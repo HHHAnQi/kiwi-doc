@@ -1,0 +1,54 @@
+# ============================================================
+# 公共配置(所有 profile 共享)
+# ============================================================
+spring:
+  application:
+    name: rag-doc-platform
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 55MB
+  jackson:
+    time-zone: UTC
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+
+# OpenAPI(springdoc)
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+# 业务配置
+app:
+  upload:
+    max-size: 50MB
+    allowed-types: pdf,md,html
+  trace:
+    enabled: true
+  auth:
+    dev-token: ${APP_DEV_TOKEN:dev-token-change-me}
+    admin-token: ${APP_ADMIN_TOKEN:admin-token-change-me}
+
+# 可观测
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    root: INFO
+    com.xxx.ragdoc: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
