@@ -9,7 +9,9 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-ragdoc}
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      # 本机已装原生 MySQL 占 3306, 改映射到 3307
+      # App 连接时 application-dev.yml 用 MYSQL_PORT=3307
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -22,7 +24,9 @@ services:
     image: redis:7-alpine
     container_name: ragdoc-redis
     ports:
-      - "6379:6379"
+      # 本机已有 aigov-redis 占用 6379, 改映射到 6380
+      # App 连接时用 application-dev.yml 的 redis.port (V1 暂未使用 Redis)
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

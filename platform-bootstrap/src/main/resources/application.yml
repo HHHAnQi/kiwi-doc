@@ -12,6 +12,8 @@ spring:
     time-zone: UTC
     serialization:
       write-dates-as-timestamps: false
+    # api-contracts.md 全用 snake_case; 让 Jackson 自动驼峰↔蛇形互转
+    property-naming-strategy: SNAKE_CASE
 
 server:
   port: 8080

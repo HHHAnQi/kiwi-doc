@@ -3,13 +3,22 @@ package com.xxx.ragdoc.infrastructure.config;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * MinIO 配置。
+ *
+ * <p>关键修复(本次烟测发现): 之前 {@code init()} 直接调 {@code minioClient()} 方法, Spring 在 @Configuration 类(@Bean
+ * 方法)内部直接自调 method 会触发循环依赖。 修复: 把 bucket 初始化拆为独立 Component(MinioBucketInitializer)接受注入的 client。
+ */
 @Slf4j
 @Configuration
+@RequiredArgsConstructor
 @ConfigurationProperties(prefix = "minio")
 public class MinioConfig {
 
@@ -28,9 +37,17 @@ public class MinioConfig {
         return bucket;
     }
 
-    public void init() {
+    /** 应用启动后创建 bucket(若不存在)。 不再用 @PostConstruct 自调 minioClient(), 避免循环依赖。 */
+    @PostConstruct
+    public void initBucket() {
         try {
-            MinioClient client = minioClient();
+            // 直接用 endpoint/credentials 新建一个临时 client 做初始化操作
+            // (不用 Spring 管理的 Bean, 避免 @Configuration 自调 method 的代理冲突)
+            MinioClient client =
+                    MinioClient.builder()
+                            .endpoint(endpoint)
+                            .credentials(accessKey, secretKey)
+                            .build();
             boolean exists = client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
             if (!exists) {
                 client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
@@ -75,10 +92,5 @@ public class MinioConfig {
 
     public void setBucket(String bucket) {
         this.bucket = bucket;
-    }
-
-    @jakarta.annotation.PostConstruct
-    public void postConstruct() {
-        init();
     }
 }

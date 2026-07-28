@@ -29,8 +29,8 @@ logs: ## 跟踪中间件日志
 app: ## 构建应用 jar
 	$(GRADLE) :platform-bootstrap:bootJar
 
-run: ## 启动应用(Spring Boot)
-	$(GRADLE) :platform-bootstrap:bootRun
+run: ## 启动应用(Spring Boot, 默认 dev profile, 连 docker-compose 中间件)
+	$(GRADLE) :platform-bootstrap:bootRun --args="--spring.profiles.active=dev"
 
 test: ## 单元测试
 	$(GRADLE) test
