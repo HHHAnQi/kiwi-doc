@@ -22,7 +22,17 @@ subprojects {
     apply(plugin = "com.diffplug.spotless")
 
     configure<JavaPluginExtension> {
-        toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+        // V1 暂用 JDK 17 降低上手门槛; V2 接入真实 LLM 长连接后切 21 启用虚拟线程
+        toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    }
+
+    // Lombok 版本集中管理; 子模块只需声明 compileOnly / annotationProcessor
+    val lombokVersion = "1.18.34"
+    dependencies {
+        "compileOnly"("org.projectlombok:lombok:$lombokVersion")
+        "annotationProcessor"("org.projectlombok:lombok:$lombokVersion")
+        "testCompileOnly"("org.projectlombok:lombok:$lombokVersion")
+        "testAnnotationProcessor"("org.projectlombok:lombok:$lombokVersion")
     }
 
     configure<com.diffplug.gradle.spotless.SpotlessExtension> {

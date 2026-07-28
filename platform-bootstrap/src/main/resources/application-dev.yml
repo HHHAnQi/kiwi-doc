@@ -37,6 +37,13 @@ llm:
   model: ${LLM_MODEL:qwen2.5-7b-instruct}
   timeout-ms: 30000
 
+# V2 引入: embedding 配置 (接入 BGE-M3 服务后启用,通过 text-embeddings-inference 容器)
+# 见 docs/features/chat/spec.md §任务卡 V2-2/V2-4
+# embedding:
+#   base-url: ${EMBEDDING_BASE_URL:http://localhost:8081}
+#   model: bge-m3
+#   timeout-ms: 10000
+
 logging:
   level:
     com.xxx.ragdoc: DEBUG

@@ -10,6 +10,8 @@ dependencies {
     implementation("jakarta.validation:jakarta.validation-api:3.0.2")
     // 仅编译期需要,运行时由 platform-bootstrap 提供
     compileOnly("org.springframework:spring-web:6.1.12")
+    compileOnly("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations:2.17.2")
 
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

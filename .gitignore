@@ -33,5 +33,4 @@ jacoco.exec
 
 # ===== Gradle =====
 .gradle/
-gradle/wrapper/gradle-wrapper.jar
-gradle/wrapper/gradle-wrapper.properties
+# 注意: gradle-wrapper.jar 必须提交, 不能 ignore

@@ -30,6 +30,9 @@ dependencies {
     // MinIO
     implementation("io.minio:minio:8.5.12")
 
+    // HTML 转义工具(feedback 防 XSS)
+    implementation("org.apache.commons:commons-text:1.12.0")
+
     // Milvus SDK
     implementation("io.milvus:milvus-sdk-java:2.4.6")
 
