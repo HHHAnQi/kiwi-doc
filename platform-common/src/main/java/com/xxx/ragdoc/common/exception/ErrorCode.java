@@ -1,9 +1,7 @@
 package com.xxx.ragdoc.common.exception;
 
 /**
- * 错误码体系,统一用枚举集中管理。
- * 命名: {DOMAIN}_{TYPE},全大写下划线。
- * 与 {@code GlobalExceptionHandler} 配合映射 HTTP 状态码。
+ * 错误码体系,统一用枚举集中管理。 命名: {DOMAIN}_{TYPE},全大写下划线。 与 {@code GlobalExceptionHandler} 配合映射 HTTP 状态码。
  *
  * @see ErrorCode 系统对外暴露的稳定契约,禁止随版本随意改名。
  */
@@ -21,9 +19,10 @@ public enum ErrorCode {
     CHUNK_NOT_FOUND(404, "CHUNK_NOT_FOUND", "chunk 不存在"),
 
     // 检索/问答域 ================================================================
-    RAG_NO_RESULT(200, "RAG_NO_RESULT", "未找到相关信息"),
+    // 注意: 业务降级场景(召回为空 / LLM 不可用)不走异常路径,
+    // 改走 ChatResponse.stateHint(StateHint 枚举)。
+    // 详见 docs/architecture/error-model.md §业务降级协议 + domain/shared/StateHint.java
     RAG_LLM_TIMEOUT(504, "RAG_LLM_TIMEOUT", "LLM 推理超时"),
-    RAG_LLM_DEGRADED(200, "RAG_LLM_DEGRADED", "LLM 暂不可用,降级返回"),
     RAG_EMBEDDING_FAILED(500, "RAG_EMBEDDING_FAILED", "向量化失败"),
 
     // 反馈域 ====================================================================
