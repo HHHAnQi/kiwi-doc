@@ -1,16 +1,8 @@
 package com.xxx.ragdoc.application.document.command;
 
-/**
- * 上传命令(应用层用例入参)。不可变 record。
- * Controller 把 multipart 转成此 command,service 不感知 HTTP。
- */
+/** 上传命令(应用层用例入参)。不可变 record。 Controller 把 multipart 转成此 command,service 不感知 HTTP。 */
 public record UploadCommand(
-        String originalFilename,
-        String mimeType,
-        long sizeBytes,
-        byte[] content,
-        String tenantId
-) {
+        String originalFilename, String mimeType, long sizeBytes, byte[] content, String tenantId) {
     public UploadCommand {
         if (originalFilename == null || originalFilename.isBlank()) {
             throw new IllegalArgumentException("originalFilename 不能为空");

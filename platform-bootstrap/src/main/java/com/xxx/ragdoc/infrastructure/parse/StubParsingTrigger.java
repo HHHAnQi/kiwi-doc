@@ -10,11 +10,9 @@ import org.springframework.stereotype.Component;
 /**
  * V1 解析触发器桩实现:同步空走一遍状态机,标记 PARSING → 仍 PARSING(留待 V2 接 Tika)。
  *
- * <p>V2 替换为:Apache Tika 抽内容 + 切片 + BGE-M3 向量 + Milvus 写入,
- * 状态在 try/catch 末尾迁至 READY 或 FAILED。
+ * <p>V2 替换为:Apache Tika 抽内容 + 切片 + BGE-M3 向量 + Milvus 写入, 状态在 try/catch 末尾迁至 READY 或 FAILED。
  *
- * <p>V3 替换为:发 DocumentParsedRequest 到 RocketMQ,
- * 由独立 parser-service 消费,trigger 立即返回。
+ * <p>V3 替换为:发 DocumentParsedRequest 到 RocketMQ, 由独立 parser-service 消费,trigger 立即返回。
  */
 @Slf4j
 @Component
@@ -25,8 +23,11 @@ public class StubParsingTrigger implements ParsingTrigger {
 
     @Override
     public void trigger(Long documentId) {
-        Document doc = documentRepository.findById(documentId)
-                .orElseThrow(() -> new IllegalStateException("Document 不存在: " + documentId));
+        Document doc =
+                documentRepository
+                        .findById(documentId)
+                        .orElseThrow(
+                                () -> new IllegalStateException("Document 不存在: " + documentId));
         try {
             doc.startParsing();
             documentRepository.save(doc);

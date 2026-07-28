@@ -6,13 +6,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.time.Instant;
 
 /**
- * documents 表 JPA Entity。
- * 与 domain.Document 解耦:本类是持久化模型,不动业务规则。
- * domain ↔ entity 的换由 {@code DocumentMapper}(infra 层)完成。
+ * documents 表 JPA Entity。 与 domain.Document 解耦:本类是持久化模型,不动业务规则。 domain ↔ entity 的换由 {@code
+ * DocumentMapper}(infra 层)完成。
  */
 @Entity
 @Table(name = "documents")

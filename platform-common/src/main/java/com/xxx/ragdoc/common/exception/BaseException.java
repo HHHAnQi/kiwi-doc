@@ -1,8 +1,8 @@
 package com.xxx.ragdoc.common.exception;
 
 /**
- * 异常基类。所有业务异常必须继承它,让 {@code GlobalExceptionHandler} 统一处理。
- * 禁止在 Controller / Service 直接抛 {@code RuntimeException}。
+ * 异常基类。所有业务异常必须继承它,让 {@code GlobalExceptionHandler} 统一处理。 禁止在 Controller / Service 直接抛 {@code
+ * RuntimeException}。
  */
 public abstract class BaseException extends RuntimeException {
 

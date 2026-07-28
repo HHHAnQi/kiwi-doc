@@ -13,10 +13,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 /**
  * 全局异常处理器。
+ *
  * <ul>
- *   <li>任何业务异常(BaseException 子类)统一转 ErrorResponse</li>
- *   <li>参数校验失败 → SYS_INVALID_ARGUMENT</li>
- *   <li>未捕获异常 → SYS_INTERNAL,不向用户泄漏堆栈</li>
+ *   <li>任何业务异常(BaseException 子类)统一转 ErrorResponse
+ *   <li>参数校验失败 → SYS_INVALID_ARGUMENT
+ *   <li>未捕获异常 → SYS_INTERNAL,不向用户泄漏堆栈
  * </ul>
  *
  * 见 docs/architecture/error-model.md §1。
@@ -28,27 +29,29 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBaseException(BaseException ex) {
         ErrorCode code = ex.errorCode();
-        log.warn("biz_error code={}, message={}, trace_id={}",
-                code.code(), ex.getMessage(), MDC.get("trace_id"));
-        return ResponseEntity
-                .status(code.httpStatus())
-                .body(ErrorResponse.of(
-                        code.code(), ex.getMessage(), MDC.get("trace_id")));
+        log.warn(
+                "biz_error code={}, message={}, trace_id={}",
+                code.code(),
+                ex.getMessage(),
+                MDC.get("trace_id"));
+        return ResponseEntity.status(code.httpStatus())
+                .body(ErrorResponse.of(code.code(), ex.getMessage(), MDC.get("trace_id")));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        String msg = ex.getBindingResult().getAllErrors().stream()
-                .findFirst()
-                .map(e -> e.getDefaultMessage())
-                .orElse("参数校验失败");
+        String msg =
+                ex.getBindingResult().getAllErrors().stream()
+                        .findFirst()
+                        .map(e -> e.getDefaultMessage())
+                        .orElse("参数校验失败");
         return build(ErrorCode.SYS_INVALID_ARGUMENT, msg);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        return build(ErrorCode.SYS_INVALID_ARGUMENT,
-                "参数类型不匹配: " + ex.getName());
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex) {
+        return build(ErrorCode.SYS_INVALID_ARGUMENT, "参数类型不匹配: " + ex.getName());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -63,9 +66,7 @@ public class GlobalExceptionHandler {
     }
 
     private static ResponseEntity<ErrorResponse> build(ErrorCode code, String message) {
-        return ResponseEntity
-                .status(code.httpStatus())
-                .body(ErrorResponse.of(
-                        code.code(), message, MDC.get("trace_id")));
+        return ResponseEntity.status(code.httpStatus())
+                .body(ErrorResponse.of(code.code(), message, MDC.get("trace_id")));
     }
 }

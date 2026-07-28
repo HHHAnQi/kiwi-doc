@@ -1,8 +1,6 @@
 package com.xxx.ragdoc.domain.document;
 
-/**
- * chunk 类型。与 docs/data/data-model.md 一致。
- */
+/** chunk 类型。与 docs/data/data-model.md 一致。 */
 public enum ChunkType {
     TEXT("文本块"),
     TABLE("表格,转 HTML"),

@@ -1,23 +1,27 @@
 package com.xxx.ragdoc.infrastructure.persistence.jpa;
 
+import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
+import com.xxx.ragdoc.application.document.query.DocumentDetail;
+import com.xxx.ragdoc.application.document.query.DocumentSummary;
 import com.xxx.ragdoc.domain.document.Document;
+import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.ContentHash;
 import com.xxx.ragdoc.domain.shared.DocumentId;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.DocumentEntity;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.DocumentJpaRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 
 /**
  * {@link DocumentRepository} 端口的 JPA 适配实现。
  *
- * <p>负责 domain.Document ↔ DocumentEntity 的双向翻译,
- * 让 application 层永远看到领域对象而非 JPA Entity。
+ * <p>负责 domain.Document ↔ DocumentEntity 的双向翻译, 让 application 层永远看到领域对象而非 JPA Entity。
  *
  * <p>幂等冲突(MySQL 唯一索引)在此被吞掉并转 null,由 application 层根据 cache 决策。
  */
@@ -27,6 +31,7 @@ import java.util.Optional;
 public class JpaDocumentRepository implements DocumentRepository {
 
     private final DocumentJpaRepository jpa;
+    private final ChunkRepository chunkRepository;
 
     @Override
     public Document save(Document document) {
@@ -37,9 +42,14 @@ public class JpaDocumentRepository implements DocumentRepository {
             document.assignId(new DocumentId(entity.getId()));
         } else {
             // 更新(V1 简化:重新 load 后更新状态字段)
-            DocumentEntity existed = jpa.findById(document.id().value())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "保存失败: id=" + document.id() + " 的 Document 不存在"));
+            DocumentEntity existed =
+                    jpa.findById(document.id().value())
+                            .orElseThrow(
+                                    () ->
+                                            new IllegalStateException(
+                                                    "保存失败: id="
+                                                            + document.id()
+                                                            + " 的 Document 不存在"));
             jpa.save(DocumentMapper.toEntity(document, existed));
             entity = existed;
         }
@@ -62,5 +72,45 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public Optional<Document> findById(Long id) {
         return jpa.findById(id).map(DocumentMapper::toDomain);
+    }
+
+    @Override
+    public long countByStatus(DocumentStatus status) {
+        return jpa.countByStatusAndDeletedAtIsNull(status.name());
+    }
+
+    @Override
+    public Page<DocumentSummary> list(DocumentStatus status, String keyword, Pageable pageable) {
+        String statusStr = status == null ? null : status.name();
+        String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        Page<DocumentEntity> page = jpa.listForSummary(statusStr, kw, pageable);
+        return page.map(
+                e ->
+                        new DocumentSummary(
+                                e.getId(),
+                                e.getOriginalFilename(),
+                                DocumentStatus.valueOf(e.getStatus()),
+                                e.getSizeBytes(),
+                                chunkRepository.countByDocumentId(e.getId()),
+                                e.getCreatedAt(),
+                                e.getUpdatedAt()));
+    }
+
+    @Override
+    public Optional<DocumentDetail> findDetailById(Long id) {
+        return jpa.findById(id)
+                .map(
+                        e ->
+                                new DocumentDetail(
+                                        e.getId(),
+                                        e.getOriginalFilename(),
+                                        e.getMimeType(),
+                                        DocumentStatus.valueOf(e.getStatus()),
+                                        e.getSizeBytes(),
+                                        chunkRepository.countByDocumentId(e.getId()),
+                                        e.getRetryCount(),
+                                        e.getErrorMessage(),
+                                        e.getCreatedAt(),
+                                        e.getUpdatedAt()));
     }
 }

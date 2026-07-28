@@ -2,7 +2,6 @@ package com.xxx.ragdoc.domain.document;
 
 import com.xxx.ragdoc.domain.shared.ContentHash;
 import com.xxx.ragdoc.domain.shared.DocumentId;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -10,12 +9,13 @@ import java.util.Objects;
 
 /**
  * Document 聚合根,V1 简化版。
- * <p>
- * 设计契约:
+ *
+ * <p>设计契约:
+ *
  * <ul>
- *   <li>状态变更必须经业务方法(startParsing/markReady/markFailed/retry/softDelete),不暴露 setter。</li>
- *   <li>所有不变量在方法内自校验,失败抛 IllegalStateException(领域规则违反)。</li>
- *   <li>持久化由 infrastructure 层负责(JPA Entity ↔ Document 双向映射),不污染领域层。</li>
+ *   <li>状态变更必须经业务方法(startParsing/markReady/markFailed/retry/softDelete),不暴露 setter。
+ *   <li>所有不变量在方法内自校验,失败抛 IllegalStateException(领域规则违反)。
+ *   <li>持久化由 infrastructure 层负责(JPA Entity ↔ Document 双向映射),不污染领域层。
  * </ul>
  *
  * 详见 docs/architecture/domain-model.md §2。
@@ -39,25 +39,29 @@ public class Document {
     // 工厂方法
     // ============================================================
 
-    /**
-     * 新建 Document(刚上传,尚未持久化,id 为 null,持久化后回填)。
-     */
+    /** 新建 Document(刚上传,尚未持久化,id 为 null,持久化后回填)。 */
     public static Document newUploaded(
             ContentHash contentHash,
             String originalFilename,
             String mimeType,
             long sizeBytes,
-            String tenantId
-    ) {
+            String tenantId) {
         return new Document(
-                null, contentHash, originalFilename, mimeType, sizeBytes, tenantId,
-                DocumentStatus.UPLOADED, 0, null, new ArrayList<>(), false);
+                null,
+                contentHash,
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                tenantId,
+                DocumentStatus.UPLOADED,
+                0,
+                null,
+                new ArrayList<>(),
+                false);
     }
 
-    /**
-     * 从持久化恢复(由 infrastructure 层重建聚合根)。包私有,仅允许同包调用。
-     */
-    static Document restore(
+    /** 从持久化恢复(由 infrastructure 层重建聚合根)。 无公开工厂方法 newXxx, 因为参数较多且是 infra 专用, 但允许跨包调用。 */
+    public static Document restore(
             DocumentId id,
             ContentHash contentHash,
             String originalFilename,
@@ -68,21 +72,33 @@ public class Document {
             int retryCount,
             String errorMessage,
             List<Chunk> chunks,
-            boolean deleted
-    ) {
+            boolean deleted) {
         return new Document(
-                id, contentHash, originalFilename, mimeType, sizeBytes, tenantId,
-                status, retryCount, errorMessage,
+                id,
+                contentHash,
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                tenantId,
+                status,
+                retryCount,
+                errorMessage,
                 chunks == null ? new ArrayList<>() : new ArrayList<>(chunks),
                 deleted);
     }
 
     private Document(
-            DocumentId id, ContentHash contentHash, String originalFilename, String mimeType,
-            long sizeBytes, String tenantId,
-            DocumentStatus status, int retryCount, String errorMessage,
-            List<Chunk> chunks, boolean deleted
-    ) {
+            DocumentId id,
+            ContentHash contentHash,
+            String originalFilename,
+            String mimeType,
+            long sizeBytes,
+            String tenantId,
+            DocumentStatus status,
+            int retryCount,
+            String errorMessage,
+            List<Chunk> chunks,
+            boolean deleted) {
         this.contentHash = Objects.requireNonNull(contentHash);
         this.originalFilename = Objects.requireNonNull(originalFilename);
         this.mimeType = Objects.requireNonNull(mimeType);
@@ -104,17 +120,13 @@ public class Document {
     // 业务行为(状态机迁移 + 不变量约束)
     // ============================================================
 
-    /**
-     * 进入解析。仅 UPLOADED 可迁(V1 同步由 upload 流程立即触发)。
-     */
+    /** 进入解析。仅 UPLOADED 可迁(V1 同步由 upload 流程立即触发)。 */
     public void startParsing() {
         ensureNotDeleted();
         this.status = status.transitionTo(DocumentStatus.PARSING);
     }
 
-    /**
-     * 解析成功。要求 chunks 非空(否则"标记成功却无内容"违反不变量)。
-     */
+    /** 解析成功。要求 chunks 非空(否则"标记成功却无内容"违反不变量)。 */
     public void markReady(List<Chunk> parsedChunks) {
         ensureNotDeleted();
         if (parsedChunks == null || parsedChunks.isEmpty()) {
@@ -125,9 +137,7 @@ public class Document {
         this.errorMessage = null;
     }
 
-    /**
-     * 解析失败。强制附加 errorMessage。
-     */
+    /** 解析失败。强制附加 errorMessage。 */
     public void markFailed(String errorMessage) {
         ensureNotDeleted();
         if (errorMessage == null || errorMessage.isBlank()) {
@@ -137,9 +147,7 @@ public class Document {
         this.errorMessage = errorMessage;
     }
 
-    /**
-     * 重试(V1 仅允许 FAILED 且 retry_count=0 时触发一次)。
-     */
+    /** 重试(V1 仅允许 FAILED 且 retry_count=0 时触发一次)。 */
     public void retry() {
         ensureNotDeleted();
         if (status != DocumentStatus.FAILED) {
@@ -153,9 +161,7 @@ public class Document {
         this.errorMessage = null;
     }
 
-    /**
-     * 软删。仅 READY/FAILED 可删;PARSING 中不可删。
-     */
+    /** 软删。仅 READY/FAILED 可删;PARSING 中不可删。 */
     public void softDelete() {
         if (this.status == DocumentStatus.PARSING) {
             throw new IllegalStateException("PARSING 中不可删除");
@@ -163,9 +169,7 @@ public class Document {
         this.deleted = true;
     }
 
-    /**
-     * 持久化后回填主键。
-     */
+    /** 持久化后回填主键。 */
     public void assignId(DocumentId id) {
         if (this.id != null) {
             throw new IllegalStateException("Document 已有 id, 不允许重新 assign");
@@ -221,9 +225,7 @@ public class Document {
         return errorMessage;
     }
 
-    /**
-     * chunks 不可变视图。V1 简化:实际切片只在 markReady 时替换。
-     */
+    /** chunks 不可变视图。V1 简化:实际切片只在 markReady 时替换。 */
     public List<Chunk> chunks() {
         return Collections.unmodifiableList(chunks);
     }
@@ -238,9 +240,16 @@ public class Document {
 
     @Override
     public String toString() {
-        return "Document{id=" + id
-                + ", contentHash=" + (contentHash == null ? null : contentHash.value().substring(0, 8) + "...")
-                + ", status=" + status + ", retryCount=" + retryCount
-                + ", deleted=" + deleted + '}';
+        return "Document{id="
+                + id
+                + ", contentHash="
+                + (contentHash == null ? null : contentHash.value().substring(0, 8) + "...")
+                + ", status="
+                + status
+                + ", retryCount="
+                + retryCount
+                + ", deleted="
+                + deleted
+                + '}';
     }
 }

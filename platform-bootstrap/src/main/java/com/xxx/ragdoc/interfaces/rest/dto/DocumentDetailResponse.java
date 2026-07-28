@@ -1,0 +1,33 @@
+package com.xxx.ragdoc.interfaces.rest.dto;
+
+import com.xxx.ragdoc.application.document.query.DocumentDetail;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Instant;
+
+/** 文档详情响应 DTO。 */
+@Schema(name = "DocumentDetailResponse")
+public record DocumentDetailResponse(
+        Long docId,
+        String originalFilename,
+        String mimeType,
+        String status,
+        long sizeBytes,
+        long chunkCount,
+        int retryCount,
+        String errorMessage,
+        Instant createdAt,
+        Instant updatedAt) {
+    public static DocumentDetailResponse from(DocumentDetail d) {
+        return new DocumentDetailResponse(
+                d.docId(),
+                d.originalFilename(),
+                d.mimeType(),
+                d.status().name(),
+                d.sizeBytes(),
+                d.chunkCount(),
+                d.retryCount(),
+                d.errorMessage(),
+                d.createdAt(),
+                d.updatedAt());
+    }
+}

@@ -1,26 +1,22 @@
 package com.xxx.ragdoc.domain.document;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.xxx.ragdoc.domain.shared.ContentHash;
 import com.xxx.ragdoc.domain.shared.DocumentId;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
-/**
- * Document 聚合根的不变量测试。覆盖状态机所有合法/非法迁移,
- * 保证领域规则不被手抖破坏。
- */
+/** Document 聚合根的不变量测试。覆盖状态机所有合法/非法迁移, 保证领域规则不被手抖破坏。 */
 class DocumentTest {
 
-    private static final ContentHash HASH = new ContentHash(
-            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-    private static final List<Chunk> SAMPLE_CHUNKS = List.of(
-            new Chunk(1L, 1L, 0, ChunkType.TEXT, "hello", 0, null, null, "hash"));
+    private static final ContentHash HASH =
+            new ContentHash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    private static final List<Chunk> SAMPLE_CHUNKS =
+            List.of(new Chunk(1L, 1L, 0, ChunkType.TEXT, "hello", 0, null, null, "hash"));
 
     @Nested
     @DisplayName("工厂方法 newUploaded")
@@ -78,8 +74,7 @@ class DocumentTest {
         @DisplayName("PARSING → FAILED: 必须带 errorMessage")
         void parsingToFailedRequiresMessage() {
             Document d = parsedDoc();
-            assertThatThrownBy(() -> d.markFailed(" "))
-                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> d.markFailed(" ")).isInstanceOf(IllegalStateException.class);
             d.markFailed("OCR 失败");
             assertThat(d.status()).isEqualTo(DocumentStatus.FAILED);
             assertThat(d.errorMessage()).isEqualTo("OCR 失败");
@@ -173,9 +168,19 @@ class DocumentTest {
         @Test
         @DisplayName("重复 assign 非法")
         void cannotReassign() {
-            Document d = Document.restore(
-                    new DocumentId(1L), HASH, "f", "x", 1, "t",
-                    DocumentStatus.UPLOADED, 0, null, List.of(), false);
+            Document d =
+                    Document.restore(
+                            new DocumentId(1L),
+                            HASH,
+                            "f",
+                            "x",
+                            1,
+                            "t",
+                            DocumentStatus.UPLOADED,
+                            0,
+                            null,
+                            List.of(),
+                            false);
             assertThatThrownBy(() -> d.assignId(new DocumentId(2L)))
                     .isInstanceOf(IllegalStateException.class);
         }
