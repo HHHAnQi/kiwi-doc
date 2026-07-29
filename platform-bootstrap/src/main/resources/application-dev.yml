@@ -34,15 +34,16 @@ minio:
 llm:
   base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
   api-key: ${LLM_API_KEY:}
-  model: ${LLM_MODEL:qwen2.5-7b-instruct}
+  model: ${LLM_MODEL:qwen-max}
   timeout-ms: 30000
 
-# V2 引入: embedding 配置 (接入 BGE-M3 服务后启用,通过 text-embeddings-inference 容器)
-# 见 docs/features/chat/spec.md §任务卡 V2-2/V2-4
-# embedding:
-#   base-url: ${EMBEDDING_BASE_URL:http://localhost:8081}
-#   model: bge-m3
-#   timeout-ms: 10000
+# V2: 真实 embedding 服务(BGE-M3 via text-embeddings-inference)
+embedding:
+  base-url: ${EMBEDDING_BASE_URL:http://localhost:8082}
+  model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+  # Rosetta amd64 模拟下 BGE-M3 推理慢(单条 ~7s, batch=6 翻倍), 必须 >40s 才不超时
+  # 生产用 GPU/原生 amd64 时可降到 5000ms
+  timeout-ms: 90000
 
 logging:
   level:

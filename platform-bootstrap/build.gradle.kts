@@ -36,6 +36,13 @@ dependencies {
     // Milvus SDK
     implementation("io.milvus:milvus-sdk-java:2.4.6")
 
+    // Apache Tika (V2: 真实 PDF/Markdown 解析, 替换 StubParsingTrigger)
+    implementation("org.apache.tika:tika-core:2.9.2")
+    implementation("org.apache.tika:tika-parsers-standard-package:2.9.2")
+
+    // WebClient (V2: 调 BGE-M3 / LLM 服务的 OpenAI 兼容协议)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
     // 可观测埋点
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("net.logstash.logback:logstash-logback-encoder:7.4")

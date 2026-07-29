@@ -64,4 +64,7 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
               )
             """)
     int maxPageOfDocument(@Param("docId") Long docId);
+
+    /** V2: 重新解析前清除旧 chunks。 */
+    void deleteByDocumentId(Long documentId);
 }

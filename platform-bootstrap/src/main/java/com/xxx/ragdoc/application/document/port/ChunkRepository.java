@@ -28,4 +28,16 @@ public interface ChunkRepository {
 
     /** 所属 doc 的最大 page 数(前端分页跳转用)。无 chunks 时返回 0。 */
     int maxPageOfDocument(Long documentId);
+
+    // ===== V2 写入能力 =====
+
+    /**
+     * 批量保存 chunks(V2: TikaParsingTrigger 解析后调用)。 实现需保证原子性: 同一 documentId 的旧 chunks 应先清除(重新解析场景)。
+     *
+     * @return 已保存的 chunks(含生成的 id)
+     */
+    List<Chunk> saveAll(Long documentId, List<Chunk> chunks);
+
+    /** 删除指定文档的所有 chunks(重新解析前调用, 含 Milvus 向量清理由 service 协调)。 */
+    void deleteByDocumentId(Long documentId);
 }

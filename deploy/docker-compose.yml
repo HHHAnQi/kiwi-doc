@@ -51,23 +51,39 @@ services:
       retries: 5
 
   # Milvus 2.5 依赖 etcd + MinIO
+  # 关键: 默认 etcd 只 listen 127.0.0.1:2379, 跨容器(Docker bridge 网络)连不上。
+  # 这是 restarts=241 的真因 —— 不光 Go panic, 也包括 etcd 无法访问。
   milvus-etcd:
     image: quay.io/coreos/etcd:v3.5.16
     container_name: ragdoc-etcd
-    environment:
-      - ETCD_AUTO_COMPACTION_MODE=revision
-      - ETCD_AUTO_COMPACTION_RETENTION=1000
-      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+    command:
+      - etcd
+      - --name=etcd
+      - --data-dir=/etcd
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://milvus-etcd:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://milvus-etcd:2380
+      - --initial-cluster=etcd=http://milvus-etcd:2380
+      - --initial-cluster-token=etcd-cluster
+      - --initial-cluster-state=new
+      - --auto-compaction-mode=revision
+      - --auto-compaction-retention=1000
+      - --quota-backend-bytes=4294967296
     volumes:
       - etcd_data:/etcd
     healthcheck:
       test: ["CMD", "etcdctl", "endpoint", "health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   milvus:
     image: milvusdb/milvus:v2.5.0
+    # M4(arm64) 上 Milvus v2.5.0 原生 binary 会 Go runtime panic(SIGABRT);
+    # 强制 amd64 + Rosetta 模拟稳定运行, 性能足够烟测。
+    platform: linux/amd64
     container_name: ragdoc-milvus
     command: ["milvus", "run", "standalone"]
     security_opt:
@@ -77,6 +93,7 @@ services:
       MINIO_ADDRESS: minio:9000
       MINIO_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minio}
       MINIO_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minio123}
+    restart: unless-stopped
     depends_on:
       milvus-etcd:
         condition: service_healthy
@@ -91,6 +108,52 @@ services:
       timeout: 5s
       retries: 20
       start_period: 60s
+
+  # V2: BGE-M3 embedding 服务(OpenAI 兼容协议)
+  # 提供 /v1/embeddings 接口, 同时输出 dense(1024) + sparse 向量
+  #
+  # 部署备注:
+  # 1) hfei cpu-1.5 tag 只打 linux/amd64 manifest, M4 Mac 是 arm64,
+  #    必须显式 platform: linux/amd64 让 Docker Desktop 用 Rosetta 模拟运行。
+  # 2) hfei 内置 hf-hub 0.3.2 在跟随 hf-mirror redirect 时会拿到相对 URL 导致 panic。
+  #    解法: 宿主机 git clone + curl 把模型下好, 按 HF hub cache 标准结构挂入 /data。
+  # 3) macOS TCC 保护 ~/Desktop, Docker Desktop bind mount 在该目录下会被拒
+  #    "operation not permitted"。整个工作区移至 ~/RagDoc 跳出沙箱;
+  #    无需 GUI 配置, 无需磁盘拷贝。结构: ~/RagDoc/{rag-doc-platform, testdata}。
+  bge-m3:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.5
+    platform: linux/amd64
+    container_name: ragdoc-bge-m3
+    # 用本地绝对路径作为 --model-id, 让 hfei 当本地模型直接加载,
+    # 完全绕过 hf-hub 0.3.2 的 repository 解析 + redirect(那个版本有 relative URL bug)。
+    # HF_HUB_OFFLINE=1 双保险, 关闭任何联网尝试。
+    # cpu-1.5 默认 onnx backend, 但我们没下 model.onnx(~2GB 大文件, git lfs 拉失败的那批);
+    # 加 --dtype float32 强制走 PyTorch backend(已有 pytorch_model.bin), 跳过 ONNX。
+    command:
+      - "--model-id"
+      - "/data/models--BAAI--bge-m3/snapshots/5617a9f61b028005a4858fdac845db406aefb181"
+      - "--port"
+      - "8081"
+      - "--dtype"
+      - "float32"
+    environment:
+      HF_HUB_OFFLINE: "1"
+    restart: unless-stopped
+    volumes:
+      # bind mount: 宿主机已下好的模型按 HF hub cache 标准结构挂进容器
+      # ~/RagDoc/testdata/bge-m3-cache 结构图:
+      #   models--BAAI--bge-m3/refs/main                          # commit hash
+      #   models--BAAI--bge-m3/snapshots/<commit>/*.bin *.json    # 软链到 bge-m3/ 实际文件
+      - /Users/huanqi/RagDoc/testdata/bge-m3-cache:/data
+    ports:
+      - "8082:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/health"]
+      # Rosetta amd64 模拟下单次请求响应慢, 放宽 timeout/interval 避免误判 unhealthy
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 240s
 
 volumes:
   mysql_data:

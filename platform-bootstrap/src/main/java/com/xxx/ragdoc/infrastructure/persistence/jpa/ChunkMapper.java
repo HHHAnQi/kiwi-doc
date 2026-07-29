@@ -29,6 +29,27 @@ public final class ChunkMapper {
                 e.getContentHash());
     }
 
+    /** V2: domain.Chunk → ChunkEntity(新建, 持久化前)。 bbox 序列化为 JSON 数组字符串。 */
+    public static ChunkEntity toNewEntity(Chunk c) {
+        ChunkEntity e = new ChunkEntity();
+        e.setDocumentId(c.documentId());
+        e.setSeq(c.seq());
+        e.setChunkType(c.type().name());
+        e.setContent(c.content());
+        e.setPage(c.page());
+        e.setBbox(formatBbox(c.bbox()));
+        e.setParentChunkId(c.parentChunkId());
+        e.setContentHash(c.contentHash());
+        return e;
+    }
+
+    private static String formatBbox(BoundingBox bbox) {
+        if (bbox == null) {
+            return null;
+        }
+        return "[" + bbox.x1() + "," + bbox.y1() + "," + bbox.x2() + "," + bbox.y2() + "]";
+    }
+
     /**
      * V1 简化的 bbox 解析。
      *

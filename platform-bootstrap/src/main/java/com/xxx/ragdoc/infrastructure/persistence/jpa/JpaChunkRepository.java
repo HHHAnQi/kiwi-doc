@@ -2,6 +2,7 @@ package com.xxx.ragdoc.infrastructure.persistence.jpa;
 
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.domain.document.Chunk;
+import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.ChunkEntity;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.ChunkJpaRepository;
 import java.util.List;
 import java.util.Optional;
@@ -45,5 +46,18 @@ public class JpaChunkRepository implements ChunkRepository {
     @Override
     public int maxPageOfDocument(Long documentId) {
         return jpa.maxPageOfDocument(documentId);
+    }
+
+    @Override
+    public List<Chunk> saveAll(Long documentId, List<Chunk> chunks) {
+        // 重新解析时先清旧(保证幂等: 同一文档重复解析不会产生重复 chunks)
+        jpa.deleteByDocumentId(documentId);
+        List<ChunkEntity> entities = chunks.stream().map(ChunkMapper::toNewEntity).toList();
+        return jpa.saveAll(entities).stream().map(ChunkMapper::toDomain).toList();
+    }
+
+    @Override
+    public void deleteByDocumentId(Long documentId) {
+        jpa.deleteByDocumentId(documentId);
     }
 }
