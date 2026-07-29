@@ -4,10 +4,13 @@ import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.domain.document.Chunk;
 import io.milvus.client.MilvusServiceClient;
+import io.milvus.param.MetricType;
 import io.milvus.param.R;
 import io.milvus.param.collection.LoadCollectionParam;
 import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.InsertParam;
+import io.milvus.param.dml.SearchParam;
+import io.milvus.response.SearchResultsWrapper;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -107,11 +110,62 @@ public class MilvusVectorStore implements VectorStore {
         }
     }
 
-    /** V2-B 实现真实 hybrid search + RRF; V2-A 先返回空(TikaParsingTrigger 不会调用 search)。 */
+    /**
+     * V2-B: dense HNSW 检索。
+     *
+     * <p>设计取舍: V2-A 阶段 sparse 字段是占位 token(0L→0.0), sparse 通道无信号。 当前先走 dense-only ANN(IP + HNSW),
+     * 已足够 SCA 文档问答。 V2-C 切到 hfei /embed + /sparse 双调用后, sparse 会有真值, 那时再升级为 hybrid search + RRF 融合。
+     *
+     * <p>过滤逻辑: docId==null 时跨全库检索, 否则按 document_id 过滤(Milvus expr)。 返回 chunk_id 列表(按分数降序), 由
+     * RetrieveService 回查 MySQL 拼 Citation。
+     */
     @Override
     public List<Long> search(EmbeddingResult queryEmbedding, Long docId, int topK) {
-        log.warn("milvus.search V2-A 未实现, V2-B 接 RetrieveService 时补", new Throwable());
-        return List.of();
+        ensureCollectionLoaded();
+
+        // 构造 docId 过滤表达式(Milvus expr 语法, null = 跨全库)
+        String expr = (docId == null) ? null : "document_id == " + docId;
+
+        SearchParam.Builder searchBuilder =
+                SearchParam.newBuilder()
+                        .withCollectionName(props.getCollection())
+                        .withVectorFieldName(MilvusCollectionInitializer.FIELD_DENSE)
+                        .withFloatVectors(List.of(toFloatList(queryEmbedding.denseVector())))
+                        .withTopK(topK)
+                        .withMetricType(MetricType.IP)
+                        // HNSW 搜索 ef>=topK*4 才能保证召回率, 否则近似质量差
+                        // SDK 2.4 SearchParam 用 withParams(String) 装额外参数
+                        .withParams("{\"params\":{\"ef\":" + Math.max(64, topK * 4) + "}}")
+                        .withOutFields(List.of(MilvusCollectionInitializer.FIELD_CHUNK_ID));
+        if (expr != null) {
+            searchBuilder.withExpr(expr);
+        }
+
+        R<io.milvus.grpc.SearchResults> resp = milvusClient.search(searchBuilder.build());
+        if (resp.getStatus() != R.Status.Success.getCode()) {
+            log.error(
+                    "milvus.search_failed docId={}, topK={}, err={}",
+                    docId,
+                    topK,
+                    resp.getMessage());
+            return List.of();
+        }
+
+        // SearchResultsWrapper.getFieldData("chunk_id", 0) 返回第 0 个 query 的 hits
+        // 在该字段列上的值(按分数降序), 直接是 List<Number>
+        SearchResultsWrapper wrapper = new SearchResultsWrapper(resp.getData().getResults());
+        Object fieldRaw = wrapper.getFieldData(MilvusCollectionInitializer.FIELD_CHUNK_ID, 0);
+        List<Long> chunkIds = new ArrayList<>();
+        if (fieldRaw instanceof List<?> rawList) {
+            for (Object v : rawList) {
+                if (v instanceof Number n) {
+                    chunkIds.add(n.longValue());
+                }
+            }
+        }
+
+        log.info("milvus.search done docId={}, topK={}, hits={}", docId, topK, chunkIds.size());
+        return chunkIds;
     }
 
     // ===== 辅助 =====

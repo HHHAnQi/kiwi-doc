@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
+import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.common.exception.DomainException;
@@ -19,6 +20,7 @@ import com.xxx.ragdoc.domain.shared.ContentHash;
 import com.xxx.ragdoc.domain.shared.DocumentId;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +34,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-/** ChatService V1 stub 行为单元测试。 覆盖 EMPTY_KB / NO_RECALL / DOC_NOT_READY / DOC_NOT_FOUND 四个关键路径。 */
+/**
+ * ChatService 单元测试(V2-B 升级版)。
+ *
+ * <p>覆盖五个关键路径: EMPTY_KB / NO_RECALL / OK / LLM_DEGRADED / DOC_NOT_READY+DOC_NOT_FOUND。 召回与 LLM 全部走
+ * mock(不依赖 Milvus / DashScope 实体服务)。
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ChatServiceTest {
@@ -40,6 +47,9 @@ class ChatServiceTest {
     @Mock private DocumentRepository documentRepository;
     @Mock private ChatTracesRepository chatTracesRepository;
     @Mock private ChatMessages chatMessages;
+    // V2-B 新增
+    @Mock private RetrieveService retrieveService;
+    @Mock private ChatClient chatClient;
 
     @InjectMocks private ChatService chatService;
 
@@ -49,6 +59,9 @@ class ChatServiceTest {
     void setupMessages() {
         when(chatMessages.getEmptyKbMessage()).thenReturn("EMPTY_MSG");
         when(chatMessages.getNoRecallMessage()).thenReturn("NORECALL_MSG");
+        when(chatMessages.getLlmDegradedMessage()).thenReturn("LLM_FAIL:");
+        // 默认召回为空, NO_RECALL 分支复用
+        when(retrieveService.retrieve(any())).thenReturn(RetrieveService.RetrieveResult.empty());
     }
 
     @Nested
@@ -84,29 +97,74 @@ class ChatServiceTest {
     }
 
     @Nested
-    @DisplayName("NO_RECALL: ≥1 READY 文档但 stub 无 chunks")
+    @DisplayName("NO_RECALL: ≥1 READY 文档但召回为空")
     class NoRecall {
         @Test
         @DisplayName("应返回 state_hint=NO_RECALL")
-        void shouldReturnNoRecall() {
+        void shouldReturnNoRecall() throws Exception {
             when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(3L);
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(RetrieveService.RetrieveResult.empty());
 
             ChatResult r = chatService.chat(new ChatCommand("Sentinel 限流", null, 5), TID);
 
             assertThat(r.stateHint()).isEqualTo(StateHint.NO_RECALL);
             assertThat(r.answer()).isEqualTo("NORECALL_MSG");
             assertThat(r.citations()).isEmpty();
+            // 召回被调用过
+            verify(retrieveService, times(1)).retrieve(any());
+            // LLM 不应被调用(召回空时不调 LLM, 节省成本)
+            verify(chatClient, never()).chat(any(), any());
         }
+    }
 
+    @Nested
+    @DisplayName("OK: 召回成功 + LLM 成功")
+    class OkPath {
         @Test
-        @DisplayName("V1 stub 永不调召回, 直接走 NO_RECALL")
-        void shouldNotHitRealRetrieval() {
+        @DisplayName("应返回 state_hint=OK + LLM 答案 + citations")
+        void shouldReturnOkWithAnswerAndCitations() throws Exception {
             when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            // 召回 2 条 chunk
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(
+                                    List.of(
+                                            new RetrieveService.Citation(19L, 6L, 0, "Sentinel 文本"),
+                                            new RetrieveService.Citation(20L, 6L, 0, "Nacos 文本"))));
+            when(chatClient.chat(any(), any())).thenReturn("限流策略用 Sentinel[1]");
 
-            chatService.chat(new ChatCommand("q", null, null), TID);
+            ChatResult r = chatService.chat(new ChatCommand("怎么限流", null, 5), TID);
 
-            // chatTracesRepository 仅被调一次(写记录), 没有任何召回相关调用
-            verify(chatTracesRepository, times(1)).save(any());
+            assertThat(r.stateHint()).isEqualTo(StateHint.OK);
+            assertThat(r.answer()).isEqualTo("限流策略用 Sentinel[1]");
+            assertThat(r.citations()).hasSize(2);
+            assertThat(r.citations().get(0).chunkId()).isEqualTo(19L);
+            assertThat(r.citations().get(0).snippet()).isEqualTo("Sentinel 文本");
+        }
+    }
+
+    @Nested
+    @DisplayName("LLM_DEGRADED: 召回成功但 LLM 抛异常")
+    class LlmDegraded {
+        @Test
+        @DisplayName("应返回 state_hint=LLM_DEGRADED + trace_id 兜底 + citations 仍返回")
+        void shouldDegradeWhenLlmThrows() throws Exception {
+            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(
+                                    List.of(new RetrieveService.Citation(19L, 6L, 0, "片段"))));
+            when(chatClient.chat(any(), any()))
+                    .thenThrow(new RuntimeException("DashScope timeout"));
+
+            ChatResult r = chatService.chat(new ChatCommand("怎么限流", null, 5), TID);
+
+            assertThat(r.stateHint()).isEqualTo(StateHint.LLM_DEGRADED);
+            // 兜底文案 + trace_id(LlmDegradedMessage="LLM_FAIL:" + tid)
+            assertThat(r.answer()).startsWith("LLM_FAIL:").endsWith(TID.value());
+            // 虽 LLM 失败, citations 仍返回(用户可看检索到的片段)
+            assertThat(r.citations()).hasSize(1);
         }
     }
 

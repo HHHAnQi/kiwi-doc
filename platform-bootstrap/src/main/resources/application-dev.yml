@@ -32,10 +32,14 @@ minio:
   bucket: ${MINIO_BUCKET:ragdoc}
 
 llm:
+  # DashScope 已迁阿里云百炼(bailian), 老 URL 仍转发, 无效换 https://dashscope-intl.aliyuncs.com/compatible-mode/v1
   base-url: ${LLM_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
   api-key: ${LLM_API_KEY:}
   model: ${LLM_MODEL:qwen-max}
-  timeout-ms: 30000
+  # 国内大模型首 token 可能 5-10s, 全长 20-40s, 设置 60s 安全
+  timeout-ms: 60000
+  # 给 LLM 的 context 字符上限(拼检索片段时裁剪)
+  max-context-chars: 4000
 
 # V2: 真实 embedding 服务(BGE-M3 via text-embeddings-inference)
 embedding:
