@@ -16,7 +16,11 @@ public record DocumentDetailResponse(
         int retryCount,
         String errorMessage,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String source,
+        String version,
+        String language,
+        String docType) {
     public static DocumentDetailResponse from(DocumentDetail d) {
         return new DocumentDetailResponse(
                 d.docId(),
@@ -28,6 +32,10 @@ public record DocumentDetailResponse(
                 d.retryCount(),
                 d.errorMessage(),
                 d.createdAt(),
-                d.updatedAt());
+                d.updatedAt(),
+                d.source(),
+                d.version(),
+                d.language(),
+                d.docType());
     }
 }

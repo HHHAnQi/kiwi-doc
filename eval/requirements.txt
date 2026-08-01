@@ -1,0 +1,11 @@
+# V2-C 评测依赖
+# 用法: pip install -r eval/requirements.txt
+openai>=1.20,<2.0
+pymysql>=1.1,<2.0
+python-dotenv>=1.0,<2.0
+requests>=2.31,<3.0
+jieba>=0.42,<1.0
+# P1: RAGAS 评测 + judge LLM 接入 (设计文档 README.md L16 要求)
+ragas==0.2.15
+langchain-openai>=0.2,<0.3
+langchain-core>=0.3,<0.4

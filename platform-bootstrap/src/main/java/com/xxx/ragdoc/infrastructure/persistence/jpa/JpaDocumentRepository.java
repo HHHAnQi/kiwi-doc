@@ -93,7 +93,11 @@ public class JpaDocumentRepository implements DocumentRepository {
                                 e.getSizeBytes(),
                                 chunkRepository.countByDocumentId(e.getId()),
                                 e.getCreatedAt(),
-                                e.getUpdatedAt()));
+                                e.getUpdatedAt(),
+                                e.getSource(),
+                                e.getVersion(),
+                                e.getLanguage(),
+                                e.getDocType()));
     }
 
     @Override
@@ -111,6 +115,10 @@ public class JpaDocumentRepository implements DocumentRepository {
                                         e.getRetryCount(),
                                         e.getErrorMessage(),
                                         e.getCreatedAt(),
-                                        e.getUpdatedAt()));
+                                        e.getUpdatedAt(),
+                                        e.getSource(),
+                                        e.getVersion(),
+                                        e.getLanguage(),
+                                        e.getDocType()));
     }
 }

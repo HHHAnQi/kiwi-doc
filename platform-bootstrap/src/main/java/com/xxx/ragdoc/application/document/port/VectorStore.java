@@ -9,28 +9,106 @@ import java.util.List;
  *
  * <p>V2-A 只用 {@link #upsertChunks} 和 {@link #deleteByDocumentId}; search 方法留给 V2-B
  * (RetrieveService) 调用。
+ *
+ * <p>V2-C 升级: search 返回 {@link ScoredChunk}(带 score), 为 hybrid RRF 与未来 Reranker 留出分数透出通道。
+ *
+ * <p>V3 元数据升级: {@link ChunkMetadata} 把 document 级业务元数据 (source/version/language/docType) 和 chunk 级
+ * {@code chunkType} 一起带入向量库, 支撑元数据过滤检索与 Parent-Child。 老调用方走 {@link #upsertChunks(Long, List, List)}
+ * 默认实现, 落库为缺省值, 零改动。
  */
 public interface VectorStore {
 
     /**
-     * 批量写入 chunks 的向量(与 chunks 表同序)。
+     * 批量写入 chunks 的向量(与 chunks 表同序)。老接口缺省元数据。
+     *
+     * <p>实现应委托 {@link #upsertChunks(Long, List, List, ChunkMetadata)}, 传 {@link
+     * ChunkMetadata#unknown()}。
+     */
+    default void upsertChunks(
+            Long documentId, List<Chunk> chunks, List<EmbeddingResult> embeddings) {
+        upsertChunks(documentId, chunks, embeddings, ChunkMetadata.unknown());
+    }
+
+    /**
+     * 批量写入 chunks 的向量 + 业务元数据。
      *
      * @param documentId 所属文档
      * @param chunks 已持久化的 chunks(含 id)
-     * @param embeddings 与 chunks 同序的向量(BGE-M3 dense+sparse)
+     * @param embeddings 与 chunks 同序的向量(BGE-M3 dense)
+     * @param metadata 落库到向量库的业务元数据, 用于标量过滤检索
      */
-    void upsertChunks(Long documentId, List<Chunk> chunks, List<EmbeddingResult> embeddings);
+    void upsertChunks(
+            Long documentId,
+            List<Chunk> chunks,
+            List<EmbeddingResult> embeddings,
+            ChunkMetadata metadata);
 
     /** 删除指定文档的所有向量(重新解析前调用)。 */
     void deleteByDocumentId(Long documentId);
 
+    /** 混合检索(V2-C 落地): dense(BGE-M3) + sparse(Milvus 原生 BM25) → RRF 融合 → top-k。 无元数据过滤。 */
+    default List<ScoredChunk> search(
+            EmbeddingResult queryEmbedding, String queryText, Long docId, int topK) {
+        return search(queryEmbedding, queryText, docId, topK, null);
+    }
+
     /**
-     * 混合检索(V2-B 用): dense + sparse → RRF 融合 → top-k chunk_ids。
+     * 混合检索(V3): dense(BGE-M3) + sparse(Milvus 原生 BM25) → RRF 融合 → top-k, 支持 {@link MetadataFilter}
+     * 标量过滤。
      *
-     * @param queryEmbedding 查询向量(BGE-M3 embed 结果)
+     * @param queryEmbedding 查询向量(BGE-M3 dense embed 结果)
+     * @param queryText 查询原文(BM25 sparse 检索用,不能从向量反推)
      * @param docId 可选, 限定文档; null = 跨全库
      * @param topK 返回条数
-     * @return 召回的 chunk_id 列表(按融合后分数降序)
+     * @param filter 可选业务元数据过滤(source/version/language), null = 不过滤
+     * @return 召回结果(按融合后分数降序), 含 chunkId 与 score
      */
-    List<Long> search(EmbeddingResult queryEmbedding, Long docId, int topK);
+    List<ScoredChunk> search(
+            EmbeddingResult queryEmbedding,
+            String queryText,
+            Long docId,
+            int topK,
+            MetadataFilter filter);
+
+    /** 带分数的检索结果 record, 给 RetrieveService / 未来 Reranker 用。 */
+    record ScoredChunk(Long chunkId, float score) {}
+
+    /**
+     * 业务元数据标量过滤条件, 各字段均可空(逻辑 AND): 实现侧负责转 Milvus expr 或同等机制。
+     *
+     * @param source 限定来源组件(dubbo/nacos/seata/rocketmq/sentinel); null/blank = 不限
+     * @param version 限定版本; null/blank = 不限
+     * @param language 限定语言; null/blank = 不限
+     */
+    record MetadataFilter(String source, String version, String language) {
+
+        /** 是否一个条件都没设(实现侧可据此跳过 expr 拼接)。 */
+        public boolean isEmpty() {
+            return (source == null || source.isBlank())
+                    && (version == null || version.isBlank())
+                    && (language == null || language.isBlank());
+        }
+
+        public static MetadataFilter empty() {
+            return new MetadataFilter(null, null, null);
+        }
+    }
+
+    /**
+     * 写入向量库所需业务元数据。值对象, 一次构造不可变。
+     *
+     * @param source 来源组件(dubbo/nacos/seata/rocketmq/sentinel)
+     * @param version 版本号, 可空
+     * @param language 语言(zh/en)
+     * @param docType 文档类型(doc/blog/spec/...)
+     * @param chunkType chunk 类型(TEXT/CODE/TABLE/FIGURE/TITLE), P3 Parent-Child 时标 child/parent
+     */
+    record ChunkMetadata(
+            String source, String version, String language, String docType, String chunkType) {
+
+        /** 老路径元数据缺省值, 保证未注入元数据时向量库可写。 */
+        public static ChunkMetadata unknown() {
+            return new ChunkMetadata("unknown", null, "zh", "doc", "TEXT");
+        }
+    }
 }

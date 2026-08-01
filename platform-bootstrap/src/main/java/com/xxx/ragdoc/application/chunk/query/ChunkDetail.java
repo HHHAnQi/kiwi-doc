@@ -2,11 +2,14 @@ package com.xxx.ragdoc.application.chunk.query;
 
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
+import java.util.List;
 
 /**
  * 单条 chunk 详情(已关联父 doc 元信息, 减少前端二次请求)。
  *
  * @param documentFilename 所属文档原名(仅展示用)
+ * @param sectionPath Q3-B: 该 chunk 所属的 markdown heading 路径栈, 如 [Dubbo, 异步调用]; 空 list = 无 heading
+ *     上下文
  */
 public record ChunkDetail(
         Long id,
@@ -18,7 +21,8 @@ public record ChunkDetail(
         double[] bbox,
         Long parentChunkId,
         String contentHash,
-        String documentFilename) {
+        String documentFilename,
+        List<String> sectionPath) {
     /** 从 {@link Chunk} 转换; bbox 拆为数组便于 JSON 序列化。 */
     public static ChunkDetail from(Chunk c, String documentFilename) {
         double[] bbox =
@@ -35,6 +39,7 @@ public record ChunkDetail(
                 bbox,
                 c.parentChunkId(),
                 c.contentHash(),
-                documentFilename);
+                documentFilename,
+                c.sectionPath());
     }
 }

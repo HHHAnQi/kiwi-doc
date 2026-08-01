@@ -28,6 +28,12 @@ public class Document {
     private final String mimeType;
     private final long sizeBytes;
     private final String tenantId;
+    // 业务元数据(上传时一次定型, 不可变): 支撑元数据过滤检索/分组消融/跨版本问答
+    // 详见 ADR-0001 与 docs/data/data-model.md。缺省值保证老调用方零改动。
+    private final String source; // dubbo/nacos/seata/rocketmq/sentinel/unknown
+    private final String version; // 自由版本号, null = 未指定
+    private final String language; // zh/en
+    private final String docType; // doc/blog/release-notes/spec/demo
 
     private DocumentStatus status;
     private int retryCount;
@@ -39,13 +45,36 @@ public class Document {
     // 工厂方法
     // ============================================================
 
-    /** 新建 Document(刚上传,尚未持久化,id 为 null,持久化后回填)。 */
+    /** 新建 Document(刚上传,尚未持久化,id 为 null,持久化后回填)。无元数据重载, 老调用方零改动。 */
     public static Document newUploaded(
             ContentHash contentHash,
             String originalFilename,
             String mimeType,
             long sizeBytes,
             String tenantId) {
+        return newUploaded(
+                contentHash,
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                tenantId,
+                "unknown",
+                null,
+                "zh",
+                "doc");
+    }
+
+    /** 新建 Document 并携带业务元数据(source/version/language/docType)。 */
+    public static Document newUploaded(
+            ContentHash contentHash,
+            String originalFilename,
+            String mimeType,
+            long sizeBytes,
+            String tenantId,
+            String source,
+            String version,
+            String language,
+            String docType) {
         return new Document(
                 null,
                 contentHash,
@@ -53,6 +82,10 @@ public class Document {
                 mimeType,
                 sizeBytes,
                 tenantId,
+                "unknown".equals(safe(source)) ? "unknown" : safe(source),
+                nullIfBlank(version), // version 可空; 空白也视作 null, 防下游 Milvus 写空串污染过滤
+                defaultIfBlank(language, "zh"),
+                defaultIfBlank(docType, "doc"),
                 DocumentStatus.UPLOADED,
                 0,
                 null,
@@ -60,7 +93,7 @@ public class Document {
                 false);
     }
 
-    /** 从持久化恢复(由 infrastructure 层重建聚合根)。 无公开工厂方法 newXxx, 因为参数较多且是 infra 专用, 但允许跨包调用。 */
+    /** 从持久化恢复(由 infrastructure 层重建聚合根)。老重载保留, 委托新方法并补元数据缺省值。 */
     public static Document restore(
             DocumentId id,
             ContentHash contentHash,
@@ -73,6 +106,41 @@ public class Document {
             String errorMessage,
             List<Chunk> chunks,
             boolean deleted) {
+        return restore(
+                id,
+                contentHash,
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                tenantId,
+                status,
+                retryCount,
+                errorMessage,
+                chunks,
+                deleted,
+                "unknown",
+                null,
+                "zh",
+                "doc");
+    }
+
+    /** 从持久化恢复(含业务元数据)。 */
+    public static Document restore(
+            DocumentId id,
+            ContentHash contentHash,
+            String originalFilename,
+            String mimeType,
+            long sizeBytes,
+            String tenantId,
+            DocumentStatus status,
+            int retryCount,
+            String errorMessage,
+            List<Chunk> chunks,
+            boolean deleted,
+            String source,
+            String version,
+            String language,
+            String docType) {
         return new Document(
                 id,
                 contentHash,
@@ -80,6 +148,10 @@ public class Document {
                 mimeType,
                 sizeBytes,
                 tenantId,
+                "unknown".equals(safe(source)) ? "unknown" : safe(source),
+                nullIfBlank(version), // 与 newUploaded 一致: 空白视作 null
+                defaultIfBlank(language, "zh"),
+                defaultIfBlank(docType, "doc"),
                 status,
                 retryCount,
                 errorMessage,
@@ -94,6 +166,10 @@ public class Document {
             String mimeType,
             long sizeBytes,
             String tenantId,
+            String source,
+            String version,
+            String language,
+            String docType,
             DocumentStatus status,
             int retryCount,
             String errorMessage,
@@ -108,12 +184,30 @@ public class Document {
         this.sizeBytes = sizeBytes;
         this.tenantId = Objects.requireNonNull(tenantId);
 
+        this.source = Objects.requireNonNull(source, "source 不能为 null, 用 'unknown'");
+        this.version = version;
+        this.language = Objects.requireNonNull(language, "language 不能为 null, 用 'zh'");
+        this.docType = Objects.requireNonNull(docType, "docType 不能为 null, 用 'doc'");
+
         this.id = id;
         this.status = Objects.requireNonNull(status);
         this.retryCount = retryCount;
         this.errorMessage = errorMessage;
         this.chunks = Objects.requireNonNull(chunks);
         this.deleted = deleted;
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s.trim();
+    }
+
+    private static String defaultIfBlank(String s, String def) {
+        return (s == null || s.isBlank()) ? def : s.trim();
+    }
+
+    /** 空白字符串归一化为 null(version 允许 null 但不允许空串, 防 Milvus 写入空串污染过滤)。 */
+    private static String nullIfBlank(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
     }
 
     // ============================================================
@@ -169,6 +263,23 @@ public class Document {
         this.deleted = true;
     }
 
+    /**
+     * 复活(对称 softDelete)。
+     *
+     * <p>用于"同 hash 软删 doc 被重新上传"场景: 应用层选择复活老聚合根(保留原 doc_id)而不是 插新 doc, 这样 (a) 不撞
+     * documents.uk_content_hash 唯一约束, (b) chunks/Milvus 可走重切路径。 调用方须保证 chunks 已清(reactivate 不负责清旧
+     * chunks, 状态机只关心自身)。
+     */
+    public void reactivate() {
+        if (!this.deleted) {
+            throw new IllegalStateException("Document 未删除, 无需 reactivate");
+        }
+        this.deleted = false;
+        this.status = DocumentStatus.UPLOADED;
+        this.retryCount = 0;
+        this.errorMessage = null;
+    }
+
     /** 持久化后回填主键。 */
     public void assignId(DocumentId id) {
         if (this.id != null) {
@@ -193,6 +304,11 @@ public class Document {
         return id;
     }
 
+    /** 文档是否被软删(供 application 层 reactivate 分支判断)。 */
+    public boolean deleted() {
+        return deleted;
+    }
+
     public ContentHash contentHash() {
         return contentHash;
     }
@@ -211,6 +327,26 @@ public class Document {
 
     public String tenantId() {
         return tenantId;
+    }
+
+    /** 业务元数据: 来源组件(dubbo/nacos/seata/rocketmq/sentinel), 缺省 'unknown'。 */
+    public String source() {
+        return source;
+    }
+
+    /** 业务元数据: 版本号(可空)。 */
+    public String version() {
+        return version;
+    }
+
+    /** 业务元数据: 语言(zh/en), 缺省 'zh'。 */
+    public String language() {
+        return language;
+    }
+
+    /** 业务元数据: 文档类型(doc/blog/release-notes/spec/demo), 缺省 'doc'。 */
+    public String docType() {
+        return docType;
     }
 
     public DocumentStatus status() {

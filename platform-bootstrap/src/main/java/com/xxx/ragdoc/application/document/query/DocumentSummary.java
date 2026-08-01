@@ -9,6 +9,10 @@ import java.time.Instant;
  * <p>列表分页时摘要返回 + 单条详情时用 {@link DocumentDetail}。
  *
  * @param chunkCount 关联 chunks 统计; V1 parsing stub 始终为 0
+ * @param source V3 业务元数据: 来源组件(dubbo/nacos/seata/rocketmq/sentinel), 缺省 'unknown'
+ * @param version V3 业务元数据: 版本号, 可空
+ * @param language V3 业务元数据: 语言(zh/en), 缺省 'zh'
+ * @param docType V3 业务元数据: 文档类型(doc/blog/release-notes/spec/demo), 缺省 'doc'
  */
 public record DocumentSummary(
         Long docId,
@@ -17,4 +21,8 @@ public record DocumentSummary(
         long sizeBytes,
         long chunkCount,
         Instant createdAt,
-        Instant updatedAt) {}
+        Instant updatedAt,
+        String source,
+        String version,
+        String language,
+        String docType) {}

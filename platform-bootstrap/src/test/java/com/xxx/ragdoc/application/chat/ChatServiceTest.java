@@ -130,8 +130,22 @@ class ChatServiceTest {
                     .thenReturn(
                             new RetrieveService.RetrieveResult(
                                     List.of(
-                                            new RetrieveService.Citation(19L, 6L, 0, "Sentinel 文本"),
-                                            new RetrieveService.Citation(20L, 6L, 0, "Nacos 文本"))));
+                                            new RetrieveService.Citation(
+                                                    19L,
+                                                    6L,
+                                                    0,
+                                                    "Sentinel 文本",
+                                                    "Sentinel 文本",
+                                                    0.9f,
+                                                    java.util.List.of()),
+                                            new RetrieveService.Citation(
+                                                    20L,
+                                                    6L,
+                                                    0,
+                                                    "Nacos 文本",
+                                                    "Nacos 文本",
+                                                    0.8f,
+                                                    java.util.List.of()))));
             when(chatClient.chat(any(), any())).thenReturn("限流策略用 Sentinel[1]");
 
             ChatResult r = chatService.chat(new ChatCommand("怎么限流", null, 5), TID);
@@ -154,7 +168,15 @@ class ChatServiceTest {
             when(retrieveService.retrieve(any()))
                     .thenReturn(
                             new RetrieveService.RetrieveResult(
-                                    List.of(new RetrieveService.Citation(19L, 6L, 0, "片段"))));
+                                    List.of(
+                                            new RetrieveService.Citation(
+                                                    19L,
+                                                    6L,
+                                                    0,
+                                                    "片段",
+                                                    "片段",
+                                                    0.9f,
+                                                    java.util.List.of()))));
             when(chatClient.chat(any(), any()))
                     .thenThrow(new RuntimeException("DashScope timeout"));
 

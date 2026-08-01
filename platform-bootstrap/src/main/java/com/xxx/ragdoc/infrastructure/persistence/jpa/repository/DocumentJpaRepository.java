@@ -12,8 +12,19 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Long> {
 
-    /** 幂等查找(V1 单租户)。 */
-    Optional<DocumentEntity> findByContentHashAndTenantId(String contentHash, String tenantId);
+    /**
+     * 幂等查找(V1 单租户, 含软删 doc)。
+     *
+     * <p>必须显式查所有(含 deletedAt != NULL): 上层 DocumentUploadService 需要区分"未删=幂等命中" 与"已删=复活 reactivate
+     * 走重切路径"。后者是 P3-A 全量重灌的关键(reshash→ 找到软删→ reactivate → parsingTrigger 重新 chunk 到 chunks 表, 不撞
+     * documents.uk_content_hash 唯一约束)。
+     */
+    @Query(
+            "SELECT d FROM DocumentEntity d "
+                    + "WHERE d.contentHash = :contentHash "
+                    + "AND d.tenantId = :tenantId")
+    Optional<DocumentEntity> findByContentHashAndTenantId(
+            @Param("contentHash") String contentHash, @Param("tenantId") String tenantId);
 
     /** chat V1 stub 判 EMPTY_KB 用此方法。 */
     long countByStatusAndDeletedAtIsNull(String status);

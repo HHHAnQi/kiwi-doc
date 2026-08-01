@@ -13,7 +13,11 @@ public record DocumentSummaryResponse(
         long sizeBytes,
         long chunkCount,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        String source,
+        String version,
+        String language,
+        String docType) {
     public static DocumentSummaryResponse from(DocumentSummary s) {
         return new DocumentSummaryResponse(
                 s.docId(),
@@ -22,6 +26,10 @@ public record DocumentSummaryResponse(
                 s.sizeBytes(),
                 s.chunkCount(),
                 s.createdAt(),
-                s.updatedAt());
+                s.updatedAt(),
+                s.source(),
+                s.version(),
+                s.language(),
+                s.docType());
     }
 }

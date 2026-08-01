@@ -1,62 +1,84 @@
 package com.xxx.ragdoc.infrastructure.milvus;
 
-import io.milvus.client.MilvusServiceClient;
-import io.milvus.grpc.DataType;
-import io.milvus.param.IndexType;
-import io.milvus.param.MetricType;
-import io.milvus.param.R;
-import io.milvus.param.RpcStatus;
-import io.milvus.param.collection.CreateCollectionParam;
-import io.milvus.param.collection.FieldType;
-import io.milvus.param.collection.HasCollectionParam;
-import io.milvus.param.index.CreateIndexParam;
+import io.milvus.common.clientenum.FunctionType;
+import io.milvus.v2.client.MilvusClientV2;
+import io.milvus.v2.common.DataType;
+import io.milvus.v2.common.IndexParam;
+import io.milvus.v2.service.collection.request.CreateCollectionReq;
+import io.milvus.v2.service.collection.request.DescribeCollectionReq;
+import io.milvus.v2.service.collection.request.DropCollectionReq;
+import io.milvus.v2.service.collection.request.HasCollectionReq;
+import io.milvus.v2.service.collection.response.DescribeCollectionResp;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 /**
- * Milvus collection 初始化器。
+ * Milvus collection 初始化器(v2 API, BM25 Function)。
  *
  * <p>启动时幂等创建 collection + 索引; 已存在则跳过。
  *
- * <p>V2-A 简化: 用 Milvus SDK 2.4.x 的 gRPC API 直建。 schema:
+ * <p>SDK 2.5.x schema (双路召回用 BM25 sparse + dense):
  *
  * <ul>
  *   <li>id (INT64, PK, auto-id)
  *   <li>dense_vector (FLOAT_VECTOR, dim=1024) — BGE-M3 dense
- *   <li>sparse_vector (SPARSE_FLOAT_VECTOR) — BGE-M3 sparse
+ *   <li>text (VARCHAR 4000, enable_analyzer=chinese) — chunk 文本, BM25 输入
+ *   <li>sparse_bm25 (SPARSE_FLOAT_VECTOR) — 由 BM25 Function 自动算, 不手动写
  *   <li>document_id (INT64) — 过滤
  *   <li>chunk_id (INT64) — 回溯 MySQL chunks 表
  *   <li>page (INT32) — 引用回溯
  *   <li>tenant_id (VARCHAR 32) — V4 多租户
  * </ul>
  *
+ * <p>Function: BM25(input=text → output=sparse_bm25), Milvus 2.5 原生分词+倒排, 中文用内置 chinese analyzer。
+ *
  * <p>索引:
  *
  * <ul>
  *   <li>dense: HNSW (M=16, efConstruction=200, IP)
- *   <li>sparse: SPARSE_INVERTED_INDEX (IP)
+ *   <li>sparse_bm25: SPARSE_INVERTED_INDEX (BM25 metric)
  * </ul>
+ *
+ * <p>当前 collection schema 升级到 V2-C 双路召回版本时, 因为旧 schema 没 text/BM25 Function 字段, 启动会检测到 schema 不同并删旧
+ * collection 重建。
  */
 @Slf4j
 @Component
 public class MilvusCollectionInitializer implements ApplicationRunner {
 
     public static final int DENSE_DIM = 1024;
+    public static final int TEXT_MAX_LENGTH = 4000;
     public static final String FIELD_ID = "id";
     public static final String FIELD_DENSE = "dense_vector";
-    public static final String FIELD_SPARSE = "sparse_vector";
+    public static final String FIELD_TEXT = "text";
+    public static final String FIELD_SPARSE_BM25 = "sparse_bm25";
     public static final String FIELD_DOC_ID = "document_id";
     public static final String FIELD_CHUNK_ID = "chunk_id";
     public static final String FIELD_PAGE = "page";
     public static final String FIELD_TENANT = "tenant_id";
+    // V3 业务元数据标量字段(原 data-model.md L159 即要求 chunk_type 入 Milvus 做过滤, 此前漏建)
+    // source/version/language/doc_type 支撑元数据过滤检索与按组件分组消融。
+    public static final String FIELD_SOURCE = "source";
+    public static final String FIELD_VERSION = "version";
+    public static final String FIELD_LANGUAGE = "language";
+    public static final String FIELD_DOC_TYPE = "doc_type";
+    public static final String FIELD_CHUNK_TYPE = "chunk_type";
+    public static final String BM25_FUNCTION_NAME = "text_to_bm25";
 
-    private final MilvusServiceClient milvusClient;
+    /**
+     * 旧 schema 用的 sparse 字段名(BGE-M3 sparse 占位), 用于检测老 collection 是否需要重建。 V3 后又新增 5 个标量, 老版 V2-C
+     * collection 亦需重建。
+     */
+    private static final String LEGACY_OLD_SPARSE_FIELD = "sparse_vector";
+
+    private final MilvusClientV2 milvusClientV2;
     private final MilvusProperties props;
 
-    public MilvusCollectionInitializer(MilvusServiceClient milvusClient, MilvusProperties props) {
-        this.milvusClient = milvusClient;
+    public MilvusCollectionInitializer(MilvusClientV2 milvusClientV2, MilvusProperties props) {
+        this.milvusClientV2 = milvusClientV2;
         this.props = props;
     }
 
@@ -64,99 +86,183 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         String collection = props.getCollection();
         try {
-            R<Boolean> has =
-                    milvusClient.hasCollection(
-                            HasCollectionParam.newBuilder().withCollectionName(collection).build());
-            if (has.getData()) {
-                log.info("✓ Milvus collection '{}' 已存在, 跳过创建", collection);
-                return;
+            boolean has =
+                    milvusClientV2.hasCollection(
+                            HasCollectionReq.builder().collectionName(collection).build());
+            if (has) {
+                // 检测 schema 是否是新的 BM25 版本; 旧版要重建
+                if (needsSchemaMigration(collection)) {
+                    log.warn(
+                            "⚠ Milvus collection '{}' 还是旧 schema(没 BM25 Function), 删除重建...",
+                            collection);
+                    milvusClientV2.dropCollection(
+                            DropCollectionReq.builder().collectionName(collection).build());
+                } else {
+                    log.info("✓ Milvus collection '{}' 已存在(BM25 schema), 跳过", collection);
+                    return;
+                }
             }
             createCollection(collection);
-            log.info("✓ Milvus collection '{}' 已自动创建 + 索引就绪", collection);
+            log.info("✓ Milvus collection '{}' 已自动创建 + dense/sparse_bm25 索引就绪", collection);
         } catch (Exception e) {
             log.warn("Milvus collection 初始化失败(应用仍可启动): {}", e.getMessage());
         }
     }
 
-    private void createCollection(String collection) throws Exception {
-        // 1. 建集合
-        CreateCollectionParam createParam =
-                CreateCollectionParam.newBuilder()
-                        .withCollectionName(collection)
-                        .withDescription("RAG doc chunks V2")
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_ID)
-                                        .withDataType(DataType.Int64)
-                                        .withPrimaryKey(true)
-                                        .withAutoID(true)
-                                        .build())
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_DENSE)
-                                        .withDataType(DataType.FloatVector)
-                                        .withDimension(DENSE_DIM)
-                                        .build())
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_SPARSE)
-                                        .withDataType(DataType.SparseFloatVector)
-                                        .build())
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_DOC_ID)
-                                        .withDataType(DataType.Int64)
-                                        .build())
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_CHUNK_ID)
-                                        .withDataType(DataType.Int64)
-                                        .build())
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_PAGE)
-                                        .withDataType(DataType.Int32)
-                                        .build())
-                        .addFieldType(
-                                FieldType.newBuilder()
-                                        .withName(FIELD_TENANT)
-                                        .withDataType(DataType.VarChar)
-                                        .withMaxLength(32)
-                                        .build())
+    /** 判断已存在的 collection 是否需要迁移重建: 看是否缺 BM25 或 V3 元数据字段。 */
+    private boolean needsSchemaMigration(String collection) {
+        try {
+            DescribeCollectionResp resp =
+                    milvusClientV2.describeCollection(
+                            DescribeCollectionReq.builder().collectionName(collection).build());
+            java.util.List<String> fieldNames = resp.getFieldNames();
+            boolean hasLegacySparse = fieldNames.contains(LEGACY_OLD_SPARSE_FIELD);
+            boolean hasBm25 = fieldNames.contains(FIELD_SPARSE_BM25);
+            boolean hasSource = fieldNames.contains(FIELD_SOURCE);
+            boolean hasChunkType = fieldNames.contains(FIELD_CHUNK_TYPE);
+            boolean needsMigrate = hasLegacySparse || !hasBm25 || !hasSource || !hasChunkType;
+            log.info(
+                    "milvus.schema_check fields={} hasLegacySparse={} hasBm25={} hasSource={} hasChunkType={} -> needsMigrate={}",
+                    fieldNames,
+                    hasLegacySparse,
+                    hasBm25,
+                    hasSource,
+                    hasChunkType,
+                    needsMigrate);
+            return needsMigrate;
+        } catch (Exception e) {
+            // describe 失败保守起见认为不需要重建(避免误删)
+            log.warn("describeCollection 失败, 跳过迁移检测: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private void createCollection(String collection) {
+        // ===== Schema =====
+        // v2 API: 用 AddFieldReq (不是 FieldType), schema.addField() 接 AddFieldReq。
+        CreateCollectionReq.CollectionSchema schema =
+                CreateCollectionReq.CollectionSchema.builder().build();
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_ID)
+                        .dataType(DataType.Int64)
+                        .isPrimaryKey(true)
+                        .autoID(true)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_DENSE)
+                        .dataType(DataType.FloatVector)
+                        .dimension(DENSE_DIM)
+                        .build());
+        // text 字段: 必须开 analyzer 才能跑 BM25 分词。
+        // Milvus 2.5 内置 chinese analyzer, 不需 jieba 外挂。
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_TEXT)
+                        .dataType(DataType.VarChar)
+                        .maxLength(TEXT_MAX_LENGTH)
+                        .enableAnalyzer(true)
+                        .analyzerParams(java.util.Map.of("type", "chinese"))
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_SPARSE_BM25)
+                        .dataType(DataType.SparseFloatVector)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_DOC_ID)
+                        .dataType(DataType.Int64)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_CHUNK_ID)
+                        .dataType(DataType.Int64)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_PAGE)
+                        .dataType(DataType.Int32)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_TENANT)
+                        .dataType(DataType.VarChar)
+                        .maxLength(32)
+                        .build());
+        // ===== V3 业务元数据标量字段, 用于标量过滤检索 =====
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_SOURCE)
+                        .dataType(DataType.VarChar)
+                        .maxLength(32)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_VERSION)
+                        .dataType(DataType.VarChar)
+                        .maxLength(16)
+                        .build()); // Milvus SDK 2.5 不支持 nullable(true); version 空时存空串, 读侧映射回 null
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_LANGUAGE)
+                        .dataType(DataType.VarChar)
+                        .maxLength(8)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_DOC_TYPE)
+                        .dataType(DataType.VarChar)
+                        .maxLength(16)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_CHUNK_TYPE)
+                        .dataType(DataType.VarChar)
+                        .maxLength(16)
+                        .build());
+
+        // BM25 Function: 自动从 text 算 sparse_bm25, 插入时不需手动写 sparse
+        schema.addFunction(
+                CreateCollectionReq.Function.builder()
+                        .name(BM25_FUNCTION_NAME)
+                        .functionType(FunctionType.BM25)
+                        .inputFieldNames(List.of(FIELD_TEXT))
+                        .outputFieldNames(List.of(FIELD_SPARSE_BM25))
+                        .build());
+
+        // ===== 索引 =====
+        IndexParam denseIdx =
+                IndexParam.builder()
+                        .fieldName(FIELD_DENSE)
+                        .indexType(IndexParam.IndexType.HNSW)
+                        .metricType(IndexParam.MetricType.IP)
+                        .extraParams(java.util.Map.of("M", 16, "efConstruction", 200))
                         .build();
-        R<RpcStatus> createResp = milvusClient.createCollection(createParam);
-        if (createResp.getStatus() != R.Status.Success.getCode()) {
-            throw new IllegalStateException("CreateCollection 失败: " + createResp.getMessage());
-        }
+        IndexParam sparseIdx =
+                IndexParam.builder()
+                        .fieldName(FIELD_SPARSE_BM25)
+                        .indexType(IndexParam.IndexType.SPARSE_INVERTED_INDEX)
+                        .metricType(IndexParam.MetricType.BM25)
+                        .build();
+        // 标量索引注意:
+        //   Milvus 2.5 的 STL_SORT 仅支持数值字段; 对 VARCHAR(source/tenant/language 等) 不能用。
+        //   数值标量(document_id) 走 STL_SORT 加速等值过滤; 字符串标量在此版本先不加索引,
+        //   Milvus 用 brute-force 过滤, V2 数据规模(<10w 行)下完全够用。
+        //   V4+ 若要给字符串标量加索引, 用 Milvus 2.6+ 的 INVERTED 索引(本版 SDK 2.5 暂不支持)。
+        IndexParam docIdIdx =
+                IndexParam.builder()
+                        .fieldName(FIELD_DOC_ID)
+                        .indexType(IndexParam.IndexType.STL_SORT)
+                        .build();
 
-        // 2. 建 dense 索引 (HNSW)
-        R<RpcStatus> denseIdx =
-                milvusClient.createIndex(
-                        CreateIndexParam.newBuilder()
-                                .withCollectionName(collection)
-                                .withFieldName(FIELD_DENSE)
-                                .withIndexType(IndexType.HNSW)
-                                .withMetricType(MetricType.IP)
-                                .withExtraParam("{\"M\":16,\"efConstruction\":200}")
-                                .build());
-        if (denseIdx.getStatus() != R.Status.Success.getCode()) {
-            throw new IllegalStateException("CreateIndex dense 失败: " + denseIdx.getMessage());
-        }
-
-        // 3. 建 sparse 索引 (SPARSE_INVERTED)
-        R<RpcStatus> sparseIdx =
-                milvusClient.createIndex(
-                        CreateIndexParam.newBuilder()
-                                .withCollectionName(collection)
-                                .withFieldName(FIELD_SPARSE)
-                                .withIndexType(IndexType.SPARSE_INVERTED_INDEX)
-                                .withMetricType(MetricType.IP)
-                                .withExtraParam("{}")
-                                .build());
-        if (sparseIdx.getStatus() != R.Status.Success.getCode()) {
-            throw new IllegalStateException("CreateIndex sparse 失败: " + sparseIdx.getMessage());
-        }
-
-        log.info("✓ Milvus collection '{}' schema + dense/sparse 索引创建完成", collection);
+        milvusClientV2.createCollection(
+                CreateCollectionReq.builder()
+                        .collectionName(collection)
+                        .description("RAG doc chunks V3 (dense + BM25 sparse + RRF + metadata)")
+                        .collectionSchema(schema)
+                        .indexParams(List.of(denseIdx, sparseIdx, docIdIdx))
+                        .build());
     }
 }

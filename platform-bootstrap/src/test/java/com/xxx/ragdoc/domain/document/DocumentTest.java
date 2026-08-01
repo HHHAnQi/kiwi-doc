@@ -16,7 +16,9 @@ class DocumentTest {
     private static final ContentHash HASH =
             new ContentHash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
     private static final List<Chunk> SAMPLE_CHUNKS =
-            List.of(new Chunk(1L, 1L, 0, ChunkType.TEXT, "hello", 0, null, null, "hash"));
+            List.of(
+                    new Chunk(
+                            1L, 1L, 0, ChunkType.TEXT, "hello", 0, null, null, "hash", List.of()));
 
     @Nested
     @DisplayName("工厂方法 newUploaded")
@@ -45,6 +47,88 @@ class DocumentTest {
         void shouldRejectNegativeSize() {
             assertThatThrownBy(() -> Document.newUploaded(HASH, "f", "x", -1, "t"))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        // ===== F-SMOKE-1: 元数据透传 / 缺省 / 规范化 (防 K2 复活: version 被写死 null) =====
+
+        @Test
+        @DisplayName("携带元数据的重载: source/version/language/docType 全部透传不丢")
+        void shouldPreserveAllMetadata() {
+            Document d =
+                    Document.newUploaded(
+                            HASH,
+                            "f.pdf",
+                            "application/pdf",
+                            100L,
+                            "default",
+                            "sentinel",
+                            "1.8",
+                            "zh",
+                            "doc");
+            assertThat(d.source()).isEqualTo("sentinel");
+            assertThat(d.version()).isEqualTo("1.8"); // ★ 防 K2: 不能再被写死 null
+            assertThat(d.language()).isEqualTo("zh");
+            assertThat(d.docType()).isEqualTo("doc");
+        }
+
+        @Test
+        @DisplayName("老重载: 元数据落缺省值(unknown/null/zh/doc) - 防老调用方行为变化")
+        void shouldFallBackToDefaultMetadata() {
+            Document d = Document.newUploaded(HASH, "f.pdf", "application/pdf", 100L, "default");
+            assertThat(d.source()).isEqualTo("unknown");
+            assertThat(d.version()).isNull();
+            assertThat(d.language()).isEqualTo("zh");
+            assertThat(d.docType()).isEqualTo("doc");
+        }
+
+        @Test
+        @DisplayName("元数据空白串规范化: version 空白→null, language/docType 空白→缺省")
+        void shouldNormalizeBlankMetadata() {
+            Document d =
+                    Document.newUploaded(
+                            HASH,
+                            "f.pdf",
+                            "application/pdf",
+                            100L,
+                            "default",
+                            "  sentinel  ",
+                            "   ",
+                            "  ",
+                            "\t");
+            assertThat(d.source()).isEqualTo("sentinel"); // 去首尾空白
+            assertThat(d.version()).isNull(); // 空白→null, 不是 "   "
+            assertThat(d.language()).isEqualTo("zh");
+            assertThat(d.docType()).isEqualTo("doc");
+        }
+    }
+
+    @Nested
+    @DisplayName("工厂方法 restore - 元数据透传")
+    class RestoreMetadata {
+
+        @Test
+        @DisplayName("restore 带 version=2.0 时 version() 正确返回 2.0")
+        void restoreShouldPreserveVersion() {
+            Document d =
+                    Document.restore(
+                            new DocumentId(1L),
+                            HASH,
+                            "f.pdf",
+                            "application/pdf",
+                            100L,
+                            "default",
+                            DocumentStatus.READY,
+                            0,
+                            null,
+                            SAMPLE_CHUNKS,
+                            false,
+                            "nacos",
+                            "2.0",
+                            "zh",
+                            "spec");
+            assertThat(d.source()).isEqualTo("nacos");
+            assertThat(d.version()).isEqualTo("2.0"); // ★ 防 K2 在 restore 路径复活
+            assertThat(d.docType()).isEqualTo("spec");
         }
     }
 

@@ -25,12 +25,21 @@ logs/
 .env
 .env.local
 .env.*.local
+.env.bak
+.env.*.bak
 secrets/
 
 # ===== Test =====
 test-results/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
 jacoco.exec
 
 # ===== Gradle =====
 .gradle/
 # 注意: gradle-wrapper.jar 必须提交, 不能 ignore
+.venv/

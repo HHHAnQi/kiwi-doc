@@ -2,6 +2,7 @@ package com.xxx.ragdoc.interfaces.rest.dto;
 
 import com.xxx.ragdoc.application.chunk.query.ChunkDetail;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 
 @Schema(name = "ChunkDetailResponse")
 public record ChunkDetailResponse(
@@ -14,7 +15,9 @@ public record ChunkDetailResponse(
         double[] bbox,
         Long parentChunkId,
         String contentHash,
-        String documentFilename) {
+        String documentFilename,
+        @Schema(description = "Q3-B: 所属 markdown heading 路径栈, 如 [\"Dubbo\",\"异步调用\"]")
+                List<String> sectionPath) {
     public static ChunkDetailResponse from(ChunkDetail d) {
         return new ChunkDetailResponse(
                 d.id(),
@@ -26,6 +29,7 @@ public record ChunkDetailResponse(
                 d.bbox(),
                 d.parentChunkId(),
                 d.contentHash(),
-                d.documentFilename());
+                d.documentFilename(),
+                d.sectionPath());
     }
 }

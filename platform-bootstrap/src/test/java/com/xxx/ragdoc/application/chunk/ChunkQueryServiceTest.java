@@ -59,7 +59,8 @@ class ChunkQueryServiceTest {
                 1,
                 new BoundingBox(0, 0, 1, 1),
                 null,
-                "hash-" + seq);
+                "hash-" + seq,
+                List.of());
     }
 
     private static Document sampleDoc(Long id) {
@@ -89,7 +90,11 @@ class ChunkQueryServiceTest {
                         0,
                         null,
                         null,
-                        null);
+                        null,
+                        "unknown",
+                        null,
+                        "zh",
+                        "doc");
         when(documentRepository.findDetailById(docId)).thenReturn(Optional.of(detail));
     }
 

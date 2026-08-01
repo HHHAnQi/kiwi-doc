@@ -155,6 +155,46 @@ services:
       retries: 5
       start_period: 240s
 
+  # V2 第③段: BGE-Reranker-v2-m3 cross-encoder 精排服务
+  # 调用方式: POST /rerank {"query":"...", "documents":[...], "top_n":5}
+  # 启用前提: application.yml rag.rerank.enabled=true
+  bge-reranker:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.7
+    platform: linux/amd64
+    container_name: ragdoc-bge-reranker
+    # 用本地绝对路径作为 --model-id, 让 hfei 当本地模型直接加载,
+    # 绕过 hf-hub repository 解析(版本 0.3.2 在 hf-mirror redirect 时有 relative URL bug)。
+    # HF_HUB_OFFLINE=1 双保险, 关闭任何联网尝试。
+    # 模型下载方式: hf CLI 的 lock bug 失败, 改用 curl 直拉 13 个文件平铺到 bge-reranker-v2-m3/,
+    # 再用 optimum-cli 把 safetensors 转 ONNX 到 onnx/ 子目录。
+    # 关键: candle backend 在 Rosetta amd64 下对 XLMRoberta 段错误(SIGSEGV 139),
+    # 必须 ORT backend(走 onnx/model.onnx + model.onnx_data)才能起得来。
+    # 因此 --model-id 直接指 /data/onnx(含 model.onnx 与 model.onnx_data)。
+    command:
+      - "--model-id"
+      - "/data/onnx"
+      - "--port"
+      - "8081"
+      - "--dtype"
+      - "float32"
+    environment:
+      HF_HUB_OFFLINE: "1"
+    restart: unless-stopped
+    volumes:
+      # bind mount: 宿主机已下好的 13 个模型文件平铺在 bge-reranker-v2-m3/ 目录下,
+      # 直接挂进容器 /data 作为 --model-id 加载。
+      # 文件: model.safetensors(2.1G) + sentencepiece.bpe.model + tokenizer*.json + config.json + ...
+      - /Users/huanqi/RagDoc/testdata/bge-reranker-v2-m3:/data
+    ports:
+      - "8084:8081"
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/health"]
+      # Rosetta amd64 模拟下 reranker 加载与推理都慢, 放宽到 240s 启动
+      interval: 30s
+      timeout: 20s
+      retries: 5
+      start_period: 240s
+
 volumes:
   mysql_data:
   minio_data:

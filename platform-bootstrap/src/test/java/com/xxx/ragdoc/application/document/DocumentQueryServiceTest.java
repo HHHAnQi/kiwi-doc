@@ -34,7 +34,17 @@ class DocumentQueryServiceTest {
         // given
         com.xxx.ragdoc.application.document.query.DocumentSummary sample =
                 new com.xxx.ragdoc.application.document.query.DocumentSummary(
-                        1L, "sentinel.pdf", DocumentStatus.READY, 100L, 5, null, null);
+                        1L,
+                        "sentinel.pdf",
+                        DocumentStatus.READY,
+                        100L,
+                        5,
+                        null,
+                        null,
+                        "sentinel",
+                        null,
+                        "zh",
+                        "doc");
         Page<com.xxx.ragdoc.application.document.query.DocumentSummary> stub =
                 new PageImpl<>(List.of(sample));
         when(documentRepository.list(eq(DocumentStatus.READY), eq("sentinel"), any()))
@@ -62,7 +72,11 @@ class DocumentQueryServiceTest {
                         0,
                         null,
                         null,
-                        null);
+                        null,
+                        "unknown",
+                        null,
+                        "zh",
+                        "doc");
         when(documentRepository.findDetailById(1L)).thenReturn(Optional.of(detail));
 
         DocumentDetail result = queryService.getDetail(1L);

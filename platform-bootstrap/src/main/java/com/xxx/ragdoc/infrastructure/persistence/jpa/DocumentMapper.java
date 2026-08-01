@@ -25,7 +25,11 @@ public final class DocumentMapper {
                 e.getRetryCount(),
                 e.getErrorMessage(),
                 null, // chunks 由独立查询组装,V1 简化
-                e.getDeletedAt() != null);
+                e.getDeletedAt() != null,
+                e.getSource(),
+                e.getVersion(),
+                e.getLanguage(),
+                e.getDocType());
     }
 
     /** 把聚合根状态回写到 Entity(用于 update)。 id 来自聚合根(已 assign); 元信息(hash/filename 等)V1 只读,不回写。 */
@@ -52,6 +56,11 @@ public final class DocumentMapper {
         e.setStatus(d.status().name());
         e.setRetryCount(d.retryCount());
         e.setErrorMessage(d.errorMessage());
+        // 业务元数据(上传时一次定型)
+        e.setSource(d.source());
+        e.setVersion(d.version());
+        e.setLanguage(d.language());
+        e.setDocType(d.docType());
         return e;
     }
 }

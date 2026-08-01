@@ -97,12 +97,15 @@ public class ChatService {
                                                         c.chunkId(),
                                                         c.docId(),
                                                         c.page(),
-                                                        c.snippet()))
+                                                        c.snippet(),
+                                                        c.llmContext(),
+                                                        c.sectionPath()))
                                 .toList();
-                // 拼 context 给 LLM(用 snippet 已够, 不必塞原文)
+                // 喂 LLM 用 chunk 全文(llmContext), 不是给前端的 200 字 snippet。
+                // 早期两者共用 snippet 致双重截断 maxContextChars 才是真正该用的总闸。
                 List<String> context = new ArrayList<>();
                 for (var c : retrieve.items()) {
-                    context.add(c.snippet());
+                    context.add(c.llmContext());
                 }
                 String llmAnswer;
                 try {

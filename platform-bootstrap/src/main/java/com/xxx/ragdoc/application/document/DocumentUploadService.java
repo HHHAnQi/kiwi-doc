@@ -11,10 +11,11 @@ import com.xxx.ragdoc.domain.shared.ContentHash;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 上传用例(应用服务)。
@@ -33,7 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DocumentUploadService {
 
     private static final Set<String> ALLOWED_MIME =
@@ -43,7 +43,29 @@ public class DocumentUploadService {
     private final FileStorage fileStorage;
     private final ParsingTrigger parsingTrigger;
 
-    @Transactional
+    /**
+     * 编程式短事务: 只持有写 doc 行的部分(MS 级), 不包 MinIO/parse/embed。
+     *
+     * <p>P3-A 全量重灌首批 187/200 fail 根因: {@code @Transactional} 类级标注让整个 upload() 含
+     * parsingTrigger(embed 5-10min) 全在一个事务里, doc 行锁持有过久 → 下个请求 Lock wait timeout。 拆事务边界: doc 写入短事务
+     * commit 释放锁; parse 跑在事务外(失败用 markFailed 单独短事务回写)。
+     */
+    private final TransactionTemplate shortTxWrite;
+
+    public DocumentUploadService(
+            DocumentRepository documentRepository,
+            FileStorage fileStorage,
+            ParsingTrigger parsingTrigger,
+            PlatformTransactionManager txManager) {
+        this.documentRepository = documentRepository;
+        this.fileStorage = fileStorage;
+        this.parsingTrigger = parsingTrigger;
+        this.shortTxWrite = new TransactionTemplate(txManager);
+        // 短事务: 仅包 doc 写, 不传播外层(虽然 upload() 本身不带 @Transactional, 防御未来变更)
+        this.shortTxWrite.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    }
+
+    /** Disable class-level @Transactional(P3-A 重灌死锁根因)。事务边界下沉到 doc 写入段, parse 在事务外。 */
     public UploadResult upload(UploadCommand cmd) {
         validate(cmd);
 
@@ -54,25 +76,62 @@ public class DocumentUploadService {
                 cmd.sizeBytes(),
                 hash.value().substring(0, 8));
 
-        // ============ 幂等 ============
+        // ============ 幂等 / 复活 ============
+        // 1. 未删 doc 同 hash → idempotent_hit 直接返回(不重切)
+        // 2. 软删 doc 同 hash → reactivate 复活(保留原 doc_id) → 触发重切 chunks → parent-child 重灌路径
+        // 3. 全新 hash → 走正常 insert
         var existed = documentRepository.findByContentHash(hash);
         if (existed.isPresent()) {
             Document d = existed.get();
-            log.info("upload.idempotent_hit doc_id={}, hash={}", d.id(), d.contentHash().value());
-            return new UploadResult(d.id().value(), d.status(), d.originalFilename(), true);
+            if (!d.deleted()) {
+                log.info(
+                        "upload.idempotent_hit doc_id={}, hash={}",
+                        d.id().value(),
+                        d.contentHash().value());
+                return new UploadResult(d.id().value(), d.status(), d.originalFilename(), true);
+            }
+            // 软删命中: reactivate 包在短事务里, commit 释放锁
+            d.reactivate();
+            shortTxWrite.executeWithoutResult(status -> documentRepository.save(d));
+            log.info(
+                    "upload.reactivate doc_id={}, hash={}, before=DELETED",
+                    d.id().value(),
+                    d.contentHash().value());
+
+            // MinIO 覆盖上传(无锁)
+            try {
+                fileStorage.uploadRaw(d.id().value(), cmd.originalFilename(), cmd.content());
+                log.debug("upload.file_stored(overwrite) objectKey={}", d.id().value());
+            } catch (Exception e) {
+                log.error("upload.minio_failed(reactivate) doc_id={}", d.id(), e);
+                d.markFailed("文件存储失败: " + e.getMessage());
+                final Document failMark = d;
+                shortTxWrite.executeWithoutResult(s -> documentRepository.save(failMark));
+                throw new DomainException(ErrorCode.SYS_INTERNAL, "文件存储失败");
+            }
+            // parse 在事务外: chunks 写入走自己的事务(JpaChunkRepository.saveAll 有 @Transactional)
+            parsingTrigger.trigger(d.id().value());
+            // 重读最新状态(parse 已把 status=READY 写回)
+            Document fresh = documentRepository.findById(d.id().value()).orElseThrow();
+            return new UploadResult(
+                    fresh.id().value(), fresh.status(), fresh.originalFilename(), false);
         }
 
-        // ============ 创建聚合根并持久化 ============
-        Document document =
+        // ============ 创建聚合根并持久化(短事务) ============
+        Document draft =
                 Document.newUploaded(
                         hash,
                         cmd.originalFilename(),
                         cmd.mimeType(),
                         cmd.sizeBytes(),
-                        cmd.tenantId());
-        document = documentRepository.save(document);
+                        cmd.tenantId(),
+                        cmd.source(),
+                        cmd.version(),
+                        cmd.language(),
+                        cmd.docType());
+        Document document = shortTxWrite.execute(status -> documentRepository.save(draft));
 
-        // ============ 落 MinIO ============
+        // ============ 落 MinIO(无锁) ============
         try {
             String objectKey =
                     fileStorage.uploadRaw(
@@ -80,17 +139,19 @@ public class DocumentUploadService {
             log.debug("upload.file_stored objectKey={}", objectKey);
         } catch (Exception e) {
             log.error("upload.minio_failed doc_id={}", document.id(), e);
-            // 不回滚事务(MinIO 文件可清理由定时任务),但标记 FAILED
             document.markFailed("文件存储失败: " + e.getMessage());
-            documentRepository.save(document);
+            final Document failMark = document;
+            shortTxWrite.executeWithoutResult(s -> documentRepository.save(failMark));
             throw new DomainException(ErrorCode.SYS_INTERNAL, "文件存储失败");
         }
 
-        // ============ 触发解析(V1 同步 stub) ============
+        // ============ 触发解析(事务外; parse 内部有自己的 @Transactional) ============
         parsingTrigger.trigger(document.id().value());
 
+        // 重读最新 status(parse 把 status=READY 写回但 document 实体未持有, 因为是 PARALLEL 写入)
+        Document fresh = documentRepository.findById(document.id().value()).orElseThrow();
         return new UploadResult(
-                document.id().value(), document.status(), document.originalFilename(), false);
+                fresh.id().value(), fresh.status(), fresh.originalFilename(), false);
     }
 
     // ============================================================

@@ -74,7 +74,9 @@ class TikaParsingTriggerTest {
                         chunkingService,
                         embeddingClient,
                         chunkRepository,
-                        vectorStore);
+                        vectorStore,
+                        // P3-A feature flag 默认 flat(测试沿用 V2 原路径)
+                        new com.xxx.ragdoc.application.document.ChunkingProperties());
     }
 
     /** 构造一个 UPLOADED 状态的 Document(saved 版本, 已有 id)。 */
@@ -107,7 +109,8 @@ class TikaParsingTriggerTest {
                                         0,
                                         null,
                                         null,
-                                        CHUNK_HASH))
+                                        CHUNK_HASH,
+                                        List.of()))
                 .toList();
     }
 
@@ -125,7 +128,15 @@ class TikaParsingTriggerTest {
             Document doc = newUploadedDoc();
             when(documentRepository.findById(DOC_ID)).thenReturn(Optional.of(doc));
             when(fileStorage.download(any())).thenReturn(FAKE_BYTES);
-            when(chunkingService.chunk(any(String.class))).thenReturn(List.of("段一", "段二", "段三"));
+            when(chunkingService.chunkSectioned(any(String.class)))
+                    .thenReturn(
+                            java.util.List.of(
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "段一", java.util.List.of()),
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "段二", java.util.List.of()),
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "段三", java.util.List.of())));
             List<EmbeddingResult> embeds =
                     List.of(
                             new EmbeddingResult(new float[1024], Map.of(1, 0.5f)),
@@ -146,9 +157,14 @@ class TikaParsingTriggerTest {
 
             // chunks 表写入
             verify(chunkRepository).saveAll(eq(DOC_ID), any());
-            // Milvus: 先删(重新解析幂等) + 写
+            // Milvus: 先删(重新解析幂等) + 写(V3 携带 ChunkMetadata, 因 newUploadedDoc 未传元数据, 落 unknown)
             verify(vectorStore).deleteByDocumentId(DOC_ID);
-            verify(vectorStore).upsertChunks(eq(DOC_ID), eq(saved), eq(embeds));
+            verify(vectorStore)
+                    .upsertChunks(
+                            eq(DOC_ID),
+                            eq(saved),
+                            eq(embeds),
+                            any(VectorStore.ChunkMetadata.class));
         }
 
         @Test
@@ -157,7 +173,11 @@ class TikaParsingTriggerTest {
             Document doc = newUploadedDoc();
             when(documentRepository.findById(DOC_ID)).thenReturn(Optional.of(doc));
             when(fileStorage.download(any())).thenReturn(FAKE_BYTES);
-            when(chunkingService.chunk(any(String.class))).thenReturn(List.of("a-chunk-text"));
+            when(chunkingService.chunkSectioned(any(String.class)))
+                    .thenReturn(
+                            java.util.List.of(
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "a-chunk-text", java.util.List.of())));
             when(embeddingClient.embedBatch(any()))
                     .thenReturn(List.of(new EmbeddingResult(new float[1024], Map.of(1, 0.1f))));
             when(chunkRepository.saveAll(eq(DOC_ID), any())).thenReturn(savedChunksWithIds(1));
@@ -208,7 +228,7 @@ class TikaParsingTriggerTest {
             when(fileStorage.download(any())).thenReturn(FAKE_BYTES);
             // parseToString 抽出空白
             // 为了让"全文为空"路径触发, 让 chunkingService 收到空字符串切片结果为空
-            when(chunkingService.chunk(any(String.class))).thenReturn(List.of());
+            when(chunkingService.chunkSectioned(any(String.class))).thenReturn(List.of());
 
             assertThatThrownBy(() -> trigger.trigger(DOC_ID))
                     .isInstanceOf(IllegalStateException.class);
@@ -227,8 +247,13 @@ class TikaParsingTriggerTest {
             Document doc = newUploadedDoc();
             when(documentRepository.findById(DOC_ID)).thenReturn(Optional.of(doc));
             when(fileStorage.download(any())).thenReturn(FAKE_BYTES);
-            when(chunkingService.chunk(any(String.class)))
-                    .thenReturn(List.of("chunk-a", "chunk-b"));
+            when(chunkingService.chunkSectioned(any(String.class)))
+                    .thenReturn(
+                            java.util.List.of(
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "chunk-a", java.util.List.of()),
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "chunk-b", java.util.List.of())));
             // 切了 2 段, 但 embedding 只返回 1 个 → 不一致
             when(embeddingClient.embedBatch(any()))
                     .thenReturn(List.of(new EmbeddingResult(new float[1024], Map.of(1, 0.2f))));

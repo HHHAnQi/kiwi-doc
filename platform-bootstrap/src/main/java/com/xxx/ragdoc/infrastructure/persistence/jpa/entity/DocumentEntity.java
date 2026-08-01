@@ -29,6 +29,23 @@ public class DocumentEntity {
     @Column(name = "mime_type", nullable = false, length = 64)
     private String mimeType;
 
+    // ===== 业务元数据 (V3 迁移新增) =====
+    /** 来源组件: dubbo/nacos/seata/rocketmq/sentinel, 缺省 unknown。 */
+    @Column(name = "source", nullable = false, length = 32)
+    private String source = "unknown";
+
+    /** 版本号, 可空(未识别版本时为 null)。 */
+    @Column(name = "version", length = 16)
+    private String version;
+
+    /** 语言: zh / en, 缺省 zh。 */
+    @Column(name = "language", nullable = false, length = 8)
+    private String language = "zh";
+
+    /** 文档类型: doc / blog / release-notes / spec / demo, 缺省 doc。 */
+    @Column(name = "doc_type", nullable = false, length = 16)
+    private String docType = "doc";
+
     @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;
 
@@ -85,6 +102,38 @@ public class DocumentEntity {
 
     public void setMimeType(String mimeType) {
         this.mimeType = mimeType;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getDocType() {
+        return docType;
+    }
+
+    public void setDocType(String docType) {
+        this.docType = docType;
     }
 
     public Long getSizeBytes() {

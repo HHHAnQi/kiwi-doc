@@ -42,12 +42,18 @@ public class DocumentController {
     // ============================================================
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "上传文档")
-    public ResponseEntity<DocumentUploadResponse> upload(@RequestParam("file") MultipartFile file)
+    public ResponseEntity<DocumentUploadResponse> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "source", required = false) String source,
+            @RequestParam(value = "version", required = false) String version,
+            @RequestParam(value = "language", required = false) String language,
+            @RequestParam(value = "doc_type", required = false) String docType)
             throws IOException {
         log.info(
-                "rest.document.upload.start filename={}, size={}, trace_id={}",
+                "rest.document.upload.start filename={}, size={}, source={}, trace_id={}",
                 file.getOriginalFilename(),
                 file.getSize(),
+                source,
                 MDC.get("trace_id"));
 
         UploadCommand cmd =
@@ -56,7 +62,11 @@ public class DocumentController {
                         file.getContentType(),
                         file.getSize(),
                         file.getBytes(),
-                        "default");
+                        "default",
+                        source,
+                        version,
+                        language,
+                        docType);
 
         UploadResult result = uploadService.upload(cmd);
 

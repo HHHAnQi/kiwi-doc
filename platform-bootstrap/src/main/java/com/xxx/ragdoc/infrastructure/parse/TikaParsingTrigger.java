@@ -2,6 +2,7 @@ package com.xxx.ragdoc.infrastructure.parse;
 
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
+import com.xxx.ragdoc.application.document.ChunkingProperties;
 import com.xxx.ragdoc.application.document.ParsingTrigger;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
@@ -53,6 +54,7 @@ public class TikaParsingTrigger implements ParsingTrigger {
     private final EmbeddingClient embeddingClient;
     private final ChunkRepository chunkRepository;
     private final VectorStore vectorStore;
+    private final ChunkingProperties chunkingProps;
 
     /** Tika 是线程安全(内部 facade 单例), 复用即可。 */
     private final Tika tika = new Tika();
@@ -90,55 +92,29 @@ public class TikaParsingTrigger implements ParsingTrigger {
                 fullText = fullText.substring(0, MAX_TEXT_LENGTH);
             }
 
-            // 4. 切片
-            List<String> chunkTexts = chunkingService.chunk(fullText);
-            if (chunkTexts.isEmpty()) {
-                throw new IllegalStateException("切片结果为空(全文过短或全是噪声)");
+            // 4. 切片(P3-A: feature flag flat|parent_child, 默认 flat 兼容老路径)
+            boolean useParentChild =
+                    chunkingProps.getMode()
+                            == com.xxx.ragdoc.application.document.ChunkingProperties.Mode
+                                    .PARENT_CHILD;
+
+            List<Chunk> savedChunks;
+
+            if (useParentChild) {
+                savedChunks = parseParentChild(doc, documentId, fullText);
+            } else {
+                savedChunks = parseFlat(doc, documentId, fullText);
             }
-            log.info("parse.chunked doc_id={}, chunks={}", documentId, chunkTexts.size());
-
-            // 5. 构建 domain.Chunk(V2 简化: page=0 全文块, type=TEXT, bbox/parent 留空)
-            List<Chunk> chunks = new ArrayList<>(chunkTexts.size());
-            for (int i = 0; i < chunkTexts.size(); i++) {
-                String text = chunkTexts.get(i);
-                chunks.add(
-                        new Chunk(
-                                null, // id 由 DB 自增
-                                documentId,
-                                i, // seq 从 0 起
-                                ChunkType.TEXT,
-                                text,
-                                0, // V2 不做页码检测
-                                null,
-                                null,
-                                sha256Hex(text)));
-            }
-
-            // 6. 批量 embed(与 chunks 同序)
-            List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
-            if (embeddings.size() != chunks.size()) {
-                throw new IllegalStateException(
-                        "embed 数量与 chunks 不一致: chunks="
-                                + chunks.size()
-                                + ", embeddings="
-                                + embeddings.size());
-            }
-
-            // 7. 落 MySQL(自带清旧, 幂等)
-            List<Chunk> savedChunks = chunkRepository.saveAll(documentId, chunks);
-
-            // 8. 写 Milvus(重新解析时显式清旧向量, saveAll 已清 chunk 表, 但 vector 需独立清)
-            vectorStore.deleteByDocumentId(documentId);
-            vectorStore.upsertChunks(documentId, savedChunks, embeddings);
 
             // 9. 状态机迁移: PARSING → READY
             doc.markReady(savedChunks);
             documentRepository.save(doc);
             log.info(
-                    "parse.done doc_id={}, status={}, chunks={}",
+                    "parse.done doc_id={}, status={}, chunks={}, mode={}",
                     documentId,
                     doc.status(),
-                    savedChunks.size());
+                    savedChunks.size(),
+                    useParentChild ? "parent_child" : "flat");
 
         } catch (Exception e) {
             log.error("parse.failed doc_id={}", documentId, e);
@@ -162,6 +138,164 @@ public class TikaParsingTrigger implements ParsingTrigger {
     /** 与 {@code MinioFileStorage.uploadRaw} 的 key 规则对齐: raw/{docId}/{filename}。 */
     private static String buildObjectKey(Document doc) {
         return "raw/" + doc.id().value() + "/" + sanitize(doc.originalFilename());
+    }
+
+    /** flat 模式: 单层 token-based 切片 + embed + 入 Milvus + markReady(返回 savedChunks)。 */
+    private List<Chunk> parseFlat(Document doc, Long documentId, String fullText) {
+        List<ChunkingService.SectionedFlatChunk> sectioned =
+                chunkingService.chunkSectioned(fullText);
+        if (sectioned.isEmpty()) {
+            throw new IllegalStateException("切片结果为空(全文过短或全是噪声)");
+        }
+        List<String> chunkTexts =
+                sectioned.stream().map(ChunkingService.SectionedFlatChunk::text).toList();
+        log.info("parse.chunked doc_id={}, chunks={}", documentId, chunkTexts.size());
+
+        List<Chunk> chunks = new ArrayList<>(sectioned.size());
+        for (int i = 0; i < sectioned.size(); i++) {
+            String text = sectioned.get(i).text();
+            chunks.add(
+                    new Chunk(
+                            null,
+                            documentId,
+                            i,
+                            ChunkType.TEXT,
+                            text,
+                            0,
+                            null,
+                            null,
+                            sha256Hex(text),
+                            sectioned.get(i).sectionPath()));
+        }
+        List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
+        if (embeddings.size() != chunks.size()) {
+            throw new IllegalStateException("embed 数量与 chunks 不一致");
+        }
+        List<Chunk> savedChunks = chunkRepository.saveAll(documentId, chunks);
+        vectorStore.deleteByDocumentId(documentId);
+        VectorStore.ChunkMetadata md =
+                new VectorStore.ChunkMetadata(
+                        doc.source(),
+                        doc.version(),
+                        doc.language(),
+                        doc.docType(),
+                        ChunkType.TEXT.name());
+        vectorStore.upsertChunks(documentId, savedChunks, embeddings, md);
+        return savedChunks;
+    }
+
+    /**
+     * parent-child 模式: 两层级切片 + embed child + 入 Milvus + 返回 (parents ∪ children)。
+     *
+     * <p>关键设计(参考 LlamaIndex HierarchicalNodeParser):
+     *
+     * <ul>
+     *   <li>parent 全文存 MySQL 但<b>不入 Milvus</b>(用于 context 回链)
+     *   <li>child 入 Milvus 索引(检索准)
+     *   <li>child.parentChunkId 关联到真实 parent chunk id
+     * </ul>
+     */
+    private List<Chunk> parseParentChild(Document doc, Long documentId, String fullText) {
+        List<ChunkingService.SectionedParentChildChunk> pcChunks =
+                chunkingService.chunkParentChildSectioned(fullText);
+        if (pcChunks.isEmpty()) {
+            throw new IllegalStateException("Parent-Child 切片结果为空");
+        }
+
+        // 按 parent 文本去重 → 唯一 parents(保证同段 parent 只存一份)
+        java.util.Map<String, Integer> parentTextToId = new java.util.LinkedHashMap<>();
+        java.util.List<String> uniqueParentTexts = new java.util.ArrayList<>();
+        for (var pc : pcChunks) {
+            if (!parentTextToId.containsKey(pc.parentText())) {
+                parentTextToId.put(pc.parentText(), uniqueParentTexts.size());
+                uniqueParentTexts.add(pc.parentText());
+            }
+        }
+        log.info(
+                "parse.parent_child_chunked doc_id={}, children={}, unique_parents={}",
+                documentId,
+                pcChunks.size(),
+                uniqueParentTexts.size());
+
+        // 步骤 A: 先存 parent chunks 拿真实 id(不入 Milvus)
+        java.util.List<Chunk> parentChunks = new java.util.ArrayList<>();
+        for (int i = 0; i < uniqueParentTexts.size(); i++) {
+            String ptext = uniqueParentTexts.get(i);
+            parentChunks.add(
+                    new Chunk(
+                            null,
+                            documentId,
+                            i,
+                            ChunkType.PARENT,
+                            ptext,
+                            0,
+                            null,
+                            null,
+                            sha256Hex(ptext),
+                            // parent 的 sectionPath 取它第一个 child 的 sectionPath
+                            pcChunks.stream()
+                                    .filter(c -> c.parentText().equals(ptext))
+                                    .map(ChunkingService.SectionedParentChildChunk::sectionPath)
+                                    .findFirst()
+                                    .orElse(List.of())));
+        }
+        // 同文档重新解析时先清旧(parents+children): deleteByDocumentId 通过 saveAll 内部完成
+        java.util.List<Chunk> savedParents = chunkRepository.saveAll(documentId, parentChunks);
+        java.util.Map<String, Long> parentTextToRealId = new java.util.HashMap<>();
+        for (Chunk sp : savedParents) {
+            parentTextToRealId.put(sp.content(), sp.id());
+        }
+
+        // 步骤 B: 构造 children, parent_chunk_id 关联到 savedParents 真实 id
+        java.util.List<String> childTexts = new java.util.ArrayList<>();
+        java.util.List<Chunk> childChunks = new java.util.ArrayList<>();
+        int childSeq = 0;
+        for (var pc : pcChunks) {
+            Long pid = parentTextToRealId.get(pc.parentText());
+            childChunks.add(
+                    new Chunk(
+                            null,
+                            documentId,
+                            childSeq++,
+                            ChunkType.CHILD,
+                            pc.childText(),
+                            0,
+                            null,
+                            pid,
+                            sha256Hex(pc.childText()),
+                            pc.sectionPath()));
+            childTexts.add(pc.childText());
+        }
+
+        // 步骤 C: embed 只 children
+        List<EmbeddingResult> embeddings = embeddingClient.embedBatch(childTexts);
+        if (embeddings.size() != childChunks.size()) {
+            throw new IllegalStateException("embed 数量与 child chunks 不一致");
+        }
+
+        // 步骤 D: 追加 children(不清旧, parents 已在步骤 A 落库)
+        java.util.List<Chunk> savedChildren =
+                chunkRepository.saveAllAppend(documentId, childChunks);
+
+        // 步骤 E: vectorStore 只写 children
+        vectorStore.deleteByDocumentId(documentId);
+        VectorStore.ChunkMetadata md =
+                new VectorStore.ChunkMetadata(
+                        doc.source(),
+                        doc.version(),
+                        doc.language(),
+                        doc.docType(),
+                        ChunkType.CHILD.name());
+        vectorStore.upsertChunks(documentId, savedChildren, embeddings, md);
+        log.info(
+                "parse.parent_child_indexed doc_id={}, parents={}, children_in_milvus={}",
+                documentId,
+                savedParents.size(),
+                savedChildren.size());
+
+        java.util.List<Chunk> allSaved = new java.util.ArrayList<>(savedParents);
+        allSaved.addAll(savedChildren);
+        return allSaved;
     }
 
     private String extractText(Document doc, byte[] bytes) throws Exception {

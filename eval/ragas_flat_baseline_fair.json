@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "created": "2026-08-01",
+    "purpose": "P3-A parent-child 验收标尺(公平 flat baseline)",
+    "contexts_source": "llm_context(=child 全文, 真正喂 LLM 的内容, NOT 前端 snippet)",
+    "chunking_mode": "flat",
+    "retrieve_mode": "hybrid",
+    "sample_size": 30,
+    "old_baseline_replaced": "eval/ragas_baseline.json (snippet 作 contexts, 严重低估 -15~17pp, 仅作历史对照保留)",
+    "p3a_acceptance_gate": {
+      "context_recall": {
+        "baseline": 0.7444,
+        "target": 0.80,
+        "rationale": "parent-child 把 child(~400) → parent(~1500-2000) 拉 4.6×, 设计上为 LLM 提供更完整上下文。若真有效, recall 应在公平 baseline 基础上再 +5~6pp。低于 0.7444 则 parent-child 无效甚至有害。",
+        "noise_band": "实测 3 次跑 StDev=±1.70pp (Run1=0.7444 / Run2=0.7778 / Run3=0.7556, Range=3.34pp). 信号/噪声比 StDev/DesignEffect=0.31x <0.5, 30 题分辨力可接受。P3-A 增量需 ≥2*StDev=±3.4pp 才视为显著(单边 +1.7pp 起, 双边 +3.4pp 强证。设计目标 +5~6pp 在显著区间内)"
+      },
+      "faithfulness": {
+        "baseline": 0.8160,
+        "target": 0.80,
+        "rationale": "parent 全文可能引入更多干扰段落 → faithfulness 可能略降但仍 ≥0.80 视为可接受(不能让幻觉率上升超过 1.6pp)。"
+      },
+      "context_precision": {
+        "baseline": 0.8568,
+        "target": 0.80,
+        "rationale": "parent-child 改变了检索粒度, 召回 parent 全文必然含非命中段落 → precision 大概率下降。允许降 5.6pp 以内, 超过说明 child→parent 映射太松。"
+      }
+    }
+  },
+  "faithfulness": 0.8160,
+  "answer_relevancy": 0.7106,
+  "context_precision": 0.8568,
+  "context_recall": 0.7444
+}

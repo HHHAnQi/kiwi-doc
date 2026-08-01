@@ -41,6 +41,10 @@ public class ChunkEntity {
     @Column(name = "content_hash", nullable = false, length = 64)
     private String contentHash;
 
+    /** Q3-B: chunk 所属 markdown heading 路径栈, JSON 数组字符串(如 ["Dubbo","异步调用"]); null = 无上下文。 */
+    @Column(name = "section_path", columnDefinition = "JSON")
+    private String sectionPath;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -114,6 +118,14 @@ public class ChunkEntity {
 
     public void setContentHash(String contentHash) {
         this.contentHash = contentHash;
+    }
+
+    public String getSectionPath() {
+        return sectionPath;
+    }
+
+    public void setSectionPath(String sectionPath) {
+        this.sectionPath = sectionPath;
     }
 
     public Instant getCreatedAt() {

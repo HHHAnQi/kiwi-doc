@@ -1,14 +1,21 @@
 package com.xxx.ragdoc.interfaces.rest.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/** feedback 提交请求 DTO。 契约见 api-contracts.md §E1。 */
+/**
+ * feedback 提交请求 DTO。 契约见 api-contracts.md §E1。
+ *
+ * <p>字段兼容: 同 {@link ChatRequest}, 全局 SNAKE_CASE 下用 {@code @JsonAlias} 接受 camelCase 别名, 避免
+ * traceId/correctedAnswer 误传 camelCase 静默丢字段。
+ */
 @Schema(name = "FeedbackRequest")
 public record FeedbackRequest(
-        @Schema(
+        @JsonAlias("traceId")
+                @Schema(
                         description = "chat 响应中的 trace_id, 仅允许字母数字下划线中划线",
                         requiredMode = Schema.RequiredMode.REQUIRED)
                 @NotBlank(message = "trace_id 不能为空")
@@ -18,7 +25,8 @@ public record FeedbackRequest(
                 @NotBlank(message = "rating 不能为空")
                 @Pattern(regexp = "^(like|dislike)$", message = "rating 只能是 like 或 dislike")
                 String rating,
-        @Schema(description = "纠错答案(选填), ≤5000 字")
+        @JsonAlias("correctedAnswer")
+                @Schema(description = "纠错答案(选填), ≤5000 字")
                 @Size(max = 5000, message = "corrected_answer 长度不能超过 5000")
                 String correctedAnswer,
         @Schema(description = "备注(选填), ≤1000 字") @Size(max = 1000, message = "comment 长度不能超过 1000")

@@ -1,0 +1,73 @@
+# ============================================================
+# rag-doc-platform CI
+#
+# 设计目标(Phase 0 工作):
+#   1. 守住格式纪律: spotlessCheck 不通过 = 不许合
+#   2. 守住单测纪律: test 全绿 = 不许合
+#   3. 守住架构纪律: ArchUnit 规则在 test 任务里一并跑
+#
+# 关于"评测回归门禁" (V2 评测 30 题):
+#   评测链路依赖外部服务 (Milvus / BGE-M3 / LLM API), 不在 CI 单元/集成测试里跑。
+#   评测回归由独立的 workflow `eval-regression` 在主分支上定时跑(见下)。
+#   不放进 PR 门禁的原因: 评测环境 = docker-compose 全栈 + GPU/CPU 推理 ~10 分钟,
+#   对 PR 反馈太慢; 评测稳定性 ±1.7pp 噪声也易误报。
+#   正确分层: PR 走 test+lint (秒级), 主分支定时跑评测 (/.
+# ============================================================
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: ci-\${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build + Spotless + Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      # Spotless 先跑 — 格式不达标立即失败, 不浪费后续 test 时间
+      - name: Spotless Check (格式纪律)
+        run: ./gradlew spotlessCheck
+
+      # compile-only 施工面 — 让编译错误早暴露, 不靠 test 阶段才发现
+      - name: Compile (main + test)
+        run: ./gradlew compileJava compileTestJava
+
+      # 单测 + ArchUnit 架构纪律 + Testcontainers 集成测试(自动起 MySQL 容器)
+      # GitHub runner 自带 docker, Testcontainers 直接可用, 无需额外配置
+      - name: Test (unit + integration)
+        run: ./gradlew test
+
+      # 测试报告归档(失败时可下载定位)
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            **/build/test-results/**/*.xml
+            **/build/reports/tests/**
+          if-no-files-found: ignore
+          retention-days: 7

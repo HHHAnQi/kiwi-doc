@@ -34,7 +34,7 @@ dependencies {
     implementation("org.apache.commons:commons-text:1.12.0")
 
     // Milvus SDK
-    implementation("io.milvus:milvus-sdk-java:2.4.6")
+    implementation("io.milvus:milvus-sdk-java:2.5.15")
 
     // Apache Tika (V2: 真实 PDF/Markdown 解析, 替换 StubParsingTrigger)
     implementation("org.apache.tika:tika-core:2.9.2")

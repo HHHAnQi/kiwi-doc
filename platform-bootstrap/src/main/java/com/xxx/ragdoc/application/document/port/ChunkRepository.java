@@ -20,6 +20,16 @@ public interface ChunkRepository {
     /** 单条 chunk(关联校验父 doc 未软删)。 */
     Optional<Chunk> findById(Long chunkId);
 
+    /**
+     * 批量查 chunks(一次 SQL, 关联校验父 doc 未软删)。
+     *
+     * <p>Phase 0.3 改造引入: 消除 RetrieveService 的 N+1 查询(原先循环 findById 拉召回结果 + 又 N+1 的 parent 反链)。返回
+     * list 顺序不保证与入参 ids 一致 —— 调用方(RetrieveService)自己按 hit 序保序, 这里只求"一次 SQL"。
+     *
+     * <p>空 ids 入参 → 直接返回空 list(不去数据库)。
+     */
+    List<Chunk> findByIdIn(List<Long> ids);
+
     /** 按 docId + seq 精确定位相邻 chunk(用于 prev/next 查询)。 查不到返回 empty。 */
     Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq);
 
@@ -37,6 +47,14 @@ public interface ChunkRepository {
      * @return 已保存的 chunks(含生成的 id)
      */
     List<Chunk> saveAll(Long documentId, List<Chunk> chunks);
+
+    /**
+     * 追加保存 chunks(不清旧, 不删已有)。 供 Parent-Child 模式多阶段写入: 先 saveAll(parents), 再用拿到的 parent id 构造 child
+     * 调本方法。
+     *
+     * @return 已保存的 chunks(含生成的 id)
+     */
+    List<Chunk> saveAllAppend(Long documentId, List<Chunk> chunks);
 
     /** 删除指定文档的所有 chunks(重新解析前调用, 含 Milvus 向量清理由 service 协调)。 */
     void deleteByDocumentId(Long documentId);

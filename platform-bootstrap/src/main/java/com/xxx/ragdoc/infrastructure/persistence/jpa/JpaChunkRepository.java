@@ -32,6 +32,14 @@ public class JpaChunkRepository implements ChunkRepository {
     }
 
     @Override
+    public List<Chunk> findByIdIn(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return jpa.findActiveByIdIn(ids).stream().map(ChunkMapper::toDomain).toList();
+    }
+
+    @Override
     public Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq) {
         return jpa.findActiveByDocAndSeq(documentId, seq).map(ChunkMapper::toDomain);
     }
@@ -52,6 +60,14 @@ public class JpaChunkRepository implements ChunkRepository {
     public List<Chunk> saveAll(Long documentId, List<Chunk> chunks) {
         // 重新解析时先清旧(保证幂等: 同一文档重复解析不会产生重复 chunks)
         jpa.deleteByDocumentId(documentId);
+        List<ChunkEntity> entities = chunks.stream().map(ChunkMapper::toNewEntity).toList();
+        return jpa.saveAll(entities).stream().map(ChunkMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Chunk> saveAllAppend(Long documentId, List<Chunk> chunks) {
+        // 不清旧。供 Parent-Child 两阶段写入: 先 saveAll(parents) 拿 id, 再用 children 调本方法追加。
+        // 调用方需自己保证幂等(整体上层用 deleteByDocumentId 清旧后再两阶段写)。
         List<ChunkEntity> entities = chunks.stream().map(ChunkMapper::toNewEntity).toList();
         return jpa.saveAll(entities).stream().map(ChunkMapper::toDomain).toList();
     }

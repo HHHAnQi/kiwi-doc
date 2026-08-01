@@ -55,7 +55,25 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
         if (texts == null || texts.isEmpty()) {
             return List.of();
         }
-        return callEmbedding(texts);
+        // 按 props.batchSize 分批调用避免 TEI 413: 单请求 body 上限 ~2MB,
+        // 大 doc parent_child 模式下 child 数可能 30+ × 400 字 → 超 2MB 触发 413
+        // (P3-A 全量重灌首批 197/200 失败根因)。
+        int batchSize = Math.max(1, props.getBatchSize());
+        if (texts.size() <= batchSize) {
+            return callEmbedding(texts);
+        }
+        log.info(
+                "embedding.batch_split total={}, batch_size={}, batches={}",
+                texts.size(),
+                batchSize,
+                (texts.size() + batchSize - 1) / batchSize);
+        List<EmbeddingResult> all = new ArrayList<>(texts.size());
+        for (int i = 0; i < texts.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, texts.size());
+            List<String> sub = texts.subList(i, end);
+            all.addAll(callEmbedding(sub));
+        }
+        return all;
     }
 
     @Override

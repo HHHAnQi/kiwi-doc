@@ -7,7 +7,11 @@ public enum ChunkType {
     FIGURE("图片,可附 VLM caption"),
     TITLE("标题"),
     CODE("代码块"),
-    LIST("列表");
+    LIST("列表"),
+    /** Parent-Child 切片的大块(用于 LLM context 回链, 不入向量索引) */
+    PARENT("Parent-Child 模式的 parent 全文块"),
+    /** Parent-Child 切片的小块(入向量索引, 检索精准) */
+    CHILD("Parent-Child 模式的 child 检索块");
 
     private final String description;
 

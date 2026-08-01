@@ -49,6 +49,29 @@ embedding:
   # 生产用 GPU/原生 amd64 时可降到 5000ms
   timeout-ms: 90000
 
+# V2-C: 检索 feature flag
+# dense(默认): 单路 BGE-M3 dense ANN, 生产基线
+# hybrid: dense + BM25 RRF, 设计文档既定, 但需大数据规模+清洗配合
+rag:
+  retrieve:
+    mode: ${RAG_RETRIEVE_MODE:dense}
+  # V2 第③段: cross-encoder 精排。enabled=false 时跳过 rerank, enabled=true 时
+  # hybrid 召回扩到 candidatePool(20) → rerank → topN(5)。
+  # 启用前提: docker-compose 起 ragdoc-reranker 容器(BGE-Reranker-v2-m3, 8084)。
+  rerank:
+    enabled: ${RAG_RERANK_ENABLED:false}
+    base-url: ${RAG_RERANK_BASE_URL:http://localhost:8084}
+    model: ${RAG_RERANK_MODEL:BAAI/bge-reranker-v2-m3}
+    timeout-ms: 30000
+    candidate-pool: 20
+    top-n: 5
+  # P3-A: 切片模式 feature flag。
+  #   flat(默认): 同质 token-based(V2 原始路径)
+  #   parent_child: 两层级(parent 全文喂 LLM + child 入索引精准检索, 参考 LlamaIndex HierarchicalNodeParser)
+  # 启用 parent_child 需重新解析已有文档(upload 重传/手动 deleteDocumentId 触发)才能生效。
+  chunking:
+    mode: ${RAG_CHUNKING_MODE:flat}
+
 logging:
   level:
     com.xxx.ragdoc: DEBUG

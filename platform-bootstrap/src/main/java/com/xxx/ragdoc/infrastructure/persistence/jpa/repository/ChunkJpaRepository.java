@@ -26,6 +26,21 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
             """)
     Optional<ChunkEntity> findActiveById(@Param("id") Long id);
 
+    /**
+     * 批量: 一次 SQL 拉多个 chunk, 同样校验父 doc 未软删。关联校验放 EXISTS-subquery 而非 join, 让 MySQL 优化器 自行决定 semi-join
+     * 策略; ids 空集合 → Spring Data JPA 直接返空, 不发查询。
+     */
+    @Query(
+            """
+            SELECT c FROM ChunkEntity c
+            WHERE c.id IN :ids
+              AND EXISTS (
+                SELECT 1 FROM DocumentEntity d
+                WHERE d.id = c.documentId AND d.deletedAt IS NULL
+              )
+            """)
+    List<ChunkEntity> findActiveByIdIn(@Param("ids") List<Long> ids);
+
     /** 按 (docId, seq) 精确定位: 同样校验父 doc 未软删。 */
     @Query(
             """

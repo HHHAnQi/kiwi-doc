@@ -49,7 +49,14 @@ public class ChatController {
         String traceId = MDC.get(TraceIdFilter.MDC_TRACE_KEY);
         TraceId tid = new TraceId(traceId);
 
-        ChatCommand cmd = new ChatCommand(request.query(), request.docId(), request.topK());
+        ChatCommand cmd =
+                new ChatCommand(
+                        request.query(),
+                        request.docId(),
+                        request.topK(),
+                        request.source(),
+                        request.version(),
+                        request.language());
         ChatResult result = chatService.chat(cmd, tid);
 
         return ChatResponse.from(result);
