@@ -71,10 +71,11 @@ public class MilvusVectorStore implements VectorStore {
             JsonObject row = new JsonObject();
             row.add(MilvusCollectionInitializer.FIELD_DENSE, toJsonArray(e.denseVector()));
             // text 字段截 TEXT_MAX_LENGTH, 防 VarChar 越界。Function 据此自动算 sparse_bm25。
+            // Q3-A 修复: VARCHAR maxLength 在 Milvus 是 byte 长度(UTF-8 编码后), 不是 char 数。
+            // 中文 1 char = 3 bytes → 4000 bytes 容纳 ~1333 个中文字符。原来的 substring 按字符截
+            // 中文文本超 4000 bytes 仍报 "length exceeds max length"。改用 UTF-8 byte-aware truncation。
             String text = c.content() == null ? "" : c.content();
-            if (text.length() > MilvusCollectionInitializer.TEXT_MAX_LENGTH) {
-                text = text.substring(0, MilvusCollectionInitializer.TEXT_MAX_LENGTH);
-            }
+            text = truncateUtf8Bytes(text, MilvusCollectionInitializer.TEXT_MAX_LENGTH);
             row.addProperty(MilvusCollectionInitializer.FIELD_TEXT, text);
             row.addProperty(MilvusCollectionInitializer.FIELD_DOC_ID, documentId);
             row.addProperty(MilvusCollectionInitializer.FIELD_CHUNK_ID, c.id());
@@ -226,5 +227,24 @@ public class MilvusVectorStore implements VectorStore {
             out.add(v);
         }
         return out;
+    }
+
+    /**
+     * 按 UTF-8 字节长度截断字符串, 不在多字节字符中间断。Milvus VARCHAR maxLength 是 byte 长度。
+     *
+     * <p>Q3-A 修复: 之前用 {@code substring(0, maxChars)} 按字符截, 中文文本 >4000 bytes 仍报 "length exceeds max
+     * length"(因为原串 byte count 实际超VARCHAR 上限)。改 UTF-8 byte-aware 截断后, 截到 maxBytes 之内的最后一个完整字符位置。
+     */
+    private static String truncateUtf8Bytes(String s, int maxBytes) {
+        if (s == null || s.isEmpty()) return "";
+        byte[] bytes = s.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        if (bytes.length <= maxBytes) return s;
+        // ByteBuffer decode 不在多字节中段截; 但 bytes[maxBytes] 起始字节可能落在某多字节中段。
+        // 用 CharsetDecoder 报错回退方式: 找一个不超 maxBytes 的最大 p, 满足 bytes[p-1] 不是
+        // continue-byte (即 0x80..0xBF)
+        int p = maxBytes;
+        // continue-byte check: 退到上一字符边界(顺 0x80..0xBF 后退)
+        while (p > 0 && (bytes[p] & 0xC0) == 0x80) p--;
+        return new String(bytes, 0, p, java.nio.charset.StandardCharsets.UTF_8);
     }
 }
