@@ -1,60 +1,116 @@
 # Autodl GPU 部署: BGE-Reranker-v2-m3
 
-> 本机 M4 + Rosetta amd64 跑 ORT backend 单 query 3-10s, batch 翻倍; 12G native RAM 下 candle 还会 SIGSEGV。
-> 迁到 Autodl GPU 后单 query ~50-200ms, **解决 V2 验收报告 §2 标的 P0 债**(recall 0.78→0.82)。
+> **V2 验收报告 §2 标的 P0 债**: 本机 M4 + Rosetta amd64 跑 ORT backend 单 query 3-10s, batch 翻倍;
+> 12G native RAM 下 candle 还会 SIGSEGV。迁到 Autodl GPU 后单 query ~1s, recall 0.78→0.82(β 用户门槛)。
 
 ---
 
-## 文件清单
+## 实际选型: 纯 Python (sentence_transformers) + CUDA, **不走 docker**
 
-| 文件 | 作用 |
-|---|---|
-| `reranker.Dockerfile` | 基于 TEI GPU 镜像, 模型 bind mount 不 bake |
-| `start_reranker.sh` | 一键启动: 检查 runtime / 模型 / 拉镜像 / run |
-| `download_model.py` | 从 hf-mirror 下 BGE-Reranker-v2-m3 全集(避开 hf-hub bug) |
+实测 Autodl Ubuntu 22.04 GPU 系统镜像**没装 docker daemon**, 但已预装 miniconda3 + CUDA + torch 2.8。
+所以纯 Python 走 sentence_transformers.CrossEncoder **更轻量**:
+- 不需要 docker pull / nvidia-container-toolkit
+- 模型加载一次常驻显存, 单 query ~1s, batch 5 文档 ~30ms
+- uvicorn + FastAPI 协议层与 BgeRerankClient 完全兼容(/rerank 端点)
 
-## 启动步骤
+`rerank_svc.py` 已在 `/root/autodl-tmp/` 就位(2026-08-01 实测可启动)。
 
-### 1. 开 Autodl GPU 实例
-- 镜像: `Ubuntu 22.04 + Docker`(预装 nvidia-container-toolkit 的更佳)
-- 显卡: **≥ 16G 显存**(RTX 3090 / A10 / V100 都行)
-- 实例启动后 ssh 进去
+模型路径(预下好): `/root/autodl-tmp/ms_cache/models/BAAI--bge-reranker-v2-m3/snapshots/master/`
 
-### 2. 下模型 + 启容器
+---
+
+## 启动步骤(已验证 2026-08-01)
+
 ```bash
-# scp 本目录三个文件到 Autodl:/root/autodl-tmp/
-# 或 git clone 项目到 Autodl 后切到 deploy/autodl/
+ssh -p <port> root@<autodl-host>      # 进 Autodl
 cd /root/autodl-tmp
 
-python3 download_model.py            # 下 2.2GB 模型 ~2-5min
-./start_reranker.sh                  # 启动容器
-```
+# 一条命令:start_rerank.sh 已就位(本会话产出), 干掉旧进程 + 重启
+sh /root/autodl-tmp/start_rerank.sh
 
-### 3. Autodl 端口暴露
-- Autodl 控制台 → 容器实例 → **自定义服务**
-- 系统已自动把容器内 `8080` 映射到公网某个 `xxx.autodl.pro:NNNN`
-- 记下该公网 URL(下文 `<autodl-pub-url>`)
+# 等 ~25s 模型加载 + warmup
+# 验证
+curl http://127.0.0.1:6006/health
+# -> {"status":"ok","model":".../bge-reranker-v2-m3/snapshots/master","device":"cuda"}
 
-### 4. 烟测(在 Autodl 里)
-```bash
-curl http://localhost:8080/health
-curl -X POST http://localhost:8080/rerank \
+# 烟测
+curl -X POST http://127.0.0.1:6006/rerank \
   -H 'Content-Type: application/json' \
-  -d '{"query":"Sentinel 怎么配置限流","documents":["Sentinel 用 SphU.entry 限流","Dubbo 异步调用配置"],"top_n":2}'
-# 期望: 第二个文档排在前面(relevance_score 高)
+  -d '{"query":"Sentinel 怎么配置限流规则","documents":["SphU.entry 包裹资源受流控约束","Dubbo 异步调用通过 RpcContext.asyncCall 实现"],"top_n":2}'
+# -> {"results":[{"index":0,"relevance_score":0.97},{"index":1,...}]}
 ```
 
-### 5. 应用本机接入
-`.env` 加 / 改:
+---
+
+## 暴露公网(必须用户控制台手动)
+
+容器内监听 0.0.0.0:6006, 但 Autodl 默认只把 **22 (ssh)** 暴露公网。
+要让应用本机能访问, 二选一:
+
+### 方式 A: Autodl 自定义服务(推荐)
+1. Autodl 控制台 → 你的 GPU 实例 → **"自定义服务"** 标签
+2. 启用 → 给一个独立的 `xxx.autodl.pro:NNNN` 公网域名
+3. 默认映射成容器 6006 端口
+4. 应用本机 `.env`: `RAG_RERANK_BASE_URL=http://xxx.autodl.pro:NNNN`
+
+### 方式 B: SSH 隧道(临时, 不需控制台操作)
+本机终端跑:
+```bash
+ssh -L 19006:127.0.0.1:6006 -p 46908 root@connect.nmb2.seetacloud.com -N
+# 留这个终端开着
+```
+应用本机 `.env`: `RAG_RERANK_BASE_URL=http://localhost:19006`
+
+方式 B 缺点: 隧道断线需手动重连; `autossh` 可保活但本机需装。
+
+---
+
+## 应用本机接入
+
+`.env` 加:
 ```bash
 RAG_RERANK_ENABLED=true
-RAG_RERANK_BASE_URL=http://<autodl-pub-url>
+RAG_RERANK_BASE_URL=http://<autodl-custom-service-url-or-localhost-tunnel>
+RAG_RERANK_MODEL=BAAI/bge-reranker-v2-m3
 ```
 
-重启应用 + 验证日志含 `retrieve.rerank_applied`:
-```bash
-make run  # 然后调 /chat 看日志
+启动 app, 触发一次 chat, 日志应含:
 ```
+retrieve.rerank_applied candidates=20, final_n=5, top1_score=0.9x
+```
+
+---
+
+## 故障排查(实测过的)
+
+| 症状 | 根因 + 处置 |
+|---|---|
+| `bind 8080 address already in use` | start_rerank.sh 内部已 kill 旧进程, 但若你手动 spawn 多份会冲突。先 `pkill -9 -f rerank_svc 2>/dev/null; ps -ef \| grep [r]erank` 清干净 |
+| `[Errno 98] bind on 0.0.0.0:6006` | 6006 被 tensorboard 占用? 改 PORT=6008 |
+| curl `Connection refused` 公网 | 自定义服务没启用 / 映射错端口; 检查 `curl 127.0.0.1:6006/health` 仍可, 说明容器内 OK, 公网映射问题 |
+| 调用 504 timeout | RAG_RERANK_TIMEOUT_MS 默认 30000ms, Rosetta 慢; 但 GPU 下应该是 ms 级, 检查 `/health` 显存是否释放 |
+| recall 数字没变 | chunks 没重新索引; 跑 `scripts/reindex_milvus.py` |
+
+---
+
+## start_rerank.sh 内容(已验证)
+
+```bash
+#!/bin/bash
+pkill -9 -f rerank_svc 2>/dev/null
+ps -ef | grep [r]erank_svc.py | awk '{print $2}' | xargs -r kill -9 2>/dev/null
+sleep 2
+cd /root/autodl-tmp
+export PORT=6006
+setsid /root/miniconda3/bin/python3 rerank_svc.py </dev/null >/root/autodl-tmp/rerank_6006.out 2>&1 &
+disown 2>/dev/null
+echo "spawned $!"
+```
+
+关键点:
+- `pkill -9 -f rerank_svc` **不能直接用**—— 会误杀自己的 sshd 父进程(命令字符串含 'rerank_svc')。必须用 `ps -ef \| grep [r]erank_svc.py` 把 `[r]` 加上让它不匹配 grep 自身。这是已踩过的坑。
+- `setsid + </dev/null + &` 三件套确保 ssh 会话退出后服务不挂。`nohup` 也可但 setsid 更彻底脱离 controlling tty。
+- `disown` 让 shell 退出不杀子进程; bash 支持, sh 不支持(警告但不影响)。
 
 ---
 
@@ -62,20 +118,8 @@ make run  # 然后调 /chat 看日志
 
 | # | 决策 | 理由 |
 |---|---|---|
-| 1 | 用 TEI 而非 vLLM 起 reranker | TEI 是 HF 官方, Jina/Cohere 协议兼容; BGE-Reranker-v2-m3 是 cross-encoder 不是生成模型, vLLM 不适用 |
-| 2 | bind mount 模型, 不 bake 进镜像 | 镜像通用, 模型可热替换; 2.2GB bake 镜像 push 慢 |
-| 3 | HF_HUB_OFFLINE=1 | 防止 hf-hub 0.3.2 redirect bug 启动失败(本机 V2-A 坑 1 的延伸) |
-| 4 | --dtype float16 | 7B 以下 reranker 在 16G 显存下剩 ~50% 容量; float32 没必要 |
-| 5 | model_dir 默认 /root/autodl-tmp/ | Autodl 数据盘扩容便宜; 系统盘小 |
-
----
-
-## 故障排查
-
-| 症状 | 根因 + 处置 |
-|---|---|
-| `docker run` 报 `could not select device driver` | nvidia-container-toolkit 未装, Autodl 重装系统镜像选 + cuda toolkit 版 |
-| 启动 5 分钟仍不 ready | docker logs 看具体错误; OOM → 换 24G 显存实例 |
-| 应用调 rerank 503/504 | Autodl 自定义服务端口映射问题, 用 `curl <autodl-pub-url>/health` 直测 |
-| rerank 比无 rerank 还慢 | 检查 RAG_RERANK_TOP_N 与 RetrieveService candidatePool, candidatePool=20 是上限 |
-| recall 数字没变化 | chunk 没重新 index; 跑 `scripts/reindex_milvus.py` |
+| 1 | 纯 Python 而非 TEI/容器 | Autodl Ubuntu 22.04 系统镜像无 docker; miniconda3+CUDA+torch 已预装; 纯 Python 轻量 |
+| 2 | CrossEncoder 而非 FlagEmbedding | sentence_transformers API 更通用, 未来要换别的 cross-encoder 改一行即可 |
+| 3 | 监听 6006 而非默认 8080 | Autodl "自定义服务" 默认抓 6006 → 公网; tensorboard 已占 6007 |
+| 4 | 模型 stays in `/root/autodl-tmp/` | Autodl 数据盘扩容便宜, 不占系统盘 |
+| 5 | 不 bake 进 git | `/root/autodl-tmp/rerank_svc.py` 是远程资产, 不入 repo; 项目内 `deploy/autodl/` 仅放文档 |
