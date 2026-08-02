@@ -14,8 +14,8 @@ import org.springframework.stereotype.Component;
 /**
  * ParseTask domain ↔ ParseTaskEntity 双向翻译。
  *
- * <p>attempts 字段(domain 是 {@code List<ParseTask.Attempt>}, entity 是 JSON 字符串)走 Jackson 序列化。
- * 解析失败不抛, 返回空列表 + log warn —— attempts 是诊断辅助字段, 不该挡状态迁移。
+ * <p>attempts 字段(domain 是 {@code List<ParseTask.Attempt>}, entity 是 JSON 字符串)走 Jackson 序列化。 解析失败不抛,
+ * 返回空列表 + log warn —— attempts 是诊断辅助字段, 不该挡状态迁移。
  */
 @Slf4j
 @Component

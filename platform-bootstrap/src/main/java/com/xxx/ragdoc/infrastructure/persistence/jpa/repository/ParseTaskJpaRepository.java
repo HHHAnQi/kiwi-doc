@@ -17,8 +17,8 @@ import org.springframework.stereotype.Repository;
  *
  * <p>本接口只承担 CRDU; 状态迁移 invariant 由 application 层(ParseTaskService)守护。
  *
- * <p>{@link #leaseNextPending} 是 worker 抢占的核心原子操作: PESSIMISTIC_WRITE 行锁 + 限制单条 +
- * 状态转移(MOD sql, 一次 round-trip 完成 select+update)。
+ * <p>{@link #leaseNextPending} 是 worker 抢占的核心原子操作: PESSIMISTIC_WRITE 行锁 + 限制单条 + 状态转移(MOD sql, 一次
+ * round-trip 完成 select+update)。
  */
 @Repository
 public interface ParseTaskJpaRepository extends JpaRepository<ParseTaskEntity, Long> {
@@ -30,9 +30,9 @@ public interface ParseTaskJpaRepository extends JpaRepository<ParseTaskEntity, L
     /**
      * 原子 lease: 抢一条 PENDING + visible_at ≤ now 的 task, 转 RUNNING, 标 leasedBy + visibleAt 延长。
      *
-     * <p>用法: 实现 service 层先 @Lock(PESSIMISTIC_WRITE) 查一条, 再 update — Spring Data JPA 不能直接
-     * 在 Derived Query 上加锁+update, 这里只提供候选查找(加锁), update 走 {@link #markRunning}.
-     * 组合语义见 JpaParseTaskRepository.leaseNextPending()。
+     * <p>用法: 实现 service 层先 @Lock(PESSIMISTIC_WRITE) 查一条, 再 update — Spring Data JPA 不能直接 在 Derived
+     * Query 上加锁+update, 这里只提供候选查找(加锁), update 走 {@link #markRunning}. 组合语义见
+     * JpaParseTaskRepository.leaseNextPending()。
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query(

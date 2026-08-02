@@ -17,11 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * {@link ParseTaskRepository} 端口的 JPA 适配实现(V3 parser-service 拆分)。
  *
- * <p>{@link #leaseNextPending} 是 worker 抢占心跳核心: PESSIMISTIC_WRITE 行锁查候选 + markRunning 单条
- * update, 全过程包在 REQUIRES_NEW 短事务内, 防 worker 并发抢同一 task。
+ * <p>{@link #leaseNextPending} 是 worker 抢占心跳核心: PESSIMISTIC_WRITE 行锁查候选 + markRunning 单条 update,
+ * 全过程包在 REQUIRES_NEW 短事务内, 防 worker 并发抢同一 task。
  *
- * <p>占位说明: chat-app 默认 rag.parser.mode=sync 时本 bean 仍被装配(直接调 markRunning 等)，
- * async 路径靠 ParseTaskProducer + parser-service 远程消费。chat-app 自己不开 worker。
+ * <p>占位说明: chat-app 默认 rag.parser.mode=sync 时本 bean 仍被装配(直接调 markRunning 等)， async 路径靠
+ * ParseTaskProducer + parser-service 远程消费。chat-app 自己不开 worker。
  */
 @Slf4j
 @Component

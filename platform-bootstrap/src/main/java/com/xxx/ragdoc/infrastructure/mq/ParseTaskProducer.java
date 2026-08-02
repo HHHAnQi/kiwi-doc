@@ -16,12 +16,12 @@ import org.springframework.stereotype.Component;
  *
  * <p>发 topic {@code parse-task-submit}, parser-service {@code @RocketMQMessageListener} 消费.
  *
- * <p>仅在 {@code rag.parser.mode=async} 时启用({@link ConditionalOnProperty}); sync 路径下不会注入
- * 本 bean, 也不需要 RocketMQ broker 在跑, 平滑迁移保护(dev 默认 sync, 生产切 async).
+ * <p>仅在 {@code rag.parser.mode=async} 时启用({@link ConditionalOnProperty}); sync 路径下不会注入 本 bean, 也不需要
+ * RocketMQ broker 在跑, 平滑迁移保护(dev 默认 sync, 生产切 async).
  *
- * <p>失败处理: producer.send 抛异常 → 由上层 DocumentUploadService 捕获, 不回滚 documents/parse_tasks
- * INSERT(已 commit), 改为: parse_tasks 仍 PENDING, 由 V3 Commit 3 心跳 job 兜底重投或人工 retry.
- * 此处对 sendResult 没有同步等 broker ack, RocketMQ 默认同步发送(send-message-timeout=5s).
+ * <p>失败处理: producer.send 抛异常 → 由上层 DocumentUploadService 捕获, 不回滚 documents/parse_tasks INSERT(已
+ * commit), 改为: parse_tasks 仍 PENDING, 由 V3 Commit 3 心跳 job 兜底重投或人工 retry. 此处对 sendResult 没有同步等
+ * broker ack, RocketMQ 默认同步发送(send-message-timeout=5s).
  */
 @Slf4j
 @Component
@@ -47,9 +47,7 @@ public class ParseTaskProducer {
                         task.id(), task.documentId(), task.contentHash(), Instant.now(clock));
 
         org.springframework.messaging.Message<ParseTaskSubmitMessage> message =
-                MessageBuilder.withPayload(payload)
-                        .setHeader("traceId", traceId.value())
-                        .build();
+                MessageBuilder.withPayload(payload).setHeader("traceId", traceId.value()).build();
 
         try {
             rocketMQTemplate.syncSend(TOPIC, message);

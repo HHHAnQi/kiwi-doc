@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>对应 spec §8 Commit 2 chat-app 端改造: ParsingTrigger 端口加双实现, DocumentUploadService 不动。
  *
- * <p>trace_id 取自当前线程(TraceIdFilter 注入的 MDC); 若 MDC 没值则用 documentId 编一个最小占位 trace。
- * 不强行依赖 TraceIdContext —— chat-app 复用 chat 已有的 trace 管线即可。
+ * <p>trace_id 取自当前线程(TraceIdFilter 注入的 MDC); 若 MDC 没值则用 documentId 编一个最小占位 trace。 不强行依赖
+ * TraceIdContext —— chat-app 复用 chat 已有的 trace 管线即可。
  */
 @Slf4j
 @Component
@@ -47,9 +47,7 @@ public class AsyncParsingTrigger implements ParsingTrigger {
                 documentRepository
                         .findById(documentId)
                         .orElseThrow(
-                                () ->
-                                        new IllegalStateException(
-                                                "Document 不存在: " + documentId));
+                                () -> new IllegalStateException("Document 不存在: " + documentId));
         Instant now = Instant.now(clock);
         ParseTask pending =
                 new ParseTask(

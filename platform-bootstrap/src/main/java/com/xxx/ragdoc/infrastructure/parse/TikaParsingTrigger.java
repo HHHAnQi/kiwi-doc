@@ -48,7 +48,11 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 // V3 spec §2.3: rag.parser.mode 默认 sync, 走本同步实现; async 时改为发 MQ.
-@ConditionalOnProperty(prefix = "rag.parser", name = "mode", havingValue = "sync", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = "rag.parser",
+        name = "mode",
+        havingValue = "sync",
+        matchIfMissing = true)
 public class TikaParsingTrigger implements ParsingTrigger {
 
     private final DocumentRepository documentRepository;

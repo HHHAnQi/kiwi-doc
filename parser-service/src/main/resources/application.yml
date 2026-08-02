@@ -1,0 +1,63 @@
+# ============================================================
+# parser-service 公共配置(V3 拆分, 与 chat-app 共享 schema + 共享中间件)
+# ============================================================
+spring:
+  application:
+    name: parser-service
+  jackson:
+    time-zone: UTC
+  # 注: Flyway 不在 parser-service 端启用; chat-app 启动时建表(spec §3 + V5 migration),
+  # parser-service 只读写表, 不应自己跑 migration(避免双源 DDL 冲突).
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+server:
+  port: 8093  # 与 chat-app 8080 错开
+
+# V3 共享基础设施: 与 chat-app 一致(同名 key, 同实例)
+milvus:
+  host: ${MILVUS_HOST:localhost}
+  port: ${MILVUS_PORT:19530}
+  collection: ${MILVUS_COLLECTION:documents_v1}
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ROOT_USER:minio}
+  secret-key: ${MINIO_ROOT_PASSWORD:minio123}
+  bucket: ${MINIO_BUCKET:ragdoc}
+
+embedding:
+  base-url: ${EMBEDDING_BASE_URL:http://localhost:8082}
+  model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+  timeout-ms: 90000
+  batch-size: 8
+
+# parser-service 心跳 job + 续点配置
+rag:
+  parser:
+    # RUNNING lease 时长; 心跳 job 据此回收. 5 min 覆盖最慢单文档解析.
+    lease-duration-minutes: 5
+    # 心跳 job 周期 ms
+    reap-interval-ms: 30000
+    # FAILED → PENDING redelivery delay 秒(与 chat-app ParseTaskService 一致)
+    retry-delay-seconds: 60
+
+# RocketMQ consumer 配置(parser-service 消费端, 与 chat-app producer 共用 broker)
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+  consumer:
+    group: parse-task-consumer-group
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics, prometheus
+  endpoint:
+    health:
+      show-details: when_authorized

@@ -11,8 +11,8 @@ import java.time.Instant;
 /**
  * parse_tasks 表 JPA Entity(V3 parser-service 拆分, spec §3.1 / Flyway V5)。
  *
- * <p>与 domain.ParseTask 持久化解耦: 本类是 ORM 模型, 不动业务规则。 domain ↔ entity 翻译在
- * ParseTaskMapper。attempts 字段(JSON 列) 在 RDB 端按 JSON 字符串存取, mapper 层做 List 序列化。
+ * <p>与 domain.ParseTask 持久化解耦: 本类是 ORM 模型, 不动业务规则。 domain ↔ entity 翻译在 ParseTaskMapper。attempts
+ * 字段(JSON 列) 在 RDB 端按 JSON 字符串存取, mapper 层做 List 序列化。
  */
 @Entity
 @Table(name = "parse_tasks")

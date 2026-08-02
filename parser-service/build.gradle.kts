@@ -17,6 +17,11 @@ plugins {
 // Spring Boot 3.3.2 与 platform-bootstrap 对齐。
 dependencies {
     implementation(project(":platform-common"))
+    // 复用 chat-app 已有的 infra adapter(MinioFileStorage / MilvusVectorStore / BgeM3EmbeddingClient
+    // / JpaChunkRepository / 解析相关 Mapper) — spec §6.1 写"parser-service 共享 schema + 共享基础设施",
+    // 这里 project(":platform-bootstrap") 共享的是 infra adapter 类本身, 非启动行为。
+    // parser-service 通过 component scan 限定自有包, 不引 RagDocApplication 启动类。
+    implementation(project(":platform-bootstrap"))
 
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
