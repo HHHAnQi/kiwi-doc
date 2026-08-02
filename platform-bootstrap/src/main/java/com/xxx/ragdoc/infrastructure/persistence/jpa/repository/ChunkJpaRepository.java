@@ -41,18 +41,26 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
             """)
     List<ChunkEntity> findActiveByIdIn(@Param("ids") List<Long> ids);
 
-    /** 按 (docId, seq) 精确定位: 同样校验父 doc 未软删。 */
+    /**
+     * 按 (docId, seq, chunkType) 精确定位: 同样校验父 doc 未软删。
+     *
+     * <p>V3 parent-child 切片模式下, 同 (docId, seq) 可能同时存在 PARENT 与 CHILD 两条,
+     * 旧版只按 (docId, seq) 查 + Optional getSingleResult 会抛 NonUniqueResultException
+     * 导致 /chunks/{id}/neighbors 500。现显式按当前 chunk 的 type 过滤, 保证唯一。
+     */
     @Query(
             """
             SELECT c FROM ChunkEntity c
             WHERE c.documentId = :docId
               AND c.seq = :seq
+              AND c.chunkType = :chunkType
               AND EXISTS (
                 SELECT 1 FROM DocumentEntity d
                 WHERE d.id = c.documentId AND d.deletedAt IS NULL
               )
             """)
-    Optional<ChunkEntity> findActiveByDocAndSeq(@Param("docId") Long docId, @Param("seq") int seq);
+    Optional<ChunkEntity> findActiveByDocAndSeq(
+            @Param("docId") Long docId, @Param("seq") int seq, @Param("chunkType") String chunkType);
 
     /** 拉取某页全部 chunk: 校验父 doc 未软删, 按 seq 升序。 */
     @Query(

@@ -2,6 +2,7 @@ package com.xxx.ragdoc.infrastructure.persistence.jpa;
 
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.domain.document.Chunk;
+import com.xxx.ragdoc.domain.document.ChunkType;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.ChunkEntity;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.ChunkJpaRepository;
 import java.util.List;
@@ -40,8 +41,10 @@ public class JpaChunkRepository implements ChunkRepository {
     }
 
     @Override
-    public Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq) {
-        return jpa.findActiveByDocAndSeq(documentId, seq).map(ChunkMapper::toDomain);
+    public Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq, ChunkType chunkType) {
+        return jpa
+                .findActiveByDocAndSeq(documentId, seq, chunkType == null ? null : chunkType.name())
+                .map(ChunkMapper::toDomain);
     }
 
     @Override

@@ -64,18 +64,21 @@ public class ChunkQueryService {
         ChunkDetail prev = null;
         ChunkDetail next = null;
         String filename = documentFilename(current.documentId());
+        // V3 parent-child 模式: 同 (docId, seq) 可能同时有 PARENT/CHILD, 必须按当前
+        // chunk 的 type 过滤相邻, 否则 JPA getSingleResult 抛 NonUniqueResultException。
+        com.xxx.ragdoc.domain.document.ChunkType t = current.type();
 
         if (direction == Direction.PREV || direction == Direction.BOTH) {
             prev =
                     chunkRepository
-                            .findByDocumentIdAndSeq(current.documentId(), current.seq() - 1)
+                            .findByDocumentIdAndSeq(current.documentId(), current.seq() - 1, t)
                             .map(c -> ChunkDetail.from(c, filename))
                             .orElse(null);
         }
         if (direction == Direction.NEXT || direction == Direction.BOTH) {
             next =
                     chunkRepository
-                            .findByDocumentIdAndSeq(current.documentId(), current.seq() + 1)
+                            .findByDocumentIdAndSeq(current.documentId(), current.seq() + 1, t)
                             .map(c -> ChunkDetail.from(c, filename))
                             .orElse(null);
         }

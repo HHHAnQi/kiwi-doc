@@ -92,3 +92,24 @@ export interface ErrorResponse {
   trace_id?: string;
   timestamp?: string;
 }
+
+// ===== chunks 详情 (引用卡片展开看原文出处) =====
+// 对应后端 ChunkDetailResponse + ChunkNeighborsResponse
+export interface ChunkDetail {
+  id: number;
+  document_id: number;
+  seq: number;
+  chunk_type: string; // CHILD / PARENT / TEXT / FIGURE
+  content: string;
+  page: number;
+  bbox: unknown | null;
+  parent_chunk_id: number | null;
+  content_hash: string;
+  document_filename: string;
+  section_path: string[];
+}
+
+export interface ChunkNeighbors {
+  prev: ChunkDetail | null;
+  next: ChunkDetail | null;
+}

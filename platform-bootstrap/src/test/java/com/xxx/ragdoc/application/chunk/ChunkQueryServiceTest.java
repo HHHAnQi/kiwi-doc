@@ -139,8 +139,8 @@ class ChunkQueryServiceTest {
             Chunk prev = sampleChunk(4L, 1L, 4);
             Chunk next = sampleChunk(6L, 1L, 6);
             when(chunkRepository.findById(5L)).thenReturn(Optional.of(cur));
-            when(chunkRepository.findByDocumentIdAndSeq(1L, 4)).thenReturn(Optional.of(prev));
-            when(chunkRepository.findByDocumentIdAndSeq(1L, 6)).thenReturn(Optional.of(next));
+            when(chunkRepository.findByDocumentIdAndSeq(1L, 4, ChunkType.TEXT)).thenReturn(Optional.of(prev));
+            when(chunkRepository.findByDocumentIdAndSeq(1L, 6, ChunkType.TEXT)).thenReturn(Optional.of(next));
             mockDocDetail(1L);
 
             ChunkNeighbors n = service.getNeighbors(5L, ChunkQueryService.Direction.BOTH);
@@ -154,7 +154,7 @@ class ChunkQueryServiceTest {
         void firstChunkPrevNull() {
             Chunk cur = sampleChunk(1L, 1L, 0);
             when(chunkRepository.findById(1L)).thenReturn(Optional.of(cur));
-            when(chunkRepository.findByDocumentIdAndSeq(1L, -1)).thenReturn(Optional.empty());
+            when(chunkRepository.findByDocumentIdAndSeq(1L, -1, ChunkType.TEXT)).thenReturn(Optional.empty());
             mockDocDetail(1L);
 
             ChunkNeighbors n = service.getNeighbors(1L, ChunkQueryService.Direction.BOTH);
@@ -167,13 +167,13 @@ class ChunkQueryServiceTest {
         void prevOnly() {
             Chunk cur = sampleChunk(5L, 1L, 5);
             when(chunkRepository.findById(5L)).thenReturn(Optional.of(cur));
-            when(chunkRepository.findByDocumentIdAndSeq(1L, 4)).thenReturn(Optional.empty());
+            when(chunkRepository.findByDocumentIdAndSeq(1L, 4, ChunkType.TEXT)).thenReturn(Optional.empty());
             mockDocDetail(1L);
 
             ChunkNeighbors n = service.getNeighbors(5L, ChunkQueryService.Direction.PREV);
 
             assertThat(n.next()).isNull();
-            verify(chunkRepository, never()).findByDocumentIdAndSeq(eq(1L), eq(6));
+            verify(chunkRepository, never()).findByDocumentIdAndSeq(eq(1L), eq(6), eq(ChunkType.TEXT));
         }
 
         @Test

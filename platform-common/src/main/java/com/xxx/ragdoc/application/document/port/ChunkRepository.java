@@ -1,6 +1,7 @@
 package com.xxx.ragdoc.application.document.port;
 
 import com.xxx.ragdoc.domain.document.Chunk;
+import com.xxx.ragdoc.domain.document.ChunkType;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,8 +31,14 @@ public interface ChunkRepository {
      */
     List<Chunk> findByIdIn(List<Long> ids);
 
-    /** 按 docId + seq 精确定位相邻 chunk(用于 prev/next 查询)。 查不到返回 empty。 */
-    Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq);
+    /**
+     * 按 docId + seq + chunkType 精确定位相邻 chunk(用于 prev/next 查询)。
+     *
+     * <p>V3 parent-child 模式下同 (docId, seq) 可能存在 PARENT 与 CHILD 两条, 必须按 type 消歧;
+     * 不传 type 会触发 NonUniqueResultException → /chunks/{id}/neighbors 500。
+     * 查不到返回 empty。
+     */
+    Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq, ChunkType chunkType);
 
     /** 按 docId + page 拉取该页全部 chunk(seq 升序)。 */
     List<Chunk> findByDocumentIdAndPageOrderBySeq(Long documentId, int page);
