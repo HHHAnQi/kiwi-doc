@@ -195,6 +195,47 @@ services:
       retries: 5
       start_period: 240s
 
+  # V3-W1 parser-service 拆分新增: RocketMQ broker(ADR-0009 D1 选型)
+  # chat-app producer 发 parse-task-submit topic; parser-service 消费
+  # 部署: 两个容器(namesrv + broker), 5.3.1 镜像
+  # 注: V3 第 1 周演练硬资产(scripts/v3-kill-9-drill.sh)依赖它
+  rmqnamesrv:
+    image: apache/rocketmq:5.3.1
+    platform: linux/amd64
+    container_name: ragdoc-rmqnamesrv
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'check' | nc -w 2 localhost 9876 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  rmqbroker:
+    image: apache/rocketmq:5.3.1
+    platform: linux/amd64
+    container_name: ragdoc-rmqbroker
+    # Docker bridge 网络下 broker 必须把 NAMESRV_ADDR + 自身 advertise 地址配对,
+    # 否则 producer 拿到 broker 容器内 IP(172.x.x.x)后无法从宿主机回连。
+    # 这里 broker.conf 用 host = host.docker.internal 让宿主机 mac 可达。
+    environment:
+      NAMESRV_ADDR: "rmqnamesrv:9876"
+    command: sh mqbroker -c /home/rocketmq/rocketmq-5.3.1/conf/broker.conf
+    depends_on:
+      rmqnamesrv:
+        condition: service_healthy
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'check' | nc -w 2 localhost 10911 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 60s
+
 volumes:
   mysql_data:
   minio_data:
