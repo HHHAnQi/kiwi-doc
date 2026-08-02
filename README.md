@@ -1,6 +1,7 @@
 # rag-doc-platform
 
-> 企业私有多模态 RAG 智能中台(**V3-W3 工程收尾中**)。详细设计文档见上级目录 `企业私有多模态RAG智能中台-设计文档/`,
+> 企业私有多模态 RAG 智能中台(**V3 验收门槛已命中**, faith 0.88 / recall 0.90 实测)。
+> 详细设计文档见上级目录 `企业私有多模态RAG智能中台-设计文档/`,
 > 关键 ADR 见 `docs/adr/`, V3 spec / runbook / 验收报告见 `docs/v3/`。
 
 ---
@@ -73,7 +74,13 @@ rag-doc-platform/
 
 ---
 
-## 实现进度(V3-W3 工程收尾中, 2026-08-02)
+## 实现进度(V3 主验收门槛已命中 ✨, 2026-08-02)
+
+### RAG 质量真值(P0 run final)
+
+✨ **V3 验收门槛已命中**: faith 0.88 / precision 0.87 / recall 0.90 远超设计目标(faith ≥0.75 / recall ≥0.65)。
+
+详见 [eval/baseline_v3_judge_plus.md](eval/baseline_v3_judge_plus.md) + [docs/v3/v3-acceptance-report.md §4](docs/v3/v3-acceptance-report.md)。
 
 ### 已落地能力
 
@@ -96,12 +103,12 @@ rag-doc-platform/
 
 | 项 | 推到哪 | 原因 |
 |---|---|---|
-| Langfuse SSE(chatStream) 路径接入 | V3-W3 末 | Flux 流式 token 完成 endTrace 设计复杂度高于同步, 单 commit 补 |
-| DoD-2 端到端集成测试(poison msg → DLQ) | V3-W3 末 | 单测覆盖了状态机, 端到端 IT 推后 |
-| kill -9 演练实跑 PASS log | mac/Autodl 窗口 | 真跑一次出截图入验收报告 |
-| corpus 扩 150+ docs + 重 curate ground truth | **P0, 即将启动** | 当前 100 docs + ground truth 基于旧 50 docs, RAG 数字偏低根因之一 |
-| rerank ON 重跑 baseline | **P0, 即将启动** | 当前数字 rerank OFF, 预期 +5-7pp faith |
-| ADR-0008 baseline 真值校准 | **P0 完成后** | ≥3 次 RAGAS 跑 mean ± std, threshold 从 placeholder 3pp 收紧 |
+| Langfuse SSE(chatStream) 路径接入 | V3.5 / V4 | Flux 流式 token 完成 endTrace 设计复杂度高于同步 |
+| DoD-2 端到端集成测试(poison msg → DLQ) | V3.5 | 单测覆盖了状态机, 端到端 IT 推后 |
+| kill -9 演练实跑 PASS log | mac/Autodl 窗口 | 跑 5-10min 出截图入验收报告(不阻塞 Accepted) |
+| noise 校准(nightly 跑 ≥3 次 mean ± std) | V3 末 nightly | 当前 baseline 单跑, threshold 临时 5pp buffer |
+| corpus 扩到 500+ docs | V4 | V3 已跨过验收门槛, 大 corpus 是 V4 RAG 调优主线 |
+| 真实用户 query 流量校准 | V4 | extractive GT 是 LLM 生成题, 真实 query 才是真验收 |
 | docker-compose Locust 100 并发压测 | V4 + 真流量 | ADR-0010 砍掉, 0 用户场景演不出 HP 价值 |
 | k3s / K8s | V4 + 真流量 | ADR-0007 Superseded, 同上 |
 
