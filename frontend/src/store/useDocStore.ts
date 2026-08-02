@@ -13,6 +13,8 @@ import { useToastStore } from './useToastStore';
 
 interface DocState {
   docs: DocumentSummary[];
+  // 后端总文档数(listForSummary 返回的 page.total), 用于驱动 "加载更多" 按钮
+  total: number;
   loading: boolean;
   error: string | null;
 
@@ -20,6 +22,7 @@ interface DocState {
   uploading: Record<string, boolean>;
 
   load: () => Promise<void>;
+  loadMore: () => Promise<void>;
   upload: (file: File, opts?: UploadOptions) => Promise<void>;
   remove: (docId: number) => Promise<void>;
   retry: (docId: number) => Promise<void>;
@@ -27,8 +30,14 @@ interface DocState {
 
 // 后台 status 轮询 (PARSING/UPLOADED → READY) 用 setInterval 在 App.tsx 里启, 这里只暴露 load。
 
+// 单页 size: 100 起步, 配合 loadMore 直到 total.
+// 不做无限滚动 (滚动事件 + IntersectionObserver 工作量大 + 体验未必更好),
+// 显式 "加载更多" 按钮体感更可控。
+const PAGE_SIZE = 100;
+
 export const useDocStore = create<DocState>((set, get) => ({
   docs: [],
+  total: 0,
   loading: false,
   error: null,
   uploading: {},
@@ -38,8 +47,38 @@ export const useDocStore = create<DocState>((set, get) => ({
     // 成功后由下面 set 清除。若仍在 loading 时清 error, 会让红框闪烁。
     set({ loading: true });
     try {
-      const page = await listDocuments({ size: 100 });
-      set({ docs: page.items, loading: false, error: null });
+      const page = await listDocuments({ size: PAGE_SIZE, page: 1 });
+      set({
+        docs: page.items,
+        total: page.total,
+        loading: false,
+        error: null,
+      });
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      set({ loading: false, error: msg });
+    }
+  },
+
+  // DEV-B3: loadMore 追加下一页, 不替换已有 docs。
+  // 用于 knowledge base > PAGE_SIZE 时让用户能看完整列表。
+  loadMore: async () => {
+    const cur = get().docs;
+    // 已加载页数 + 1 = 下一页号
+    const nextPage = Math.floor(cur.length / PAGE_SIZE) + 1;
+    set({ loading: true });
+    try {
+      const page = await listDocuments({ size: PAGE_SIZE, page: nextPage });
+      // 后端按 createdAt DESC; 由于 docs 在前页已按时间倒序排, append 即可保持序一致。
+      // 严格点应去重(doc_id), 防 windows.confirm 间的并发刷新导致重叠。
+      const existingIds = new Set(cur.map((d) => d.doc_id));
+      const fresh = page.items.filter((d) => !existingIds.has(d.doc_id));
+      set({
+        docs: [...cur, ...fresh],
+        total: page.total,
+        loading: false,
+        error: null,
+      });
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : (e as Error).message;
       set({ loading: false, error: msg });

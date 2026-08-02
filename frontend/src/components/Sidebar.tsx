@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useDocStore } from '../store/useDocStore';
+import { useUIStore } from '../store/useUIStore';
 import { UploadDropzone } from './UploadDropzone';
 import { StatusBadge } from './StatusBadge';
 import { formatBytes, formatRelativeTime } from '../lib/format';
@@ -14,11 +15,15 @@ interface Props {
 
 export function Sidebar({ onPickDoc, selectedDocId }: Props) {
   const docs = useDocStore((s) => s.docs);
+  const total = useDocStore((s) => s.total);
   const loading = useDocStore((s) => s.loading);
   const error = useDocStore((s) => s.error);
+  const loadMore = useDocStore((s) => s.loadMore);
 
   const readyCount = docs.filter((d) => d.status === 'READY').length;
   const totalSize = docs.reduce((acc, d) => acc + d.size_bytes, 0);
+  // DEV-B3: 仍有未加载文档时, footer 区显示 "加载更多 (剩余 N)"
+  const remaining = Math.max(0, total - docs.length);
 
   return (
     <aside className="flex h-full w-72 flex-col border-r border-slate-200 bg-white">
@@ -65,6 +70,18 @@ export function Sidebar({ onPickDoc, selectedDocId }: Props) {
             />
           ))}
         </ul>
+
+        {/* DEV-B3: 加载更多 — 当前 docs.length < total 时显示 */}
+        {remaining > 0 && (
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loading}
+            className="mt-2 w-full rounded-md border border-slate-200 bg-white py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+          >
+            {loading ? '加载中...' : `加载更多 (剩 ${remaining} 个文档)`}
+          </button>
+        )}
       </div>
 
       <div className="border-t border-slate-100 p-3 text-center text-[10px] text-slate-400">
@@ -87,7 +104,12 @@ function DocItem({
   // retry 仅 FAILED 可用(后端约束); delete 任意状态都可软删.
   const remove = useDocStore((s) => s.remove);
   const retry = useDocStore((s) => s.retry);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const activeMenuDocId = useUIStore((s) => s.activeMenuDocId);
+  const toggleMenu = useUIStore((s) => s.toggleMenu);
+  const closeMenu = useUIStore((s) => s.closeMenu);
+  // ARCH-F4: 菜单开关从全局 UI store 派生 — 同一时刻只允许一个 DocItem 的菜单展开,
+  // 替换旧版本 menuOpen useState (会被其它卡片 menuOpen 干扰同时显示)。
+  const menuOpen = activeMenuDocId === doc.doc_id;
   const [busy, setBusy] = useState(false);
 
   const onDelete = async () => {
@@ -97,7 +119,7 @@ function DocItem({
       )
     )
       return;
-    setMenuOpen(false);
+    closeMenu();
     setBusy(true);
     try {
       await remove(doc.doc_id);
@@ -107,7 +129,7 @@ function DocItem({
   };
 
   const onRetry = async () => {
-    setMenuOpen(false);
+    closeMenu();
     setBusy(true);
     try {
       await retry(doc.doc_id);
@@ -148,7 +170,7 @@ function DocItem({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setMenuOpen((v) => !v);
+              toggleMenu(doc.doc_id);
             }}
             aria-label="文档操作"
             aria-haspopup="menu"
@@ -169,13 +191,13 @@ function DocItem({
 
       {menuOpen && (
         // 点容器外任意处关闭: 用 onBlur 不可靠(点菜单内按钮本身就会 blur),
-        // 简化用 backdrop div 捕获外层 click 关菜单。
+        // 简化用 backdrop div 捕获外层 click 调用 closeMenu() 关全局菜单。
         <>
           <div
             className="fixed inset-0 z-10"
             onClick={(e) => {
               e.stopPropagation();
-              setMenuOpen(false);
+              closeMenu();
             }}
           />
           <div
@@ -188,7 +210,7 @@ function DocItem({
                 role="menuitem"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setMenuOpen(false);
+                  closeMenu();
                   onRetry();
                 }}
                 disabled={busy}
@@ -202,7 +224,7 @@ function DocItem({
               role="menuitem"
               onClick={(e) => {
                 e.stopPropagation();
-                setMenuOpen(false);
+                closeMenu();
                 onDelete();
               }}
               disabled={busy}

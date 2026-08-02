@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
 import { Toaster } from './components/Toaster';
+import { TokenEditor } from './components/TokenEditor';
 import { useDocStore } from './store/useDocStore';
 import { useToastStore } from './store/useToastStore';
 
@@ -118,6 +119,7 @@ function Header({ error }: { error: string | null }) {
             ⚠ 后端连接异常
           </span>
         )}
+        <TokenEditor />
         <a
           href="https://github.com/HHHAnQi/kiwi-doc"
           target="_blank"
