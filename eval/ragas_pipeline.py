@@ -104,13 +104,15 @@ def build_ragas_dataset(questions):
     for i, q in enumerate(questions, 1):
         try:
             answer, contexts = call_chat(q["question"])
+            # 兼容 gen_questions.py 多种 key: 旧版 'answer', V3-W3 新版 'ground_truth_answer'
+            gt = q.get("ground_truth_answer") or q.get("answer") or ""
             samples.append({
                 "question": q["question"],
-                "ground_truth": q.get("answer", ""),
+                "ground_truth": gt,
                 "answer": answer,
                 "contexts": contexts,
             })
-            print(f"  [{i}/{len(questions)}] got answer_len={len(answer)} ctx={len(contexts)}")
+            print(f"  [{i}/{len(questions)}] got answer_len={len(answer)} ctx={len(contexts)} gt_len={len(gt)}")
         except Exception as e:
             print(f"  [{i}/{len(questions)}] FAIL: {e}")
         time.sleep(0.5)  # 礼让 LLM
