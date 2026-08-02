@@ -33,7 +33,15 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 CHAT_URL="${CHAT_URL:-http://localhost:8080}"
+# ragas_pipeline.py 期望 CHAT_URL 是完整 chat 接口 URL(含 /api/v1/chat);
+# bulk_upload_corpus.py 期望 UPLOAD_URL 是 root URL(含 /api/v1/documents).
+# 用户只传 root URL 时统一拼好下游用, 调 P0 时不用分别设.
+ROOT_APP_URL="${CHAT_URL%/}"  # 去尾斜杠
+CHAT_URL="${ROOT_APP_URL}/api/v1/chat"
+# bulk_upload_corpus.py 默认 UPLOAD_URL 8092, 这里跟 root 对齐(同进程同端口)
+UPLOAD_URL="${UPLOAD_URL:-${ROOT_APP_URL}/api/v1/documents}"
 CHAT_TOKEN="${TEST_AUTH_TOKEN:-dev-token-change-me}"
+export CHAT_URL UPLOAD_URL
 MYSQL_PORT="${MYSQL_PORT:-3307}"
 MYSQL_USER="${MYSQL_USER:-root}"
 MYSQL_PASS="${MYSQL_ROOT_PASSWORD:-rootpass}"
@@ -58,8 +66,9 @@ fail() {
 # Step 0: 前置检查
 # ============================================================
 log "step0 前置检查"
-curl -sf "${CHAT_URL}/actuator/health" > /dev/null || fail "chat-app 不可达: $CHAT_URL"
-log "  ✓ chat-app 健康"
+# 健康检查用 root app URL 不是 chat endpoint
+curl -sf "${ROOT_APP_URL}/actuator/health" > /dev/null || fail "chat-app 不可达: ${ROOT_APP_URL}"
+log "  ✓ chat-app 健康 (${ROOT_APP_URL}/actuator/health)"
 
 curl -sf http://localhost:8082/health > /dev/null 2>&1 || log "  ⚠ BGE-M3 8082 不可达(脚本仍跑, ragas_pipeline 可能挂)"
 curl -sf http://localhost:8084/health > /dev/null 2>&1 || log "  ⚠ Reranker 8084 不可达(预期 +5-7pp faith 拿不到)"

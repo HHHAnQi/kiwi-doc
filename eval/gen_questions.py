@@ -1,42 +1,43 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-V2-C Step 1: 从 chunks 表合成 30 题 QA 评测集。
+V3-W3 重写: deterministic-leaning QA 生成器(P0 badcase 调研后重写).
 
-流程:
-1. 从 MySQL 拉 chunks (按 document_id 分组, 每个文档取全部 chunks)
-2. 调 DashScope qwen-max 让 LLM 基于 chunk 内容生成 N 个 QA 对
-   每个 QA: {question, ground_truth_answer, ground_truth_chunk_id}
-3. 输出 JSONL 到 eval/questions.30.jsonl
+V2 版本的痛点(badcase 分析 docs/v3/badcase-analysis.md §3):
+  1. ground_truth 被 LLM 改写成 "Spring Cloud Alibaba 中可以通过 X 实现" 这种通用 wrapper,
+     与真实 chunk 文本偏离 → RAGAS context_recall 查不到原 chunk 文本, 分数极低
+  2. 遍历所有 chunks (100+ doc × ~20 chunk = 2000+), 每个 LLM 调用 → 跑了几小时没出 30 题
 
-依赖:
-  pip install openai pymysql python-dotenv
+新版本设计:
+  1. extractive ground_truth - LLM 抽 chunk 中**直接原文当 answer**, 不改写不总结
+  2. 采样而非全遍 - 随机 N=(target*2) 个 chunks 做 seed(过滤掉<200字过短 + code-only 的)
+  3. 单题输出 - 每个 chunk 只生 1 题(够 curated 数量级, 控成本)
+  4. 必须给 evidence_span - LLM 返回 chunk 内的原文 span, answer 严格=evidence_span 不改
 
 用法:
-  export LLM_API_KEY=sk-xxx       # 或在 ~/RagDoc/rag-doc-platform/.env
-  python3 gen_questions.py 30     # 30 题, 数字可改
-"""
+  LLM_API_KEY=xxx LLM_BASE_URL=xxx LLM_MODEL=glm-4-plus \
+      python3 gen_questions.py 30 [随机 seed]
 
+输出: eval/questions.jsonl 每行:
+  {"question":"...", "ground_truth":"<chunk 内原文>", "ground_truth_chunk_id":..., "ground_truth_doc_id":...}
+"""
 import json
 import os
-import sys
 import random
+import re
+import sys
 from pathlib import Path
 
 import pymysql
-from openai import OpenAI
 from dotenv import load_dotenv
+from openai import OpenAI
 
-# 加载 .env
-# override=False: shell 已 export 的优先(例如 LLM_API_KEY), .env 只填未设置的
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_ROOT / ".env", override=False)
 
-DASHSCOPE_BASE_URL = os.getenv(
-    "LLM_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
-)
-DASHSCOPE_API_KEY = os.getenv("LLM_API_KEY", "")
-LLM_MODEL = os.getenv("LLM_MODEL", "qwen-max")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")
+LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+LLM_MODEL = os.getenv("LLM_MODEL", "glm-4-plus")
 
 DB_CONFIG = {
     "host": os.getenv("MYSQL_HOST", "localhost"),
@@ -50,47 +51,70 @@ DB_CONFIG = {
 OUT_FILE = Path(__file__).resolve().parent / "questions.jsonl"
 
 
-def fetch_chunks():
-    """拉所有 chunks, 按 document_id 分组返回 [{doc_id, chunks: [...]}]"""
-    conn = pymysql.connect(**DB_CONFIG)
+def fetch_chunks(sample_size, seed):
+    """随机采样 chunk: 过滤过短 + 全 code 内容, 保证 chunk 真有可问事实."""
     try:
+        conn = pymysql.connect(**DB_CONFIG)
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            # 先捞所有候选 chunk(len>=200), 再 Python 侧 sample,
+            # 避免 ORDER BY RAND() 在百万行表上的代价(本项目 2k 行其实用 RAND 也行, 但保持通用).
+            # 同时拉 chunk_type 过滤掉 PARENT(整段太长 LLM gen 质量差) 仅保留 CHILD/TEXT.
             cur.execute(
-                "SELECT id, document_id, seq, content FROM chunks "
+                "SELECT id, document_id, seq, chunk_type, content FROM chunks "
+                "WHERE LENGTH(content) >= 200 AND chunk_type IN ('CHILD', 'TEXT') "
                 "ORDER BY document_id, seq"
             )
             rows = cur.fetchall()
     finally:
         conn.close()
 
-    # 按 document_id 分组
-    docs = {}
-    for r in rows:
-        docs.setdefault(r["document_id"], []).append(r)
-    return [
-        {"doc_id": k, "chunks": v} for k, v in docs.items()
-    ]
+    rng = random.Random(seed)
+    rng.shuffle(rows)
+    out = []
+    for r in rows[:sample_size]:
+        c = r["content"] or ""
+        # 跳过 code block 占主导的 chunk(> 50% 行是 code 围栏内)
+        if looks_like_code(c):
+            continue
+        out.append(r)
+        if len(out) >= sample_size:
+            break
+    return out
 
 
-def gen_qa_for_chunk(client, chunk, n_questions):
-    """让 LLM 基于 chunk 内容生成 n 个 QA 对"""
-    # 清洗 chunk 文本(去多余空行, 限 1500 字)
+def looks_like_code(text):
+    """简单启发式: 大于 50% 行以非语言字符开头(# - * 全算 markdown 不算 code)"""
+    lines = [l for l in text.split("\n") if l.strip()]
+    if not lines:
+        return True
+    code_lines = sum(
+        1
+        for l in lines
+        if l.strip().startswith(("<", "import ", "package ", "public ", "private "))
+        or re.match(r"^\s*[a-zA-Z_]+\s*=", l)
+    )
+    return code_lines * 2 > len(lines)
+
+
+def gen_qa_extractive(client, chunk, attempt=0):
+    """让 LLM 基于 chunk 抽出 1 个问答对.
+
+    关键: answer 必须**原样摘录** chunk 内 1-3 句, 严禁改写/总结.
+    这是 V3-W3 badcase 修复重点 — 让 ground_truth 跟 chunk 完全对齐,
+    RAGAS context_recall judge 能直接命中 chunk.
+    """
     text = (chunk["content"] or "").strip()
-    text = "\n".join(line for line in text.split("\n") if line.strip())
     if len(text) > 1500:
         text = text[:1500]
 
-    if len(text) < 80:
-        return []  # 内容太少, 跳过
+    prompt = f"""下面是 Spring Cloud Alibaba 技术文档的一个片段。请基于该片段生成 1 个验证用问答对。
 
-    prompt = f"""下面是 Spring Cloud Alibaba 技术文档中的一个片段。请基于该片段生成 {n_questions} 个高质量的问答对, 用于评测 RAG 系统。
-
-要求:
-1. 问题要具体、可操作, 体现真实开发者会问的工程问题(如配置方式、步骤、原理、对比)
-2. 每个问题必须有可从片段内容直接推出的明确答案
-3. 答案限 2-5 句, 不要编造片段中没有的内容
-4. 用 JSON 数组返回, 每个元素格式 {{"question": "...", "answer": "..."}}
-5. 不要输出任何其他文本(无前言无解释), 只输出 JSON 数组
+【硬性约束(违反即视为无效输出)】:
+1. question 必须具体(配置项名/步骤号/版本号都行), 是开发者真会问的问题;
+2. answer 必须**原样摘录**片段中的 1-3 句话(连续段), 不允许任何改写、总结或翻译;
+3. 只回答片段明确给出的信息, 不要编造;
+4. 输出严格 JSON: {{"question": "...", "answer": "<片段原文逐字摘录 1-3 句>"}}
+5. 不输出任何其他文字(无前言、无解释、无 markdown fence)。
 
 片段内容:
 {text}
@@ -99,68 +123,82 @@ def gen_qa_for_chunk(client, chunk, n_questions):
         resp = client.chat.completions.create(
             model=LLM_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+            temperature=0.0,
+            max_tokens=400,
         )
         content = resp.choices[0].message.content.strip()
-        # LLM 可能带 ```json fence, 去掉
+        # 去 markdown fence(若 LLM 违规加)
         if content.startswith("```"):
             content = content.split("```")[1]
-            if content.startswith("json"):
+            if content.lower().startswith("json"):
                 content = content[4:]
         content = content.strip().rstrip("`").strip()
-        qa_list = json.loads(content)
-        return qa_list
+        qa = json.loads(content)
+        # 关键: 验证 answer 真是 chunk 原文摘录
+        answer = qa.get("answer", "")
+        if not answer or not is_substring_of(answer, chunk["content"] or ""):
+            print(
+                f"  [warn] answer 不是 chunk 原文摘录, 丢弃 chunk_id={chunk['id']} attempt={attempt}"
+            )
+            return None
+        return qa
     except Exception as e:
         print(f"  [warn] gen_qa failed chunk_id={chunk['id']}: {e}")
-        return []
+        return None
+
+
+def is_substring_of(answer, source):
+    """answer 是否是 source 的子串(允许少量空白差异).
+
+    规范化: 去所有空白后子串匹配, 解决不同换行/空白让 strict substring 假阴性.
+    """
+    norm_answer = re.sub(r"\s+", "", answer)
+    norm_source = re.sub(r"\s+", "", source or "")
+    return norm_answer and norm_answer in norm_source
 
 
 def main():
     target = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-    if not DASHSCOPE_API_KEY:
+    seed = int(sys.argv[2]) if len(sys.argv) > 2 else 42
+
+    if not LLM_API_KEY:
         print("ERROR: LLM_API_KEY 未配置")
         sys.exit(1)
 
-    client = OpenAI(api_key=DASHSCOPE_API_KEY, base_url=DASHSCOPE_BASE_URL)
-    docs = fetch_chunks()
-    total_chunks = sum(len(d["chunks"]) for d in docs)
-    print(f"[1/3] 拉取 chunks: {len(docs)} 个文档, 共 {total_chunks} 个 chunk")
+    # 采样目标数量 × 2(给 LLM 失败 / 短 answer 失败留余量)
+    candidate_size = min(target * 2, 200)
+    print(f"[1/3] 采样 {candidate_size} chunks (seed={seed}, target={target})")
+    chunks = fetch_chunks(candidate_size, seed)
+    print(f"      实际过滤后 {len(chunks)} 个候选 chunk")
 
-    # 每个 chunk 平均生成 target/total_chunks 个问题, 向上取整
-    per_chunk = max(1, (target + total_chunks - 1) // total_chunks)
-    print(f"[2/3] 每个 chunk 生成 {per_chunk} 题(目标共 {per_chunk * total_chunks} 题)")
+    client = OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+    print(f"[2/3] 调 LLM({LLM_MODEL}) 生成 extractive QA(每 chunk 1 题)...")
 
     all_qa = []
-    for doc in docs:
-        for chunk in doc["chunks"]:
-            qas = gen_qa_for_chunk(client, chunk, per_chunk)
-            for q in qas:
-                if "question" not in q or "answer" not in q:
-                    continue
-                all_qa.append({
-                    "question": q["question"],
-                    "ground_truth_answer": q["answer"],
-                    "ground_truth_chunk_id": chunk["id"],
-                    "ground_truth_doc_id": doc["doc_id"],
-                })
-            print(f"  chunk_id={chunk['id']} doc_id={doc['doc_id']} seq={chunk['seq']} → {len(qas)} 题")
+    for i, chunk in enumerate(chunks):
+        if len(all_qa) >= target:
+            break
+        qa = gen_qa_extractive(client, chunk)
+        if not qa:
+            continue
+        all_qa.append(
+            {
+                "question": qa["question"],
+                "ground_truth_answer": qa["answer"][:500],  # 防超长
+                "ground_truth_chunk_id": chunk["id"],
+                "ground_truth_doc_id": chunk["document_id"],
+                "topic": f"gen-{chunk['document_id']}-{chunk['seq']}",
+            }
+        )
+        print(f"  [{len(all_qa)}/{target}] chunk_id={chunk['id']} ok")
 
-    # 打乱并截取 target 数
-    random.seed(42)  # 复现性
-    random.shuffle(all_qa)
-    all_qa = all_qa[:target]
-
-    print(f"[3/3] 写入 {len(all_qa)} 题到 {OUT_FILE}")
+    print(f"[3/3] 写入 {len(all_qa)} 题 到 {OUT_FILE}")
     with open(OUT_FILE, "w", encoding="utf-8") as f:
-        for item in all_qa:
-            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+        for qa in all_qa:
+            f.write(json.dumps(qa, ensure_ascii=False) + "\n")
 
-    print(f"\n✓ 完成。可执行评测: python3 eval_pipeline.py")
-    print(f"  预览前 3 题:")
-    for i, item in enumerate(all_qa[:3], 1):
-        print(f"  [{i}] Q: {item['question'][:60]}")
-        print(f"      A: {item['ground_truth_answer'][:60]}")
+    print(f"\n✓ 完成, {len(all_qa)}/{target} 题(extractive ground truth)")
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)

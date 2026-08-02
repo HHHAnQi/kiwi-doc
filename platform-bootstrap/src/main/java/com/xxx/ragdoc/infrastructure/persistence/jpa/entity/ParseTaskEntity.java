@@ -29,7 +29,13 @@ public class ParseTaskEntity {
     private String contentHash;
 
     /** 状态机 ENUM: PENDING/RUNNING/PARSED/FAILED/CANCELLED. */
-    @Column(nullable = false, length = 16)
+    // columnDefinition 显式声明 MySQL ENUM 类型, 让 Hibernate ddl-auto=validate
+    // 与 V5 migration DDL 的 ENUM('PENDING','RUNNING','PARSED','FAILED','CANCELLED') 一致校验通过
+    // 不写的话 JPA 默认按 String → VARCHAR(16), 与 DDL 的 ENUM 类型不符, validate fail.
+    @Column(
+            name = "status",
+            nullable = false,
+            columnDefinition = "ENUM('PENDING','RUNNING','PARSED','FAILED','CANCELLED')")
     private String status;
 
     @Column(name = "retry_count", nullable = false)

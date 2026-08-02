@@ -63,7 +63,9 @@ rag:
     mode: ${RAG_RETRIEVE_MODE:dense}
   # V2 第③段: cross-encoder 精排。enabled=false 时跳过 rerank, enabled=true 时
   # hybrid 召回扩到 candidatePool(20) → rerank → topN(5)。
-  # 启用前提: docker-compose 起 ragdoc-reranker 容器(BGE-Reranker-v2-m3, 8084)。
+  # 启用前提: Autodl reranker 服务跑(6006) + 本机开 ssh -L 8084:localhost:6006 隧道。
+  # 注: base-url 没写默认值, 必须在 .env 显式声明 RAG_RERANK_BASE_URL=http://localhost:8084
+  # 防止 dev.yml fallback 到错误 endpoint 造成 reranker 静默失败回退 hybrid (P0 debug 教训)。
   rerank:
     enabled: ${RAG_RERANK_ENABLED:false}
     base-url: ${RAG_RERANK_BASE_URL:http://localhost:8084}

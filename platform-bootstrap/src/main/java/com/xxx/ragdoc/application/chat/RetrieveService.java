@@ -8,6 +8,7 @@ import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import com.xxx.ragdoc.domain.document.Chunk;
+import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,25 @@ public class RetrieveService {
     // 但通过 RerankProperties.feature flag 决定是否实际调用, 二者任一缺失即视为不支持 rerank。
     private final RerankClient rerankClient;
     private final RerankProperties rerankProps;
+
+    /**
+     * V3-W3 加固: 启动期自检 + 打日志明示 reranker 实际配置。防止 .env / dev.yml / 环境变量多重覆盖 静默让 reranker base_url 错配,
+     * 跑完一组 RAGAS 才发现全跑 hybrid fallback(P0 教训)。
+     */
+    @PostConstruct
+    void logRerankConfig() {
+        log.info(
+                "retrieve.rerank_config enabled={}, base_url={}, model={}, candidate_pool={}, top_n={}",
+                rerankProps.isEnabled(),
+                rerankProps.getBaseUrl(),
+                rerankProps.getModel(),
+                rerankProps.getCandidatePool(),
+                rerankProps.getTopN());
+        if (rerankProps.isEnabled() && rerankProps.getBaseUrl() == null) {
+            log.warn(
+                    "retrieve.rerank_misconfig ❌ enabled=true 但 base_url 为空, 启动后所有 rerank 调用会 fail");
+        }
+    }
 
     /**
      * 执行召回。
@@ -88,7 +108,9 @@ public class RetrieveService {
 
         // 4. ③ 可选: cross-encoder reranker 精排, 取 topN(=userTopK)
         //    失败时降级到原 hybrid 序(不破坏主流程, 只 log)
+        //    V3-W3: 加 candidates 数 + top1 hybrid score 进 log, 跑完 RAGAS 看分布判断 reranker 是否真提质
         List<ScoredChunk> finalHits = validHits;
+        float top1HybridScore = validHits.isEmpty() ? 0f : validHits.get(0).score();
         if (rerankEnabled && validHits.size() > 1) {
             try {
                 List<RerankCandidate> candidates = new ArrayList<>(validHits.size());
@@ -97,14 +119,20 @@ public class RetrieveService {
                             new RerankCandidate(h.chunkId(), chunkMap.get(h.chunkId()).content()));
                 }
                 int topN = Math.min(userTopK, candidates.size());
+                log.info(
+                        "retrieve.rerank_start candidates={} topN={} top1_hybrid_score={}",
+                        candidates.size(),
+                        topN,
+                        top1HybridScore);
                 List<ScoredChunk> reranked = rerankClient.rerank(cmd.query(), candidates, topN);
                 if (!reranked.isEmpty()) {
                     finalHits = reranked;
                     log.info(
-                            "retrieve.rerank_applied candidates={}, final_n={}, top1_score={}",
+                            "retrieve.rerank_applied candidates={}, final_n={}, top1_rerank_score={}, top1_hybrid_score={}",
                             candidates.size(),
                             reranked.size(),
-                            reranked.get(0).score());
+                            reranked.get(0).score(),
+                            top1HybridScore);
                 } else {
                     log.warn("retrieve.rerank_empty fallback to hybrid");
                 }
