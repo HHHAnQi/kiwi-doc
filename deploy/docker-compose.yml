@@ -225,10 +225,14 @@ services:
     container_name: ragdoc-rmqbroker
     # Docker bridge 网络下 broker 必须把 NAMESRV_ADDR + 自身 advertise 地址配对,
     # 否则 producer 拿到 broker 容器内 IP(172.x.x.x)后无法从宿主机回连。
-    # 这里 broker.conf 用 host = host.docker.internal 让宿主机 mac 可达。
+    # 这里 broker.conf 用 brokerIP1 = host.docker.internal 让 host 上的 chat-app / parser-service
+    # 都能回连(PM-V3-B kill-9 演练真实验证过该配置生效)。
     environment:
       NAMESRV_ADDR: "rmqnamesrv:9876"
     command: sh mqbroker -c /home/rocketmq/rocketmq-5.3.1/conf/broker.conf
+    volumes:
+      # 把项目内 broker.conf 挂入容器, 让 broker 广播 host.docker.internal 而非容器内 IP
+      - ./rocketmq/broker.conf:/home/rocketmq/rocketmq-5.3.1/conf/broker.conf
     depends_on:
       rmqnamesrv:
         condition: service_healthy

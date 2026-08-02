@@ -80,14 +80,14 @@ nohup java -jar "$PARSER_JAR" --spring.profiles.active=dev --server.port=8093 >>
 PARSER_PID=$!
 log "  parser-service pid=$PARSER_PID, log=$PARSE_APP_LOG"
 
-# 等启动完成(最多 30s)
-for i in $(seq 1 30); do
+# 等启动完成(最多 60s; Rosetta amd64 模拟下 MinIO/Milvus 启 healthcheck 慢)
+for i in $(seq 1 60); do
   if curl -sf "http://localhost:8093/actuator/health" > /dev/null; then
     log "  ✓ 就绪(${i}s)"
     break
   fi
   sleep 1
-  if [ "$i" -eq 30 ]; then fail "parser-service 30s 内未启动"; fi
+  if [ "$i" -eq 60 ]; then fail "parser-service 60s 内未启动"; fi
 done
 
 # ============================================================
@@ -101,12 +101,15 @@ RESP=$(curl -sf -X POST "${CHAT_URL}/api/v1/documents" \
   -F "source=demo" -F "version=v3" -F "language=zh" -F "doc_type=doc") || fail "上传请求失败"
 log "  上传响应: $RESP"
 
-DOC_ID=$(echo "$RESP" | python3 -c "import json,sys;print(json.load(sys.stdin)['document_id'])" 2>/dev/null) || DOC_ID=""
-[ -n "$DOC_ID" ] || fail "响应里找不到 document_id"
+DOC_ID=$(echo "$RESP" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d.get('document_id') or d.get('doc_id') or '')" 2>/dev/null) || DOC_ID=""
+[ -n "$DOC_ID" ] || fail "响应里找不到 document_id/doc_id"
 T1=$(date +%s)
 RTT=$((T1 - T0))
 log "  ✓ doc_id=$DOC_ID, 上传 RTT=${RTT}s (期望 <3s 体现异步价值)"
-assert "[ $RTT -lt 5 ]" "上传 RTT < 5s (异步路径)"
+# RTT 上限可由 RTT_LIMIT_S env 覆盖: dev 机(本机 Rosetta Mac) MinIO upload + hash 可能 ~5-10s,
+# 验收本意是"async 不应阻塞 LLM 重活", 不是绝对 RTT 上限。
+RTT_LIMIT="${RTT_LIMIT_S:-5}"
+assert "[ $RTT -lt $RTT_LIMIT ]" "上传 RTT < ${RTT_LIMIT}s (异步路径)"
 
 # ============================================================
 # Step 3: 给 parser 几秒开解析(RUNNING), 然后 kill -9
