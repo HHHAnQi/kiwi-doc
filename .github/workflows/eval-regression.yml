@@ -1,0 +1,155 @@
+# ============================================================
+# rag-doc-platform 评测回归门禁(ADR-0008 D3)
+#
+# 触发: 两个模式
+#   1. PR label "eval-impact" → 跑 10 题 smoke, 任一指标降 >3pp 阻断合并
+#   2. nightly (cron) → 跑 30 题全集, 报告 artifact
+#
+# 设计原则:
+# - 默认不在每个 PR 跑(成本高, 起完整 RAG 栈 + LLM API 调用)
+# - 只标 "eval-impact" label 才跑(major 改动: 切 LLM / 切切片 / 拆服务等)
+# - nightly 跑完整 30 题, 出 markdown 报告便于追踪
+#
+# baseline: eval/baseline_v3_judge_plus.md(同 question × 同 judge × 同 corpus)
+# ============================================================
+name: Eval Regression
+
+on:
+  pull_request:
+    types: [labeled, synchronize]
+    branches: [main, master]
+  schedule:
+    # nightly 北京时间凌晨 3 点(UTC 19:00), 低流量时段少干扰
+    - cron: "0 19 * * *"
+  workflow_dispatch: # 支持手动触发
+
+concurrency:
+  group: eval-regression-${{ github.ref }}
+  cancel-in-progress: false # 评测不抢占, 防止数据不全
+
+jobs:
+  smoke-10q:
+    # PR 默认不跑, 只在 label=eval-impact 时跑
+    if: (github.event_name == 'schedule') || (github.event_name == 'workflow_dispatch') || contains(github.event.label.name, 'eval-impact')
+    name: 10-question smoke(PR gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      JUDGE_MODEL: glm-4-plus
+      # 走智谱 API, 需要 GH Actions secret
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      # corpus 在 docker-compose 起后, app 启动自动重建
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r eval/requirements.txt 2>/dev/null || pip install ragas openai jieba
+
+      - name: Start middleware (docker-compose)
+        run: |
+          docker compose -f deploy/docker-compose.yml up -d
+          sleep 60 # 等 Milvus healthy
+
+      - name: Build & start app
+        run: |
+          ./gradlew :platform-bootstrap:bootJar
+          SPRING_PROFILES_ACTIVE=dev java -jar platform-bootstrap/build/libs/*.jar --server.port=8092 &
+          sleep 45
+
+      - name: Run smoke 10-question RAGAS
+        working-directory: eval
+        run: |
+          # 只跑 curated 前 10 题
+          head -10 questions.curated.jsonl > questions.smoke.jsonl
+          cp questions.smoke.jsonl questions.real.jsonl
+          python3 ragas_pipeline.py || true # 即使 RAGAS 失败不阻断(夜间可重试)
+
+      - name: Compare with baseline
+        run: |
+          python3 eval/compare_baseline.py \
+            --baseline eval/baseline_v3_judge_plus.md \
+            --current eval/eval_ragas_report.md \
+            --threshold 3.0 \
+            --output eval/regression_check.md
+
+      - name: Fail if any metric regressed >3pp
+        run: |
+          if grep -q "REGRESSION_DETECTED" eval/regression_check.md; then
+            echo "::error::RAGAS regression > 3pp detected. See eval/regression_check.md"
+            exit 1
+          fi
+
+      - name: Upload regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-regression-report
+          path: eval/regression_check.md
+
+  nightly-30q:
+    # 完整 30 题 cron 触发
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    name: 30-question nightly
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      JUDGE_MODEL: glm-4-plus
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r eval/requirements.txt 2>/dev/null || pip install ragas openai jieba
+
+      - name: Start middleware + app
+        run: |
+          docker compose -f deploy/docker-compose.yml up -d
+          sleep 60
+          ./gradlew :platform-bootstrap:bootJar
+          SPRING_PROFILES_ACTIVE=dev java -jar platform-bootstrap/build/libs/*.jar --server.port=8092 &
+          sleep 45
+
+      - name: Run 30-question RAGAS
+        working-directory: eval
+        run: |
+          # 跑 curated 前 30 题
+          head -30 questions.curated.jsonl > questions.real.jsonl
+          python3 ragas_pipeline.py || true
+
+      - name: Upload full eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-nightly-${{ github.run_id }}
+          path: |
+            eval/eval_ragas_report.md
+            eval/ragas_raw.jsonl
+          retention-days: 90
