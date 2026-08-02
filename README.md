@@ -44,6 +44,19 @@ make run
 - MinIO 控制台: http://localhost:9001 (用户 `minio` / 密码 `minio123`)
 - Langfuse 控制台(V3-W3, enabled 时): http://localhost:3000
 
+### 前端 SPA(可选,V3 已落地)
+
+```bash
+cd frontend
+npm install
+npm run dev     # http://localhost:5173(被占用则自动落到 5174)
+```
+
+dev 模式下 `vite.config.ts` 把 `/api/*` 反向代理到 `http://localhost:8080`,
+因此**不需要**在后端额外开 CORS。前置条件:chat-app 已 `make run` 起来。
+打开浏览器即可:左侧上传/选择文档 → 右侧输入问题 → SSE 流式回答 → 引用卡片 → 👍/👎 反馈。
+细节见 [`frontend/README.md`](frontend/README.md)。
+
 ---
 
 ## 项目结构
@@ -60,7 +73,13 @@ rag-doc-platform/
 ├── parser-service/              # V3-W1 独立异步解析服务(RocketMQ 驱动, 已落地 DoD-1/2/4)
 │   └── src/main/java/com/xxx/ragdoc/parser/
 │       ├── application/         # ParseTaskService(状态机) / ParseWorker(Tika+checkpoint)
-│       └── infrastructure/      # ParseTaskConsumer(RocketMQListener) / VisibilityTimeoutScheduler
+│       └── infrastructure/      # ParseTaskConsumer(RocketMQListener) / Visibility Timeout Scheduler
+├── frontend/                    # V3 前端 SPA(React 19 + Vite 8 + Tailwind v4 + Zustand 5)
+│   └── src/
+│       ├── api/                 # client/documents/chat(SSE)/feedback
+│       ├── components/          # StatusBadge/UploadDropzone/Sidebar/StateBanner/CitationCard/FeedbackBar/ChatMessage/ChatWindow
+│       ├── store/               # useDocStore / useChatStore(zustand)
+│       └── types/api.ts         # 与后端 DTO 对齐的 TS 类型
 ├── deploy/docker-compose.yml    # 本地中间件 + RocketMQ broker 一键起
 ├── docs/adr/                    # 架构决策记录(ADR-0001 ~ 0010)
 ├── docs/v3/                     # V3 spec / kill-9 runbook / 验收报告 / P0 runbook(待加)

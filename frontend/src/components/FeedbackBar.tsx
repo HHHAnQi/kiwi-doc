@@ -48,10 +48,10 @@ export function FeedbackBar({ traceId, submitted, onSubmitDone }: Props) {
         <span>这个回答:</span>
         <button
           disabled={submitting}
-          onClick={() => setPicked('GOOD')}
+          onClick={() => setPicked('like')}
           className={cn(
             'rounded px-2 py-0.5 transition',
-            picked === 'GOOD'
+            picked === 'like'
               ? 'bg-emerald-100 text-emerald-700'
               : 'hover:bg-slate-100',
           )}
@@ -60,10 +60,10 @@ export function FeedbackBar({ traceId, submitted, onSubmitDone }: Props) {
         </button>
         <button
           disabled={submitting}
-          onClick={() => setPicked('BAD')}
+          onClick={() => setPicked('dislike')}
           className={cn(
             'rounded px-2 py-0.5 transition',
-            picked === 'BAD'
+            picked === 'dislike'
               ? 'bg-rose-100 text-rose-700'
               : 'hover:bg-slate-100',
           )}
@@ -75,7 +75,7 @@ export function FeedbackBar({ traceId, submitted, onSubmitDone }: Props) {
       </div>
       {picked && (
         <div className="mt-1 space-y-1">
-          {picked === 'BAD' && (
+          {picked === 'dislike' && (
             <textarea
               value={corrected}
               onChange={(e) => setCorrected(e.target.value)}

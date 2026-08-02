@@ -75,7 +75,9 @@ export type SSEEvent =
 
 // ===== feedback =====
 
-export type Rating = 'GOOD' | 'BAD';
+// 与后端 domain.feedback.Rating 枚举的 dbValue 对齐: like / dislike
+// (后端只接受小写, 发 GOOD/BAD 会被拒为 SYS_INVALID_ARGUMENT)
+export type Rating = 'like' | 'dislike';
 
 export interface FeedbackRequest {
   trace_id: string;

@@ -35,7 +35,47 @@ export default function App() {
         <Sidebar onPickDoc={setSelectedDocId} selectedDocId={selectedDocId} />
         <ChatWindow selectedDocId={selectedDocId} />
       </div>
+      <Footer />
     </div>
+  );
+}
+
+function Footer() {
+  const link = 'text-[10px] text-slate-400 hover:text-brand-600';
+  return (
+    <footer className="flex items-center justify-between border-t border-slate-200 bg-white px-6 py-1.5 text-[10px] text-slate-400">
+      <span>RAG 文档中台 · V3</span>
+      <div className="flex items-center gap-3">
+        <a
+          className={link}
+          href="https://github.com/HHHAnQi/kiwi-doc"
+          target="_blank"
+          rel="noreferrer"
+        >
+          GitHub
+        </a>
+        <span className="text-slate-300">·</span>
+        <a
+          className={link}
+          href="https://github.com/HHHAnQi/kiwi-doc/tree/main/docs/adr"
+          target="_blank"
+          rel="noreferrer"
+          title="架构决策记录 ADR-0001 ~ 0010"
+        >
+          ADR
+        </a>
+        <span className="text-slate-300">·</span>
+        <a
+          className={link}
+          href="https://github.com/HHHAnQi/kiwi-doc/tree/main/docs/v3/v3-acceptance-report.md"
+          target="_blank"
+          rel="noreferrer"
+          title="RAGAS 评测: faith 0.88 / recall 0.90"
+        >
+          RAGAS
+        </a>
+      </div>
+    </footer>
   );
 }
 
