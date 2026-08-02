@@ -1,0 +1,12 @@
+# 防止把不该进镜像的东西打进 build context
+node_modules
+dist
+dist-ssr
+*.local
+.vscode
+.idea
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

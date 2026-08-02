@@ -238,6 +238,31 @@ services:
       retries: 20
       start_period: 60s
 
+  # ============================================================
+  # frontend SPA (V3)
+  # ============================================================
+  # 默认不启(用 docker compose up mysql milvus ... 显式排除),
+  # prod 烟测用 docker compose --profile frontend up frontend 触发。
+  #
+  # 注意 nginx.conf 里 upstream 写的是 service 名 chat-app:8080,
+  # 当前 chat-app 是宿主机 bootRun 起的, 这条 frontend 容器内连不到它。
+  # 全容器化部署时, 把 chat-app 也加入此 compose 网络, 或调 nginx upstream 指向
+  # host.docker.internal:8080(dev only)。
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: ragdoc-frontend
+    ports:
+      - "8088:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
 volumes:
   mysql_data:
   minio_data:

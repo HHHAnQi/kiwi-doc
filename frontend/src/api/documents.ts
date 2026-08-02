@@ -3,7 +3,7 @@ import type {
   DocumentUploadResponse,
   PageResponse,
 } from '../types/api';
-import { getJSON, postForm } from './client';
+import { getJSON, postForm, del, postNoBody } from './client';
 
 export function listDocuments(params?: {
   status?: string;
@@ -37,4 +37,16 @@ export function uploadDocument(
   if (opts.language) fd.append('language', opts.language);
   if (opts.docType) fd.append('doc_type', opts.docType);
   return postForm<DocumentUploadResponse>('/api/v1/documents', fd);
+}
+
+// 后端契约:
+//   DELETE /api/v1/documents/{id}  -> 204 软删
+//   POST   /api/v1/documents/{id}/retry -> 202 重试(仅 FAILED 可调用一次)
+// 见 DocumentController.java:114,121
+export function deleteDocument(docId: number): Promise<void> {
+  return del(`/api/v1/documents/${docId}`);
+}
+
+export function retryDocument(docId: number): Promise<void> {
+  return postNoBody(`/api/v1/documents/${docId}/retry`);
 }

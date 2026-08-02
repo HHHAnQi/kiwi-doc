@@ -92,3 +92,28 @@ export async function postForm<T>(path: string, formData: FormData): Promise<T> 
   if (!resp.ok) throw await parseError(resp);
   return (await resp.json()) as T;
 }
+
+// DELETE / 后端返回 204 no-body 版本: ApiError 照样抛, 但成功时不解析 body
+export async function del(path: string): Promise<void> {
+  const resp = await fetch(apiURL(path), {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+      Accept: 'application/json',
+    },
+  });
+  if (!resp.ok) throw await parseError(resp);
+  // 204 no content; 即便有 body 也忽略
+}
+
+// POST 无 body 版本(用于后端约定 202 Accepted 无入参的接口, 如 retry)
+export async function postNoBody(path: string): Promise<void> {
+  const resp = await fetch(apiURL(path), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+      Accept: 'application/json',
+    },
+  });
+  if (!resp.ok) throw await parseError(resp);
+}

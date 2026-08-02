@@ -1,7 +1,13 @@
 // 文档列表 store: 加载 / 上传 / 状态轮询
 import { create } from 'zustand';
 import type { DocumentSummary } from '../types/api';
-import { listDocuments, uploadDocument, type UploadOptions } from '../api/documents';
+import {
+  listDocuments,
+  uploadDocument,
+  deleteDocument,
+  retryDocument,
+  type UploadOptions,
+} from '../api/documents';
 import { ApiError } from '../api/client';
 
 interface DocState {
@@ -14,6 +20,8 @@ interface DocState {
 
   load: () => Promise<void>;
   upload: (file: File, opts?: UploadOptions) => Promise<void>;
+  remove: (docId: number) => Promise<void>;
+  retry: (docId: number) => Promise<void>;
 }
 
 // 后台 status 轮询 (PARSING/UPLOADED → READY) 用 setInterval 在 App.tsx 里启, 这里只暴露 load。
@@ -54,6 +62,30 @@ export const useDocStore = create<DocState>((set, get) => ({
         delete next[file.name];
         return { uploading: next };
       });
+    }
+  },
+
+  // 软删: 后端 DELETE /documents/{id} 返回 204, 列表里这条变 DELETED(或被过滤)
+  // 乐观 UI 不做, 因后端是软删 + listDocuments 仍可能返回 DELETED 条目, 直接重 load 最稳。
+  remove: async (docId: number) => {
+    try {
+      await deleteDocument(docId);
+      await get().load();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      set({ error: msg });
+    }
+  },
+
+  // 重试: 仅 FAILED 状态可调, 后端 202 Accepted, 实际解析是异步的(parser-service 消费 MQ)
+  // 触发后状态变 PARSING/RUNNING, App.tsx 轮询会自动追到 READY
+  retry: async (docId: number) => {
+    try {
+      await retryDocument(docId);
+      await get().load();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      set({ error: msg });
     }
   },
 }));

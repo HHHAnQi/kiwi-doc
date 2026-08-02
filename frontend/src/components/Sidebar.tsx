@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useDocStore } from '../store/useDocStore';
 import { UploadDropzone } from './UploadDropzone';
 import { StatusBadge } from './StatusBadge';
@@ -82,12 +83,51 @@ function DocItem({
   selected: boolean;
   onClick: () => void;
 }) {
+  // …菜单: 点击 ⋯ 切换; 操作本身通过 store 触发, 完成后 load 会刷新 docs.
+  // retry 仅 FAILED 可用(后端约束); delete 任意状态都可软删.
+  const remove = useDocStore((s) => s.remove);
+  const retry = useDocStore((s) => s.retry);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const stop = (e: React.SyntheticEvent) => {
+    // 阻止触发父级 onClick (选中文档), 否则点 ⋯ 会意外切换 selected
+    e.stopPropagation();
+  };
+
+  const onDelete = async () => {
+    if (
+      !window.confirm(
+        `确认软删文档「${doc.original_filename}」?\n(后端软删, 可由 DBA 恢复)`,
+      )
+    )
+      return;
+    setMenuOpen(false);
+    setBusy(true);
+    try {
+      await remove(doc.doc_id);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onRetry = async () => {
+    setMenuOpen(false);
+    setBusy(true);
+    try {
+      await retry(doc.doc_id);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <li>
+    <li className="relative">
       <button
         onClick={onClick}
+        disabled={busy}
         className={cn(
-          'w-full rounded-md px-2 py-2 text-left transition-colors hover:bg-slate-50',
+          'w-full rounded-md px-2 py-2 text-left transition-colors hover:bg-slate-50 disabled:opacity-60',
           selected && 'ring-2 ring-brand-500 bg-brand-50',
         )}
       >
@@ -98,6 +138,26 @@ function DocItem({
           >
             {doc.original_filename}
           </span>
+          {/* 操作菜单触发器: 阻止冒泡到选中文档 onClick */}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(e) => {
+              stop(e);
+              setMenuOpen((v) => !v);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                stop(e);
+                setMenuOpen((v) => !v);
+              }
+            }}
+            className="shrink-0 rounded px-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+            aria-label="文档操作"
+            title="删除 / 重试"
+          >
+            ⋯
+          </span>
         </div>
         <div className="mt-1 flex items-center justify-between gap-2">
           <StatusBadge status={doc.status} />
@@ -106,6 +166,41 @@ function DocItem({
           </span>
         </div>
       </button>
+
+      {menuOpen && (
+        // 点容器外任意处关闭: 用 onBlur 不可靠(点菜单内按钮本身就会 blur),
+        // 简化用 backdrop div 捕获外层 click 关菜单。
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={(e) => {
+              stop(e);
+              setMenuOpen(false);
+            }}
+          />
+          <div
+            className="absolute right-2 top-8 z-20 w-28 rounded-md border border-slate-200 bg-white py-1 text-xs shadow-lg"
+            onClick={stop}
+          >
+            {doc.status === 'FAILED' && (
+              <button
+                onClick={onRetry}
+                disabled={busy}
+                className="block w-full px-3 py-1.5 text-left text-slate-700 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+              >
+                🔄 重试解析
+              </button>
+            )}
+            <button
+              onClick={onDelete}
+              disabled={busy}
+              className="block w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+            >
+              🗑 删除
+            </button>
+          </div>
+        </>
+      )}
     </li>
   );
 }

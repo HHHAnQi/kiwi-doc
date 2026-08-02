@@ -1,5 +1,6 @@
 // Chat store: 消息历史 + 正在流式中的当前问答状态。
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { Citation, ChatRequest, StateHint } from '../types/api';
 import { chatSSE } from '../api/chat';
 import { uid } from '../lib/format';
@@ -20,6 +21,7 @@ export interface ChatMessage {
 interface ChatState {
   messages: ChatMessage[];
   sending: boolean;
+  // AbortController 不可序列化, 仅运行时存在
   abortController: AbortController | null;
 
   send: (req: ChatRequest) => void;
@@ -27,12 +29,14 @@ interface ChatState {
   markFeedbackSubmitted: (msgId: string) => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
-  messages: [],
-  sending: false,
-  abortController: null,
+export const useChatStore = create<ChatState>()(
+  persist(
+    (set, get) => ({
+      messages: [],
+      sending: false,
+      abortController: null,
 
-  send: (req: ChatRequest) => {
+      send: (req: ChatRequest) => {
     if (get().sending) return;
     const userMsg: ChatMessage = {
       id: uid('u'),
@@ -119,4 +123,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
         m.id === msgId ? { ...m, feedbackSubmitted: true } : m,
       ),
     })),
-}));
+    }),
+    {
+      name: 'ragdoc.chat', // localStorage key
+      version: 1,
+      // 只持久化 messages; sending/abortController 是运行时状态, 不可序列化也不该恢复
+      partialize: (s) => ({ messages: s.messages }),
+      // 再水合时: 刷新瞬即"挂掉", 任何遗留 streaming:true 的消息必须收尾,
+      // 否则永久卡住(stale streaming=true)。给个通用完成标记 + 灰字提示。
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        state.messages = state.messages.map((m) =>
+          m.streaming
+            ? {
+                ...m,
+                streaming: false,
+                content:
+                  m.content +
+                  (m.content ? '\n\n_(页面刷新, 已中断)_' : '_(页面刷新, 已中断)_'),
+              }
+            : m,
+        );
+        state.sending = false;
+        state.abortController = null;
+      },
+    },
+  ),
+);

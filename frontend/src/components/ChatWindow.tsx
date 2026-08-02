@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useChatStore } from '../store/useChatStore';
 import { useDocStore } from '../store/useDocStore';
-import { ChatMessageView } from './ChatMessage';
 import type { ChatRequest } from '../types/api';
+
+// markdown 渲染器很重 (react-markdown + remark-gfm ~40KB gzip),
+// 但首屏空状态根本用不到。lazy 拆出去, 用户首次点发送 / 点示例才加载。
+const ChatMessageView = lazy(() =>
+  import('./ChatMessage').then((m) => ({ default: m.ChatMessageView })),
+);
 
 interface Props {
   selectedDocId: number | null;
@@ -78,8 +83,10 @@ export function ChatWindow({ selectedDocId }: Props) {
           <EmptyState
             readyCount={readyCount}
             onPick={(q) => {
+              // readyCount=0 时不允许发送(否则会触发 EMPTY_KB 噪音),
+              // 让 EmptyState 内部 disable 按钮也走这条判断
+              if (readyCount === 0) return;
               setInput(q);
-              // 直接发, 不走 debounced submit; trigger send 同步执行
               const req: ChatRequest = {
                 query: q,
                 doc_id: selectedDocId ?? null,
@@ -90,13 +97,21 @@ export function ChatWindow({ selectedDocId }: Props) {
           />
         ) : (
           <div className="mx-auto max-w-3xl space-y-4">
-            {messages.map((m) => (
-              <ChatMessageView
-                key={m.id}
-                msg={m}
-                onFeedbackSubmitted={markFeedbackSubmitted}
-              />
-            ))}
+            <Suspense
+              fallback={
+                <div className="text-center text-xs text-slate-400">
+                  加载渲染器...
+                </div>
+              }
+            >
+              {messages.map((m) => (
+                <ChatMessageView
+                  key={m.id}
+                  msg={m}
+                  onFeedbackSubmitted={markFeedbackSubmitted}
+                />
+              ))}
+            </Suspense>
           </div>
         )}
       </div>
@@ -170,8 +185,11 @@ function EmptyState({
         {samples.map((s) => (
           <button
             key={s}
+            // 空库时示例按钮禁用(否则发出去就是 EMPTY_KB 噪音),
+            // 与 textarea disabled 条件保持一致(行为统一见 ChatWindow.tsx)
+            disabled={readyCount === 0}
             onClick={() => onPick(s)}
-            className="rounded border border-slate-200 bg-white px-3 py-1.5 text-left transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+            className="rounded border border-slate-200 bg-white px-3 py-1.5 text-left transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white disabled:hover:text-slate-400"
           >
             {s}
           </button>
