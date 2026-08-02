@@ -53,6 +53,12 @@ embedding:
 # dense(默认): 单路 BGE-M3 dense ANN, 生产基线
 # hybrid: dense + BM25 RRF, 设计文档既定, 但需大数据规模+清洗配合
 rag:
+  # V3-W1 parser-service 拆分(ADR-0005/0010 + docs/v3/parser-service-spec.md §2.3):
+  #   sync (默认, 调试/降级): DocumentUploadService 同步调 TikaParsingTrigger(老路径)
+  #   async (生产): DocumentUploadService 写 parse_tasks PENDING + 发 RocketMQ, 由 parser-service 消费
+  # 切 async 前需先起 RocketMQ broker(docker-compose) + parser-service 进程。
+  parser:
+    mode: ${RAG_PARSER_MODE:sync}
   retrieve:
     mode: ${RAG_RETRIEVE_MODE:dense}
   # V2 第③段: cross-encoder 精排。enabled=false 时跳过 rerank, enabled=true 时
@@ -71,6 +77,15 @@ rag:
   # 启用 parent_child 需重新解析已有文档(upload 重传/手动 deleteDocumentId 触发)才能生效。
   chunking:
     mode: ${RAG_CHUNKING_MODE:flat}
+
+# V3-W1 parser-service 拆分: RocketMQ name-server + producer/consumer group。
+# 只在 rag.parser.mode=async 时生效(@ConditionalOnProperty 守护 RocketMQ 相关 Bean)。
+# docker-compose 拉起的 namesrv 默认 127.0.0.1:9876。
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:127.0.0.1:9876}
+  producer:
+    group: ${ROCKETMQ_PRODUCER_GROUP:parse-task-producer-group}
+    send-message-timeout: 5000
 
 logging:
   level:

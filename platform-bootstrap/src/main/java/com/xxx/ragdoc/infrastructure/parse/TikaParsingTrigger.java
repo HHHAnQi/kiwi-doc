@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,6 +47,8 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+// V3 spec §2.3: rag.parser.mode 默认 sync, 走本同步实现; async 时改为发 MQ.
+@ConditionalOnProperty(prefix = "rag.parser", name = "mode", havingValue = "sync", matchIfMissing = true)
 public class TikaParsingTrigger implements ParsingTrigger {
 
     private final DocumentRepository documentRepository;

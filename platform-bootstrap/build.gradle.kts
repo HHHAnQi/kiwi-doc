@@ -40,6 +40,9 @@ dependencies {
     implementation("org.apache.tika:tika-core:2.9.2")
     implementation("org.apache.tika:tika-parsers-standard-package:2.9.2")
 
+    // RocketMQ (V3-W1 parser-service 拆分, ADR-0009 D1 选 RocketMQ; async ParsingTrigger 用)
+    implementation("org.apache.rocketmq:rocketmq-spring-boot-starter:2.3.3")
+
     // WebClient (V2: 调 BGE-M3 / LLM 服务的 OpenAI 兼容协议)
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
