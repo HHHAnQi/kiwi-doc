@@ -75,18 +75,25 @@ rag-doc-platform/
 │       ├── application/         # ParseTaskService(状态机) / ParseWorker(Tika+checkpoint)
 │       └── infrastructure/      # ParseTaskConsumer(RocketMQListener) / Visibility Timeout Scheduler
 ├── frontend/                    # V3 前端 SPA(React 19 + Vite 8 + Tailwind v4 + Zustand 5)
-│   └── src/
-│       ├── api/                 # client/documents/chat(SSE)/feedback
-│       ├── components/          # StatusBadge/UploadDropzone/Sidebar/StateBanner/CitationCard/FeedbackBar/ChatMessage/ChatWindow
-│       ├── store/               # useDocStore / useChatStore(zustand)
-│       └── types/api.ts         # 与后端 DTO 对齐的 TS 类型
-├── deploy/docker-compose.yml    # 本地中间件 + RocketMQ broker 一键起
+│   ├── src/
+│   │   ├── api/                 # client/documents/chat(SSE)/chunks/feedback
+│   │   ├── components/          # Sidebar/ChatWindow/ChatMessage/CitationCard/FeedbackBar
+│   │   │                        # + StateBanner/StatusBadge/UploadDropzone/Toaster
+│   │   │                        # + TokenEditor/ErrorBoundary
+│   │   ├── store/               # useDocStore / useChatStore(persist) / useToastStore / useUIStore
+│   │   └── types/api.ts         # 与后端 DTO 对齐的 TS 类型
+│   ├── Dockerfile               # 多阶段构建(node:20 build → nginx:alpine serve)
+│   ├── vitest.config.ts         # jsdom + globals, 与 vite.config.ts 分离
+│   └── nginx 反代规则见 ../deploy/nginx.conf
+├── deploy/
+│   ├── docker-compose.yml       # 本地中间件 + RocketMQ broker 一键起(含 frontend profile)
+│   └── nginx.conf               # prod 部署: 静态托管 + SSE buffer off + 安全头 + /healthz
 ├── docs/adr/                    # 架构决策记录(ADR-0001 ~ 0010)
 ├── docs/v3/                     # V3 spec / kill-9 runbook / 验收报告 / P0 runbook(待加)
 ├── docs/operations/             # Autodl reranker SOP / eval-regression SOP
 ├── eval/                        # RAGAS 评测脚本 + 真实 baseline 报告(ADR-0008)
 ├── scripts/                     # 工具脚本 + v3-kill-9-drill.sh
-├── .github/workflows/           # CI( lint+test ) + eval-regression( ADR-0008 D3 )
+├── .github/workflows/           # CI(Java lint+test) + frontend-ci(vitest+tsc+build) + eval-regression
 ├── Makefile                     # 常用命令封装
 └── .env.example                 # 本地配置模板
 ```
@@ -202,11 +209,86 @@ corpus 完整性是 RAG 数字最大杠杆: 50 docs → 100 docs 后 recall +23p
 | Workflow | 触发 | 用途 |
 |---|---|---|
 | `.github/workflows/ci.yml` | 每个 PR / push | spotless + test + ArchUnit 守护 |
+| `.github/workflows/frontend-ci.yml` | 每个 PR / push (frontend/**) | npm ci + **vitest + tsc + vite build**, ~40s |
 | `.github/workflows/eval-regression.yml` | nightly + PR 带 `eval-impact` label + 手动 | RAGAS 30 题评测 + baseline 对比, regression 自动开 issue |
 
 eval-regression 详见 `docs/operations/eval-regression-sop.md`。
 
 **必须打 `eval-impact` label 的 PR**: 改切片 / 检索 / embedding / corpus / reranker / prompt。
+
+---
+
+## 前端 SPA (V3 已落地)
+
+V3 第二交付主线 — 把 chat-app 的 REST + SSE 后端能力翻译成产品级浏览器体验。
+脚手架→主链路→反馈闭环→bug 修复→prod 部署套件→引用卡片升级→测试基础设施, 8 个 commit 全在 `frontend/` 下。
+
+### 技术栈 + 选型理由
+
+| 关注点 | 选型 | 选型理由(不是盲目跟风) |
+|---|---|---|
+| 构建 | Vite 8 | dev proxy 反代 8080, 避开 CORS 这个永远坑的关口 |
+| UI | React 19 + TypeScript 6 + Tailwind v4 | 函数组件 + 类型契约 + utility classes, 不引 UI kit |
+| 状态 | Zustand 5 | 比 Redux 模板代码少 80%, 比 Context 不触发全树重渲染 |
+| 路由 | ❌ 无 | 一个问答框 + 一个列表不需要 router |
+| SSE | fetch + ReadableStream (非 EventSource) | 后端 chat/sse 是 POST+JSON body, EventSource 只支持 GET |
+| Markdown | react-markdown 9 + remark-gfm | lazy import 拆 bundle, 首屏不必加载 |
+
+### 已落地能力(对应后端契约)
+
+| 模块 | 后端 | 前端 | 价值 |
+|---|---|---|---|
+| 文档列表 + 状态轮询 | `GET /documents` | Sidebar + DocItem | PARSING/UPLOADED 5s poll, 5min 上限 |
+| 上传 | `POST /documents` (multipart) | UploadDropzone (拖拽 + 串行) | 防 embed 单线程被并发打爆 |
+| 删除 / 重解析 | `DELETE /{id}` / `POST /{id}/retry` | Sidebar 操作菜单 ⋯ | 解决 FAILED 假死场景 |
+| SSE 流式问答 | `POST /chat/sse` | fetch ReadableStream + 单帧 30s 看门狗 | 流式 token + abort 后恢复 |
+| 引用卡片(主) | (SSE citations, 含 chunkId) | CitationCard | markdown 答案下方 [1][2] 对齐 |
+| 引用源出处(PM-F1) | `GET /chunks/{id}` | 同组件并发拉 document_filename | 不再"文档 #97 是什么看不懂" |
+| 引用上下文(ARCH-F5) | `GET /chunks/{id}/neighbors` | 同时拉 prev/next 嵌展开区 | LLM 用的 chunks 让用户前后扫一眼 |
+| 反馈 | `POST /feedback` (rating=like/dislike) | FeedbackBar | NO_RECALL/LLM_DEGRADED 也能反馈 |
+| 4 级降级提示 | SSE done.state_hint | StateBanner | EMPTY_KB/NO_RECALL/LLM_DEGRADED 友好文案 + trace_id |
+| token 编辑 | Authorization header | TokenEditor | localStorage 持久 + 状态点(绿=默认/黄=自定义) |
+
+### 生产部署套件 (prod 必修)
+
+```
+deploy/nginx.conf                # 静态托管 + 反代 chat-app:8080
+frontend/Dockerfile              # 多阶段: node:20-alpine build → nginx:alpine serve
+deploy/docker-compose.yml        # 加 frontend service (profile=gated, prod 烟测触发)
+.github/workflows/frontend-ci.yml # PR 守门: vitest + tsc + vite build
+```
+
+**关键坑(不修上线 SSE 必坏)**: `location = /api/v1/chat/sse` 必须显式
+```nginx
+proxy_buffering        off;
+proxy_cache            off;
+chunked_transfer_encoding on;
+gzip                   off;
+proxy_read_timeout     300s;
+```
+否则 nginx 默认 buffering 把流式变批量, 体验直接死。
+
+### 工程质量护栏
+
+- **类型**: 全 DTO 手写 (`types/api.ts`), Jackson SNAKE_CASE 与 SSE record 原名双兼容
+- **单测**: vitest 27 cases, SSE 帧解析(4 事件 × 双命名 × 4 类畸形帧) + formatBytes 边界 + formatRelativeTime + uid
+- **CI 守门**: PR 必跑 vitest, 退出码非 0 即 fail
+- **韧性**: 全局 ErrorBoundary 防白屏, SSE 30s 单帧 abort, persist rehydrate 兜底孤儿 streaming
+- **bundle**: ChatMessage lazy 拆 159KB(48KB gzip), 首屏 main 仅 70KB gzip
+- **a11y**: ⋯ 菜单走 role=menu/menuitem + aria-haspopup, 不再用 button-in-button 非法嵌套
+
+### start / 测试
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173(被占则自动 5174), 依赖本地 8080 chat-app
+npm run test       # vitest 单测 (CI 用)
+npm run test:watch # 监听模式
+npm run build      # dist/ 产物, ~70KB gzip main + 48KB lazy ChatMessage
+```
+
+详见 [`frontend/README.md`](frontend/README.md)。
 
 ---
 
