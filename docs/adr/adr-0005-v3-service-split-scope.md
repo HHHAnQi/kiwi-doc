@@ -1,6 +1,6 @@
 # ADR-0005: V3 服务拆分范围 — parser + rag + llm-gateway（3 个）
 
-- Status: Accepted
+- Status: Superseded by ADR-0010 (rag / llm-gateway 推 V4, 只保留 parser)
 - Date: 2026-08-02
 
 ## Context

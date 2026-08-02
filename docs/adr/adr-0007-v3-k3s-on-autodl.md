@@ -1,6 +1,6 @@
 # ADR-0007: V3 部署用 k3s on Autodl GPU(替代 SSH 隧道单机方案)
 
-- Status: Accepted
+- Status: Superseded by ADR-0010 (k3s 改 docker-compose, V4 真流量来时再启)
 - Date: 2026-08-02
 
 ## Context
