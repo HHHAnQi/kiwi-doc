@@ -102,7 +102,12 @@ public class JpaDocumentRepository implements DocumentRepository {
 
     @Override
     public Optional<DocumentDetail> findDetailById(Long id) {
-        return jpa.findById(id)
+        // DEV-V3-C: 与 listForSummary 一致地过滤 deletedAt IS NOT NULL,
+        // 否则软删后 GET /documents/{id} 仍返回 200, 与列表"无声消失"链路不一致。
+        // findById 不带过滤, 用 lambda 显式校验 deletedAt == null。
+        return jpa
+                .findById(id)
+                .filter(e -> e.getDeletedAt() == null)
                 .map(
                         e ->
                                 new DocumentDetail(

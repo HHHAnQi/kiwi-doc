@@ -6,11 +6,24 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 
-/** chunks 表 JPA Entity。 V1 parsing stub 不会写入, 此 Entity 仅为详情 chunk_count 统计用; V2 真实解析接入后用于切片读取。 */
+/**
+ * chunks 表 JPA Entity。 V1 parsing stub 不会写入, 此 Entity 仅为详情 chunk_count 统计用;
+ * V2 真实解析接入后用于切片读取。
+ *
+ * <p>DEV-V3-B: 唯一约束在 V6 migration 落 DB, JPA 层显式声明让 hibernate validate 不报错
+ * (ddl-auto=validate 时不会创建约束, 只校验存在性), 同步防止有人改名后改不齐 schema。
+ */
 @Entity
-@Table(name = "chunks")
+@Table(
+        name = "chunks",
+        uniqueConstraints = {
+            @UniqueConstraint(
+                    name = "uk_doc_seq_type",
+                    columnNames = {"document_id", "seq", "chunk_type"})
+        })
 public class ChunkEntity {
 
     @Id

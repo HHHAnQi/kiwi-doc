@@ -139,12 +139,15 @@ services:
     environment:
       HF_HUB_OFFLINE: "1"
     restart: unless-stopped
+    # 用 build-arg / runtime env 注入本地 HF cache 路径,
+    # 避免 hardcodedmac 路径让别机 `make up` 起不来。
+    # 默认值是本仓开发者(mac huanqi)机器路径, 其它机器 export BGE_M3_CACHE_DIR 覆盖即可。
     volumes:
       # bind mount: 宿主机已下好的模型按 HF hub cache 标准结构挂进容器
       # ~/RagDoc/testdata/bge-m3-cache 结构图:
       #   models--BAAI--bge-m3/refs/main                          # commit hash
       #   models--BAAI--bge-m3/snapshots/<commit>/*.bin *.json    # 软链到 bge-m3/ 实际文件
-      - /Users/huanqi/RagDoc/testdata/bge-m3-cache:/data
+      - ${BGE_M3_CACHE_DIR:-/Users/huanqi/RagDoc/testdata/bge-m3-cache}:/data
     ports:
       - "8082:8081"
     healthcheck:
@@ -184,7 +187,8 @@ services:
       # bind mount: 宿主机已下好的 13 个模型文件平铺在 bge-reranker-v2-m3/ 目录下,
       # 直接挂进容器 /data 作为 --model-id 加载。
       # 文件: model.safetensors(2.1G) + sentencepiece.bpe.model + tokenizer*.json + config.json + ...
-      - /Users/huanqi/RagDoc/testdata/bge-reranker-v2-m3:/data
+      # 默认值同 BGE_M3_CACHE_DIR 注释: mac dev 路径, 其它机器 export BGE_RERANKER_DIR 覆盖。
+      - ${BGE_RERANKER_DIR:-/Users/huanqi/RagDoc/testdata/bge-reranker-v2-m3}:/data
     ports:
       - "8084:8081"
     healthcheck:

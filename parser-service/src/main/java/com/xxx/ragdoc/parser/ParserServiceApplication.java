@@ -1,6 +1,5 @@
 package com.xxx.ragdoc.parser;
 
-import com.xxx.ragdoc.RagDocApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -21,22 +20,38 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *
  * <ul>
  *   <li>扫 {@code com.xxx.ragdoc.parser.*} (parser-service 自有 service / consumer / scheduler)
- *   <li>扫 {@code com.xxx.ragdoc.infrastructure.*} (复用 platform-bootstrap 的 infra adapter)
- *   <li>扫 {@code com.xxx.ragdoc.application.document.chunking.*} (复用共享切片层)
- *   <li><b>排除</b> {@link RagDocApplication}, platform-bootstrap 的 chat / feedback / Controller /
- *       Filter 等 不需要的 chat-app 业务 Bean(由 ASSIGNABLE_TYPE filter 精确排除)
+ *   <li>扫 {@code com.xxx.ragdoc.infrastructure.*} (复用 platform-bootstrap 的 infra adapter, 但
+ *       排除 rerank 客户端 — parser 不调 rerank, 但 BgeRerankClient 依赖 RerankProperties 在
+ *       application.chat 包, 不排除会触发 NoUniqueBean)
+ *   <li>扫 {@code com.xxx.ragdoc.application.document.chunking.*} (复用共享切片层, 注意 regex 必须匹配
+ *       {@code application\.chunk\..*} 而不是 {@code application\.chunk.*} 否则会把 chunking 一并排除)
+ *   <li><b>排除</b> chat / feedback / ChunkController / BgeRerankClient 等 chat-app 业务 Bean
+ *       (由 ComponentScan regex filter 精确排除)
  * </ul>
+ *
+ * <p>注: {@code com.xxx.ragdoc.RagDocApplication} 在 root package 且不在任何 ComponentScan
+ * basePackages 内, 自然不会被加载, 因此<b>不需要也不允许</b>把它列进 @SpringBootApplication.excludeName
+ * (Spring Boot 3.3 严格校验: excludeName 必须是 AutoConfiguration 类, 普通 @SpringBootApplication
+ * 类报 "could not be excluded because they are not auto-configuration classes")。
  *
  * <p>{@code @EnableScheduling} 启动 VisibilityTimeoutScheduler(V3 第 1 周 Commit 3 加)。
  */
-@SpringBootApplication(excludeName = {"com.xxx.ragdoc.RagDocApplication"})
+@SpringBootApplication
 @ComponentScan(
-        basePackages = {"com.xxx.ragdoc.parser", "com.xxx.ragdoc.infrastructure"},
-        excludeFilters =
-                @ComponentScan.Filter(
-                        type = FilterType.REGEX,
-                        pattern =
-                                "com\\.xxx\\.ragdoc\\.(interfaces|application\\.chat|application\\.feedback|application\\.chunk|application\\.auth|event).*"))
+        basePackages = {"com.xxx.ragdoc.parser", "com.xxx.ragdoc.infrastructure", "com.xxx.ragdoc.application.document.chunking"},
+        excludeFilters = {
+            @ComponentScan.Filter(
+                    type = FilterType.REGEX,
+                    // 注意 chunk.\. 的尾点: 排除 application.chunk.* (ChunkQueryService/ChunkController 这类 chat-app 业务 Bean),
+                    // 但保留 application.chunking.* (切片层 ParseWorker 真正依赖的 ChunkingService)
+                    pattern =
+                            "com\\.xxx\\.ragdoc\\.(interfaces|application\\.chat|application\\.feedback|application\\.chunk\\..*|application\\.auth|event).*"),
+            // 排除仅 chat-app 用的 rerank client: 它依赖 RerankProperties(application.chat 包),
+            // parser 不调 rerank, 排除它解掉 NoUniqueBean
+            @ComponentScan.Filter(
+                    type = FilterType.ASSIGNABLE_TYPE,
+                    classes = com.xxx.ragdoc.infrastructure.rerank.BgeRerankClient.class),
+        })
 @EntityScan(basePackages = {"com.xxx.ragdoc.infrastructure.persistence.jpa.entity"})
 @EnableJpaRepositories(basePackages = {"com.xxx.ragdoc.infrastructure.persistence.jpa.repository"})
 @EnableScheduling

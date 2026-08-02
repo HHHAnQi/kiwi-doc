@@ -1,0 +1,22 @@
+-- ============================================================
+-- V6: chunks 表 (document_id, seq, chunk_type) 加 UNIQUE 防御
+--
+-- 背景: V3 parent-child 模式下, 同 (doc_id, seq) 同时存在 PARENT 与 CHILD 是
+--       设计预期; 旧版 ChunkQueryService.findByDocumentIdAndSeq(query:docId+seq)
+--       会触发 NonUniqueResultException → /chunks/{id}/neighbors 500。
+--
+-- 已修(本周 commit 540a552): port + repo + service 三层加 chunkType 消歧。
+-- 本 migration 是"数据库层第一防御": 保证 (doc_id, seq, type) 三元组永远唯一,
+-- 让 JPA getSingleResult 永不在邻居查询里炸, 即使代码层以后被回退也能兜住。
+--
+-- 已验证当前数据无三元组重复(2026-08-02 实际迁前 check):
+--   SELECT document_id, seq, chunk_type, COUNT(*) c
+--   FROM chunks GROUP BY document_id, seq, chunk_type HAVING c > 1
+--   → 0 行, 加 UNIQUE 不会失败。
+--
+-- 注意: 不能 DROP idx_doc (document_id, seq) — 它是 FK fk_chunk_doc 的支持索引,
+--       MySQL 不允许 drop in-use index。本 migration 保留 idx_doc 作 FK 支持索引,
+--       新增 uk_doc_seq_type 作业务唯一约束。两个索引职责不同, 共存 OK。
+-- ============================================================
+
+ALTER TABLE chunks ADD UNIQUE KEY uk_doc_seq_type (document_id, seq, chunk_type);

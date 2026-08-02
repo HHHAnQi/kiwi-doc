@@ -1,0 +1,66 @@
+# ============================================================
+# parser-service 本地开发 profile
+#
+# 共享 chat-app 的 schema + 中间件, 但 parser 不接 LLM / 不入 RocketMQ producer,
+# 仅消费 parse-task-submit + 自己写 chunks + 调 BGE-M3 embed。
+# ============================================================
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3307}/${MYSQL_DATABASE:ragdoc}?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_ROOT_PASSWORD:rootpass}
+    hikari:
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      # parser 与 chat-app 共 schema, 由 chat-app Flyway 建表,
+      # parser 端只 validate, 不应自己跑 migration(避免 DDL 双源冲突)
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  # parser-service 端不跑 Flyway(由 chat-app 一处统一跑)
+  flyway:
+    enabled: false
+
+# RocketMQ consumer: 与 chat-app producer 共 broker (9876)
+rocketmq:
+  name-server: ${ROCKETMQ_NAME_SERVER:localhost:9876}
+  consumer:
+    group: parser-service-consumer
+    # parse-task-submit topic 与 chat-app producer 一致(spec §3.2)
+    topic: ${ROCKETMQ_TOPIC:parse-task-submit}
+
+milvus:
+  host: ${MILVUS_HOST:localhost}
+  port: ${MILVUS_PORT:19530}
+  collection: ${MILVUS_COLLECTION:documents_v1}
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ROOT_USER:minio}
+  secret-key: ${MINIO_ROOT_PASSWORD:minio123}
+  bucket: ${MINIO_BUCKET:ragdoc}
+
+# embedding: BGE-M3 与 chat-app 共用同一 endpoint
+embedding:
+  base-url: ${EMBEDDING_BASE_URL:http://localhost:8082}
+  model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+  timeout-ms: 90000
+  batch-size: 8
+
+# parser-service 心跳 / 续点配置(spec §4.2)
+parser:
+  heartbeat:
+    # lease 有效期, 过期后 VisibilityTimeoutScheduler 把 zombie RUNNING 回滚 PENDING
+    lease-seconds: ${PARSER_LEASE_SECONDS:300}
+    # 心跳 job 扫描周期(默认 30s, 演练用 DRILL_FAST_LEASE 缩到 5s)
+    scan-interval-ms: ${PARSER_SCAN_INTERVAL_MS:30000}
+  # checkpoint 频率: 每 N chunks 落一次 chunks_written 续点
+  checkpoint-every: ${PARSER_CHECKPOINT_EVERY:10}
+
+logging:
+  level:
+    com.xxx.ragdoc.parser: INFO
+    org.apache.rocketmq: WARN
