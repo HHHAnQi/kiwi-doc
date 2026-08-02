@@ -87,7 +87,10 @@ export function ChatMessageView({ msg, onFeedbackSubmitted }: Props) {
           </div>
         )}
 
-        {!isUser && msg.trace_id && !msg.streaming && msg.state_hint === 'OK' && (
+        {/* 反馈按钮: 只要流式结束 + 有 trace_id 就允许反馈。
+            NO_RECALL / LLM_DEGRADED / EMPTY_KB 恰恰是最该收反馈的场景,
+            不应只限 OK (旧逻辑会让最差的回答反而无法反馈, 与产品目的相反)。 */}
+        {!isUser && msg.trace_id && !msg.streaming && (
           <FeedbackBar
             traceId={msg.trace_id}
             submitted={!!msg.feedbackSubmitted}

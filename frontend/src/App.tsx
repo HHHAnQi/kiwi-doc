@@ -18,13 +18,25 @@ export default function App() {
     load();
   }, [load]);
 
-  // 后台轮询 doc status: 若有 PARSING/UPLOADED 状态, 每 5s 拉一次直到全 READY/FAILED
+  // 后台轮询 doc status: 若有 PARSING/UPLOADED 状态, 每 5s 拉一次直到全 READY/FAILED。
+  // 加硬上限 MAX_TICKS (5min * 60s / 5s = 60 次), 防止 parser-service 挂了导致永远轮询。
   useEffect(() => {
     const hasPending = docs.some(
       (d) => d.status === 'PARSING' || d.status === 'UPLOADED',
     );
     if (!hasPending) return;
-    const id = window.setInterval(() => load(), 5_000);
+    const INTERVAL_MS = 5_000;
+    const MAX_TICKS = 60; // 60 * 5s = 5min, 之后停 (用 console 告警, 不打扰用户)
+    let ticks = 0;
+    const id = window.setInterval(() => {
+      ticks += 1;
+      if (ticks >= MAX_TICKS) {
+        console.warn('[polling] 已轮询 5 分钟仍未全部 READY, 停止轮询');
+        window.clearInterval(id);
+        return;
+      }
+      load();
+    }, INTERVAL_MS);
     return () => window.clearInterval(id);
   }, [docs, load]);
 

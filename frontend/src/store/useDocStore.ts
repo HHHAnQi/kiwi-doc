@@ -25,10 +25,12 @@ export const useDocStore = create<DocState>((set, get) => ({
   uploading: {},
 
   load: async () => {
-    set({ loading: true, error: null });
+    // 注意: 进 loading 不立即清 error, 让上次错误在请求期间仍可见;
+    // 成功后由下面 set 清除。若仍在 loading 时清 error, 会让红框闪烁。
+    set({ loading: true });
     try {
       const page = await listDocuments({ size: 100 });
-      set({ docs: page.items, loading: false });
+      set({ docs: page.items, loading: false, error: null });
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : (e as Error).message;
       set({ loading: false, error: msg });

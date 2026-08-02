@@ -20,12 +20,21 @@ export function ChatWindow({ selectedDocId }: Props) {
 
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 自动滚到底部
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  // textarea 自动撑高: 内容变化时重置 height 再 scrollHeight, 上限 maxHeight (CSS 控制)
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [input]);
 
   const submit = () => {
     const q = input.trim();
@@ -66,7 +75,19 @@ export function ChatWindow({ selectedDocId }: Props) {
       {/* 消息流 */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-4">
         {messages.length === 0 ? (
-          <EmptyState readyCount={readyCount} />
+          <EmptyState
+            readyCount={readyCount}
+            onPick={(q) => {
+              setInput(q);
+              // 直接发, 不走 debounced submit; trigger send 同步执行
+              const req: ChatRequest = {
+                query: q,
+                doc_id: selectedDocId ?? null,
+                top_k: 5,
+              };
+              send(req);
+            }}
+          />
         ) : (
           <div className="mx-auto max-w-3xl space-y-4">
             {messages.map((m) => (
@@ -85,6 +106,7 @@ export function ChatWindow({ selectedDocId }: Props) {
         <div className="mx-auto max-w-3xl">
           <div className="flex items-end gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-100">
             <textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
@@ -124,7 +146,18 @@ export function ChatWindow({ selectedDocId }: Props) {
   );
 }
 
-function EmptyState({ readyCount }: { readyCount: number }) {
+function EmptyState({
+  readyCount,
+  onPick,
+}: {
+  readyCount: number;
+  onPick: (q: string) => void;
+}) {
+  const samples = [
+    'Dubbo 有哪些负载均衡策略?',
+    'Nacos 如何开启鉴权?',
+    'Sentinel 如何配置流控规则?',
+  ];
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-400">
       <div className="text-5xl">💬</div>
@@ -134,14 +167,14 @@ function EmptyState({ readyCount }: { readyCount: number }) {
           : '试着问点 SCA 组件相关的问题'}
       </div>
       <div className="mt-4 grid grid-cols-1 gap-1 text-xs">
-        {[
-          'Dubbo 有哪些负载均衡策略?',
-          'Nacos 如何开启鉴权?',
-          'Sentinel 如何配置流控规则?',
-        ].map((s) => (
-          <div key={s} className="rounded border border-slate-200 bg-white px-3 py-1.5">
+        {samples.map((s) => (
+          <button
+            key={s}
+            onClick={() => onPick(s)}
+            className="rounded border border-slate-200 bg-white px-3 py-1.5 text-left transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700"
+          >
             {s}
-          </div>
+          </button>
         ))}
       </div>
     </div>

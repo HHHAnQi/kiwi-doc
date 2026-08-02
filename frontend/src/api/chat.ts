@@ -9,7 +9,7 @@
 //   \n
 // 一帧 = 多行, 以空行(\n\n)分隔。
 import type { ChatRequest, SSEEvent, StateHint } from '../types/api';
-import { getToken } from './client';
+import { apiURL, getToken } from './client';
 
 export interface ChatHandlers {
   onEvent: (ev: SSEEvent) => void;
@@ -30,7 +30,7 @@ export function chatSSE(req: ChatRequest, handlers: ChatHandlers): AbortControll
   (async () => {
     let resp: Response;
     try {
-      resp = await fetch('/api/v1/chat/sse', {
+      resp = await fetch(apiURL('/api/v1/chat/sse'), {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getToken()}`,
@@ -59,23 +59,45 @@ export function chatSSE(req: ChatRequest, handlers: ChatHandlers): AbortControll
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
     let buf = '';
+    // 单帧超时看门狗: 收到任意 chunk 后, 若 HEARTBEAT_MS 内再无数据, 视为后端 hang。
+    // SSE 长连接首字节延迟正常(LLM 推理 ~3-10s), 故首帧前用 INITIAL_MS 容忍。
+    const HEARTBEAT_MS = 30_000;
+    const INITIAL_MS = 60_000;
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    const arm = (ms: number) => {
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = setTimeout(() => controller.abort(), ms);
+    };
+    const disarm = () => {
+      if (watchdog) {
+        clearTimeout(watchdog);
+        watchdog = null;
+      }
+    };
+    arm(INITIAL_MS);
     try {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        arm(HEARTBEAT_MS); // 每次 chunk 到达, 重置看门狗
         buf += decoder.decode(value, { stream: true });
         let idx;
         while ((idx = buf.indexOf('\n\n')) >= 0) {
           const frame = buf.slice(0, idx);
           buf = buf.slice(idx + 2);
           const ev = parseSSEFrame(frame);
-          if (ev) handlers.onEvent(ev);
+          if (ev) {
+            // 收到终态事件即便 disarm, 由下面 finally 兜底
+            handlers.onEvent(ev);
+          }
         }
       }
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
         handlers.onError?.(e as Error);
       }
+    } finally {
+      disarm();
     }
   })();
 
