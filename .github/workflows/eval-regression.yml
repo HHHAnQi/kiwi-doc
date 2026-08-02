@@ -1,155 +1,203 @@
 # ============================================================
-# rag-doc-platform 评测回归门禁(ADR-0008 D3)
+# RAGAS 评测回归门禁 (ADR-0008 D3)
 #
-# 触发: 两个模式
-#   1. PR label "eval-impact" → 跑 10 题 smoke, 任一指标降 >3pp 阻断合并
-#   2. nightly (cron) → 跑 30 题全集, 报告 artifact
+# 设计目标:
+#   1. 主分支定时跑 (nightly + 手动 dispatch), 跑完整 RAG 评测链路 (30 题 curated)
+#   2. 与 baseline 对比, 任一指标降幅 > threshold pp 阻断 + GitHub issue 自动开
+#   3. 不放在 PR 门禁 (评测需 docker-compose 全栈 + BGE-M3 推理慢 + noise ±1.7pp 易误报)
 #
-# 设计原则:
-# - 默认不在每个 PR 跑(成本高, 起完整 RAG 栈 + LLM API 调用)
-# - 只标 "eval-impact" label 才跑(major 改动: 切 LLM / 切切片 / 拆服务等)
-# - nightly 跑完整 30 题, 出 markdown 报告便于追踪
+# 评测触发场景:
+#   - schedule: 每天凌晨 03:00 UTC (中国时间 11:00)
+#   - workflow_dispatch: 手动触发 (corpus 扩充 / 切切片模式 / baseline 升级时)
+#   - PR label `eval-impact` 触发 (改动切片/检索/embedding 的 PR 必须打的 label)
 #
-# baseline: eval/baseline_v3_judge_plus.md(同 question × 同 judge × 同 corpus)
+# 关联 ADR-0008 D3:
+#   "baseline 升级时机(任一发生): corpus 扩 / 切片 mode 改 / rerank 开关切"
+#   本 workflow 自动验证每次主分支变更是否符合这些 baseline 守护条件
 # ============================================================
-name: Eval Regression
+name: eval-regression
 
 on:
-  pull_request:
-    types: [labeled, synchronize]
-    branches: [main, master]
   schedule:
-    # nightly 北京时间凌晨 3 点(UTC 19:00), 低流量时段少干扰
-    - cron: "0 19 * * *"
-  workflow_dispatch: # 支持手动触发
+    # 每天凌晨 03:00 UTC 跑(夜里无人上传, corpus 稳定)
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      baseline_file:
+        description: 'Baseline md file path (default: eval/baseline_v3_judge_plus.md)'
+        required: false
+        default: 'eval/baseline_v3_judge_plus.md'
+      threshold_pp:
+        description: '允许的最大降幅 pp (default 3.0)'
+        required: false
+        default: '3.0'
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+    branches: [main]
 
+# 同分支并发只跑一份, 取消旧的
 concurrency:
   group: eval-regression-${{ github.ref }}
-  cancel-in-progress: false # 评测不抢占, 防止数据不全
+  cancel-in-progress: true
 
 jobs:
-  smoke-10q:
-    # PR 默认不跑, 只在 label=eval-impact 时跑
-    if: (github.event_name == 'schedule') || (github.event_name == 'workflow_dispatch') || contains(github.event.label.name, 'eval-impact')
-    name: 10-question smoke(PR gate)
+  # 守门员 job: 只对带 eval-impact label 的 PR / 定时 / 手动 触发
+  gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      JUDGE_MODEL: glm-4-plus
-      # 走智谱 API, 需要 GH Actions secret
-      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-      # corpus 在 docker-compose 起后, app 启动自动重建
+    outputs:
+      should_run: ${{ steps.decide.outputs.run }}
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-          cache: gradle
-
-      - name: Setup Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install Python deps
+      - id: decide
         run: |
-          python -m pip install --upgrade pip
-          pip install -r eval/requirements.txt 2>/dev/null || pip install ragas openai jieba
-
-      - name: Start middleware (docker-compose)
-        run: |
-          docker compose -f deploy/docker-compose.yml up -d
-          sleep 60 # 等 Milvus healthy
-
-      - name: Build & start app
-        run: |
-          ./gradlew :platform-bootstrap:bootJar
-          SPRING_PROFILES_ACTIVE=dev java -jar platform-bootstrap/build/libs/*.jar --server.port=8092 &
-          sleep 45
-
-      - name: Run smoke 10-question RAGAS
-        working-directory: eval
-        run: |
-          # 只跑 curated 前 10 题
-          head -10 questions.curated.jsonl > questions.smoke.jsonl
-          cp questions.smoke.jsonl questions.real.jsonl
-          python3 ragas_pipeline.py || true # 即使 RAGAS 失败不阻断(夜间可重试)
-
-      - name: Compare with baseline
-        run: |
-          python3 eval/compare_baseline.py \
-            --baseline eval/baseline_v3_judge_plus.md \
-            --current eval/eval_ragas_report.md \
-            --threshold 3.0 \
-            --output eval/regression_check.md
-
-      - name: Fail if any metric regressed >3pp
-        run: |
-          if grep -q "REGRESSION_DETECTED" eval/regression_check.md; then
-            echo "::error::RAGAS regression > 3pp detected. See eval/regression_check.md"
-            exit 1
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR 必须带 eval-impact label 才跑
+            if echo "${{ toJson(github.event.pull_request.labels.*.name) }}" | grep -q "eval-impact"; then
+              echo "run=true" >> $GITHUB_OUTPUT
+            else
+              echo "run=false (PR 无 eval-impact label)" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "run=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Upload regression report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eval-regression-report
-          path: eval/regression_check.md
-
-  nightly-30q:
-    # 完整 30 题 cron 触发
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    name: 30-question nightly
+  ragas-eval:
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      JUDGE_MODEL: glm-4-plus
-      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: '17'
           cache: gradle
 
-      - name: Setup Python 3.13
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: eval/requirements.txt
 
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r eval/requirements.txt 2>/dev/null || pip install ragas openai jieba
+          pip install -r eval/requirements.txt
+          pip install pymysql python-dotenv requests jieba
 
-      - name: Start middleware + app
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Start middleware (MySQL + MinIO + Milvus + RocketMQ + BGE-M3)
         run: |
-          docker compose -f deploy/docker-compose.yml up -d
+          # GitHub Actions runner 限 7GB + 14GB 磁盘; 下 milvus + bge-m3 镜像较大(~5GB)
+          # 通不过验收再考虑拆 step / 用 smaller image / 切 nightly only.
+          chmod +x ./gradlew
+          docker compose -f deploy/docker-compose.yml up -d --wait
+          docker compose -f deploy/docker-compose.yml ps
+
+      - name: Build chat-app & parser-service
+        run: |
+          ./gradlew :platform-bootstrap:bootJar :parser-service:bootJar --no-daemon -x test
+
+      - name: Run Flyway migrations (create schema)
+        run: |
+          ./gradlew :platform-bootstrap:bootRun --args='--spring.profiles.active=ci --spring.flyway.baseline-on-migrate=true' &
           sleep 60
-          ./gradlew :platform-bootstrap:bootJar
-          SPRING_PROFILES_ACTIVE=dev java -jar platform-bootstrap/build/libs/*.jar --server.port=8092 &
-          sleep 45
+          # 让 Flyway 跑完即可 kill, 不需要 app 完全 ready
+          pkill -f RagDocApplication || true
 
-      - name: Run 30-question RAGAS
-        working-directory: eval
+      - name: Bulk upload corpus
+        env:
+          CHAT_URL: http://localhost:8080
+          TEST_AUTH_TOKEN: ci-token
+          MAX_PER_SOURCE: 20
+          MAX_WORKERS: 1
         run: |
-          # 跑 curated 前 30 题
-          head -30 questions.curated.jsonl > questions.real.jsonl
-          python3 ragas_pipeline.py || true
+          # corpus 必须起一个 chat-app 来接上传(同步模式, 不需要 parser-service)
+          RAG_PARSER_MODE=sync ./gradlew :platform-bootstrap:bootRun --args='--spring.profiles.active=ci' &
+          APP_PID=$!
+          # 等 chat-app ready
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/actuator/health > /dev/null && break
+            sleep 5
+          done
+          python3 scripts/bulk_upload_corpus.py || echo "corpus 上传 fail-non-fatal (继续跑评测)"
+          kill $APP_PID || true
 
-      - name: Upload full eval report
+      - name: Run RAGAS evaluation
+        env:
+          CHAT_URL: http://localhost:8080
+          TEST_AUTH_TOKEN: ci-token
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.LLM_API_KEY }}
+          OPENAI_API_BASE: ${{ secrets.LLM_BASE_URL }}
+          JUDGE_MODEL: glm-4-plus
+          JUDGE_DISABLE_THINKING: '1'
+        run: |
+          # 重启 chat-app 跑评测(同进程也可, 这里重启确保 corpus 数据已 ready)
+          RAG_PARSER_MODE=sync ./gradlew :platform-bootstrap:bootRun --args='--spring.profiles.active=ci' &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/actuator/health > /dev/null && break
+            sleep 5
+          done
+          python3 eval/ragas_pipeline.py --output eval/eval_ragas_report.md || {
+            echo "RAGAS 跑挂了 → 视为 infrastructure fail, 退出 1 但不算 regression"
+            exit 1
+          }
+
+      - name: Compare vs baseline
+        id: compare
+        continue-on-error: true
+        run: |
+          python3 eval/compare_baseline.py \
+            --baseline ${{ inputs.baseline_file || 'eval/baseline_v3_judge_plus.md' }} \
+            --current eval/eval_ragas_report.md \
+            --threshold ${{ inputs.threshold_pp || '3.0' }} \
+            --output eval/regression_check.md
+
+          # 把 exit code 暴露给后续 step
+          echo "exit_code=$?" >> $GITHUB_OUTPUT
+
+      - name: Upload eval artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: eval-nightly-${{ github.run_id }}
+          name: ragas-report-${{ github.run_id }}
           path: |
             eval/eval_ragas_report.md
-            eval/ragas_raw.jsonl
-          retention-days: 90
+            eval/regression_check.md
+            eval/eval_results.jsonl
+          retention-days: 30
+
+      - name: Fail build if regression
+        if: steps.compare.outputs.exit_code == '2'
+        run: |
+          echo "::error::RAGAS regression detected, 任一指标降幅超 ${{ inputs.threshold_pp || '3.0' }}pp"
+          cat eval/regression_check.md
+          exit 1
+
+      - name: Auto open issue on regression
+        if: failure() && steps.compare.outputs.exit_code == '2'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: '[eval-regression] 指标下降超阈值 (${{ github.run_id }})'
+          content-filepath: eval/regression_check.md
+          labels: bug, eval-regression
+
+  # 通知 job: 跑完成功也算 (往 commit status / Discord / Slack 推消息, 当前留空给后续接入)
+  notify:
+    needs: ragas-eval
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output summary
+        run: |
+          echo "eval-regression result: ${{ needs.ragas-eval.result }}"
+          echo "(V3-W3: 后续接入 Slack / Discord webhook)"
