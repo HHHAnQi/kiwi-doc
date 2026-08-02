@@ -5,6 +5,7 @@ import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
+import com.xxx.ragdoc.application.chat.port.TraceObserver;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.common.exception.ErrorCode;
@@ -18,6 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,10 +53,14 @@ public class ChatService {
     // V2-B 新增
     private final RetrieveService retrieveService;
     private final ChatClient chatClient;
+    // V3-W3 Langfuse trace 接入(DoD-5); NoOpTraceObserver 兜底零开销
+    private final TraceObserver traceObserver;
 
     @Transactional
     public ChatResult chat(ChatCommand cmd, TraceId traceId) {
         log.info("chat.start trace_id={}, query_len={}", traceId.value(), cmd.query().length());
+        String lfTrace =
+                traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query()));
 
         // 1. 限定 doc_id 时校验存在 + READY(4xx 客户端错误走异常)
         if (cmd.docId() != null) {
@@ -81,13 +87,40 @@ public class ChatService {
         if (documentRepository.countByStatus(DocumentStatus.READY) == 0) {
             hint = StateHint.EMPTY_KB;
             answer = chatMessages.getEmptyKbMessage();
+            traceObserver.observe(
+                    lfTrace,
+                    TraceObserver.ObservationType.DECISION,
+                    "decision.empty_kb",
+                    null,
+                    null,
+                    0,
+                    null);
         } else {
             // 3. 真实召回(query → embed → Milvus dense ANN → MySQL 回查)
+            long t0 = System.currentTimeMillis();
             RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
+            long retrieveMs = System.currentTimeMillis() - t0;
+            traceObserver.observe(
+                    lfTrace,
+                    TraceObserver.ObservationType.RETRIEVE,
+                    "retrieve",
+                    cmd.query(),
+                    Map.of("hits", retrieve.items().size()),
+                    retrieveMs,
+                    null);
+
             if (retrieve.items().isEmpty()) {
                 // 3a. NO_RECALL
                 hint = StateHint.NO_RECALL;
                 answer = chatMessages.getNoRecallMessage();
+                traceObserver.observe(
+                        lfTrace,
+                        TraceObserver.ObservationType.DECISION,
+                        "decision.no_recall",
+                        null,
+                        null,
+                        retrieveMs,
+                        null);
             } else {
                 // 3b. 有召回, 进 LLM; citations 转 ChatResult.Citation
                 citations =
@@ -109,27 +142,71 @@ public class ChatService {
                     context.add(c.llmContext());
                 }
                 String llmAnswer;
+                long t1 = System.currentTimeMillis();
                 try {
                     llmAnswer = chatClient.chat(cmd.query(), context);
                 } catch (Exception e) {
+                    long llmMs = System.currentTimeMillis() - t1;
                     // 3c. LLM_DEGRADED — 召回成功但 LLM 失败, 走降级
                     log.warn(
                             "chat.llm_failed trace_id={}, err={}", traceId.value(), e.getMessage());
+                    traceObserver.observe(
+                            lfTrace,
+                            TraceObserver.ObservationType.LLM,
+                            "llm.dashscope",
+                            cmd.query(),
+                            Map.of("error", e.getClass().getSimpleName()),
+                            llmMs,
+                            null);
+                    traceObserver.observe(
+                            lfTrace,
+                            TraceObserver.ObservationType.DECISION,
+                            "decision.llm_degraded",
+                            null,
+                            null,
+                            llmMs,
+                            null);
                     hint = StateHint.LLM_DEGRADED;
                     answer = chatMessages.getLlmDegradedMessage() + traceId.value();
                     // 注意: LLM 降级时 citations 仍返回, 用户可看检索到的片段
+                    traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
                     return finish(cmd, traceId, hint, answer, citations);
                 }
+                long llmMs = System.currentTimeMillis() - t1;
+                traceObserver.observe(
+                        lfTrace,
+                        TraceObserver.ObservationType.LLM,
+                        "llm.dashscope",
+                        cmd.query(),
+                        Map.of("answer_len", llmAnswer == null ? 0 : llmAnswer.length()),
+                        llmMs,
+                        null);
                 if (llmAnswer == null || llmAnswer.isBlank()) {
                     hint = StateHint.LLM_DEGRADED;
                     answer = chatMessages.getLlmDegradedMessage() + traceId.value();
+                    traceObserver.observe(
+                            lfTrace,
+                            TraceObserver.ObservationType.DECISION,
+                            "decision.llm_blank",
+                            null,
+                            null,
+                            0,
+                            null);
                 } else {
                     hint = StateHint.OK;
                     answer = llmAnswer;
+                    traceObserver.observe(
+                            lfTrace,
+                            TraceObserver.ObservationType.DECISION,
+                            "decision.ok",
+                            null,
+                            null,
+                            0,
+                            null);
                 }
             }
         }
-
+        traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
         return finish(cmd, traceId, hint, answer, citations);
     }
 

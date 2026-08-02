@@ -87,6 +87,18 @@ rocketmq:
     group: ${ROCKETMQ_PRODUCER_GROUP:parse-task-producer-group}
     send-message-timeout: 5000
 
+# V3-W3 Langfuse trace 接入(DoD-5)。enabled=false 时上报 bean 不装配, ChatService 走 no-op,
+# 不起 Langfuse 也能跑(docker-compose 不含 Langfuse, 起本地 langfuse/langfuse-compose 即可)。
+langfuse:
+  enabled: ${LANGFUSE_ENABLED:false}
+  base-url: ${LANGFUSE_BASE_URL:http://localhost:3000}
+  public-key: ${LANGFUSE_PUBLIC_KEY:}
+  secret-key: ${LANGFUSE_SECRET_KEY:}
+  # 上报 batch 大小 + flush interval(ms)。Langfuse ingestion 接受 batch event 一次 ≤100 条。
+  flush-interval-ms: 5000
+  # 上报异步线程池大小(async, 不阻塞 chat 主路径)
+  pool-size: 2
+
 logging:
   level:
     com.xxx.ragdoc: DEBUG

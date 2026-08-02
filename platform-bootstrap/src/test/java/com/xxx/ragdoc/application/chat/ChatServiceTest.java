@@ -9,6 +9,7 @@ import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
+import com.xxx.ragdoc.application.chat.port.TraceObserver;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.common.exception.ErrorCode;
@@ -50,6 +51,8 @@ class ChatServiceTest {
     // V2-B 新增
     @Mock private RetrieveService retrieveService;
     @Mock private ChatClient chatClient;
+    // V3-W3 Langfuse trace 接入(DoD-5); mock 让所有 trace 调用成 no-op
+    @Mock private TraceObserver traceObserver;
 
     @InjectMocks private ChatService chatService;
 
@@ -62,6 +65,8 @@ class ChatServiceTest {
         when(chatMessages.getLlmDegradedMessage()).thenReturn("LLM_FAIL:");
         // 默认召回为空, NO_RECALL 分支复用
         when(retrieveService.retrieve(any())).thenReturn(RetrieveService.RetrieveResult.empty());
+        // traceObserver.startTrace 默认返回原 traceId 让内部链路对齐
+        lenient().when(traceObserver.startTrace(any(), any(), any())).thenReturn(TID.value());
     }
 
     @Nested
