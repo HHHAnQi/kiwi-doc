@@ -29,6 +29,8 @@ import org.springframework.stereotype.Component;
  * </ol>
  *
  * <p>保守保留规则: **不删代码块内容、不删配置/参数名、不删版本号**。这些是真信息。
+ *
+ * <p>V3: 下沉到 platform-common 共享层(parser-service 复用同一清洗规则)。
  */
 @Component
 public class TextCleaner {

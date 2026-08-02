@@ -1,7 +1,10 @@
-package com.xxx.ragdoc.parser.domain;
+package com.xxx.ragdoc.domain.document;
 
 /**
- * parser-service 任务状态机(对应 parse_tasks.status ENUM)。
+ * parse_tasks 状态机(对应 parse_tasks.status ENUM)。
+ *
+ * <p>共享于 platform-common: chat-app(DocumentUploadService 创建 PENDING) 与 parser-service (worker 状态迁移)
+ * 共用同一枚举。
  *
  * <p>迁移规则(spec §3.3):
  *
@@ -13,7 +16,7 @@ package com.xxx.ragdoc.parser.domain;
  *   <li>{@link #CANCELLED}: retry_count 达 max_retries, DLQ 终态
  * </ul>
  *
- * <p>迁移 invariant(代码层守护): 见 {@code ParseTaskService}.
+ * <p>迁移 invariant(代码层守护): 见 parser-service 的 {@code ParseTaskService}.
  */
 public enum ParseTaskStatus {
     PENDING,

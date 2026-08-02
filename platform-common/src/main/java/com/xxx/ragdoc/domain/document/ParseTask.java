@@ -1,10 +1,13 @@
-package com.xxx.ragdoc.parser.domain;
+package com.xxx.ragdoc.domain.document;
 
 import java.time.Instant;
 import java.util.List;
 
 /**
  * parser-service 任务聚合根(对应 parse_tasks 表一行)。
+ *
+ * <p>共享于 platform-common: chat-app(DocumentUploadService INSERT) 与 parser-service(worker 消费)
+ * 共用同一类型。
  *
  * <p>不可变 record(创建后字段不可改, 状态迁移通过 ParseTaskService 写新对象回 repo)。
  *

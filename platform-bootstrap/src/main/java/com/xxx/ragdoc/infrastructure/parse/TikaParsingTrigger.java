@@ -2,8 +2,8 @@ package com.xxx.ragdoc.infrastructure.parse;
 
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
-import com.xxx.ragdoc.application.document.ChunkingProperties;
 import com.xxx.ragdoc.application.document.ParsingTrigger;
+import com.xxx.ragdoc.application.document.chunking.ChunkingProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
@@ -94,9 +94,7 @@ public class TikaParsingTrigger implements ParsingTrigger {
 
             // 4. 切片(P3-A: feature flag flat|parent_child, 默认 flat 兼容老路径)
             boolean useParentChild =
-                    chunkingProps.getMode()
-                            == com.xxx.ragdoc.application.document.ChunkingProperties.Mode
-                                    .PARENT_CHILD;
+                    chunkingProps.getMode() == ChunkingProperties.Mode.PARENT_CHILD;
 
             List<Chunk> savedChunks;
 

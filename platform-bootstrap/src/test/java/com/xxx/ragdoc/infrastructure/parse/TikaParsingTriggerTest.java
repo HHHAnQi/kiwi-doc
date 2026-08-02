@@ -76,7 +76,7 @@ class TikaParsingTriggerTest {
                         chunkRepository,
                         vectorStore,
                         // P3-A feature flag 默认 flat(测试沿用 V2 原路径)
-                        new com.xxx.ragdoc.application.document.ChunkingProperties());
+                        new com.xxx.ragdoc.application.document.chunking.ChunkingProperties());
     }
 
     /** 构造一个 UPLOADED 状态的 Document(saved 版本, 已有 id)。 */

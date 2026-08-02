@@ -1,8 +1,4 @@
-package com.xxx.ragdoc.application.document;
-
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+package com.xxx.ragdoc.application.document.chunking;
 
 /**
  * 切片模式配置(P3-A Parent-Child feature flag)。
@@ -17,10 +13,12 @@ import org.springframework.stereotype.Component;
  * </ul>
  *
  * <p>切换通过环境变量 {@code RAG_CHUNKING_MODE=parent_child} 或 application.yml。
+ *
+ * <p>V3: 下沉到 platform-common 共享层(parser-service 同样需要切片配置)。
  */
-@Data
-@Component
-@ConfigurationProperties(prefix = "rag.chunking")
+@lombok.Data
+@org.springframework.stereotype.Component
+@org.springframework.boot.context.properties.ConfigurationProperties(prefix = "rag.chunking")
 public class ChunkingProperties {
 
     /** 切片模式: flat(默认) / parent_child。 */
