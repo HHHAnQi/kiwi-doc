@@ -1,8 +1,10 @@
 package com.xxx.ragdoc.interfaces.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxx.ragdoc.application.chat.ChatService;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
+import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import com.xxx.ragdoc.interfaces.rest.dto.ChatRequest;
 import com.xxx.ragdoc.interfaces.rest.dto.ChatResponse;
@@ -13,10 +15,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * chat REST 接口(V1 stub 版本)。
@@ -40,11 +44,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatController {
 
     private final ChatService chatService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping
     @Operation(
             summary = "同步问答(V1 stub)",
-            description = "V1 仅返回 EMPTY_KB / NO_RECALL 兜底; V2 接入真实召回与 LLM 后支持 OK / LLM_DEGRADED")
+            description =
+                    "V1 仅返回 EMPTY_KB / NO_RECALL 兜底; V2 接入真实召回与 LLM "
+                            + "后支持 OK / LLM_DEGRADED; V3-W1 加 /chat/sse 流式版本")
     public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
         String traceId = MDC.get(TraceIdFilter.MDC_TRACE_KEY);
         TraceId tid = new TraceId(traceId);
@@ -60,5 +67,94 @@ public class ChatController {
         ChatResult result = chatService.chat(cmd, tid);
 
         return ChatResponse.from(result);
+    }
+
+    /**
+     * V3 W1: SSE 流式问答。
+     *
+     * <p>响应 Content-Type: text/event-stream, 每条事件 3 个字段:
+     *
+     * <pre>
+     * event: citations
+     * data: {"citations":[{"chunkId":123,...}]}
+     *
+     * event: delta
+     * data: {"delta":"Sentinel"}
+     *
+     * event: delta
+     * data: {"delta":" 用 SphU.entry 限流"}
+     *
+     * event: done
+     * data: {"traceId":"abc","stateHint":"OK"}
+     * </pre>
+     *
+     * <p>体感收益: 首 token &lt; 1.5s(对齐 ADR-0004 L3 SLA) — 用户不再等 8-15s 看全文才出。
+     *
+     * <p>错误: LLM 失败时 ChatService 转发{@link ChatStreamEvent.DoneEvent} state=LLM_DEGRADED, 而不是抛异常,
+     * 让前端统一在 onComplete 收尾。
+     */
+    @PostMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(
+            summary = "流式 SSE 问答(V3 W1 新增)",
+            description =
+                    "Server-Sent Events 协议, 先发 citations → 多个 delta token → done。"
+                            + " 首 token <1.5s 让用户立刻看到答案增量。")
+    public SseEmitter chatStream(@Valid @RequestBody ChatRequest request) {
+        String traceId = MDC.get(TraceIdFilter.MDC_TRACE_KEY);
+        TraceId tid = new TraceId(traceId);
+
+        // 5 分钟 timeout(对应 LLM_TIMEOUT_MS 上限 + buffer)
+        SseEmitter emitter = new SseEmitter(300_000L);
+
+        ChatCommand cmd =
+                new ChatCommand(
+                        request.query(),
+                        request.docId(),
+                        request.topK(),
+                        request.source(),
+                        request.version(),
+                        request.language());
+
+        chatService
+                .chatStream(cmd, tid)
+                .subscribe(
+                        event -> {
+                            try {
+                                emitter.send(
+                                        SseEmitter.event()
+                                                .name(event.type())
+                                                .data(objectMapper.writeValueAsString(event)));
+                            } catch (Exception e) {
+                                log.warn(
+                                        "chat.sse_send_failed trace_id={}, event_type={}, err={}",
+                                        tid.value(),
+                                        event.type(),
+                                        e.getMessage());
+                            }
+                        },
+                        error -> {
+                            // 兜底: subscribe 异常(理论上 ChatService 已 onErrorResume 处理)
+                            log.error("chat.sse_unhandled_error trace_id={}", tid.value(), error);
+                            try {
+                                emitter.send(
+                                        SseEmitter.event()
+                                                .name("error")
+                                                .data(
+                                                        "{\"traceId\":\""
+                                                                + tid.value()
+                                                                + "\",\"message\":\""
+                                                                + (error.getMessage() == null
+                                                                        ? "unknown"
+                                                                        : error.getMessage())
+                                                                + "\"}"));
+                            } catch (Exception ignored) {
+                                // ignore
+                            } finally {
+                                emitter.completeWithError(error);
+                            }
+                        },
+                        emitter::complete);
+
+        return emitter;
     }
 }

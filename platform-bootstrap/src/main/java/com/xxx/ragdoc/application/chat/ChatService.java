@@ -2,6 +2,7 @@ package com.xxx.ragdoc.application.chat;
 
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
+import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
@@ -130,6 +131,144 @@ public class ChatService {
         }
 
         return finish(cmd, traceId, hint, answer, citations);
+    }
+
+    /**
+     * V3 W1: 流式 chat。返回 Flux&lt;{@link ChatStreamEvent}&gt; 给 ChatController 的 SSE endpoint。
+     *
+     * <p>流程:
+     *
+     * <ol>
+     *   <li>同步段复用 {@link #chat} 的 EMPTY_KB / NO_RECALL 判断(docId 校验 + countByStatus + retrieve)
+     *   <li>有召回 → 先异步写 chat_traces 短事务(保 feedback 软引用根基)
+     *   <li>Flux 发 CitationsEvent(让前端立刻渲染引用卡片)
+     *   <li>mergeWith chatClient.chatStream(...) 把每个增量 token 转发为 DeltaEvent
+     *   <li>LLM 完整结束后发 DoneEvent(state=OK), 反之 ErrorEvent(state=LLM_DEGRADED)
+     * </ol>
+     *
+     * <p>事务边界: chat_traces 写入用 REQUIRES_NEW 短事务(不持有 Reactor 流), 与 {@link #chat} 设计 一致(都避免长事务)。
+     *
+     * <p>降级状态: EMPTY_KB / NO_RECALL 同步路径直接发 DoneEvent(不走 LLM)。
+     */
+    public reactor.core.publisher.Flux<ChatStreamEvent> chatStream(
+            ChatCommand cmd, TraceId traceId) {
+        log.info(
+                "chat.stream_start trace_id={}, query_len={}",
+                traceId.value(),
+                cmd.query().length());
+
+        // 1. docId 校验(同 chat 复用 4xx 路径)
+        if (cmd.docId() != null) {
+            Document doc =
+                    documentRepository
+                            .findById(cmd.docId())
+                            .orElseThrow(
+                                    () ->
+                                            new NotFoundException(
+                                                    ErrorCode.DOC_NOT_FOUND,
+                                                    "文档不存在: " + cmd.docId()));
+            if (doc.status() != DocumentStatus.READY) {
+                throw new DomainException(
+                        ErrorCode.DOC_NOT_READY,
+                        "文档 " + cmd.docId() + " 状态=" + doc.status() + ", 暂不能问答");
+            }
+        }
+
+        // 2. EMPTY_KB 同步降级: Flux.just(DoneEvent state=EMPTY_KB)
+        if (documentRepository.countByStatus(DocumentStatus.READY) == 0) {
+            return reactor.core.publisher.Flux.just(
+                    new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.EMPTY_KB.name()));
+        }
+
+        // 3. 召回(同步, retrieve 本身快, p99 < 1s ADR-0004 L1 SLA)
+        RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
+        if (retrieve.items().isEmpty()) {
+            // NO_RECALL 同步降级
+            return reactor.core.publisher.Flux.just(
+                    new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.NO_RECALL.name()));
+        }
+
+        // 4. 有召回: 拼 citations + context
+        List<ChatResult.Citation> citations =
+                retrieve.items().stream()
+                        .map(
+                                c ->
+                                        new ChatResult.Citation(
+                                                c.chunkId(),
+                                                c.docId(),
+                                                c.page(),
+                                                c.snippet(),
+                                                c.llmContext(),
+                                                c.sectionPath()))
+                        .toList();
+        List<String> context =
+                retrieve.items().stream().map(RetrieveService.Citation::llmContext).toList();
+
+        // 5. 异步调 LLM 流式; CitationsEvent 先发 → mergeWith LLM delta flux → DoneEvent
+        // 注意: chat_traces 不在此处写(写要等 LLM 完整答案长度才知道; 在 chatStream 完成时
+        // 由 .doFinally 异步落库, 不阻塞前端 token 流)
+        ChatStreamEvent.CitationsEvent head = new ChatStreamEvent.CitationsEvent(citations);
+
+        // 答案累积 StringBuilder(线程安全考虑: Reactor 单线程消费, 无 race)
+        StringBuilder acc = new StringBuilder(1024);
+
+        reactor.core.publisher.Flux<ChatStreamEvent> tokens =
+                chatClient
+                        .chatStream(cmd.query(), context)
+                        .map(
+                                delta -> {
+                                    acc.append(delta);
+                                    return (ChatStreamEvent) new ChatStreamEvent.DeltaEvent(delta);
+                                })
+                        .onErrorResume(
+                                e -> {
+                                    log.warn(
+                                            "chat.stream_llm_failed trace_id={}, err={}",
+                                            traceId.value(),
+                                            e.getMessage());
+                                    // LLM 失败时落降级 trace + 发 DoneEvent(LLM_DEGRADED)
+                                    persistTrace(
+                                            cmd, traceId, acc.toString(), StateHint.LLM_DEGRADED);
+                                    return reactor.core.publisher.Flux.just(
+                                            new ChatStreamEvent.DoneEvent(
+                                                    traceId.value(),
+                                                    StateHint.LLM_DEGRADED.name()));
+                                })
+                        .concatWith(
+                                reactor.core.publisher.Flux.defer(
+                                        () -> {
+                                            // 流正常结束 → 落 trace + 发 DoneEvent
+                                            persistTrace(
+                                                    cmd, traceId, acc.toString(), StateHint.OK);
+                                            return reactor.core.publisher.Flux.just(
+                                                    new ChatStreamEvent.DoneEvent(
+                                                            traceId.value(), StateHint.OK.name()));
+                                        }));
+
+        // 异常路径也要落 trace(LLM_DEGRADED 时 acc 包含部分答案; onErrorResume 已转 DoneEvent)
+        return reactor.core.publisher.Flux.<ChatStreamEvent>just(head).concatWith(tokens);
+    }
+
+    /** 异步落 chat_traces: 流结束/失败时调, 用 REQUIRES_NEW 短事务同 {@link #finish} 设计。 */
+    private void persistTrace(ChatCommand cmd, TraceId traceId, String answer, StateHint hint) {
+        try {
+            ChatTrace trace =
+                    new ChatTrace(
+                            traceId,
+                            sha256(cmd.query()),
+                            cmd.query().length(),
+                            answer.length(),
+                            hint,
+                            null);
+            chatTracesRepository.save(trace);
+            log.info("chat.stream_end trace_id={}, state_hint={}", traceId.value(), hint);
+        } catch (Exception e) {
+            // 落库失败绝不阻塞前端流; 只 log
+            log.warn(
+                    "chat.stream_persist_failed trace_id={}, err={}",
+                    traceId.value(),
+                    e.getMessage());
+        }
     }
 
     /** 共用收尾: 写 chat_traces + 拼 ChatResult.citations, 同事务保证 feedback 软引用合法性根基。 */
