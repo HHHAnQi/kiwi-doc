@@ -14,6 +14,7 @@
 | [0006](./adr-0006-v3-trace-langfuse.md) | V3 trace 选型：Langfuse over Jaeger（RAG 场景演示价值更高） | Accepted |
 | [0007](./adr-0007-v3-k3s-on-autodl.md) | V3 部署：k3s on Autodl GPU（替代 SSH 隧道单机方案） | Accepted |
 | [0008](./adr-0008-evaluation-harness-lockdown.md) | 评价体系锁定：curated question + judge LLM lock + CI 门禁 | Accepted |
+| [0009](./adr-0009-parser-service-decisions.md) | parser-service 拆分关键决策：RocketMQ + chunk-level 续点 + DLQ broker-native | Accepted |
 
 > ADR 只记录"重要取舍"，不记录日常细节。新增决策按编号追加；废止决策不删除，标记为 Deprecated 或 Superceded。
 
