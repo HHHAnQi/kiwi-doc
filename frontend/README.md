@@ -54,6 +54,17 @@ npm run preview # 本地预览生产构建（不再走 dev proxy，需另行配�
 
 生产部署时，建议用 nginx 把 `/api/*` 反代到 chat-app，静态资源指向 `dist/`。
 
+## 测试
+
+```bash
+npm run test        # vitest 单次跑 (CI 用)
+npm run test:watch  # 监听模式 (开发时用)
+```
+
+首批单测覆盖纯逻辑：SSE 帧解析（4 种事件 × 双命名兼容 + 畸形帧兜底）、formatBytes
+（GB 上限 + 边界值）、formatRelativeTime、uid 唯一性。后续新增 pure-logic 应同步加
+`.test.ts`，CI 会强守。
+
 ## 与后端的接口契约
 
 | 方法 | 路径 | 用途 |

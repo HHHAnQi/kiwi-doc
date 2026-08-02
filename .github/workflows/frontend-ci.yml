@@ -1,10 +1,10 @@
 # ============================================================
 # frontend CI (V3-W3 加)
 #
-# 目标: 守住前端可构建, 不让构建失败/类型错误的 PR 合进 main。
-# 范围: pnpm 不可用就走 npm ci (lockfile 已提交), 只跑 typecheck + vite build。
-# 不跑单测: 前端目前无单测, 后续 vitest 用例接入后再扩展。
-# 时间预算: ~30s (远快于 Java CI 的 ~3min), 走独立 workflow 与 Java 并行。
+# 目标: 守住前端可构建 + 单元测试绿, 不让构建失败/类型错误/逻辑回归的 PR 合进 main。
+# 范围: pnpm 不可用就走 npm ci (lockfile 已提交), 跑 typecheck + vite build + vitest。
+# 不跑 e2e/视觉测试: 当前阶段成本/收益不划算; 真实链路验证靠手动 + headless DOM。
+# 时间预算: ~40s (含 vitest 启动), 远快于 Java CI 的 ~3min, 走独立 workflow 与 Java 并行。
 # ============================================================
 name: Frontend CI
 
@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   build:
-    name: TypeScript + Vite Build
+    name: Type-check + Test + Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
     defaults:
@@ -46,7 +46,10 @@ jobs:
       - name: Install deps (npm ci)
         run: npm ci --no-audit --no-fund
 
+      # vitest run 退出码非 0 就让 CI fail; 现有覆盖 SSE 帧解析 + formatBytes 等 pure logic
+      - name: Unit tests (vitest)
+        run: npm run test
+
       # tsc -b 是 build 脚本里的第一步, 这一步全过就证明类型契约正确。
-      # 单独 lint 步骤留位置给后续 oxlint-tsgolint 接入, 暂保留 runlint=false。
       - name: Type check + Build (tsc -b && vite build)
         run: npm run build

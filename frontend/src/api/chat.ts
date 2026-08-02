@@ -104,7 +104,8 @@ export function chatSSE(req: ChatRequest, handlers: ChatHandlers): AbortControll
   return controller;
 }
 
-function parseSSEFrame(frame: string): SSEEvent | null {
+// 导出供单元测试直接调; 运行时仍是 chatSSE 内部消费, 不破坏封装。
+export function parseSSEFrame(frame: string): SSEEvent | null {
   let eventName = 'message';
   const dataLines: string[] = [];
   for (const line of frame.split('\n')) {
