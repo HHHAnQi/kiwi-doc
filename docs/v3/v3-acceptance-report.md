@@ -2,8 +2,8 @@
 
 **报告起草日**: 2026-08-02
 **对应 spec**: docs/v3/parser-service-spec.md §9 / ADR-0010
-**当前 git HEAD**: f4e69ff (V3-W1 收工 README)
-**报告状态**: 🟡 骨架, 数字占位待 P0 微评估填充后转 Accepted
+**当前 git HEAD**: 2e259cd (V3-W3: CI 评测门禁 + Langfuse 同步路径)
+**报告状态**: 🟡 工程主体落地, 数字占位待 P0 微评估填入后转 Accepted
 
 ---
 
@@ -38,7 +38,7 @@
 | DoD-2 重试续解析 + DLQ | 🟡 ParseTaskService.markFailed(retry_count++) + RocketMQ redelivery → `%DLQ%` topic | unit (ParseTaskServiceTest 11 cases) | 🟡 端到端集成测试待补(spec §7.2 poison message 场景) |
 | DoD-3 p95 < 2s | ❌ | — | ❌ Locust 100 并发压测推 V4 (0 用户场景演不出 HP) |
 | DoD-4 中断续点 | ✅ ParseWorker.checkpointProgress 每 10 chunks flush | `scripts/v3-kill-9-drill.sh` | 🟡 同 DoD-1, 实跑 PASS log 待 mac 窗口 |
-| DoD-5 trace(Langfuse 接入) | ❌ chat_traces 表已有, Langfuse SDK 待接 | — | 🟡 V3-W3 下一步 |
+| DoD-5 trace(Langfuse 接入) | 🟡 **同步 chat 路径已接入**(commit `1fde67a`), chatStream Flux 路径 V3-W3 末 | 5 个决策点(RETRIEVE/LLM/DECISION 系列)上报 | 🟡 SSE 路径接入推 V3-W3 末 |
 | DoD-6 灰度降级演练(sync↔async 切换) | ✅ @ConditionalOnProperty(rag.parser.mode) + DocumentUploadService 零改动端口切换 | sync 模式回归测试 pass | 🟡 实跑切换演练待加到 drill 脚本 |
 
 ---
@@ -239,18 +239,22 @@ T6: 跑完 → markParsed → doc.markReady
 ## 8. 当前 V3 完成度(V3 整体进度, 实时更新)
 
 ```
-V3 完成度: ≈ 60%(ADR-0010 主线 7 项里 4 项完成 + 部分完成)
+V3 完成度: ≈ 70%(ADR-0010 主线 7 项里 4 项完成 + 部分完成)
 
 ✅ 完成(代码 + push):
   W0.1  corpus 100 docs
   W0.2  baseline 真数字(但过程性, 待 P0 重测)
   W1    SSE 流式 chat
   W1-2  parser-service 拆 + DoD-1/2/4 代码
+  W3.1  Langfuse 同步路径接入(commit 1fde67a)
+  W3.2  ADR-0008 RAGAS CI 门禁(commit 2e259cd)
+  W4    本报告(骨架完成)
 
 🟡 部分完成:
-  W3.1  Langfuse SDK 接入(0 进度, 进行下一步)
-  W3.2  RAGAS CI 门禁(0 进度)
-  W4    本报告(骨架完成)
+  W3.1  Langfuse SSE 路径(chatStream)(单 commit)
+  DoD-1 实跑 PASS log
+  DoD-4 实跑 PASS log
+  P0    真值评估(corpus 扩 + 重 curate + rerank ON)
 
 ❌ 已主动砍(不出现在完成度计算):
   W3-4 Locust 100 并发压测
@@ -279,6 +283,7 @@ V3 完成度: ≈ 60%(ADR-0010 主线 7 项里 4 项完成 + 部分完成)
 | 日期 | 修订 | 作者 |
 |---|---|---|
 | 2026-08-02 | 报告起草, 完成 §3/§5/§7/§8; §4 占位 | (架构师视角) |
+| 2026-08-02 | Langfuse 同步路径接入 → DoD-5 🟡; CI 门禁落地; HEAD 更新到 2e259cd | (架构师视角) |
 | TBD | §4 填表(P0 微评估完成) | TBD |
 | TBD | §2 DoD-1/DoD-4 实跑 PASS log 入选 | TBD |
 | TBD | 报告转 Accepted(V3 整体验收完成) | TBD |
