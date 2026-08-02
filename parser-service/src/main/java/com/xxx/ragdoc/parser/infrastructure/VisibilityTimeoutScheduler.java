@@ -40,16 +40,17 @@ public class VisibilityTimeoutScheduler {
         Instant now = Instant.now(clock);
         try {
             int affected = parseTaskRepository.reapExpiredRunning(now);
+            // PM-V3-B 演练调试: 每次循环都 INFO 留痕, 防 heartbeat job 真挂了看不出。
+            // 默认 line 数稳定后可改回 debug。
             if (affected > 0) {
                 log.info(
                         "parse_reaper.reaped count={} (zombie RUNNING → PENDING, < {})",
                         affected,
                         now);
             } else {
-                log.debug("parse_reaper.nothing_to_reap");
+                log.info("parse_reaper.tick no_reap_at={}", now);
             }
         } catch (Exception e) {
-            // 心跳 job 自身失败不致命(下次 @Scheduled 仍跑), 仅 log 后续观察告警
             log.error("parse_reaper.cycle_failed err={}", e.getMessage(), e);
         }
     }

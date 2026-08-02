@@ -95,6 +95,16 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
 
         // step 7-11: 实际解析
         try {
+            // step 7a (PM-V3-B 演练暴露的真 bug 修复): doc 状态机要先迁移 UPLOADED→PARSING,
+            // 否则 step 12a 的 doc.markReady 会抛 "UPLOADED → READY 不被允许",
+            // 导致 doc 卡 UPLOADED, 前端 readyCount 永远算不到这条 doc。
+            // (sync 路径 TikaParsingTrigger.trigger 在 try 入口就 startParsing, async 路径之前漏了)
+            Document docForState = documentRepository.findById(leased.documentId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Document 不存在: " + leased.documentId()));
+            docForState.startParsing();
+            documentRepository.save(docForState);
+
             List<com.xxx.ragdoc.domain.document.Chunk> savedChunks = worker.execute(leased);
             int chunksWritten = savedChunks.size();
             // step 12a: success — 走状态机 PARSED + markReady document
