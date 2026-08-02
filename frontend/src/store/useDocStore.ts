@@ -9,6 +9,7 @@ import {
   type UploadOptions,
 } from '../api/documents';
 import { ApiError } from '../api/client';
+import { useToastStore } from './useToastStore';
 
 interface DocState {
   docs: DocumentSummary[];
@@ -51,11 +52,18 @@ export const useDocStore = create<DocState>((set, get) => ({
       const result = await uploadDocument(file, opts);
       // 刷新文档列表(后端会返回新 doc), 上传事件 done
       await get().load();
-      // 友好提示: 幂等命中 (同 hash 重传)
+      // 友好提示: 幂等命中 (同 hash 重传) 高价值信息, 不再只 console
       if (result.idempotent_hit) {
-        // 简单 console 提醒即可(组件层会通过 docs 刷新显示)
-        console.info('idempotent hit, doc reused:', result);
+        useToastStore.getState().show(
+          'info',
+          `文件已存在 (hash 命中), 复用 doc #${result.doc_id}`,
+        );
       }
+    } catch (e) {
+      // upload 失败要写入 error 让 App.tsx effect 推 toast, 不让 reject 上抛.
+      //UploadDropzone 的 reduce 队列可继续消费下一个文件.
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      set({ error: `上传 ${file.name} 失败: ${msg}` });
     } finally {
       set((s) => {
         const next = { ...s.uploading };
@@ -71,6 +79,8 @@ export const useDocStore = create<DocState>((set, get) => ({
     try {
       await deleteDocument(docId);
       await get().load();
+      // 与 error 对称: 成功路径也告诉用户"操作生效了", 不只是列表默默消失
+      useToastStore.getState().show('success', '文档已删除');
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : (e as Error).message;
       set({ error: msg });
@@ -83,6 +93,7 @@ export const useDocStore = create<DocState>((set, get) => ({
     try {
       await retryDocument(docId);
       await get().load();
+      useToastStore.getState().show('success', '已提交重新解析');
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : (e as Error).message;
       set({ error: msg });

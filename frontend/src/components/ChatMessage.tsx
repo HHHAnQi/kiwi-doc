@@ -1,10 +1,26 @@
 import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { ChatMessage as TChatMessage } from '../store/useChatStore';
 import { CitationCard } from './CitationCard';
 import { FeedbackBar } from './FeedbackBar';
 import { StateBanner } from './StateBanner';
 import { cn } from '../lib/cn';
+
+// DEV-B5: markdown 组件覆盖项外提成模块常量, 避免 ChatMessageView 每次渲染重建对象,
+// 让 react-markdown 的 memo 化生效, 长答案不再卡顿。
+const MD_COMPONENTS: Components = {
+  // 让 markdown 链接新开 tab
+  a: ({ ...props }) => <a target="_blank" rel="noreferrer" {...props} />,
+  code: ({ className, children, ...props }) => (
+    <code
+      className={cn('rounded bg-slate-100 px-1 py-0.5 text-[12px]', className)}
+      {...props}
+    >
+      {children}
+    </code>
+  ),
+};
 
 interface Props {
   msg: TChatMessage;
@@ -32,24 +48,7 @@ export function ChatMessageView({ msg, onFeedbackSubmitted }: Props) {
           ) : (
             <>
               {msg.content ? (
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    // 让 markdown 链接新开 tab
-                    a: ({ ...props }) => <a target="_blank" rel="noreferrer" {...props} />,
-                    code: ({ className, children, ...props }) => (
-                      <code
-                        className={cn(
-                          'rounded bg-slate-100 px-1 py-0.5 text-[12px]',
-                          className,
-                        )}
-                        {...props}
-                      >
-                        {children}
-                      </code>
-                    ),
-                  }}
-                >
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
                   {msg.content}
                 </ReactMarkdown>
               ) : msg.streaming ? (

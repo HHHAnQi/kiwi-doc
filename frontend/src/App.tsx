@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatWindow } from './components/ChatWindow';
+import { Toaster } from './components/Toaster';
 import { useDocStore } from './store/useDocStore';
+import { useToastStore } from './store/useToastStore';
 
 // 顶层 App: 三区布局
 // - Header: 标题 + chat-app 状态指示 + 可编辑 dev token (localStorage 持久)
@@ -11,12 +13,18 @@ export default function App() {
   const load = useDocStore((s) => s.load);
   const docs = useDocStore((s) => s.docs);
   const error = useDocStore((s) => s.error);
+  const showToast = useToastStore((s) => s.show);
   const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
 
   // 首次加载 doc 列表
   useEffect(() => {
     load();
   }, [load]);
+
+  // docStore.error 变化时同步推 toast, 让上传失败 / 网络错暴露给用户而不只是 console
+  useEffect(() => {
+    if (error) showToast('error', error);
+  }, [error, showToast]);
 
   // 后台轮询 doc status: 若有 PARSING/UPLOADED 状态, 每 5s 拉一次直到全 READY/FAILED。
   // 加硬上限 MAX_TICKS (5min * 60s / 5s = 60 次), 防止 parser-service 挂了导致永远轮询。
@@ -48,6 +56,7 @@ export default function App() {
         <ChatWindow selectedDocId={selectedDocId} />
       </div>
       <Footer />
+      <Toaster />
     </div>
   );
 }

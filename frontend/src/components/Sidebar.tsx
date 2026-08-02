@@ -90,11 +90,6 @@ function DocItem({
   const [menuOpen, setMenuOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const stop = (e: React.SyntheticEvent) => {
-    // 阻止触发父级 onClick (选中文档), 否则点 ⋯ 会意外切换 selected
-    e.stopPropagation();
-  };
-
   const onDelete = async () => {
     if (
       !window.confirm(
@@ -122,42 +117,47 @@ function DocItem({
   };
 
   return (
+    // DEV-B1 修正: 旧版 button 内嵌 span role=button 是非法 HTML(interactive 内嵌
+    // interactive), 浏览器会重写 DOM 导致 React 事件不一致。改用 div + 两个独立
+    // 兄弟按钮(主区选中文档, ⋯ 触发菜单), 各自 stopPropagation 互不干扰。
     <li className="relative">
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onClick}
-        disabled={busy}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+        aria-pressed={selected}
+        title={doc.original_filename}
         className={cn(
-          'w-full rounded-md px-2 py-2 text-left transition-colors hover:bg-slate-50 disabled:opacity-60',
+          'w-full cursor-pointer rounded-md px-2 py-2 text-left transition-colors hover:bg-slate-50 disabled:opacity-60',
           selected && 'ring-2 ring-brand-500 bg-brand-50',
+          busy && 'pointer-events-none opacity-60',
         )}
       >
         <div className="flex items-center justify-between gap-2">
-          <span
-            className="truncate text-xs text-slate-700"
-            title={doc.original_filename}
-          >
+          <span className="truncate text-xs text-slate-700" title={doc.original_filename}>
             {doc.original_filename}
           </span>
-          {/* 操作菜单触发器: 阻止冒泡到选中文档 onClick */}
-          <span
-            role="button"
-            tabIndex={0}
+          {/* 操作菜单触发器: 与主按钮平级, 点击自行 stopPropagation, 不冒泡到父 onClick */}
+          <button
+            type="button"
             onClick={(e) => {
-              stop(e);
+              e.stopPropagation();
               setMenuOpen((v) => !v);
             }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                stop(e);
-                setMenuOpen((v) => !v);
-              }
-            }}
-            className="shrink-0 rounded px-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
             aria-label="文档操作"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
             title="删除 / 重试"
+            className="shrink-0 rounded px-1 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
           >
             ⋯
-          </span>
+          </button>
         </div>
         <div className="mt-1 flex items-center justify-between gap-2">
           <StatusBadge status={doc.status} />
@@ -165,7 +165,7 @@ function DocItem({
             {doc.chunk_count} chunks · {formatRelativeTime(doc.updated_at)}
           </span>
         </div>
-      </button>
+      </div>
 
       {menuOpen && (
         // 点容器外任意处关闭: 用 onBlur 不可靠(点菜单内按钮本身就会 blur),
@@ -174,17 +174,23 @@ function DocItem({
           <div
             className="fixed inset-0 z-10"
             onClick={(e) => {
-              stop(e);
+              e.stopPropagation();
               setMenuOpen(false);
             }}
           />
           <div
+            role="menu"
             className="absolute right-2 top-8 z-20 w-28 rounded-md border border-slate-200 bg-white py-1 text-xs shadow-lg"
-            onClick={stop}
           >
             {doc.status === 'FAILED' && (
               <button
-                onClick={onRetry}
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen(false);
+                  onRetry();
+                }}
                 disabled={busy}
                 className="block w-full px-3 py-1.5 text-left text-slate-700 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
               >
@@ -192,7 +198,13 @@ function DocItem({
               </button>
             )}
             <button
-              onClick={onDelete}
+              type="button"
+              role="menuitem"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen(false);
+                onDelete();
+              }}
               disabled={busy}
               className="block w-full px-3 py-1.5 text-left text-rose-600 hover:bg-rose-50 disabled:opacity-50"
             >

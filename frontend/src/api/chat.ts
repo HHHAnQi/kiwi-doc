@@ -3,7 +3,7 @@
 // 注意: 不能用 EventSource — 它只支持 GET 且无自定义 body, 与本项目 chat/sse
 // 接口(POST + JSON body)不兼容. 用原生 fetch + ReadableStream + 手解 SSE 帧。
 //
-// SSE 帧格式 (RFC 8895 简化):
+// SSE 帧格式 (WHATWG HTML Living Standard 的 "Server-sent events" 一节, 无独立 RFC):
 //   event: citations\n
 //   data: {"citations":[...]}\n
 //   \n
