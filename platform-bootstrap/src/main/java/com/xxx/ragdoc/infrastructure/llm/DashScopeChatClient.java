@@ -85,6 +85,12 @@ public class DashScopeChatClient implements ChatClient {
         ObjectNode body = objectMapper.createObjectNode();
         body.put("model", props.getModel());
         body.put("temperature", 0.3); // 文档问答场景要确定性, 低温度
+        // GLM-4-plus / GLM-4.5+ 默认启用深度思考模式 → 部分 prompt 下 message.content 为
+        // 极短 summary(如"以上是分析", answer_len=11), 真内容跑到 message.reasoning_content
+        // — 文档问答场景不需要思考, 显式禁用。glm-4-flash / 4-air 仍走旧路径(不读此字段)。
+        ObjectNode thinkingDisabled = objectMapper.createObjectNode();
+        thinkingDisabled.put("type", "disabled");
+        body.set("thinking", thinkingDisabled);
         ArrayNode messages = body.putArray("messages");
         ObjectNode sysMsg = messages.addObject();
         sysMsg.put("role", "system");
