@@ -39,11 +39,16 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+# Phase 0.1: judge client 必须走异族 provider, 不再读 LLM_* (那是业务 LLM 同源污染源)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from judge_client import build_judge_llm, get_provider_meta  # noqa: E402
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 EVAL_DIR = Path(__file__).resolve().parent
 load_dotenv(PROJECT_ROOT / ".env", override=False)
 
-QUESTIONS_FILE = EVAL_DIR / "questions.real.jsonl"
+# Phase 0.5: 默认题库切到 asset 化的 golden(100 题, source 标注清楚)
+QUESTIONS_FILE = Path(os.getenv("EVAL_QUESTIONS_FILE", str(EVAL_DIR / "golden" / "golden.jsonl")))
 RAW_OUT_FILE = EVAL_DIR / "ragas_raw.jsonl"
 REPORT_FILE = EVAL_DIR / "eval_ragas_report.md"
 BASELINE_FILE = EVAL_DIR / "ragas_baseline.json"
@@ -51,13 +56,12 @@ BASELINE_FILE = EVAL_DIR / "ragas_baseline.json"
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8090/api/v1/chat")
 CHAT_TOKEN = os.getenv("TEST_AUTH_TOKEN", "dev-token-change-me")
 
-# judge LLM 走 OpenAI 兼容协议 (智谱 glm-4-flash)
-LLM_BASE_URL = os.getenv("LLM_BASE_URL", "")
-LLM_API_KEY = os.getenv("LLM_API_KEY", "")
-LLM_MODEL = os.getenv("LLM_MODEL", "glm-4-flash")
-# embed 也走 OpenAI 兼容 (BGE-M3 服务)
+# embed 走 OpenAI 兼容 (BGE-M3 服务) — 与 judge 完全不同管线
 EMBED_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "http://localhost:8082")
-# RAGAS metrics 需要 embedding 维度匹配, 用 .all-MiniLM 系列会自动适配
+
+# judge 配置从 JUDGE_LLM_PROVIDER_N_* 读, 见 eval/judge_client.py
+# 全局 JUDGE_PROVIDER_ID 由 --judge-provider flag 设置, 默认 1
+DEFAULT_JUDGE_PROVIDER_ID = 1
 
 METRICS_TO_TRACK = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
 GATE_THRESHOLD = 0.03  # 文档约定 -3% 阻断
@@ -119,12 +123,13 @@ def build_ragas_dataset(questions):
     return samples
 
 
-def run_ragas(samples):
-    """跑 RAGAS 评测。延迟 import 避免装包前后副作用。"""
+def run_ragas(samples, judge_provider_id: int = DEFAULT_JUDGE_PROVIDER_ID):
+    """跑 RAGAS 评测。延迟 import 避免装包前后副作用。
+
+    judge 必须走异族 provider(judge_client.build_judge_llm), 不再 fallback 到业务 LLM。
+    """
     from datasets import Dataset  # ragas 依赖 datasets
-    from langchain_openai import ChatOpenAI
     from ragas import evaluate
-    from ragas.llms import LangchainLLMWrapper
     from ragas.metrics import (
         faithfulness,
         answer_relevancy,
@@ -133,34 +138,11 @@ def run_ragas(samples):
     )
     from ragas.run_config import RunConfig
 
-    if not LLM_BASE_URL or not LLM_API_KEY:
-        print("ERROR: LLM_BASE_URL/LLM_API_KEY 未配置(.env)")
-        sys.exit(1)
+    judge_llm, judge_meta = build_judge_llm(judge_provider_id)
+    print(f"[RAGAS] judge provider #{judge_meta.provider_id} family={judge_meta.family} "
+          f"model={judge_meta.model} thinking={judge_meta.is_thinking}")
 
-    # GLM-4.7 思考模式支持: 通过 extra_body 传给智谱 OpenAI 兼容接口。
-    # 思考模式必须 temperature=1.0; 关思考用 0.1 兼容老 glm-4-flash。
-    is_glm47 = "glm-4.7" in LLM_MODEL.lower() or "glm-4.5" in LLM_MODEL.lower()
-    extra_body = {"thinking": {"type": "enabled"}} if is_glm47 else None
-    temp_value = 1.0 if is_glm47 else 0.1
-    raw_llm = ChatOpenAI(
-        base_url=LLM_BASE_URL,  # .env 已含 /api/paas/v4
-        api_key=LLM_API_KEY,
-        model=LLM_MODEL,
-        temperature=temp_value,
-        extra_body=extra_body,  # None 时 langchain 自动忽略
-        # GLM-4.7 思考模式会跑长 reasoning chain, 默认 ~10s 不够 → 大量 TimeoutError
-        # (Run #1 在文末 374/400 起持续超时, recall 0.22 是假数字)。timeout 拉到 600s。
-        timeout=600,
-        max_retries=3,
-    )
-    judge_llm = LangchainLLMWrapper(raw_llm)
-
-    # BUG fix: RAGAS 0.2.15 LangchainLLMWrapper.get_temperature(n=1) 返回 1e-8,
-    # 智谱 glm-4-flash 要求 temperature>0 且最多 2 位小数 → 1e-8 被拒 400。
-    # patch 成固定值(GLM-4.7 思考模式 1.0, 其它 0.1), 兼容所有国产 OpenAI 兼容服务商。
-    judge_llm.get_temperature = lambda n: temp_value
-
-    # embedding: BGE-M3 走 OpenAI 兼容协议。
+    # embedding: BGE-M3 走 OpenAI 兼容协议(与 judge 完全不同管线)。
     # 关键: 不能用 langchain_openai.OpenAIEmbeddings, 它底层走 httpx,
     # 与 BGE-M3 容器(Docker proxy + text-embeddings-inference) 不兼容, 返回 502
     # (这正是历史上 answer_relevancy=0 的真正根因)。
@@ -190,7 +172,7 @@ def run_ragas(samples):
     judge_embed = _BgeM3Embeddings(base_url=EMBED_BASE_URL)
 
     ds = Dataset.from_list(samples)
-    print(f"\n[RAGAS] 评测 {len(samples)} 条, judge={LLM_MODEL} ...")
+    print(f"\n[RAGAS] 评测 {len(samples)} 条, judge={judge_meta.model} ...")
     # GLM-4.7 思考模式: 单题 ~20-60s reasoning; 智谱免费档 RPM 限流。
     # 默认 RAGAS max_workers=16 会触发 429。降并发到 4, timeout=600s 应对长 reasoning。
     rc = RunConfig(max_workers=4, timeout=600, max_retries=3)
@@ -207,7 +189,7 @@ def run_ragas(samples):
         print(f"RAGAS 评测失败: {e}")
         raise
 
-    return result_to_scores(result)
+    return result_to_scores(result), judge_meta
 
 
 def result_to_scores(result):
@@ -234,11 +216,18 @@ def result_to_scores(result):
     return scores
 
 
-def write_report(scores, samples):
+def write_report(scores, samples, judge_meta=None):
     md = ["# RAGAS 评测报告 (P1)\n",
-          "\n设计文档 README.md L16: RAGAS 答案质量评测 + CI 门禁 (-3% 阻断)\n",
-          "\n## 核心指标\n",
-          "\n| 指标 | 数值 | 说明 |\n|---|---|---|\n"]
+          "\n设计文档 README.md L16: RAGAS 答案质量评测 + CI 门禁 (-3% 阻断)\n"]
+    # Phase 0.1: 报告需标注 judge 是异族 (Phase 0 前"同源污染"问题已修复)
+    if judge_meta is not None:
+        md.append(
+            f"\n> Judge provider #{judge_meta.provider_id} `{judge_meta.family}/{judge_meta.model}` "
+            f"(temperature={judge_meta.temperature}, thinking={judge_meta.is_thinking}). "
+            f"Judge 与业务 LLM 配置物理隔离 (JUDGE_LLM_PROVIDER_* env namespace), Phase 0 同源污染已脱。\n"
+        )
+    md.append("\n## 核心指标\n")
+    md.append("\n| 指标 | 数值 | 说明 |\n|---|---|---|\n")
     desc = {
         "faithfulness": "答案是否完全从 context 推导, 高=低幻觉",
         "answer_relevancy": "答案相关性, 高=答非所问少",
@@ -284,20 +273,42 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--gate", action="store_true", help="对比 baseline, -3% 阻断")
     p.add_argument("--set-baseline", action="store_true", help="把本次结果存为新 baseline")
+    # Phase 0.1: 默认单 judge = provider 1 (GLM)。STOP 校验 / Phase 0.3 ensemble 用 --judge-provider 控制
+    p.add_argument(
+        "--judge-provider",
+        type=int,
+        default=DEFAULT_JUDGE_PROVIDER_ID,
+        choices=[1, 2, 3, 4, 5],
+        help="judge provider id, 对应 .env 的 JUDGE_LLM_PROVIDER_N_* (默认 1)",
+    )
+    p.add_argument(
+        "--questions",
+        type=str,
+        default=str(QUESTIONS_FILE),
+        help=f"题库 jsonl 路径 (默认 {QUESTIONS_FILE.name})",
+    )
     args = p.parse_args()
 
+    # 切换题库 — Phase 0.5 起默认 golden.jsonl
+    global QUESTIONS_FILE
+    QUESTIONS_FILE = Path(args.questions)
+    if not QUESTIONS_FILE.exists():
+        print(f"ERROR: 题库不存在 {QUESTIONS_FILE}", file=sys.stderr)
+        return 1
+
     questions = load_questions()
-    print(f"[1/3] 装入 {len(questions)} 题")
+    print(f"[1/3] 装入 {len(questions)} 题 (from {QUESTIONS_FILE.name})")
 
     print(f"[2/3] 调 chat 接口收集 (answer + contexts) ...")
     samples = build_ragas_dataset(questions)
 
-    print(f"[3/3] 跑 RAGAS 评测 ...")
-    scores = run_ragas(samples)
-    write_report(scores, samples)
+    print(f"[3/3] 跑 RAGAS 评测 (judge provider #{args.judge_provider}) ...")
+    scores, judge_meta = run_ragas(samples, judge_provider_id=args.judge_provider)
+    write_report(scores, samples, judge_meta=judge_meta)
     print(f"\n✓ 报告: {REPORT_FILE}")
     for k in METRICS_TO_TRACK:
         print(f"  {k:20} = {scores[k]:.4f}")
+    print(f"  judge               = provider#{judge_meta.provider_id} ({judge_meta.family}/{judge_meta.model})")
 
     if args.set_baseline:
         with open(BASELINE_FILE, "w", encoding="utf-8") as f:
@@ -306,6 +317,8 @@ def main():
 
     if args.gate:
         sys.exit(gate_check(scores))
+
+    return 0
 
 
 if __name__ == "__main__":
