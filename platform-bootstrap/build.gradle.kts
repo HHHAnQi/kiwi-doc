@@ -50,6 +50,13 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("net.logstash.logback:logstash-logback-encoder:7.4")
 
+    // Phase 1.B + Phase 3.A 共享 (2026-08-03):
+    // Resilience4j — CircuitBreaker + Retry + TimeLimiter。
+    // Phase 1.B 先在 LlmRouter 上启 CircuitBreaker; Phase 3.A 扩到 BGE/Rerank/Milvus。
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
+    implementation("io.github.resilience4j:resilience4j-reactor:2.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-aop")  // Resilience4j @CircuitBreaker AOP 支持
+
     // ArchUnit
     testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 

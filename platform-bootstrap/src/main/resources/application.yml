@@ -47,6 +47,69 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+  # Phase 3.A: RagdocMetrics 暴露 Prometheus percentile 直方图
+  metrics:
+    distribution:
+      percentiles-histogram:
+        ragdoc.chat.first_token_latency: true
+        ragdoc.chat.total_latency: true
+        ragdoc.rerank.latency: true
+      percentiles:
+        ragdoc.chat.first_token_latency: 0.5, 0.95, 0.99
+        ragdoc.chat.total_latency: 0.5, 0.95, 0.99
+        ragdoc.rerank.latency: 0.5, 0.95
+
+# Phase 1.B + Phase 3.A 共享: Resilience4j 默认配置。
+# CircuitBreaker 默认监听所有客户端 (LLM / BGE-M3 / Reranker / Milvus);
+# 通过命名 instance 区分, 配置粒度由 application-*.yml 覆盖。
+# 设计原则: 50% 失败率熔断, 30s 半开尝试恢复, 滑窗 20 次调用。
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 80
+        slow-call-duration-threshold: 30s
+        wait-duration-in-open-state: 30s
+        sliding-window-size: 20
+        sliding-window-type: COUNT_BASED
+        minimum-number-of-calls: 10
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        # 不把熔断异常当业务 exception 重抛到上层, 否则熔断态全站挂
+        writable-stack-trace-enabled: false
+    instances:
+      llm-primary:
+        base-config: default
+      llm-fallback:
+        base-config: default
+      # Phase 3.A 扩展用:
+      embedding:
+        base-config: default
+      rerank:
+        base-config: default
+      milvus:
+        base-config: default
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+    instances:
+      llm-primary:
+        base-config: default
+      embedding:
+        base-config: default
+      rerank:
+        base-config: default
+      milvus:
+        base-config: default
 
 logging:
   level:

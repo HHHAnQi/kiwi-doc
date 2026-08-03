@@ -16,15 +16,22 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
 /**
- * {@link ChatClient} 的 DashScope(通义千问)实现。
+ * {@link ChatClient} 的 DashScope(通义千问)实现 (单 route, Phase 1.B 前的老实现)。
  *
  * <p>走 OpenAI 兼容协议: POST {base-url}/chat/completions, body OpenAI 标准格式, Authorization Bearer 鉴权。
  *
  * <p>切换 LLM: 仿照本类新建 XxxChatClient, 配 base-url + model + key 即可。 本类只依赖 OpenAI 协议, 不调任何 DashScope 私有
  * API, 因此同样适用于 DeepSeek / Kimi / vLLM / Ollama 等 OpenAI 兼容服务商。
+ *
+ * <p><b>Phase 1.B (2026-08-03) deprecated</b>: 多路由 + fallback 由 {@link LlmRouter} +
+ * {@link OpenAiCompatibleLlmClient} 取代。本类保留代码作为单 route 兼容路径, 通过
+ * {@code @ConditionalOnMissingBean(LlmRouter.class)} 仅当 LlmRouter 不存在时(如 legacy
+ * 单测或 V1 mode)才装配。生产 chat-app 走 LlmRouter(@Primary)。
  */
+@Deprecated(forRemoval = false)
 @Slf4j
 @Component
+@org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean(LlmRouter.class)
 @RequiredArgsConstructor
 public class DashScopeChatClient implements ChatClient {
 

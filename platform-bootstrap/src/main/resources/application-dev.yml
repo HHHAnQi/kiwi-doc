@@ -69,6 +69,25 @@ rag:
     mode: ${RAG_PARSER_MODE:sync}
   retrieve:
     mode: ${RAG_RETRIEVE_MODE:dense}
+
+  # ─── Phase 1.B LLM Gateway (2026-08-03) ────────────────────────
+  # 多 route + 自动 fallback + CircuitBreaker。
+  # 不配 routes 时 LlmRouter 自兜底用 LlmProperties (llm.* 配置) 构造 primary, 无 fallback —
+  # 与 baseline 行为等价, 老 .env 零改动可工作。
+  # 启用 fallback: 设 LLM_FALLBACK_* env 即可, 下面用 ${ENV:default} 形式让仅有 env 时 route 才生效。
+  # primary 不在 routes[] 里 → LlmRouter 用 LlmProperties 兜底(llm.base-url/model/api-key 老配置)。
+  llm:
+    primary-role: primary
+    fallback-role: fallback
+    routes:
+      # fallback 仅当 LLM_FALLBACK_API_KEY 环境变量存在时启用(高度 backward compat)
+      - name: fallback
+        base-url: ${LLM_FALLBACK_BASE_URL:}
+        api-key: ${LLM_FALLBACK_API_KEY:}
+        model: ${LLM_FALLBACK_MODEL:deepseek-chat}
+        timeout-ms: 60000
+        max-tokens: 1024
+        temperature: 0.3
   # V2 第③段: cross-encoder 精排。enabled=false 时跳过 rerank, enabled=true 时
   # hybrid 召回扩到 candidatePool(20) → rerank → topN(5)。
   # 启用前提: Autodl reranker 服务跑(6006) + 本机开 ssh -L 8084:localhost:6006 隧道。
