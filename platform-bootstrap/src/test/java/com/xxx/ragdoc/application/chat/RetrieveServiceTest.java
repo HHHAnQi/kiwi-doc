@@ -22,6 +22,12 @@ import org.junit.jupiter.api.Test;
 @DisplayName("RetrieveService - 第③段 reranker 集成")
 class RetrieveServiceTest {
 
+    /** Phase 3.A: 给 RetrieveService 注入一个真实(简单) MeterRegistry-backed metrics, mock 它没意义。 */
+    private static com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics newRagdocMetrics() {
+        return new com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics(
+                new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+    }
+
     /** 工具: mock chunkRepository.findByIdIn 在被传入任一 ids 时, 走查表逐条返回。 */
     @SuppressWarnings("unchecked")
     private static void mockFindByIdIn(ChunkRepository cr, Chunk... chunks) {
@@ -51,7 +57,7 @@ class RetrieveServiceTest {
             ChunkRepository cr = mock(ChunkRepository.class);
             RerankClient rr = mock(RerankClient.class);
             RerankProperties rp = new RerankProperties(); // enabled=false 默认
-            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp);
+            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -95,7 +101,7 @@ class RetrieveServiceTest {
             RerankProperties rp = new RerankProperties();
             rp.setEnabled(true);
             rp.setCandidatePool(20);
-            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp);
+            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             // hybrid 召回 3 条(模拟), 顺序是 0.9 > 0.7 > 0.5
@@ -139,7 +145,7 @@ class RetrieveServiceTest {
             RerankClient rr = mock(RerankClient.class);
             RerankProperties rp = new RerankProperties();
             rp.setEnabled(true);
-            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp);
+            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -168,7 +174,7 @@ class RetrieveServiceTest {
             RerankClient rr = mock(RerankClient.class);
             RerankProperties rp = new RerankProperties();
             rp.setEnabled(true);
-            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp);
+            RetrieveService svc = new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))

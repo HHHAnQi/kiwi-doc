@@ -1,0 +1,82 @@
+# RagDoc Prometheus alerting rules (Phase 3.A 占位草案)
+#
+# 部署: 把此文件挂载到 Prometheus 容器 /etc/prometheus/rules/ragdoc.yml, 配 prometheus.yml rule_files 指向。
+# 触发条件设计原则(ADR-0004 L1 SLO + P0/1 教训):
+#   - chat first_token p95 持续超 2s → 检查 LLM 网关
+#   - chat total p95 持续超 15s → 综合 EM/Rerank/LLM 链路
+#   - LLM_DEGRADED 率 > 5% → LLM 网关 / DashScope 上行问题
+#   - retrieve.zero_recall 比 > 20% → 检索召回质量问题(embedding 维度 / 集合数据完整)
+#   - rerank_failed rate 高 → TEI reranker 容器状态
+#
+# 告警接收: 接 Alertmanager → 企业 IM webhook(钉钉/飞书 robot)。下面 alertname 对应 alertmanager-route.yml 的 routing key。
+groups:
+  - name: ragdoc-slo
+    interval: 30s
+    rules:
+      # 1. Chat first-token latency p95 持续超过 2s (5 分钟)
+      - alert: RagdocChatFirstTokenP95High
+        expr: histogram_quantile(0.95, sum(rate(ragdoc_chat_first_token_latency_seconds_bucket[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: ragdoc
+          slo: chat_first_token_p95
+        annotations:
+          summary: "RagDoc chat first_token p95 > 2s"
+          description: "SSE 首 token 延迟 p95 持续 5 分钟超 2s (ADR-0004 L1 SLA)。检查 LLM 网关上下行 / DashScope 区域。"
+
+      # 2. Chat total latency p95 持续超过 15s
+      - alert: RagdocChatTotalP95High
+        expr: histogram_quantile(0.95, sum(rate(ragdoc_chat_total_latency_seconds_bucket{outcome="ok"}[5m])) by (le)) > 15
+        for: 5m
+        labels:
+          severity: warning
+          service: ragdoc
+          slo: chat_total_p95
+        annotations:
+          summary: "RagDoc chat total p95 > 15s"
+          description: "整体 chat 时延 p95 持续超 15s。综合链路查 EM/Rerank/Milvus/LLM。"
+
+      # 3. LLM degraded 率超过 5%
+      - alert: RagdocLlmDegradedRateHigh
+        expr: |
+          sum(rate(ragdoc_llm_call_total_total{outcome="degraded"}[5m]))
+          /
+          clamp_min(sum(rate(ragdoc_llm_call_total_total[5m])), 0.001)
+          > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: ragdoc
+          slo: llm_degraded_rate
+        annotations:
+          summary: "RagDoc LLM degraded 率 > 5%"
+          description: "LLM 调用降级比例持续 >5%。优先查 GLM 网关上游 / fallback route 配置。"
+
+      # 4. Retrieve zero_recall 比例 > 20% (有 READY 文档但召回空)
+      - alert: RagdocRetrieveZeroRecallHigh
+        expr: |
+          sum(rate(ragdoc_retrieve_recall_count_count{quantile="0" or le="0"}[5m]))
+          /
+          clamp_min(sum(rate(ragdoc_retrieve_recall_count_count[5m])), 0.001)
+          > 0.20
+        for: 10m
+        labels:
+          severity: warning
+          service: ragdoc
+          slo: retrieve_zero_recall_rate
+        annotations:
+          summary: "RagDoc retrieve zero-recall 率 > 20%"
+          description: "20% 检索无召回。检查 Milvus 集合数据是否齐全 / BGE-M3 embedding 是否一致 / dense vs hybrid mode 切换误配。"
+
+      # 5. Rerank 失败 rate 持续 >0 (reranker disabled 时此规则不触发)
+      - alert: RagdocRerankFailures
+        expr: sum(rate(ragdoc_rerank_latency_seconds_count{outcome="failed"}[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: ragdoc
+          slo: rerank_failure
+        annotations:
+          summary: "RagDoc rerank 持续失败 >5m"
+          description: "Reranker 持续报错, RetrieveService 会降级 hybrid seq。检查 TEI reranker 容器(SSH tunnel / GPU)。"

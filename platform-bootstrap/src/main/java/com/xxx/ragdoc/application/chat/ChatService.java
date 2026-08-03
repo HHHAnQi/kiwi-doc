@@ -56,8 +56,12 @@ public class ChatService {
     // V3-W3 Langfuse trace 接入(DoD-5); NoOpTraceObserver 兜底零开销
     private final TraceObserver traceObserver;
 
+    // Phase 3.A: 5 SLO 计量。同步 chat 在 finish 里 record, chatStream 在 stream_done/failed/doFinally record。
+    private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
+
     @Transactional
     public ChatResult chat(ChatCommand cmd, TraceId traceId) {
+        long t0Chat = System.currentTimeMillis(); // Phase 3.A: 同步 chat 总时延 metric 基准
         log.info("chat.start trace_id={}, query_len={}", traceId.value(), cmd.query().length());
         String lfTrace =
                 traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query()));
@@ -184,7 +188,7 @@ public class ChatService {
                     answer = chatMessages.getLlmDegradedMessage() + traceId.value();
                     // 注意: LLM 降级时 citations 仍返回, 用户可看检索到的片段
                     traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
-                    return finish(cmd, traceId, hint, answer, citations);
+                    return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
                 }
                 long llmMs = System.currentTimeMillis() - t1;
                 traceObserver.observe(
@@ -221,7 +225,7 @@ public class ChatService {
             }
         }
         traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
-        return finish(cmd, traceId, hint, answer, citations);
+        return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
     }
 
     /**
@@ -266,6 +270,8 @@ public class ChatService {
         }
 
         // Phase 1.E (2026-08-03): SSE 路径 Langfuse trace 入口
+        // Phase 3.A: sseChatT0 = SSE 端到端 latency 基准(EMPTY_KB/NO_RECALL/OK/DEGRADED 全覆盖 via doFinally)
+        long sseChatT0 = System.currentTimeMillis();
         String lfTrace =
                 traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query(), "path", "sse"));
 
@@ -274,12 +280,13 @@ public class ChatService {
             traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                     "decision.empty_kb", null, null, 0, null);
             traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.EMPTY_KB.name()));
+            metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.EMPTY_KB.name()));
         }
 
         // 3. 召回(同步, retrieve 本身快, p99 < 1s ADR-0004 L1 SLA)
-        long sseT0 = System.currentTimeMillis();
+        long sseT0 = System.currentTimeMillis(); // retrieve 内部子段(已含 startTrace 后)
         RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
         long sseRetrieveMs = System.currentTimeMillis() - sseT0;
         traceObserver.observe(lfTrace, TraceObserver.ObservationType.RETRIEVE,
@@ -296,6 +303,7 @@ public class ChatService {
             traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                     "decision.no_recall", null, null, sseRetrieveMs, null);
             traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.NO_RECALL.name()));
+            metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.NO_RECALL.name()));
         }
@@ -328,6 +336,12 @@ public class ChatService {
         // 答案累积 StringBuilder(线程安全考虑: Reactor 单线程消费, 无 race)
         StringBuilder acc = new StringBuilder(1024);
 
+        // Phase 3.A: SSE outcome 共享状态(默认 unknown; LLM 流正常结尾 ok, 异常 degraded)
+        // 由 stream_done/onErrorResume 设值, doFinally 取值 record total_latency。初始 null 表示上游 cancel
+        // 兜底走 degraded。
+        java.util.concurrent.atomic.AtomicReference<String> sseOutcome =
+                new java.util.concurrent.atomic.AtomicReference<>(null);
+
         // Phase 1.E: SSE LLM call observation 开始(首 token 前)
         long sseLlmT0 = System.currentTimeMillis();
 
@@ -340,6 +354,7 @@ public class ChatService {
                                 long firstTokenMs = System.currentTimeMillis() - sseLlmT0;
                                 traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
                                         "llm.first_token", null, null, firstTokenMs, null);
+                                metrics.recordChatFirstToken(firstTokenMs);
                             }
                         })
                         .map(
@@ -356,6 +371,8 @@ public class ChatService {
                                             Map.of("error", (Object) e.getMessage()));
                                     traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                                             "decision.llm_degraded", null, null, errMs, null);
+                                    // Phase 3.A: SSE outcome 设 degraded 供 doFinally record total
+                                    sseOutcome.set("degraded");
                                     // LLM 失败时落降级 trace + 发 DoneEvent(LLM_DEGRADED)
                                     persistTrace(cmd, traceId, acc.toString(), StateHint.LLM_DEGRADED);
                                     return reactor.core.publisher.Flux.just(
@@ -372,6 +389,8 @@ public class ChatService {
                                                     null, Map.of("answer_len", acc.length()), llmTotalMs, null);
                                             traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                                                     "decision.ok", null, null, llmTotalMs, null);
+                                            // Phase 3.A: SSE outcome 设 ok 供 doFinally record total
+                                            sseOutcome.set("ok");
                                             // 流正常结束 → 落 trace + 发 DoneEvent
                                             persistTrace(cmd, traceId, acc.toString(), StateHint.OK);
                                             return reactor.core.publisher.Flux.just(
@@ -391,6 +410,13 @@ public class ChatService {
                                 finalHint = StateHint.LLM_DEGRADED;
                             }
                             traceObserver.endTrace(lfTrace, Map.of("state_hint", finalHint.name()));
+                            // Phase 3.A: SSE chat_total_latency。stream_done=ok / onErrorResume=degraded 已 set;
+                            // 上游 cancel / acc 空 兜底 degraded。outcome null 时按 finalHint 派生。
+                            String outcome = sseOutcome.get();
+                            if (outcome == null) {
+                                outcome = (finalHint == StateHint.OK) ? "ok" : "degraded";
+                            }
+                            metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, outcome);
                         });
 
         // 异常路径也要落 trace(LLM_DEGRADED 时 acc 包含部分答案; onErrorResume 已转 DoneEvent)
@@ -437,6 +463,35 @@ public class ChatService {
         chatTracesRepository.save(trace);
         log.info("chat.end trace_id={}, state_hint={}", traceId.value(), hint);
         return new ChatResult(answer, citations, hint, traceId);
+    }
+
+    /**
+     * Phase 3.A: finish + 上调 chat_total_latency metric。
+     *
+     * <p>outcome tag 规则:
+     *
+     * <ul>
+     *   <li>OK → "ok"
+     *   <li>NO_RECALL / EMPTY_KB → "skipped"(不进 LLM, 不算 LLM 失败)
+     *   <li>LLM_DEGRADED → "degraded"
+     * </ul>
+     */
+    private ChatResult finishAndRecord(
+            ChatCommand cmd,
+            TraceId traceId,
+            StateHint hint,
+            String answer,
+            List<ChatResult.Citation> citations,
+            long t0Chat) {
+        ChatResult r = finish(cmd, traceId, hint, answer, citations);
+        String outcome =
+                switch (hint) {
+                    case OK -> "ok";
+                    case NO_RECALL, EMPTY_KB -> "skipped";
+                    case LLM_DEGRADED -> "degraded";
+                };
+        metrics.recordChatTotal(System.currentTimeMillis() - t0Chat, outcome);
+        return r;
     }
 
     /** SHA-256 hex 计算; 防 PII 沉淀, 仅存 hash 不存原 query。 */

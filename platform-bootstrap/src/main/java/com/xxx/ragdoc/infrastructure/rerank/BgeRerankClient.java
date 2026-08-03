@@ -7,10 +7,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xxx.ragdoc.application.chat.RerankProperties;
 import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -47,11 +48,18 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class BgeRerankClient implements RerankClient {
 
     private final RerankProperties props;
+    // Phase 3.A: 调 BGE-Reranker 时走 CircuitBreaker(命名 instance "rerank"); 失败率 ≥ 50% 熔断后
+    // RetrieveService 直接走 hybrid fallback, 不浪费 30s+ 调用 timeout。
+    private final CircuitBreaker circuitBreaker;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public BgeRerankClient(RerankProperties props, CircuitBreakerRegistry cbRegistry) {
+        this.props = props;
+        this.circuitBreaker = cbRegistry.circuitBreaker("rerank");
+    }
 
     private WebClient client() {
         return WebClient.builder().baseUrl(props.getBaseUrl()).build();
@@ -78,18 +86,20 @@ public class BgeRerankClient implements RerankClient {
         }
         body.put("top_n", Math.min(topN, candidates.size()));
 
-        // 2. POST /rerank
+        // 2. POST /rerank  (Phase 3.A: CircuitBreaker 装饰, 熔断态直接抛 CallNotPermittedException)
         String respJson;
         try {
             respJson =
-                    client().post()
-                            .uri("/rerank")
-                            .header("Content-Type", "application/json")
-                            .bodyValue(body.toString())
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .timeout(Duration.ofMillis(props.getTimeoutMs()))
-                            .block();
+                    circuitBreaker.executeSupplier(
+                            () ->
+                                    client().post()
+                                            .uri("/rerank")
+                                            .header("Content-Type", "application/json")
+                                            .bodyValue(body.toString())
+                                            .retrieve()
+                                            .bodyToMono(String.class)
+                                            .timeout(Duration.ofMillis(props.getTimeoutMs()))
+                                            .block());
         } catch (Exception e) {
             log.error(
                     "rerank.call_failed query_len={}, candidates={}, error={}",

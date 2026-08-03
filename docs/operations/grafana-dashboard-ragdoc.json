@@ -1,0 +1,144 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "RagDoc Phase 3.A — 5 SLO panels (chat first_token / total / retrieve recall / rerank / llm call_total).",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "1. Chat First-Token Latency (p50 / p95 / p99)",
+      "description": "ADR-0004 L1 SLA: p95 ≤ 2s. SSE 首 token 延迟。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": { "unit": "ms" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(ragdoc_chat_first_token_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_chat_first_token_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(ragdoc_chat_first_token_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "2. Chat Total Latency (by outcome, p95)",
+      "description": "ADR-0004 L1 SLA: p95 ≤ 15s. outcome tag: ok / degraded / skipped (EMPTY_KB 或 NO_RECALL)。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_chat_total_latency_seconds_bucket{outcome=\"ok\"}[5m])) by (le))",
+          "legendFormat": "ok p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_chat_total_latency_seconds_bucket{outcome=\"degraded\"}[5m])) by (le))",
+          "legendFormat": "degraded p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_chat_total_latency_seconds_bucket{outcome=\"skipped\"}[5m])) by (le))",
+          "legendFormat": "skipped p95",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "3. Retrieve Recall Count 分布",
+      "description": "每次 retrieve 最终喂 LLM 的 chunk 数。0 = NO_RECALL 比例高 = 检索召回质量问题。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "quantile_over_time(0.50, ragdoc_retrieve_recall_count[5m])",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "quantile_over_time(0.10, ragdoc_retrieve_recall_count[5m])",
+          "legendFormat": "p10 ( 低召回尾巴 )",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "4. Rerank Latency + 失败比例",
+      "description": "rerank disabled 时此图为空。outcome=failed 高 = TEI reranker 不稳, RetrieveService 会降级走 hybrid seq。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_rerank_latency_seconds_bucket{outcome=\"ok\"}[5m])) by (le))",
+          "legendFormat": "rerank ok p95",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(ragdoc_rerank_latency_seconds_count{outcome=\"failed\"}[5m]))",
+          "legendFormat": "rerank failed rate/s",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "5. LLM Call Outcome (rate by tag)",
+      "description": "outcome=ok 单调升 = 成功 ; outcome=degraded / attempted 比例上升 = LLM/网关稳定性下降。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(rate(ragdoc_llm_call_total_total[5m])) by (outcome)",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["ragdoc", "phase-3a"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "RagDoc RAG — 5 SLO",
+  "uid": "ragdoc-5-slo",
+  "version": 1,
+  "weekStart": ""
+}

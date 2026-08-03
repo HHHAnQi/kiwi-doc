@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.domain.document.Chunk;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.milvus.v2.client.MilvusClientV2;
 import io.milvus.v2.common.IndexParam;
 import io.milvus.v2.service.vector.request.AnnSearchReq;
@@ -19,7 +21,6 @@ import io.milvus.v2.service.vector.request.ranker.RRFRanker;
 import io.milvus.v2.service.vector.response.SearchResp;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -39,13 +40,26 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MilvusVectorStore implements VectorStore {
 
     private final MilvusClientV2 milvusClientV2;
     private final MilvusProperties props;
     private final RetrieveProperties retrieveProps;
+    // Phase 3.A: Milvus 调用走 CircuitBreaker(命名 instance "milvus"); 熔断后 InsertService / RetrieveService 抛异常,
+    // 由各自 flow 处理(retrieve 走 empty; parse queue 重试或 DLQ)。
+    private final CircuitBreaker circuitBreaker;
     private final Gson gson = new Gson();
+
+    public MilvusVectorStore(
+            MilvusClientV2 milvusClientV2,
+            MilvusProperties props,
+            RetrieveProperties retrieveProps,
+            CircuitBreakerRegistry cbRegistry) {
+        this.milvusClientV2 = milvusClientV2;
+        this.props = props;
+        this.retrieveProps = retrieveProps;
+        this.circuitBreaker = cbRegistry.circuitBreaker("milvus");
+    }
 
     @Override
     public void upsertChunks(
@@ -98,8 +112,15 @@ public class MilvusVectorStore implements VectorStore {
             rows.add(row);
         }
 
-        milvusClientV2.insert(
-                InsertReq.builder().collectionName(props.getCollection()).data(rows).build());
+        // Phase 3.A: insert 调用走 CB。熔断态抛 CallNotPermittedException 上抛 InsertService,
+        // parse 队列据此重投或 DLQ。
+        circuitBreaker.executeRunnable(
+                () ->
+                        milvusClientV2.insert(
+                                InsertReq.builder()
+                                        .collectionName(props.getCollection())
+                                        .data(rows)
+                                        .build()));
         log.info(
                 "milvus.upsert doc_id={}, chunks={}, source={}, chunks_type={}",
                 documentId,
@@ -110,11 +131,14 @@ public class MilvusVectorStore implements VectorStore {
 
     @Override
     public void deleteByDocumentId(Long documentId) {
-        milvusClientV2.delete(
-                DeleteReq.builder()
-                        .collectionName(props.getCollection())
-                        .filter("document_id == " + documentId)
-                        .build());
+        // Phase 3.A: delete 调用走 CB。熔断态抛 CallNotPermittedException 上抛, 让 DeleteService 决策重试 / 标记 pending。
+        circuitBreaker.executeRunnable(
+                () ->
+                        milvusClientV2.delete(
+                                DeleteReq.builder()
+                                        .collectionName(props.getCollection())
+                                        .filter("document_id == " + documentId)
+                                        .build()));
     }
 
     @Override
@@ -146,7 +170,9 @@ public class MilvusVectorStore implements VectorStore {
         if (expr != null) {
             reqBuilder.filter(expr);
         }
-        SearchResp resp = milvusClientV2.search(reqBuilder.build());
+        // Phase 3.A: dense search 调用走 CB
+        SearchResp resp =
+                circuitBreaker.executeSupplier(() -> milvusClientV2.search(reqBuilder.build()));
         List<List<SearchResp.SearchResult>> results = resp.getSearchResults();
         if (results.isEmpty()) return List.of();
 
@@ -204,7 +230,8 @@ public class MilvusVectorStore implements VectorStore {
                         .outFields(List.of(MilvusCollectionInitializer.FIELD_CHUNK_ID))
                         .build();
 
-        SearchResp resp = milvusClientV2.hybridSearch(hybridReq);
+        // Phase 3.A: hybrid search 调用走 CB
+        SearchResp resp = circuitBreaker.executeSupplier(() -> milvusClientV2.hybridSearch(hybridReq));
         List<List<SearchResp.SearchResult>> results = resp.getSearchResults();
         if (results.isEmpty()) {
             return List.of();

@@ -53,6 +53,8 @@ class ChatServiceTest {
     @Mock private ChatClient chatClient;
     // V3-W3 Langfuse trace 接入(DoD-5); mock 让所有 trace 调用成 no-op
     @Mock private TraceObserver traceObserver;
+    // Phase 3.A: metrics mock 成 void no-op, ChatService recordChatTotal 等不抛 NPE。
+    @Mock private com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
 
     @InjectMocks private ChatService chatService;
 

@@ -43,6 +43,8 @@ public class RetrieveService {
     // 但通过 RerankProperties.feature flag 决定是否实际调用, 二者任一缺失即视为不支持 rerank。
     private final RerankClient rerankClient;
     private final RerankProperties rerankProps;
+    // Phase 3.A: retrieve SLO 计量(retrieve_total_latency / recall_count / rerank_latency)
+    private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
 
     /**
      * V3-W3 加固: 启动期自检 + 打日志明示 reranker 实际配置。防止 .env / dev.yml / 环境变量多重覆盖 静默让 reranker base_url 错配,
@@ -70,6 +72,7 @@ public class RetrieveService {
      * @return 召回结果(可能为空 items, 但召回操作本身成功)
      */
     public RetrieveResult retrieve(ChatCommand cmd) {
+        long retrieveT0 = System.currentTimeMillis(); // Phase 3.A: retrieve_total_latency
         // 用户 topK 是"最终想要几条"; 启用 reranker 时底层扩大到 candidatePool 条
         int userTopK = (cmd.topK() == null) ? 5 : cmd.topK();
         boolean rerankEnabled = rerankProps.isEnabled();
@@ -90,6 +93,8 @@ public class RetrieveService {
                         filter.isEmpty() ? null : filter);
         if (hits.isEmpty()) {
             log.info("retrieve.empty query_len={}, fetchK={}", cmd.query().length(), fetchK);
+            metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+            metrics.recordRetrieveRecall(0);
             return RetrieveResult.empty();
         }
 
@@ -115,6 +120,7 @@ public class RetrieveService {
         List<ScoredChunk> finalHits = validHits;
         float top1HybridScore = validHits.isEmpty() ? 0f : validHits.get(0).score();
         if (rerankEnabled && validHits.size() > 1) {
+            long rerankT0 = 0L; // Phase 3.A: rerank_latency metric 基准; 0 表示还没进入 call
             try {
                 List<RerankCandidate> candidates = new ArrayList<>(validHits.size());
                 for (ScoredChunk h : validHits) {
@@ -127,7 +133,9 @@ public class RetrieveService {
                         candidates.size(),
                         topN,
                         top1HybridScore);
+                rerankT0 = System.currentTimeMillis();
                 List<ScoredChunk> reranked = rerankClient.rerank(cmd.query(), candidates, topN);
+                metrics.recordRerankLatency(System.currentTimeMillis() - rerankT0, true);
                 if (!reranked.isEmpty()) {
                     finalHits = reranked;
                     rerankState = "applied";
@@ -143,6 +151,9 @@ public class RetrieveService {
                     log.warn("retrieve.rerank_empty fallback to hybrid");
                 }
             } catch (Exception e) {
+                if (rerankT0 > 0) {
+                    metrics.recordRerankLatency(System.currentTimeMillis() - rerankT0, false);
+                }
                 rerankState = "failed";
                 log.warn(
                         "retrieve.rerank_failed fallback to hybrid, query_len={}, error={}",
@@ -228,6 +239,9 @@ public class RetrieveService {
                 citations.size(),
                 userTopK,
                 rerankState);
+        // Phase 3.A: retrieve SLO 计量(retrieve_total_latency + recall_count)
+        metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+        metrics.recordRetrieveRecall(citations.size());
         return new RetrieveResult(citations, rerankState, top1HybridScore, top1RerankScore);
     }
 

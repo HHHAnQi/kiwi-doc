@@ -6,12 +6,13 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -40,11 +41,21 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class BgeM3EmbeddingClient implements EmbeddingClient {
 
     private final EmbeddingProperties props;
+    // Phase 3.A: 调用 BGE-M3 服务时走 CircuitBreaker(命名 instance "embedding"),
+    // 失败率 ≥ 50% 自动熔断, 防 TEI/Ollama Embedding 长时间挂掉把整站 chat 拖死。
+    private final CircuitBreaker circuitBreaker;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public BgeM3EmbeddingClient(
+            EmbeddingProperties props, CircuitBreakerRegistry cbRegistry) {
+        this.props = props;
+        // cbRegistry 已由 application.yml resilience4j.circuitbreaker.instances.embedding 装载配置,
+        // 这里仅按名取 instance。若配置缺失则按 registry default config 新建。
+        this.circuitBreaker = cbRegistry.circuitBreaker("embedding");
+    }
 
     private WebClient client() {
         return WebClient.builder().baseUrl(props.getBaseUrl()).build();
@@ -96,15 +107,19 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
         }
 
         try {
+            // Phase 3.A: embedding CircuitBreaker 装饰。熔断态会直接抛 CallNotPermittedException,
+            // 不进 HTTP 调用, 让上游 RetrieveService 知晓并形成降级链。
             String respJson =
-                    client().post()
-                            .uri("/v1/embeddings")
-                            .header("Content-Type", "application/json")
-                            .bodyValue(body.toString())
-                            .retrieve()
-                            .bodyToMono(String.class)
-                            .timeout(Duration.ofMillis(props.getTimeoutMs()))
-                            .block();
+                    circuitBreaker.executeSupplier(
+                            () ->
+                                    client().post()
+                                            .uri("/v1/embeddings")
+                                            .header("Content-Type", "application/json")
+                                            .bodyValue(body.toString())
+                                            .retrieve()
+                                            .bodyToMono(String.class)
+                                            .timeout(Duration.ofMillis(props.getTimeoutMs()))
+                                            .block());
             return parseResponse(respJson, inputs.size());
         } catch (Exception e) {
             log.error(
