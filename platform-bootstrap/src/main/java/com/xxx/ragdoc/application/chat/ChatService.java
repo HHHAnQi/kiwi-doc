@@ -105,7 +105,15 @@ public class ChatService {
                     TraceObserver.ObservationType.RETRIEVE,
                     "retrieve",
                     cmd.query(),
-                    Map.of("hits", retrieve.items().size()),
+                    Map.of(
+                            "hits",
+                            retrieve.items().size(),
+                            "rerank_state",
+                            retrieve.rerankState(),
+                            "top1_hybrid_score",
+                            retrieve.top1HybridScore(),
+                            "top1_rerank_score",
+                            retrieve.top1RerankScore()),
                     retrieveMs,
                     null);
 
@@ -257,16 +265,37 @@ public class ChatService {
             }
         }
 
+        // Phase 1.E (2026-08-03): SSE 路径 Langfuse trace 入口
+        String lfTrace =
+                traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query(), "path", "sse"));
+
         // 2. EMPTY_KB 同步降级: Flux.just(DoneEvent state=EMPTY_KB)
         if (documentRepository.countByStatus(DocumentStatus.READY) == 0) {
+            traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
+                    "decision.empty_kb", null, null, 0, null);
+            traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.EMPTY_KB.name()));
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.EMPTY_KB.name()));
         }
 
         // 3. 召回(同步, retrieve 本身快, p99 < 1s ADR-0004 L1 SLA)
+        long sseT0 = System.currentTimeMillis();
         RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
+        long sseRetrieveMs = System.currentTimeMillis() - sseT0;
+        traceObserver.observe(lfTrace, TraceObserver.ObservationType.RETRIEVE,
+                "retrieve", cmd.query(),
+                Map.of(
+                        "hits", retrieve.items().size(),
+                        "rerank_state", retrieve.rerankState(),
+                        "top1_hybrid_score", retrieve.top1HybridScore(),
+                        "top1_rerank_score", retrieve.top1RerankScore()),
+                sseRetrieveMs, null);
+
         if (retrieve.items().isEmpty()) {
             // NO_RECALL 同步降级
+            traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
+                    "decision.no_recall", null, null, sseRetrieveMs, null);
+            traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.NO_RECALL.name()));
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.NO_RECALL.name()));
         }
@@ -299,9 +328,20 @@ public class ChatService {
         // 答案累积 StringBuilder(线程安全考虑: Reactor 单线程消费, 无 race)
         StringBuilder acc = new StringBuilder(1024);
 
+        // Phase 1.E: SSE LLM call observation 开始(首 token 前)
+        long sseLlmT0 = System.currentTimeMillis();
+
         reactor.core.publisher.Flux<ChatStreamEvent> tokens =
                 chatClient
                         .chatStream(cmd.query(), context)
+                        .doOnNext(delta -> {
+                            // 首个 token — 标记 LLM first_token observation
+                            if (acc.length() == 0) {
+                                long firstTokenMs = System.currentTimeMillis() - sseLlmT0;
+                                traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
+                                        "llm.first_token", null, null, firstTokenMs, null);
+                            }
+                        })
                         .map(
                                 delta -> {
                                     acc.append(delta);
@@ -309,13 +349,15 @@ public class ChatService {
                                 })
                         .onErrorResume(
                                 e -> {
-                                    log.warn(
-                                            "chat.stream_llm_failed trace_id={}, err={}",
-                                            traceId.value(),
-                                            e.getMessage());
+                                    long errMs = System.currentTimeMillis() - sseLlmT0;
+                                    log.warn("chat.stream_llm_failed trace_id={}, err={}", traceId.value(), e.getMessage());
+                                    traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
+                                            "llm.stream_failed", null, null, errMs,
+                                            Map.of("error", (Object) e.getMessage()));
+                                    traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
+                                            "decision.llm_degraded", null, null, errMs, null);
                                     // LLM 失败时落降级 trace + 发 DoneEvent(LLM_DEGRADED)
-                                    persistTrace(
-                                            cmd, traceId, acc.toString(), StateHint.LLM_DEGRADED);
+                                    persistTrace(cmd, traceId, acc.toString(), StateHint.LLM_DEGRADED);
                                     return reactor.core.publisher.Flux.just(
                                             new ChatStreamEvent.DoneEvent(
                                                     traceId.value(),
@@ -324,13 +366,32 @@ public class ChatService {
                         .concatWith(
                                 reactor.core.publisher.Flux.defer(
                                         () -> {
+                                            long llmTotalMs = System.currentTimeMillis() - sseLlmT0;
+                                            traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
+                                                    "llm.stream_done",
+                                                    null, Map.of("answer_len", acc.length()), llmTotalMs, null);
+                                            traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
+                                                    "decision.ok", null, null, llmTotalMs, null);
                                             // 流正常结束 → 落 trace + 发 DoneEvent
-                                            persistTrace(
-                                                    cmd, traceId, acc.toString(), StateHint.OK);
+                                            persistTrace(cmd, traceId, acc.toString(), StateHint.OK);
                                             return reactor.core.publisher.Flux.just(
                                                     new ChatStreamEvent.DoneEvent(
                                                             traceId.value(), StateHint.OK.name()));
-                                        }));
+                                        }))
+                        // Phase 1.E: 不论成功还是失败, 最后 endTrace。最后一个 observable 派发后 doFinally 在 cancel/complete/error 都触发。
+                        .doFinally(signal -> {
+                            StateHint finalHint = StateHint.OK;
+                            try {
+                                String entered = acc.toString();
+                                if (entered.isEmpty()) {
+                                    // flux 中途 cancel / onError 都可能 acc 空, 视为 degraded
+                                    finalHint = StateHint.LLM_DEGRADED;
+                                }
+                            } catch (Throwable ignore) {
+                                finalHint = StateHint.LLM_DEGRADED;
+                            }
+                            traceObserver.endTrace(lfTrace, Map.of("state_hint", finalHint.name()));
+                        });
 
         // 异常路径也要落 trace(LLM_DEGRADED 时 acc 包含部分答案; onErrorResume 已转 DoneEvent)
         return reactor.core.publisher.Flux.<ChatStreamEvent>just(head).concatWith(tokens);

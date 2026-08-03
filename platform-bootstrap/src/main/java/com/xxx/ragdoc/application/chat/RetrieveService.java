@@ -109,6 +109,9 @@ public class RetrieveService {
         // 4. ③ 可选: cross-encoder reranker 精排, 取 topN(=userTopK)
         //    失败时降级到原 hybrid 序(不破坏主流程, 只 log)
         //    V3-W3: 加 candidates 数 + top1 hybrid score 进 log, 跑完 RAGAS 看分布判断 reranker 是否真提质
+        //    Phase 1.E: 通过 rerankState 把分支信息回吐给 ChatService 做 Langfuse observation
+        String rerankState = rerankEnabled ? "skipped" : "not_enabled";
+        float top1RerankScore = 0f;
         List<ScoredChunk> finalHits = validHits;
         float top1HybridScore = validHits.isEmpty() ? 0f : validHits.get(0).score();
         if (rerankEnabled && validHits.size() > 1) {
@@ -127,16 +130,20 @@ public class RetrieveService {
                 List<ScoredChunk> reranked = rerankClient.rerank(cmd.query(), candidates, topN);
                 if (!reranked.isEmpty()) {
                     finalHits = reranked;
+                    rerankState = "applied";
+                    top1RerankScore = reranked.get(0).score();
                     log.info(
                             "retrieve.rerank_applied candidates={}, final_n={}, top1_rerank_score={}, top1_hybrid_score={}",
                             candidates.size(),
                             reranked.size(),
-                            reranked.get(0).score(),
+                            top1RerankScore,
                             top1HybridScore);
                 } else {
+                    rerankState = "empty_fallback";
                     log.warn("retrieve.rerank_empty fallback to hybrid");
                 }
             } catch (Exception e) {
+                rerankState = "failed";
                 log.warn(
                         "retrieve.rerank_failed fallback to hybrid, query_len={}, error={}",
                         cmd.query().length(),
@@ -145,6 +152,7 @@ public class RetrieveService {
             }
         } else if (rerankEnabled) {
             // 单条候选 rerank 无意义, 直接用
+            rerankState = "skipped_single_candidate";
             finalHits = validHits;
         }
 
@@ -214,12 +222,13 @@ public class RetrieveService {
         }
 
         log.info(
-                "retrieve.done fetchK={}, rerank={}, hits={}, topK={}",
+                "retrieve.done fetchK={}, rerank={}, hits={}, topK={}, rerank_state={}",
                 fetchK,
                 rerankEnabled,
                 citations.size(),
-                userTopK);
-        return new RetrieveResult(citations);
+                userTopK,
+                rerankState);
+        return new RetrieveResult(citations, rerankState, top1HybridScore, top1RerankScore);
     }
 
     private static String truncate(String s, int max) {
@@ -238,9 +247,13 @@ public class RetrieveService {
             List<String> sectionPath) {}
 
     /** 召回结果。items 空表示 NO_RECALL。 */
-    public record RetrieveResult(List<Citation> items) {
+    public record RetrieveResult(
+            List<Citation> items,
+            String rerankState,
+            float top1HybridScore,
+            float top1RerankScore) {
         public static RetrieveResult empty() {
-            return new RetrieveResult(List.of());
+            return new RetrieveResult(List.of(), "not_enabled", 0f, 0f);
         }
     }
 }

@@ -150,7 +150,10 @@ class ChatServiceTest {
                                                     "Nacos 文本",
                                                     "Nacos 文本",
                                                     0.8f,
-                                                    java.util.List.of()))));
+                                                    java.util.List.of())),
+                                    "not_enabled",
+                                    0.8f,
+                                    0f));
             when(chatClient.chat(any(), any())).thenReturn("限流策略用 Sentinel[1]");
 
             ChatResult r = chatService.chat(new ChatCommand("怎么限流", null, 5), TID);
@@ -181,7 +184,10 @@ class ChatServiceTest {
                                                     "片段",
                                                     "片段",
                                                     0.9f,
-                                                    java.util.List.of()))));
+                                                    java.util.List.of())),
+                                    "not_enabled",
+                                    0.9f,
+                                    0f));
             when(chatClient.chat(any(), any()))
                     .thenThrow(new RuntimeException("DashScope timeout"));
 

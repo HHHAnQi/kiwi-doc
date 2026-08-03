@@ -32,6 +32,14 @@ public class LangfuseProperties {
     /** 上报 batch flush 间隔(ms)。 */
     private long flushIntervalMs = 5000;
 
+    /**
+     * 触发 batch flush 的累计 observation 阈值(Phase 1.E)。
+     *
+     * <p>buffer 内任意 traceId 的 pending observation 数 ≥ 此值时, 立即触发 send, 不等 定时周期。
+     * 设为 0 时禁用, 仅靠 flush-interval 周期 + endTrace 触发。
+     */
+    private int flushBatchSize = 50;
+
     /** 上报异步线程池大小。 */
     private int poolSize = 2;
 }

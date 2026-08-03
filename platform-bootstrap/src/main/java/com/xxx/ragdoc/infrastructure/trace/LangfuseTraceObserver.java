@@ -151,8 +151,15 @@ public class LangfuseTraceObserver implements TraceObserver {
             obs.put("endTime", Instant.now(clock).plusMillis(durationMs).toString());
         if (metadata != null && !metadata.isEmpty()) obs.put("metadata", metadata);
 
-        buffer.computeIfAbsent(traceId, k -> new ArrayList<>())
-                .add(wrap("observation-create", obs));
+        List<Map<String, Object>> pending =
+                buffer.computeIfAbsent(traceId, k -> new ArrayList<>());
+        pending.add(wrap("observation-create", obs));
+
+        // Phase 1.E: 阈值 flush — 单 trace observation 累积 ≥ flushBatchSize 时立刻 drain,
+        // 不等 定时周期(/= SSE 流式 query 用 Langfuse UI 看进度, first_token/retrieve 提前可见)。
+        if (props.getFlushBatchSize() > 0 && pending.size() >= props.getFlushBatchSize()) {
+            flushTraceIncremental(traceId);
+        }
     }
 
     @Override
@@ -171,7 +178,8 @@ public class LangfuseTraceObserver implements TraceObserver {
             trace.put("metadata", existing);
         }
 
-        // 拼 batch: 1 个 trace-create + N 个 observation-create
+        // 拼 batch: 1 个 trace-create + N 个 observation-create。
+        // trace-create 用 traceId body.id, Langfuse 按 id upsert — 之前 flush 的 patch 不会重复创建。
         List<Map<String, Object>> batch = new ArrayList<>();
         batch.add(wrap("trace-create", trace));
         if (observations != null) batch.addAll(observations);
@@ -179,11 +187,41 @@ public class LangfuseTraceObserver implements TraceObserver {
         send(batch);
     }
 
-    /** 把所有未 endTrace 的 trace + 其 observations flush 一次(兜底定期 flush). */
+    /**
+     * Phase 1.E: 把某 trace 当前 buffer 内积压的 observation 提前 flush 一次。
+     *
+     * <p>包含一个 trace-create(body.id = traceId)做 server side upsert, 保证后续 observation 不会因 trace 不存在 被 drop。
+     * 已结束的 trace(endTrace 已 remove)不应进此路径 — 调用方应先 check traces.containsKey。
+     */
+    private void flushTraceIncremental(String traceId) {
+        Map<String, Object> trace = traces.get(traceId);
+        if (trace == null) return;
+        List<Map<String, Object>> pending = buffer.remove(traceId);
+        // 立刻 putIfAbsent 一个空 list — 同时触发的 observe() 会拿到新 list, 不丢事件
+        buffer.putIfAbsent(traceId, new ArrayList<>());
+        if (pending == null || pending.isEmpty()) return;
+        List<Map<String, Object>> batch = new ArrayList<>(pending.size() + 1);
+        batch.add(wrap("trace-create", trace));
+        batch.addAll(pending);
+        send(batch);
+        log.debug("langfuse.incremental_flush trace_id={}, size={}", traceId, pending.size());
+    }
+
+    /**
+     * 定时 flush(由 @PostConstruct 的 scheduler 周 期触发)。
+     *
+     * <p>endTrace 已立即 send 自己的 batch, 不依赖此; 周期 flush 主要服务于长 流式 chat: 在 endTrace 之前, 让 buffer 内的
+     * retrieve/first_token observation 提前可见到 Langfuse UI。阈值 ≤0 时退化为 noop, 由 endTrace 兜底完整性。
+     */
     private void flush() {
-        // noop: 此处仅 flush 已 endTrace 通过 send 直发的, 没有积压。endTrace 内嵌立即 send.
-        // (定期 flush 主要是 keep-alive 与心跳; 简化版 trace end 即 flush, 满足 chat 单元测试场景.
-        //  V3.5 升级: 让 startTrace/observe 也立即 buffer 直发到 ingestion, 现在版本等 endTrace.)
+        if (props.getFlushBatchSize() <= 0) return;
+        // 遍历 traces 内所有未结束 trace, 符合阈值则 drain
+        for (String traceId : traces.keySet()) {
+            List<Map<String, Object>> pending = buffer.get(traceId);
+            if (pending != null && pending.size() >= props.getFlushBatchSize()) {
+                flushTraceIncremental(traceId);
+            }
+        }
     }
 
     /** 包装为 ingestion batch 单 event 项: {id, type, body}. */

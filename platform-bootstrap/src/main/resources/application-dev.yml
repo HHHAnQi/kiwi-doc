@@ -129,6 +129,9 @@ langfuse:
   secret-key: ${LANGFUSE_SECRET_KEY:}
   # 上报 batch 大小 + flush interval(ms)。Langfuse ingestion 接受 batch event 一次 ≤100 条。
   flush-interval-ms: 5000
+  # Phase 1.E: 单 trace pending observation ≥ 此阈值时, 立即 drain 一批(不等 5s 周期)。
+  # 长 SSE 流(retrieve/first_token/...)能在 Langfuse UI 看到中间进度。0 = 仅周期 + endTrace 触发。
+  flush-batch-size: 50
   # 上报异步线程池大小(async, 不阻塞 chat 主路径)
   pool-size: 2
 
