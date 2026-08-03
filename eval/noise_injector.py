@@ -49,6 +49,13 @@ from judge_client import build_judge_llm  # noqa: E402
 EVAL_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = EVAL_DIR.parent
 
+# Phase 0.1: 加载 .env (JUDGE_LLM_PROVIDER_*)。.env 在仓库根, 自动 inject 进 os.environ
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+except ImportError:
+    pass  # 没 python-dotenv 时直接读已存在的 os.environ(CI 里 secrets 已 inject)
+
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8090/api/v1/chat")
 CHAT_TOKEN = os.getenv("TEST_AUTH_TOKEN", "dev-token-change-me")
 
@@ -333,7 +340,10 @@ def _gradient_sanity(results: dict[str, dict]) -> dict:
         "value": f_rand,
         "expected": f"~< no_rerank({f_no_rerank:.3f}) [weak]",
     })
-    return {"all_strict_pass": all(c["pass"] and "weak" not in c["expected"] for c in checks),
+    return {"all_strict_pass": all(c["pass"] and "weak" not in c["expected"] for c in checks
+                                  # 仅当对应 mode 在 results 里才算 strict check 通过/失败
+                                  if c["name"] != "random_distractor_lt_no_rerank"
+                                  or "no_rerank" in results),
             "checks": checks}
 
 

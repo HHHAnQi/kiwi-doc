@@ -37,10 +37,18 @@ from judge_client import build_judge_llm, list_configured_providers  # noqa: E40
 
 EVAL_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = EVAL_DIR.parent
+
+# Phase 0.1: 加载 .env (JUDGE_LLM_PROVIDER_*)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+except ImportError:
+    pass
+
 BADCASE_DIR = EVAL_DIR / "badcases"
 
-CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8090/api/v1/chat") if (os := __import__("os")) else None
-CHAT_TOKEN = __import__("os").getenv("TEST_AUTH_TOKEN", "dev-token-change-me")
+CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8090/api/v1/chat")
+CHAT_TOKEN = os.getenv("TEST_AUTH_TOKEN", "dev-token-change-me")
 
 # 当某 judge 与 ensemble 均值的偏差超过这个阈值时, 进 badcase(默认 0.2 = 20pp)
 DISAGREEMENT_THRESHOLD = 0.2

@@ -1,0 +1,46 @@
+{
+  "results": {
+    "random_distractor": {
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.5527019865769407,
+      "context_precision": 0.0,
+      "context_recall": 0.0,
+      "_judge": "deepseek/deepseek-chat",
+      "_sample_count": 5
+    }
+  },
+  "info": {
+    "meta": {
+      "judge_provider_id": 1,
+      "question_count": 5,
+      "modes": [
+        "random_distractor"
+      ],
+      "seed": 42,
+      "ran_at_utc": "2026-08-03T04:08:12.067745+00:00"
+    },
+    "sanity": {
+      "all_strict_pass": false,
+      "checks": [
+        {
+          "name": "empty_context_is_lowest",
+          "pass": true,
+          "value": 0,
+          "expected": "≤ random_distractor(0.000)"
+        },
+        {
+          "name": "empty_context_faith_lt_0p3",
+          "pass": true,
+          "value": 0,
+          "expected": "<0.30"
+        },
+        {
+          "name": "random_distractor_lt_no_rerank",
+          "pass": true,
+          "value": 0.0,
+          "expected": "~< no_rerank(0.000) [weak]"
+        }
+      ]
+    }
+  }
+}

@@ -67,9 +67,11 @@ METRICS_TO_TRACK = ["faithfulness", "answer_relevancy", "context_precision", "co
 GATE_THRESHOLD = 0.03  # 文档约定 -3% 阻断
 
 
-def load_questions():
+def load_questions(path: "Path | None" = None):
+    """加载题目。path 不传则用模块级 QUESTIONS_FILE。"""
+    qpath = path or QUESTIONS_FILE
     items = []
-    with open(QUESTIONS_FILE, encoding="utf-8") as f:
+    with open(qpath, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if line:
@@ -290,14 +292,13 @@ def main():
     args = p.parse_args()
 
     # 切换题库 — Phase 0.5 起默认 golden.jsonl
-    global QUESTIONS_FILE
-    QUESTIONS_FILE = Path(args.questions)
-    if not QUESTIONS_FILE.exists():
-        print(f"ERROR: 题库不存在 {QUESTIONS_FILE}", file=sys.stderr)
+    qpath = Path(args.questions)
+    if not qpath.exists():
+        print(f"ERROR: 题库不存在 {qpath}", file=sys.stderr)
         return 1
 
-    questions = load_questions()
-    print(f"[1/3] 装入 {len(questions)} 题 (from {QUESTIONS_FILE.name})")
+    questions = load_questions(qpath)
+    print(f"[1/3] 装入 {len(questions)} 题 (from {qpath.name})")
 
     print(f"[2/3] 调 chat 接口收集 (answer + contexts) ...")
     samples = build_ragas_dataset(questions)
