@@ -76,9 +76,13 @@ rag:
   # 防止 dev.yml fallback 到错误 endpoint 造成 reranker 静默失败回退 hybrid (P0 debug 教训)。
   rerank:
     enabled: ${RAG_RERANK_ENABLED:false}
-    base-url: ${RAG_RERANK_BASE_URL:http://localhost:8084}
+    base-url: ${RAG_RERANK_BASE_URL:http://localhost:18080}
     model: ${RAG_RERANK_MODEL:BAAI/bge-reranker-v2-m3}
     timeout-ms: 30000
+    # Phase 2.A Upgrade A3 决议 (2026-08-03):
+    #   实测 pool 50 让 reranker 重新排序, top5 GT chunk 命中率反而从 83% 跌到 56%,
+    #   recall/precision 严重退步。**A3 不通过, 回退到 20**。
+    #   原因可能是: 当前 corpus 仅 100 docs, pool 50 引入太多干扰; 待 corpus 扩 500+ 再试。
     candidate-pool: 20
     top-n: 5
   # P3-A: 切片模式 feature flag。

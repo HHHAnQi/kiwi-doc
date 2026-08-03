@@ -141,6 +141,12 @@ public class ChatService {
                 for (var c : retrieve.items()) {
                     context.add(c.llmContext());
                 }
+                // Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (2026-08-03)
+                // 论文 Liu et al. 2023: LLM 在长 context 中对 [中间位置] 信息提取能力下降,
+                // 最佳位置是 [头 + 尾]。RetrieveService 已按 score 排序(citations 顺序),
+                // 这里把 score 最高的放头(首位),次高放尾(末位),其余保持原相对顺序在中间。
+                // 效果预期: faith_on_answered +2-3pp。
+                context = applyLostInTheMiddleReorder(context);
                 String llmAnswer;
                 long t1 = System.currentTimeMillis();
                 try {
@@ -280,6 +286,8 @@ public class ChatService {
                         .toList();
         List<String> context =
                 retrieve.items().stream().map(RetrieveService.Citation::llmContext).toList();
+        // Phase 2.A Upgrade A2: SSE 路径同样做 Lost-in-the-Middle 重排, 与同步路径一致
+        context = applyLostInTheMiddleReorder(new ArrayList<>(context));
 
         // 5. 异步调 LLM 流式; CitationsEvent 先发 → mergeWith LLM delta flux → DoneEvent
         // 注意: chat_traces 不在此处写(写要等 LLM 完整答案长度才知道; 在 chatStream 完成时
@@ -381,5 +389,36 @@ public class ChatService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 不可用", e);
         }
+    }
+
+    /**
+     * Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (Liu et al. 2023).
+     *
+     * <p>LLM 在长 context 中间位置提取能力弱于头/尾。把 score 排序后的 context list 重排为:
+     *   out[0]   = sortedDesc[0]   (最高分 → 头)
+     *   out[n-1] = sortedDesc[1]   (次高分 → 尾)
+     *   out[1..n-2] = sortedDesc[2..n-1] 按 odd 交替填充中段,让较高分靠近边界
+     *
+     * <p>不变性: 输入 size ≤ 2 时直接返回。thread-safe 纯函数。
+     */
+    static List<String> applyLostInTheMiddleReorder(List<String> sortedDesc) {
+        if (sortedDesc == null || sortedDesc.size() <= 2) {
+            return sortedDesc;
+        }
+        int n = sortedDesc.size();
+        List<String> out = new ArrayList<>(n);
+        out.add(sortedDesc.get(0));  // 头: 最高分
+        // 中段: i=2 到 n-1, 偶 i 前插入, 奇 i 后追加 (让 2,3 都靠近头/尾, 较高 i 远离)
+        java.util.ArrayDeque<String> mid = new java.util.ArrayDeque<>();
+        for (int i = 2; i < n; i++) {
+            if ((i & 1) == 0) {
+                mid.addFirst(sortedDesc.get(i));  // i=2,4,...靠头侧
+            } else {
+                mid.addLast(sortedDesc.get(i));   // i=3,5,...靠尾侧
+            }
+        }
+        out.addAll(mid);
+        out.add(sortedDesc.get(1));  // 尾: 次高分
+        return out;
     }
 }
