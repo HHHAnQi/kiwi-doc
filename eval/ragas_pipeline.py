@@ -215,10 +215,72 @@ def result_to_scores(result):
             if isinstance(v, (int, float)) and not (isinstance(v, float) and math.isnan(v))
         ]
         scores[k] = sum(nums) / len(nums) if nums else 0.0
+    # Phase 2.0.2: 附加 per-sample 数据, 由 run_ragas 之后算 refusal_rate / faith_on_answered
+    scores["_per_sample_df"] = df
     return scores
 
 
-def write_report(scores, samples, judge_meta=None):
+# Phase 2.0.2: 拒答模式匹配
+import re as _re
+_REFUSAL_PATTERNS = [
+    _re.compile(r"知识库中没有相关内容"),
+    _re.compile(r"未在知识库中找到"),
+    _re.compile(r"知识库中还没有"),
+    _re.compile(r"片段与问题完全无关"),
+]
+
+
+def is_refusal(answer: str) -> bool:
+    """识别 chat-app 降级答 (EmptyKb / NoRecall / LLM-degraded "知识库中没有相关内容")。"""
+    if not answer or not isinstance(answer, str):
+        return False
+    a = answer.strip()
+    if len(a) < 20:  # 短答通常都是拒答(text-len 11 是 chat-app 的退化)
+        return True
+    return any(p.search(a) for p in _REFUSAL_PATTERNS)
+
+
+def compute_refusal_metrics(samples, per_sample_df) -> dict:
+    """Phase 2.0.2 三档独立指标:
+    - refusal_rate:           答案被判为拒答的比例
+    - faith_on_answered:      非拒答题的 faith 均值（真实 RAG 能力）
+    - faith_on_refused:       拒答题的 faith 均值（应几乎 0，验尺子）
+
+    用 per_sample_df 同序的 faithfulness 列。
+    """
+    import math
+    n = len(samples)
+    if n == 0:
+        return {"refusal_rate": 0.0, "faith_on_answered": 0.0, "faith_on_refused": 0.0}
+    faith_col = "faithfulness" if "faithfulness" in per_sample_df.columns else \
+        next((c for c in per_sample_df.columns if c.startswith("faithfulness")), None)
+    refused, answered = [], []
+    for i, s in enumerate(samples):
+        ans = s.get("answer", "")
+        if faith_col is not None and i < len(per_sample_df):
+            f = per_sample_df[faith_col].iloc[i]
+            if isinstance(f, float) and math.isnan(f):
+                continue
+            f = float(f)
+        else:
+            continue
+        if is_refusal(ans):
+            refused.append(f)
+        else:
+            answered.append(f)
+    refusal_rate = len(refused) / n
+    faith_on_answered = sum(answered) / len(answered) if answered else 0.0
+    faith_on_refused = sum(refused) / len(refused) if refused else 0.0
+    return {
+        "refusal_rate": refusal_rate,
+        "faith_on_answered": faith_on_answered,
+        "faith_on_refused": faith_on_refused,
+        "_n_refused": len(refused),
+        "_n_answered": len(answered),
+    }
+
+
+def write_report(scores, samples, judge_meta=None, refusal=None):
     md = ["# RAGAS 评测报告 (P1)\n",
           "\n设计文档 README.md L16: RAGAS 答案质量评测 + CI 门禁 (-3% 阻断)\n"]
     # Phase 0.1: 报告需标注 judge 是异族 (Phase 0 前"同源污染"问题已修复)
@@ -239,6 +301,21 @@ def write_report(scores, samples, judge_meta=None):
     for k in METRICS_TO_TRACK:
         md.append(f"| {k} | {scores[k]:.4f} | {desc[k]} |\n")
     md.append(f"\n## 样本数: {len(samples)}\n")
+
+    # Phase 2.0.2: 拒答分离指标(把诚实拒答与幻觉分开, RAGAS 默认混在一起)
+    if refusal:
+        md.append("\n## Phase 2.0.2 拒答分离指标\n")
+        md.append("\n> RAGAS faithfulness 把 [诚实拒答 (知识库中没有相关内容)] 与 [幻觉] 都判 0,\n")
+        md.append("\n> 拒答分离指标把两类分开看, 才能真实衡量 RAG 能力。\n\n")
+        md.append("| 指标 | 数值 | 说明 |\n|---|---|---|\n")
+        md.append(f"| **refusal_rate** | {refusal['refusal_rate']:.4f} "
+                  f"({refusal['_n_refused']}/{refusal['_n_refused']+refusal['_n_answered']}) | "
+                  f"拒答率(短答 or 含'无相关') |\n")
+        md.append(f"| **faith_on_answered** | {refusal['faith_on_answered']:.4f} | "
+                  f"非拒答题 faith 均值 ← 真实 RAG 能力 |\n")
+        md.append(f"| faith_on_refused | {refusal['faith_on_refused']:.4f} | "
+                  f"拒答题 faith, 应≈0(尺刻度验证) |\n")
+
     with open(REPORT_FILE, "w", encoding="utf-8") as f:
         f.write("".join(md))
     with open(RAW_OUT_FILE, "w", encoding="utf-8") as f:
@@ -305,11 +382,22 @@ def main():
 
     print(f"[3/3] 跑 RAGAS 评测 (judge provider #{args.judge_provider}) ...")
     scores, judge_meta = run_ragas(samples, judge_provider_id=args.judge_provider)
-    write_report(scores, samples, judge_meta=judge_meta)
+
+    # Phase 2.0.2: per-sample faith 已经在 scores["_per_sample_df"] 里, 算拒答分离指标
+    per_df = scores.pop("_per_sample_df", None)
+    refusal = compute_refusal_metrics(samples, per_df) if per_df is not None else None
+
+    write_report(scores, samples, judge_meta=judge_meta, refusal=refusal)
     print(f"\n✓ 报告: {REPORT_FILE}")
     for k in METRICS_TO_TRACK:
         print(f"  {k:20} = {scores[k]:.4f}")
     print(f"  judge               = provider#{judge_meta.provider_id} ({judge_meta.family}/{judge_meta.model})")
+    if refusal:
+        print(f"\n--- Phase 2.0.2 拒答分离指标 ---")
+        print(f"  refusal_rate        = {refusal['refusal_rate']:.4f} "
+              f"({refusal['_n_refused']}/{refusal['_n_refused']+refusal['_n_answered']})")
+        print(f"  faith_on_answered   = {refusal['faith_on_answered']:.4f}  ← 真实 RAG 能力")
+        print(f"  faith_on_refused    = {refusal['faith_on_refused']:.4f}  ← 应≈0, 尺刻度验证")
 
     if args.set_baseline:
         with open(BASELINE_FILE, "w", encoding="utf-8") as f:
