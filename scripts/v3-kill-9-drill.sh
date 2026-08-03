@@ -148,38 +148,61 @@ log "  kill 后 chunks_written=$CHK_BEFORE (可能为 0 因没到 checkpoint, �
 # Step 4: 等 lease 过期 (5 分钟), 或调小 config 加速演练
 # ============================================================
 log "step4 等 lease 过期(默认 5 min, 用 DRILL_FAST_LEASE=1 可缩短)"
+# 注: heartbeat/reaper job 跑在 parser-service 进程内(@ComponentScan only by ParserServiceApplication,
+# 见 VisibilityTimeoutScheduler + ParserServiceApplication.@EnableScheduling).
+# step3 的 kill -9 把 parser 杀死 = reaper 也跟着死。所以"等心跳回收" 必须发生在 step5 重启 parser 之后,
+# 让新的健康 parser 实例的 reaper 把 zombie task 回 PENDING — 这才是 DoD-1 真实语义(多实例 HA)。
+# 本 step 仅做 lease fast-forward: 把 visible_at 改成过去, 让 step5 重启 parser 后第一轮 reap 立即命中。
 if [ "${DRILL_FAST_LEASE:-0}" = "1" ]; then
-  # 演练模式: 直接把 visible_at 改成过去, 立即触发心跳回滚
+  # TZ 修(2026-08-03): MySQL server TZ 已切 UTC(default-time-zone=+00:00),
+  # column 字面值就是 UTC framing。本机 mysql CLI 通过 docker 命令也走 server session TZ=UTC,
+  # 用 UTC_TIMESTAMP() 与 NOW() 写的都是同一字面值 framing, 安全起见显式用 UTC_TIMESTAMP。
   mysql -h127.0.0.1 -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" -e \
-    "UPDATE parse_tasks SET visible_at=DATE_SUB(NOW(), INTERVAL 1 SECOND) WHERE id=${TASK_ID}" 2>/dev/null
-  log "  (快进模式) visible_at 已改成过去"
-  SLEEP_SEC=10
-else
-  SLEEP_SEC=330  # 5.5 min, 留 30s 余量给心跳 job(@Scheduled 30s 间隔)
+    "UPDATE parse_tasks SET visible_at=DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 SECOND) WHERE id=${TASK_ID}" 2>/dev/null
+  log "  (快进模式) visible_at 已改成过去(UTC_TIMESTAMP), 等 step5 新 parser 的 reaper 回收"
 fi
-log "  sleep ${SLEEP_SEC}s ..."
-sleep "$SLEEP_SEC"
-
-# 校验: 心跳 job 把 RUNNING 回 PENDING
-STATUS_AFTER_REAP=$(mysql -h127.0.0.1 -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" -N -e \
-  "SELECT status FROM parse_tasks WHERE id=${TASK_ID}" 2>/dev/null)
-assert '[ "$STATUS_AFTER_REAP" = "PENDING" ]' "心跳 job 把 zombie RUNNING 回滚到 PENDING"
 
 # ============================================================
-# Step 5: 重启 parser-service, 等续点完成到 PARSED
+# Step 5: 重启 parser-service。新 parser 的 reaper 第一轮(<= reap-interval-ms)回收 zombie task,
+#         consumer 下一轮消费重新进 RUNNING → 跑到 PARSED(续点 / 重解析)。
 # ============================================================
-log "step5 重启 parser-service 续点"
+log "step5 重启 parser-service, 等 reaper 回收 zombie + 续解析到 PARSED"
 : > "$PARSE_APP_LOG"
-nohup java -jar "$PARSER_JAR" --spring.profiles.active=dev --server.port=8093 >> "$PARSE_APP_LOG" 2>&1 &
+# fast-lease 模式缩短 reaper 周期到 5s(默认 30s), 让第一轮 reap 立即命中。
+if [ "${DRILL_FAST_LEASE:-0}" = "1" ]; then
+  REAP_INTERVAL=5000
+else
+  REAP_INTERVAL=30000
+fi
+nohup java -jar "$PARSER_JAR" --spring.profiles.active=dev --server.port=8093 \
+  --rag.parser.reap-interval-ms="$REAP_INTERVAL" >> "$PARSE_APP_LOG" 2>&1 &
 PARSER_PID=$!
 for i in $(seq 1 30); do
   if curl -sf "http://localhost:8093/actuator/health" > /dev/null; then break; fi
   sleep 1
   [ "$i" -eq 30 ] && fail "重启后 30s 未就绪"
 done
-log "  重启完成 pid=$PARSER_PID"
+log "  重启完成 pid=$PARSER_PID reap-interval=${REAP_INTERVAL}ms"
 
-# 等最终 PARSED (最多 5 min, 因单文档 < 3min, 留余量)
+# 等 reaper 第一轮把 zombie RUNNING 回 PENDING(≤ reap-interval + 余量)
+STATUS_AFTER_REAP="RUNNING"
+for i in $(seq 1 20); do
+  STATUS_AFTER_REAP=$(mysql -h127.0.0.1 -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" -N -e \
+    "SELECT status FROM parse_tasks WHERE id=${TASK_ID}" 2>/dev/null)
+  if [ "$STATUS_AFTER_REAP" = "PENDING" ] || [ "$STATUS_AFTER_REAP" = "PARSED" ]; then break; fi
+  sleep 2
+done
+assert '[ "$STATUS_AFTER_REAP" = "PENDING" ]' "心跳 job 把 zombie RUNNING 回滚到 PENDING (新 parser 实例 reaper)"
+
+# heartbeat 把 zombie 还 PENDING 后, RocketMQ CP 模式下旧 message 已被 ack(初次 onMessage 中途抛
+# 已被 broker 视为重投但 maxReconsumeTimes 有限, 不保证新一轮投递)。当前 V3 重投 rebalance job 仍未实现
+# (spec §3.3 注: V3.5 加)。本演练直接通过 chat-app 的 retry endpoint 重发 MQ message 触发新消费,
+# 让 new parser 把 task 重新跑完到 PARSED。这等价于未来的自动重投 job, 不影响 DoD-1/4 目标验证。
+TRIGGER_RESP=$(curl -sf -X POST "${CHAT_URL}/api/v1/documents/${DOC_ID}/retry" \
+  -H "Authorization: Bearer $AUTH_TOKEN" 2>/dev/null) || TRIGGER_RESP="(retry endpoint 失败, 走 RocketMQ native redelivery 兜底)"
+log "  trigger retry: $TRIGGER_RESP"
+
+# 等最终 PARSED (最多 5 min, 因单文档 < 3min, 留余量; reaper 把 task 还 PENDING 后 consumer 立即重消费)
 for i in $(seq 1 150); do
   STATUS=$(mysql -h127.0.0.1 -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASS" "$MYSQL_DB" -N -e \
     "SELECT status FROM parse_tasks WHERE id=${TASK_ID}" 2>/dev/null)

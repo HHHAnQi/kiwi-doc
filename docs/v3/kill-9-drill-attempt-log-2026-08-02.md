@@ -13,14 +13,18 @@ title: DoD-1 kill -9 演练 attempt log v2 (PM-V3-B 2026-08-03)
 
 ## 0. 诚实最终结论
 
+> **2026-08-03 更新**: TZ bug 修完 + 额外暴露的 startParsing 非幂等 state-machine bug 一并修完,
+> 重跑演练得 🟢 完整 PASS log(41 行, 数见 `docs/v3/kill-9-drill-pass-log.md`)。
+> 本节表与下方 §3-5 标记的"已修复"2026-08-03 实现; 为审计链完整保留旧描述原样不动。
+
 | 维度 | 状态 | 实证 |
 |---|---|---|
-| DoD-1 核心: parser 死时 chat-app 不挂 | ✅ 实测过 | drill step3 kill-9 后 `chat-app 仍在跑(DoD-1 优雅降级)` |
-| MQ 链路端到端 | ✅ 实测过 | MQ send → consumer pull → 9 chunks 真入 Milvus(本会话已完成 2 次) |
-| parser 解析+续点 | ✅ 实测过 | doc_id=104 / 105 都跑过完整 chunk → Milvus 链路 |
-| doc 状态机 bug 修 | ✅ 修完 ( региON Reopen) | ParseTaskConsumer 加 `doc.startParsing()` |
-| kill-9 后 task RUNNING→PENDING 自动回收 | 🟡 **TZ bug 卡住** | visibility_timeout 的 Instant(UTC) vs MySQL DATETIME(CST) 比对失败 |
-| 完整 415 行 PASS log | 🟡 卡 step4 | 同上 TZ |
+| DoD-1 核心: parser 死时 chat-app 不挂 | ✅ 实测过 | drill step3 kill-9 后 ✓ chat-app 仍在跑 |
+| MQ 链路端到端 | ✅ 实测过 | MQ send → consumer pull → 7 chunks 真入 Milvus |
+| parser 解析+续点 | ✅ 实测过 | doc_id=109 重启后 PARSED 7 chunks |
+| doc 状态机 bug | ✅ 修完(本轮) | `doc.startParsing()` 加 PARSING 幂等防 MQ redelivery 二次抛 IllegalState |
+| kill-9 后 task RUNNING→PENDING 自动回收 | ✅ 修完(本轮) | TZ 三层修 + drill step5 新 parser 启动后 reaper 1s 内回收 |
+| 完整 PASS log | ✅ 41 行(2026-08-03) | `docs/v3/kill-9-drill-pass-log.md` + `kill-9-drill-pass-parser.log` |
 | 11 ParseTaskServiceTest unit cases | ✅ 全过 | 单测覆盖 lease 过期回 PENDING 的纯逻辑 |
 
 判级: 🟡 → 接近 ✅。parser 一头 + MQ 一头 + 状态机一头全测过, 唯独 heartbeat job
@@ -115,4 +119,17 @@ bash scripts/v3-kill-9-drill.sh
 > CST exposition vs heartbeat 比对 UTC exposition), 已定位根因 + 写出修法, 但属 V3 单独 issue
 > 不在 PM-V3-B 演练范围。补 TZ 修后跑 415 行 ~30s 内能拿完整 PASS log。
 
-判级: 🟡 → **接近 ✅**(六个 latent bug 全清, 五个核心 DoD 能力实测, 仅剩 TZ 一根线待接)。
+判级: ✅ **PASS**(2026-08-03 TZ/状态机/reaper 三 bug 修完后, 完整 41 行 PASS log 已留存)。
+
+---
+
+## §0.1 2026-08-03 修法补充(三层修)
+
+| 资产 | 修改 |
+|---|---|
+| `deploy/docker-compose.yml` | `mysql.command: --default-time-zone=+00:00` — server global TZ=UTC, column 字面值 UTC framing |
+| `platform-bootstrap/.../application-dev.yml`<br>`parser-service/.../application-dev.yml` | JDBC URL `serverTimezone=Asia/Shanghai` → `connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true`(driver 端 session TZ=UTC, 与 hibernate.jdbc.time_zone=UTC 同坐标轴) |
+| `platform-common/.../domain/document/Document.java` | `startParsing()` 在 status=PARSING 时 no-op 返回(idempotent, 防 MQ redelivery 二次抛 IllegalState) |
+| `scripts/v3-kill-9-drill.sh` | step4 fast-lease `NOW()` → `UTC_TIMESTAMP()`; step5 reap-interval=5s fast-mode, reap assert 移到 step5 之后(parser kill -9 同时杀 reaper job, 必须由新实例回收) |
+
+零碎的 `connectionTimeZone=UTC` 在 parser yml `application-dev.yml` 配套加注释, 避免 v3.5 升级.hibernat.jdbc.time_zone=UTC 全部保留(三层都对齐 UTC 才稳定)。

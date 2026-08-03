@@ -214,9 +214,18 @@ public class Document {
     // 业务行为(状态机迁移 + 不变量约束)
     // ============================================================
 
-    /** 进入解析。仅 UPLOADED 可迁(V1 同步由 upload 流程立即触发)。 */
+    /**
+     * 进入解析。仅 UPLOADED 可迁(V1 同步由 upload 流程立即触发)。
+     *
+     * <p>幂等表层: 如果已 PARSING, 直接 no-op 返回(RocketMQ redelivery / parser restart 续点会再调一次,
+     * 不应抛 IllegalState)。READY/FAILED/UPLOADED 之外的非法迁移仍走 transitionTo 抛。
+     */
     public void startParsing() {
         ensureNotDeleted();
+        if (this.status == DocumentStatus.PARSING) {
+            // MQ redelivery / 重启续点: doc 已在解析, 不重复迁移
+            return;
+        }
         this.status = status.transitionTo(DocumentStatus.PARSING);
     }
 

@@ -4,6 +4,13 @@ services:
   mysql:
     image: mysql:8.4
     container_name: ragdoc-mysql
+    # TZ 修(2026-08-03, reaper bug 根因):
+    # MySQL TIMESTAMP 列字面值 = session TZ framing, server default session TZ=SYSTEM=host TZ。
+    # 旧配 default-time-zone=SYSTEM 在 mac 上 = CST/+08:00, 与 chat-app `hibernate.jdbc.time_zone=UTC`
+    # 形成的 "UTC literal vs CST literal" 比对差 8 小时 → heartbeat job reap SQL 永远 false。
+    # 修: 强制 server global TZ=UTC, 让 column 字面值与 hibernate.jdbc.time_zone=UTC 同坐标轴。
+    # 容器进程 TZ 仍用 Asia/Shanghai(只影响容器内日志时间戳打印, 不影响数据库 time_zone)。
+    command: --default-time-zone=+00:00
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-ragdoc}
