@@ -8,9 +8,9 @@
 
 | 指标 | 数值 | 说明 |
 |---|---|---|
-| faithfulness | 0.2944 | 答案是否完全从 context 推导, 高=低幻觉 |
-| answer_relevancy | 0.5498 | 答案相关性, 高=答非所问少 |
-| context_precision | 0.4000 | LLM judge 检索条目相关性位次质量 |
+| faithfulness | 0.4000 | 答案是否完全从 context 推导, 高=低幻觉 |
+| answer_relevancy | 0.3899 | 答案相关性, 高=答非所问少 |
+| context_precision | 0.2000 | LLM judge 检索条目相关性位次质量 |
 | context_recall | 0.2000 | ground_truth 被 context 覆盖比例 |
 
 ## 样本数: 5
