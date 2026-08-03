@@ -29,6 +29,8 @@ import reactor.core.publisher.Flux;
 public class DashScopeChatClient implements ChatClient {
 
     private final LlmProperties props;
+    // Phase 2.A: 注入 ChatMessages 以读 promptRelaxRefusal flag (默认 false = baseline 行为)
+    private final com.xxx.ragdoc.application.chat.ChatMessages chatMessages;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** WebClient 实例缓存(避免每次 chat 重建连接池, 性能更优)。 */
@@ -142,30 +144,15 @@ public class DashScopeChatClient implements ChatClient {
     /** 抽出 commit d56a3e9 修复后的 body 构造逻辑, 同步与流式共享。 stream=true 时 LLM 走 SSE。 */
     private ObjectNode buildOpenAiBody(String query, List<String> context, boolean stream) {
         // 1. 组装 system prompt + user prompt(同 chat() 旧逻辑,不复制注释)
-        // Phase 2.A Upgrade A1: prompt 第 5 条改造 (2026-08-03)
-        // baseline 第5条"片段与问题完全无关时, 一句话回答知识库中没有相关内容"过严 —
-        // 80 题 baseline 上 16.25% 被拒答, 其中至少 5-7 题 (ctx 实际相关但 code-only / 概念隐含)
-        // 被 LLM 误判为"完全无关"。
-        // 改造原则: 区分"绝对无关" vs "弱相关", 让 LLM尽量从弱相关 ctx 引出答案;
-        // 同时仍保留"绝对编造"防御。
-        String systemPrompt =
-                "你是 Spring Cloud Alibaba 技术文档助手,帮助用户理解 Nacos/Sentinel/Seata/RocketMQ 等组件。"
-                        + "我会从知识库检索出与用户问题最相关的片段,标注为 [1][2][3]。回答规则(务必遵守):\n"
-                        + "1. 直接回答问题, 用 2-4 句要点作答, 不要写长篇分步骤教程, 不要复述问题;\n"
-                        + "2. 答案必须从给定的片段中得出, 命中要点即可, 不引申不展开不举例;\n"
-                        + "3. 片段里有的关键事实(配置项名、数值、版本号、步骤)要原样引用, 用 [序号] 标注来源;\n"
-                        + "4. 片段含答案但只覆盖部分角度时, 只答片段里明确写到的部分, 其余角度不补不猜;\n"
-                        + "5. 片段与问题的判定规则(严格遵守, 避免误判): \n"
-                        + "   a. 只有当 [所有片段] 都和问题主题词在不同领域(如问Nacos但片段全讲RocketMQ)、"
-                        + "或片段只是无意义占位/目录页/版权页时, 才回答\"知识库中没有相关内容\";\n"
-                        + "   b. 片段含相关 [代码示例/配置片段/类名/方法名] 时, 即使没有自然语言解释, "
-                        + "也要基于该代码用1-2句话作答(例: 问'如何配置延迟连接' + 片段含 `<dubbo:service connections=\"10\">` → "
-                        + "答'通过在 dubbo:service 标签上配置 connections 属性指定长连接数');\n"
-                        + "   c. 片段讨论同一组件(如问Nacos + 片段讲Nacos另一个特性)时, 给出与该片段直接相关的答案, "
-                        + "不要因为'片段没逐字命中问题'就拒答;\n"
-                        + "   d. 实在到了第 a 条才拒答, 不要因 ctx表述风格差异触发拒答;\n"
-                        + "6. 片段可能因 PDF 抽取含多余空行, 这是格式噪声, 忽略它聚焦正文;\n"
-                        + "7. 严禁编造任何片段中没有的版本号、数值、配置项名;";
+        // Phase 2.A Upgrade A1 (flag-driven, 默认 OFF=baseline 行为, 见 ChatMessages.promptRelaxRefusal)
+        // OFF: baseline 严格 prompt (faithfulness 数字稳)
+        // ON: 放宽 "完全无关" 判定, 允许 code-only / 弱相关 ctx 也作答
+        String systemPrompt;
+        if (chatMessages != null && chatMessages.isPromptRelaxRefusal()) {
+            systemPrompt = buildRelaxedPrompt();
+        } else {
+            systemPrompt = buildBaselinePrompt();
+        }
 
         StringBuilder ctxBuilder = new StringBuilder();
         int totalChars = 0;
@@ -202,10 +189,44 @@ public class DashScopeChatClient implements ChatClient {
         ArrayNode messages = body.putArray("messages");
         ObjectNode sysMsg = messages.addObject();
         sysMsg.put("role", "system");
-        sysMsg.put("content", systemPrompt);
-        ObjectNode userMsg = messages.addObject();
-        userMsg.put("role", "user");
-        userMsg.put("content", userPrompt);
-        return body;
+         sysMsg.put("content", systemPrompt);
+         ObjectNode userMsg = messages.addObject();
+         userMsg.put("role", "user");
+         userMsg.put("content", userPrompt);
+         return body;
+     }
+
+    /** baseline prompt — Phase 0/2.0 锁定的 system prompt (faithfulness 数字稳的版本)。 */
+    private String buildBaselinePrompt() {
+        return "你是 Spring Cloud Alibaba 技术文档助手,帮助用户理解 Nacos/Sentinel/Seata/RocketMQ 等组件。"
+                + "我会从知识库检索出与用户问题最相关的片段,标注为 [1][2][3]。回答规则(务必遵守):\n"
+                + "1. 直接回答问题, 用 2-4 句要点作答, 不要写长篇分步骤教程, 不要复述问题;\n"
+                + "2. 答案必须从给定的片段中得出, 命中要点即可, 不引申不展开不举例;\n"
+                + "3. 片段里有的关键事实(配置项名、数值、版本号、步骤)要原样引用, 用 [序号] 标注来源;\n"
+                + "4. 片段含答案但只覆盖部分角度时, 只答片段里明确写到的部分, 其余角度不补不猜;\n"
+                + "5. 片段与问题完全无关时, 一句话回答\"知识库中没有相关内容\";\n"
+                + "6. 片段可能因 PDF 抽取含多余空行, 这是格式噪声, 忽略它聚焦正文;";
+    }
+
+    /**
+     * Phase 2.A relaxed prompt — 实证降低 refusal_rate 但触发 RAGAS length-coupling。
+     * 默认 OFF, 将来严谨 A/B 时再开(chatMessages.isPromptRelaxRefusal = true)。
+     */
+    private String buildRelaxedPrompt() {
+        return "你是 Spring Cloud Alibaba 技术文档助手,帮助用户理解 Nacos/Sentinel/Seata/RocketMQ 等组件。"
+                + "我会从知识库检索出与用户问题最相关的片段,标注为 [1][2][3]。回答规则(务必遵守):\n"
+                + "1. 直接回答问题, 用 2-4 句要点作答, 不要写长篇分步骤教程, 不要复述问题;\n"
+                + "2. 答案必须从给定的片段中得出, 命中要点即可, 不引申不展开不举例;\n"
+                + "3. 片段里有的关键事实(配置项名、数值、版本号、步骤)要原样引用, 用 [序号] 标注来源;\n"
+                + "4. 片段含答案但只覆盖部分角度时, 只答片段里明确写到的部分, 其余角度不补不猜;\n"
+                + "5. 片段与问题的判定规则(严格遵守, 避免误判): \n"
+                + "   a. 只有当 [所有片段] 都和问题主题词在不同领域(如问Nacos但片段全讲RocketMQ)、"
+                + "或片段只是无意义占位/目录页/版权页时, 才回答\"知识库中没有相关内容\";\n"
+                + "   b. 片段含相关 [代码示例/配置片段/类名/方法名] 时, 即使没有自然语言解释, "
+                + "也要基于该代码用1-2句话作答;\n"
+                + "   c. 片段讨论同一组件时, 给出与该片段直接相关的答案, "
+                + "不要因'片段没逐字命中问题'就拒答;\n"
+                + "6. 片段可能因 PDF 抽取含多余空行, 这是格式噪声, 忽略它聚焦正文;\n"
+                + "7. 严禁编造任何片段中没有的版本号、数值、配置项名;";
     }
 }

@@ -24,4 +24,22 @@ public class ChatMessages {
 
     /** V2+ 生效: LLM 调用失败时的兜底文案前缀 */
     private String llmDegradedMessage = "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: ";
+
+    // ─── Phase 2.A experimental flags (2026-08-03) ─────────────────
+    // 默认 OFF, Phase 2.A 实证 "整体不通过判据" 但代码保留, 待将来严谨 A/B 时开。
+    // 见 eval/PHASE2A_REPORT.md + eval/EVAL_BASELINE_CERT.md。
+
+    /**
+     * Phase 2.A Upgrade A1: 放宽 prompt 第5条 "完全无关就答无" 判定。
+     * OFF=baseline 行为(严格拒答, faithfulness 数字更稳); ON=放宽判定让 code-only / 弱相关 ctx
+     * 也能引出答案(refusal_rate -2.5~6pp, 但 RAGAS context_recall 长度耦合 -24pp)。
+     */
+    private boolean promptRelaxRefusal = false;
+
+    /**
+     * Phase 2.A Upgrade A2: Lost-in-the-Middle context 重排 (Liu et al. 2023)。
+     * OFF=按 score 自然顺序喂 LLM; ON=最高分放 context 头, 次高分放尾, 其余交替中段。
+     * 单独贡献未验证(Phase 2.A 与 A1 同跑), 待 Phase 2.B 单独 A/B。
+     */
+    private boolean litmReorder = false;
 }

@@ -141,12 +141,12 @@ public class ChatService {
                 for (var c : retrieve.items()) {
                     context.add(c.llmContext());
                 }
-                // Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (2026-08-03)
-                // 论文 Liu et al. 2023: LLM 在长 context 中对 [中间位置] 信息提取能力下降,
-                // 最佳位置是 [头 + 尾]。RetrieveService 已按 score 排序(citations 顺序),
-                // 这里把 score 最高的放头(首位),次高放尾(末位),其余保持原相对顺序在中间。
-                // 效果预期: faith_on_answered +2-3pp。
-                context = applyLostInTheMiddleReorder(context);
+                // Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (flag-driven, 默认 OFF=baseline 行为)
+                // 论文 Liu et al. 2023: LLM 在长 context 中对 [中间位置] 信息提取能力下降。
+                // 单独贡献未验证(Phase 2.A 与 A1 同跑 trade-off), 待 Phase 2.B 单独 A/B。
+                if (chatMessages != null && chatMessages.isLitmReorder()) {
+                    context = applyLostInTheMiddleReorder(context);
+                }
                 String llmAnswer;
                 long t1 = System.currentTimeMillis();
                 try {
@@ -286,8 +286,10 @@ public class ChatService {
                         .toList();
         List<String> context =
                 retrieve.items().stream().map(RetrieveService.Citation::llmContext).toList();
-        // Phase 2.A Upgrade A2: SSE 路径同样做 Lost-in-the-Middle 重排, 与同步路径一致
-        context = applyLostInTheMiddleReorder(new ArrayList<>(context));
+        // Phase 2.A Upgrade A2: SSE 路径 LITM (flag-driven, 默认 OFF)
+        if (chatMessages != null && chatMessages.isLitmReorder()) {
+            context = applyLostInTheMiddleReorder(new ArrayList<>(context));
+        }
 
         // 5. 异步调 LLM 流式; CitationsEvent 先发 → mergeWith LLM delta flux → DoneEvent
         // 注意: chat_traces 不在此处写(写要等 LLM 完整答案长度才知道; 在 chatStream 完成时
