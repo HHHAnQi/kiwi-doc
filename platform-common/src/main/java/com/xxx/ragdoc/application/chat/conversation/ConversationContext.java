@@ -107,9 +107,11 @@ public final class ConversationContext {
     /**
      * 追加一个新 turn, 返回新 ctx。不写入 store(由调用方决定, ChatService 仅 OK turn 调 save)。
      *
-     * @param newTurn 必须 state=OK (硬规则 G3, 调用方自检)
+     * @param newTurn 必须 state=OK (硬规则 G3, 调用方调 {@link #isWritable} 自检)
+     * @throws NullPointerException newTurn 为 null
      */
     public ConversationContext appendTurn(Turn newTurn) {
+        Objects.requireNonNull(newTurn, "newTurn 不能为空");
         List<Turn> updated = new ArrayList<>(this.recentTurns);
         updated.add(newTurn);
         return new ConversationContext(
@@ -128,16 +130,19 @@ public final class ConversationContext {
      * 压缩完成时调用, 把老 turn 替换为 summary, recentTurns 保留最近若干。
      *
      * @param newSummary LLM 压缩生成的新摘要 (会跟现有 rollingSummary 不叠加, 由调用方拼好)
-     * @param keepTurns 压缩后保留的近 recentTurns (默认最近 3 个)
+     * @param keepTurns 压缩后保留的近 recentTurns (默认最近 3 个)。会做 defensive copy, 调用方持有引用修改不影响本 ctx
      * @param compressFinishedAt 压缩完成时间戳, 写入 summaryUpdatedAt 用于 debounce
+     * @throws NullPointerException newSummary 或 keepTurns 为 null
      */
     public ConversationContext withCompression(
             String newSummary, List<Turn> keepTurns, Instant compressFinishedAt) {
+        Objects.requireNonNull(newSummary, "newSummary 不能为空");
+        Objects.requireNonNull(keepTurns, "keepTurns 不能为空");
         return new ConversationContext(
                 conversationId,
                 userId,
                 tenantScope,
-                keepTurns,
+                keepTurns, // 构造器内做 unmodifiableList defensive copy
                 newSummary,
                 totalTurnCount, // 累计数不变 (不归零, 审计用)
                 createdAt,

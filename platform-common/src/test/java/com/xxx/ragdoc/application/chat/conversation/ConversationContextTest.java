@@ -135,6 +135,26 @@ class ConversationContextTest {
     }
 
     @Test
+    void appendTurn_null应抛NPE() {
+        ConversationContext ctx = ConversationContext.empty("conv-1");
+        assertThatThrownBy(() -> ctx.appendTurn(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void withCompression_null_summary_应抛NPE() {
+        ConversationContext ctx = ConversationContext.empty("conv-1");
+        assertThatThrownBy(() -> ctx.withCompression(null, List.of(), Instant.now()))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void withCompression_null_keepTurns_应抛NPE() {
+        ConversationContext ctx = ConversationContext.empty("conv-1");
+        assertThatThrownBy(() -> ctx.withCompression("s", null, Instant.now()))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     void constructor_nullConversationId应抛NPE() {
         assertThatThrownBy(
                         () ->
@@ -163,6 +183,8 @@ class ConversationContextTest {
      * <p>用 {@link ConversationContext#withCompression} 路径植入 summaryUpdatedAt — 这是该字段
      * 唯一可写的合法 path(实际生产中只有异步压缩任务会写)。保留所有 turn 不丢, 测试只看
      * needsCompression 阈值判定。
+     *
+     * <p>注意: 用 placeholder summary "__test__" 而非 null —— withCompression 的 newSummary 不可空。
      */
     private static ConversationContext ctxWithTurns(int n, Instant summaryUpdatedAt) {
         ConversationContext ctx = ConversationContext.empty("conv-test");
@@ -170,8 +192,7 @@ class ConversationContextTest {
             ctx = ctx.appendTurn(okTurn("Q" + i, "A" + i));
         }
         if (summaryUpdatedAt != null) {
-            String existingSummary = ctx.rollingSummary();
-            ctx = ctx.withCompression(existingSummary, ctx.recentTurns(), summaryUpdatedAt);
+            ctx = ctx.withCompression("__test_summary__", ctx.recentTurns(), summaryUpdatedAt);
         }
         return ctx;
     }

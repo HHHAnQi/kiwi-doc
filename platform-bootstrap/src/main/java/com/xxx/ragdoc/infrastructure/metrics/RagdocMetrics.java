@@ -112,14 +112,7 @@ public class RagdocMetrics {
         registry.counter("ragdoc.conversation.force_truncate_total").increment();
     }
 
-    /**
-     * 当前活跃 conversation 数 (gauge)。
-     *
-     * <p>实现说明: 此方法只在 ConversationStore 启动 / 关闭时调, 用 Gauge.builder 注册原子引用。
-     * 简化版本: 仅暴露 Redis 已存活 conversation 数 (size 探活), 由 RedisConversationStore 内部维护。
-     * 留给 V2 接: 接 Redis SCAN / DBSIZE。
-     */
-    public void setActiveConversations(long count) {
-        registry.gauge("ragdoc.conversation.active_total", io.micrometer.core.instrument.Tags.empty(), count);
-    }
+    // 注: 当前活跃 conversation 数 (gauge) C2 不实现。Micrometer Gauge 要求 supplier / 弱引用,
+    //     传 long value 每次重新注册会拿不到更新值, 别扭。
+    //     C8 配 Grafana 时再做 — 届时 RedisConversationStore 维护 AtomicLong 引用, Gauge 跟踪它。
 }

@@ -92,14 +92,27 @@ public class RedisConversationStore implements ConversationStore {
 
     @Override
     public void save(ConversationContext ctx) {
+        String json;
         try {
-            String json = mapper.writeValueAsString(ctx);
-            redis.opsForValue().set(key(ctx.conversationId()), json, ttl());
+            json = mapper.writeValueAsString(ctx);
         } catch (JsonProcessingException e) {
-            log.warn("conv.save_serialize_failed id={}, ignore", ctx.conversationId());
+            // 序列化失败 = 数据丢失 (本 turn 永远无法写回 Redis, 下次 chat 拿不到)
+            // 显著 error 而不是 silent, 配合 Grafana alert (C8)
+            log.error(
+                    "conv.save_serialize_failed id={} totalTurns={} — data loss risk",
+                    ctx.conversationId(),
+                    ctx.totalTurnCount(),
+                    e);
+            return;
+        }
+        try {
+            redis.opsForValue().set(key(ctx.conversationId()), json, ttl());
         } catch (Exception e) {
-            // Redis 异常: silent log, 用户不见, 本 turn 内存里继续可用
-            log.warn("conv.save_failed id={}, reason={}", ctx.conversationId(), e.getMessage());
+            // Redis 异常: silent warn, 用户不见, 本 turn 内存里继续可用 (下次 save 重试)
+            log.warn(
+                    "conv.save_failed id={}, reason={} — will retry on next turn",
+                    ctx.conversationId(),
+                    e.getMessage());
         }
     }
 
