@@ -3,10 +3,12 @@ package com.xxx.ragdoc.application.chat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.*;
 
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
+import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
@@ -56,6 +58,11 @@ class ChatServiceTest {
     // Phase 3.A: metrics mock 成 void no-op, ChatService recordChatTotal 等不抛 NPE。
     @Mock private com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
 
+    // Phase 1 / C4: 多轮对话 3 件 optional bean, @InjectMocks 自动注入到 setConversationDeps
+    @Mock private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
+    @Mock private com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer queryContextualizer;
+    @Mock private com.xxx.ragdoc.infrastructure.conversation.PromptAssembler promptAssembler;
+
     @InjectMocks private ChatService chatService;
 
     private static final TraceId TID = new TraceId("a1b2c3d4");
@@ -69,6 +76,9 @@ class ChatServiceTest {
         when(retrieveService.retrieve(any())).thenReturn(RetrieveService.RetrieveResult.empty());
         // traceObserver.startTrace 默认返回原 traceId 让内部链路对齐
         lenient().when(traceObserver.startTrace(any(), any(), any())).thenReturn(TID.value());
+        // Phase 1 / C4: @InjectMocks 对 setter 注入 @Autowired(required=false) 不一定可靠,
+        // 显式手动调 setter 强制注入 mock (mock 都是 @Mock 创建, 非 null, isMultiTurnEnabled() 应 true)
+        chatService.setConversationDeps(conversationStore, queryContextualizer, promptAssembler);
     }
 
     @Nested
@@ -282,5 +292,133 @@ class ChatServiceTest {
         ChatResult r = chatService.chat(new ChatCommand("hello", null, 5), TID);
 
         assertThat(r.traceId()).isEqualTo(TID);
+    }
+
+    /**
+     * Phase 1 / C4 (ADR-0011): 多轮对话启用时的行为集成测试 (单测级别, 跑 mock 不跑真 LLM)。
+     *
+     * <p>covers:
+     *
+     * <ul>
+     *   <li>ConversationStore.findById 返回 ctx → queryContextualizer 被调
+     *   <li>rewrite 成功 → retrieve 收到 rewritten query (不是原 cmd.query)
+     *   <li>LLM 成功 → conversationsStore.save 被调用 (history 写回)
+     *   <li>LLM 失败 (DEGRADED) → conversationsStore.save 不被调 (抗污染硬 gate G3)
+     * </ul>
+     */
+    @Nested
+    @DisplayName("多轮对话 C4 测试")
+    class MultiTurn {
+
+        private static final String CONV_ID = "conv-test-123";
+
+        @Test
+        @DisplayName("有 ctx 启用时应调 queryContextualizer + 用 rewritten query 喂 retrieve")
+        void chatWithCtx_shouldCallRewriterAndRetrieveWithRewrittenQuery() throws Exception {
+            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            // 1. store 返回 ctx with 1 turn
+            ConversationContext ctx =
+                    ConversationContext.empty(CONV_ID)
+                            .appendTurn(
+                                    new ConversationContext.Turn(
+                                            "Sentinel?", "10", List.of(1L), StateHint.OK,
+                                            java.time.Instant.now()));
+            when(conversationStore.findById(CONV_ID)).thenReturn(java.util.Optional.of(ctx));
+            // 2. rewriter 返回 ok, rewritten query
+            when(queryContextualizer.contextualize(any(), any()))
+                    .thenReturn(
+                            com.xxx.ragdoc.application.chat.conversation.ContextualizeResult
+                                    .success("那 Hystrix 呢", "Hystrix 默认 QPS", 50));
+            // 3. retrieve 返回 1 chunk
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(
+                                    List.of(
+                                            new RetrieveService.Citation(
+                                                    19L, 6L, 0,
+                                                    "Hystrix 文本", "Hystrix 文本", 0.9f,
+                                                    List.of())),
+                                    "not_enabled", 0.9f, 0f));
+            when(chatClient.chat(any(), any())).thenReturn("Hystrix 默认 10");
+            when(promptAssembler.buildHistoryBlock(any(), anyBoolean()))
+                    .thenReturn("[最近对话] Q: Sentinel? A: 10");
+            ArgumentCaptor<ConversationContext> ctxCaptor =
+                    ArgumentCaptor.forClass(ConversationContext.class);
+
+            ChatResult r =
+                    chatService.chat(
+                            new ChatCommand("那 Hystrix 呢", null, 5), TID, CONV_ID);
+
+            assertThat(r.stateHint()).isEqualTo(StateHint.OK);
+            // verify retrieve 收到 rewritten query, 不是原 query
+            ArgumentCaptor<ChatCommand> cmdCaptor =
+                    ArgumentCaptor.forClass(ChatCommand.class);
+            verify(retrieveService).retrieve(cmdCaptor.capture());
+            assertThat(cmdCaptor.getValue().query()).isEqualTo("Hystrix 默认 QPS");
+            // verify history 写回 — 新 ctx 含 2 turns
+            verify(conversationStore).save(ctxCaptor.capture());
+            assertThat(ctxCaptor.getValue().recentTurns()).hasSize(2);
+            assertThat(ctxCaptor.getValue().recentTurns().get(1).userQuery())
+                    .isEqualTo("那 Hystrix 呢");
+        }
+
+        @Test
+        @DisplayName("LLM_DEGRADED 时不应写回 history (防污染硬 gate G3)")
+        void llmDegraded_shouldNotSaveHistory() throws Exception {
+            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            ConversationContext ctx =
+                    ConversationContext.empty(CONV_ID)
+                            .appendTurn(
+                                    new ConversationContext.Turn(
+                                            "Sentinel?", "10", List.of(1L), StateHint.OK,
+                                            java.time.Instant.now()));
+            when(conversationStore.findById(CONV_ID)).thenReturn(java.util.Optional.of(ctx));
+            when(queryContextualizer.contextualize(any(), any()))
+                    .thenReturn(
+                            com.xxx.ragdoc.application.chat.conversation.ContextualizeResult
+                                    .success("那 Hystrix 呢", "Hystrix 默认 QPS", 50));
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(
+                                    List.of(
+                                            new RetrieveService.Citation(
+                                                    19L, 6L, 0,
+                                                    "Hystrix 文本", "Hystrix 文本", 0.9f,
+                                                    List.of())),
+                                    "not_enabled", 0.9f, 0f));
+            when(chatClient.chat(any(), any())).thenThrow(new RuntimeException("LLM timeout"));
+            when(promptAssembler.buildHistoryBlock(any(), anyBoolean())).thenReturn("");
+
+            ChatResult r =
+                    chatService.chat(
+                            new ChatCommand("那 Hystrix 呢", null, 5), TID, CONV_ID);
+
+            assertThat(r.stateHint()).isEqualTo(StateHint.LLM_DEGRADED);
+            // 关键: history 不写回 (防 LLM 出错消息污染下次 rewrite)
+            verify(conversationStore, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("conversationId 为 null → 完全走 stateless 老路径, store/rewriter 都不调")
+        void conversationIdNull_shouldStayStateless() throws Exception {
+            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(
+                                    List.of(
+                                            new RetrieveService.Citation(
+                                                    19L, 6L, 0,
+                                                    "Sentinel 文本", "Sentinel 文本", 0.9f,
+                                                    List.of())),
+                                    "not_enabled", 0.9f, 0f));
+            when(chatClient.chat(any(), any())).thenReturn("answer");
+
+            ChatResult r = chatService.chat(new ChatCommand("Sentinel?", null, 5), TID, null);
+
+            assertThat(r.stateHint()).isEqualTo(StateHint.OK);
+            verify(conversationStore, never()).findById(any());
+            verify(queryContextualizer, never()).contextualize(any(), any());
+            verify(conversationStore, never()).save(any());
+        }
     }
 }

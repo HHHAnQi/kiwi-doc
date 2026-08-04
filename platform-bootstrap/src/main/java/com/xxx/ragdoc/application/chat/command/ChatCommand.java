@@ -32,4 +32,19 @@ public record ChatCommand(
     public ChatCommand(String query, Long docId, Integer topK) {
         this(query, docId, topK, null, null, null);
     }
+
+    /**
+     * Phase 1 / C4 (ADR-0011 §7): 返回 query 被替换, 其他字段保持不变的副本。
+     *
+     * <p>用于多轮对话: ChatService 把 userQuery 经 QueryContextualizer 改写成 standalone query 后,
+     * 用本方法构造新 cmd 喂 {@code RetrieveService.retrieve} (retrieve 用 standalone query),
+     * 但 cmd 其他字段 (docId/topK/source/version/language) 全保留。
+     *
+     * <p>注意: 实际原 user query 从 ChatService 入参 cmd.query 或 finalRetrieveQuery 局部变量都拿得到,
+     * 这是 retrieve-dedicated 的副本, 不污染原 cmd (后续 LLM prompt 仍用原 user query)。
+     */
+    public ChatCommand withQuery(String newQuery) {
+        return new ChatCommand(
+                newQuery, docId, topK, source, version, language);
+    }
 }

@@ -3,6 +3,10 @@ package com.xxx.ragdoc.application.chat;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
+import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
+import com.xxx.ragdoc.application.chat.conversation.ContextualizeResult;
+import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
@@ -15,13 +19,17 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import com.xxx.ragdoc.infrastructure.conversation.PromptAssembler;
+import com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,10 +67,55 @@ public class ChatService {
     // Phase 3.A: 5 SLO 计量。同步 chat 在 finish 里 record, chatStream 在 stream_done/failed/doFinally record。
     private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
 
+    // Phase 1 / C4 (ADR-0011 §7): 多轮对话 3 件 optional Bean, rag.conversation.enabled=false 时
+    // 不注入, 全 null → chat() 完全走 stateless 老路径 (baseline ±3pp gate 不破)
+    private ConversationStore conversationStore;
+    private QueryContextualizer queryContextualizer;
+    private PromptAssembler promptAssembler;
+
+    @Autowired(required = false)
+    public void setConversationDeps(
+            ConversationStore conversationStore,
+            QueryContextualizer queryContextualizer,
+            PromptAssembler promptAssembler) {
+        this.conversationStore = conversationStore;
+        this.queryContextualizer = queryContextualizer;
+        this.promptAssembler = promptAssembler;
+        log.info(
+                "chat.multi_turn_enabled store={}, rewriter={}, promptAssembler={}",
+                conversationStore == null ? "none" : conversationStore.getClass().getSimpleName(),
+                queryContextualizer == null ? "none" : "QueryContextualizer",
+                promptAssembler == null ? "none" : "PromptAssembler");
+    }
+
+    /** 多轮对话是否启用 (3 件 Bean 全注入才表 enabled, 防 Redis 没起但 flag ON 的不一致)。 */
+    private boolean isMultiTurnEnabled() {
+        return conversationStore != null
+                && queryContextualizer != null
+                && promptAssembler != null;
+    }
+
     @Transactional
     public ChatResult chat(ChatCommand cmd, TraceId traceId) {
+        // 老调用方 (无 conversationId) → stateless 老路径
+        return chat(cmd, traceId, null);
+    }
+
+    /**
+     * Phase 1 / C4 (ADR-0011 §7): 多轮 chat 入口。
+     *
+     * <p>{@code conversationId} 为 null/blank → stateless 老路径 (baseline 0 变化);
+     * 否则 = 多轮模式, load ctx → rewrite → retrieve → LLM → 写回 history (仅 OK turn)。
+     */
+    @Transactional
+    public ChatResult chat(ChatCommand cmd, TraceId traceId, String conversationId) {
         long t0Chat = System.currentTimeMillis(); // Phase 3.A: 同步 chat 总时延 metric 基准
-        log.info("chat.start trace_id={}, query_len={}", traceId.value(), cmd.query().length());
+        log.info(
+                "chat.start trace_id={}, query_len={}, conv_enabled={}, conv_id={}",
+                traceId.value(),
+                cmd.query().length(),
+                isMultiTurnEnabled(),
+                conversationId == null ? "(none)" : conversationId);
         String lfTrace =
                 traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query()));
 
@@ -87,7 +140,46 @@ public class ChatService {
         String answer;
         List<ChatResult.Citation> citations = List.of();
 
-        // 2. 决策 EMPTY_KB (无 READY 文档直接兜底, 不进 LLM)
+        // Phase 1 / C4 (ADR-0011 §7): 加载 ConversationContext + Query rewrite
+        // (multi-turn 模式且 conversationId 非空才走; flag OFF 或没 ctx → stateless 老路径)
+        ConversationContext ctx = null;
+        boolean topicShift = false;
+        String retrieveQuery = cmd.query(); // 默认原 query
+        ContextualizeResult rewriteResult = null;
+        if (isMultiTurnEnabled() && conversationId != null && !conversationId.isBlank()) {
+            ctx =
+                    conversationStore
+                            .findById(conversationId)
+                            .orElseGet(
+                                    () -> {
+                                        // ctx 不存在 / TTL 过期 / store 异常 → 新建空 ctx
+                                        // (ConversationStore.findById 内部已 silent fallback)
+                                        ConversationContext fresh = ConversationContext.empty(conversationId);
+                                        return fresh;
+                                    });
+            // 注意: 简化版 V1 暂不接 TopicShiftDetector (C5 加), 此处 topicShift 永远 false
+            if (ctx.isEnabled()) {
+                rewriteResult = queryContextualizer.contextualize(cmd.query(), ctx.recentTurns());
+                retrieveQuery = rewriteResult.retrieveQuery();
+                traceObserver.observe(
+                        lfTrace,
+                        TraceObserver.ObservationType.DECISION,
+                        "query.rewrite",
+                        cmd.query(),
+                        Map.of(
+                                "rewritten",
+                                retrieveQuery,
+                                "outcome",
+                                rewriteResult.outcome(),
+                                "topic_shift",
+                                false),
+                        rewriteResult.durationMs(),
+                        null);
+            }
+        }
+        final String finalRetrieveQuery = retrieveQuery;
+
+        // 2. 决策 EMPTY_KB (无 READY 文档直接兜底, 不进 LLM 不召回不 rewrite — 防浪费)
         if (documentRepository.countByStatus(DocumentStatus.READY) == 0) {
             hint = StateHint.EMPTY_KB;
             answer = chatMessages.getEmptyKbMessage();
@@ -101,8 +193,13 @@ public class ChatService {
                     null);
         } else {
             // 3. 真实召回(query → embed → Milvus dense ANN → MySQL 回查)
+            // Phase 1 / C4: 多轮场景下 retrieve query 是 rewrite 后的 standalone query (LLM prompt 仍用原 cmd.query)
             long t0 = System.currentTimeMillis();
-            RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
+            ChatCommand retrieveCmd =
+                    finalRetrieveQuery.equals(cmd.query())
+                            ? cmd
+                            : cmd.withQuery(finalRetrieveQuery);
+            RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(retrieveCmd);
             long retrieveMs = System.currentTimeMillis() - t0;
             traceObserver.observe(
                     lfTrace,
@@ -150,6 +247,14 @@ public class ChatService {
                 // 喂 LLM 用 chunk 全文(llmContext), 不是给前端的 200 字 snippet。
                 // 早期两者共用 snippet 致双重截断 maxContextChars 才是真正该用的总闸。
                 List<String> context = new ArrayList<>();
+                // Phase 1 / C4 (ADR-0011 §7): 多轮 prompt ordering — history block 作为 context 第 1 entry
+                // 让 LLM 把它当 context 读, 主 LLM 不感知多轮 (OpenAiCompatibleLlmClient 完全不动)
+                if (ctx != null && ctx.isEnabled()) {
+                    String historyBlock = promptAssembler.buildHistoryBlock(ctx, topicShift);
+                    if (!historyBlock.isBlank()) {
+                        context.add(historyBlock);
+                    }
+                }
                 for (var c : retrieve.items()) {
                     context.add(c.llmContext());
                 }
@@ -224,6 +329,27 @@ public class ChatService {
                 }
             }
         }
+
+        // Phase 1 / C4 (ADR-0011 §6 + §8.2 G3): 写回 history — 仅当 OK turn 才允许 (硬 gate 防污染)
+        // LLM_DEGRADED / NO_RECALL / EMPTY_KB 一律不写, 否则下游 rewrite 把"出错了"当 fact 污染指代消解
+        if (hint == StateHint.OK
+                && ctx != null
+                && isMultiTurnEnabled()
+                && conversationId != null
+                && !conversationId.isBlank()) {
+            try {
+                List<Long> citedChunkIds =
+                        citations.stream().map(ChatResult.Citation::chunkId).toList();
+                Turn thisTurn =
+                        new Turn(cmd.query(), answer, citedChunkIds, StateHint.OK, Instant.now());
+                ConversationContext updated = ctx.appendTurn(thisTurn);
+                conversationStore.save(updated);
+            } catch (Exception e) {
+                // 兜底: store 异常已在 ConversationStore 内 silent log, 此处再防一道 setProperty
+                log.warn("chat.history_write_failed conv_id={}, reason={}", conversationId, e.getMessage());
+            }
+        }
+
         traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
         return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
     }
