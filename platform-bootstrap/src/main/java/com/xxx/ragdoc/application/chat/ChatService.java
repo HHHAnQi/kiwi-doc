@@ -353,7 +353,13 @@ public class ChatService {
                         Map.of("answer_len", llmAnswer == null ? 0 : llmAnswer.length()),
                         llmMs,
                         null);
-                if (llmAnswer == null || llmAnswer.isBlank()) {
+                if (llmAnswer == null || llmAnswer.isBlank() || isLlmRefusal(llmAnswer)) {
+                    // LLM_DEGRADED 3 类触发:
+                    //   1. llmAnswer null/blank (LLM 直返空)
+                    //   2. isLlmRefusal — LLM 返回它的"无相关内容"兜底文案 (OpenAiCompatibleLlmClient prompt
+                    //      内嵌 "片段与问题完全无关时回答知识库中没有相关内容" 规则)。
+                    // G3 (ADR-0011 §8.2) 实跑教训: 不加 isLlmRefusal 判定时, LLM 拒答文案 state=OK 进 history
+                    // → 下次 rewrite LLM 看到 3 条 "知识库中没有相关内容" 当 fact → 污染指代消解 (实跑 6/10 case)
                     hint = StateHint.LLM_DEGRADED;
                     answer = chatMessages.getLlmDegradedMessage() + traceId.value();
                     traceObserver.observe(
@@ -687,6 +693,31 @@ public class ChatService {
                 };
         metrics.recordChatTotal(System.currentTimeMillis() - t0Chat, outcome);
         return r;
+    }
+
+    /**
+     * Phase 1 / C7 G3 修复 (2026-08-04 实跑发现): 检测 LLM 真返回的"无相关内容"拒答文案。
+     *
+     * <p>问题: OpenAiCompatibleLlmClient / DashScopeChatClient 的 system prompt 内嵌规则
+     * "片段与问题完全无关时, 一句话回答{{知识库中没有相关内容}}"。LLM 偶尔触发 → 看似 state=OK
+     * 但 answer 实质是降级文案。G3 抗污染 gate 按 state_hint=OK 写入 history → rewrite LLM
+     * 把这条当 fact 污染下次 (实跑 6/10 G3 case 失效)。
+     *
+     * <p>修: 检测 answer ≤ 20 char + 含指定 marker → 视为 LLM_DEGRADED, 不计为 OK turn
+     * (G3 拒写 history)。
+     *
+     * <p>False positive 风险: 真正常回答 ≤20 字 + 含这些 marker 极少 (length gate 守门)。
+     */
+    private static boolean isLlmRefusal(String answer) {
+        if (answer == null) return false;
+        String trimmed = answer.trim();
+        // 拒答文案都很短 (≤30 char)
+        if (trimmed.length() > 30) return false;
+        return trimmed.contains("知识库中没有相关内容")
+                || trimmed.contains("未找到相关")
+                || trimmed.contains("未在知识库中找到")
+                || trimmed.equals("无相关信息")
+                || trimmed.equals("(无答案)");
     }
 
     /** SHA-256 hex 计算; 防 PII 沉淀, 仅存 hash 不存原 query。 */
