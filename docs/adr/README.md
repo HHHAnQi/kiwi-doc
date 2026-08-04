@@ -16,6 +16,8 @@
 | [0008](./adr-0008-evaluation-harness-lockdown.md) | 评价体系锁定：curated question + judge LLM lock + CI 门禁 | Accepted |
 | [0009](./adr-0009-parser-service-decisions.md) | parser-service 拆分关键决策：RocketMQ + chunk-level 续点 + DLQ broker-native | Accepted |
 | [0010](./adr-0010-v3-rebalance-cut-rag-llm-k8s.md) | V3 范围重平衡：砍 rag/llm-gateway/K8s, 3.5 周精简版 + 产品价值注入 | Accepted |
+| [0011](./adr-0011-multi-turn-context-memory.md) | 多轮对话上下文与压缩（Buffer+Summary 混合 + Condense Rewrite） | Proposed |
+| [—](./roadmap-agentic-rag-evolution.md) | 演化路线图：Chat-only RAG → Agentic（3-6 个月, 6 Phase） | Proposed |
 
 > ADR 只记录"重要取舍"，不记录日常细节。新增决策按编号追加；废止决策不删除，标记为 Deprecated 或 Superceded。
 
