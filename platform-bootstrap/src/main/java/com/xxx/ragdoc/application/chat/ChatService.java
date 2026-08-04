@@ -146,8 +146,23 @@ public class ChatService {
                 cmd.query().length(),
                 isMultiTurnEnabled(),
                 conversationId == null ? "(none)" : conversationId);
+        // Phase 1 / C8 (ADR-0011 §11 Observability): trace metadata 加 conversation_id,
+        // 让 Langfuse UI 按 conversation 关联多个 trace (同一会话多 turn 的视图)。
+        // conversationId 为 null (老调用方 stateless) 时 metadata 加 "none", 不影响其他 trace 查询。
+        java.util.Map<String, Object> startTraceMeta = new java.util.HashMap<>();
+        startTraceMeta.put("query", cmd.query());
+        startTraceMeta.put("conv_enabled", isMultiTurnEnabled());
+        startTraceMeta.put("conversation_id", conversationId == null ? "(none)" : conversationId);
+        if (isMultiTurnEnabled()
+                && conversationProperties != null
+                && conversationId != null
+                && !conversationId.isBlank()) {
+            // 已 load 的 ctx 信息也带进 trace (size/has_summary 是排障关键)
+            // 这里只先放 default, ctx 实际 load 后再补 trace 的 enrichment 留 V2 (防复杂度爆炸)
+            startTraceMeta.put("compress_threshold", conversationProperties.getCompressThreshold());
+        }
         String lfTrace =
-                traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query()));
+                traceObserver.startTrace(traceId.value(), null, startTraceMeta);
 
         // 1. 限定 doc_id 时校验存在 + READY(4xx 客户端错误走异常)
         if (cmd.docId() != null) {

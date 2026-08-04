@@ -80,3 +80,72 @@ groups:
         annotations:
           summary: "RagDoc rerank 持续失败 >5m"
           description: "Reranker 持续报错, RetrieveService 会降级 hybrid seq。检查 TEI reranker 容器(SSH tunnel / GPU)。"
+
+  # ─── Phase 1 / C8 (ADR-0011 §11) — 多轮对话 SLO ─────────────────
+  # 仅 rag.conversation.enabled=true 时这些指标才上报, 不启用时 metrics 不存在 (alert 永远
+  # 不触发, PromQL `> X` 对缺失指标返空 vector, 自然 not pending)
+
+  # 6. Rewrite LLM 持续异常 (fallback route 不可用)
+  - alert: RagdocRewriteLlmFailures
+    expr: sum(rate(ragdoc_conversation_rewrite_latency_seconds_count{outcome="failed"}[5m])) > 0.5
+    for: 5m
+    labels:
+      severity: warning
+      service: ragdoc
+      slo: rewrite_llm_failure
+    annotations:
+      summary: "RagDoc rewrite LLM (fallback route) 持续失败"
+      description: "ADR-0011 §4: fallback LLM 失败率 > 0.5/s 持续 5min。rewrite 失败回退原 query, 用户感受'无上下文'但仍能问答。检查 LLM_FALLBACK_* env + DeepSeek/通义 API quota/"
+
+  # 7. Topic shift 检测异常 (BGE-M3 服务挂)
+  - alert: RagdocTopicShiftDetectFailures
+    expr: sum(rate(ragdoc_conversation_topic_shift_total{detected="detect_failed"}[5m])) > 0
+    for: 10m
+    labels:
+      severity: warning
+      service: ragdoc
+      slo: topic_shift_detection
+    annotations:
+      summary: "RagDoc topic shift detector 持续异常"
+      description: "ADR-0011 §5: BGE-M3 embedding 服务连续 detect_failed。topic shift 检测失效 (视为无 shift, rewrite LLM 仍跑)。检查 embedding 容器 (port 8084 / Ollama TEI)。"
+
+  # 8. Compression 成功率低 (压缩链路异常, buffer 持续膨胀)
+  - alert: RagdocCompressionSuccessRate
+    expr: |
+      sum(rate(ragdoc_conversation_compression_total{outcome="ok"}[10m]))
+      /
+      clamp_min(sum(rate(ragdoc_conversation_compression_total[10m])), 0.001)
+      < 0.5
+    for: 10m
+    labels:
+      severity: critical
+      service: ragdoc
+      slo: compression_success_rate
+    annotations:
+      summary: "RagDoc conversation compression 成功率 < 50%"
+      description: "ADR-0011 §6 G4 代理指标: 压缩 ok / total < 50% 持续 10min。压缩失败或 LLM 出 garbage 后 history buffer 会持续膨胀, 最终被 PromptAssembler 硬 cut 丢历史。检查 summary-llm CircuitBreaker 状态 + Redis 可用性。"
+
+  # 9. History force-truncate 触发 (压缩链路 + buffer 双故障)
+  - alert: RagdocHistoryForceTruncate
+    expr: sum(increase(ragdoc_conversation_force_truncate_total[5m])) > 0
+    for: 5m
+    labels:
+      severity: warning
+      service: ragdoc
+      slo: history_force_truncate
+    annotations:
+      summary: "RagDoc 历史 buffer 硬 cut 触发"
+      description: "ADR-0011 §8.4: 压缩失败 + buffer > 5 turn 同时发生, PromptAssembler 走极端兜底砍老 history。短时间偶发可接受, 持续 > 5min 说明 compress 链路已 100% 失败。see also compression_success_rate alert。"
+
+  # 10. Compression 调用全部静默 (compress 链路在 silent fail)
+  - alert: RagdocCompressionStalled
+    expr: sum(rate(ragdoc_conversation_compression_total[15m])) == 0 and sum(rate(ragdoc_chat_total_latency_seconds_count[15m])) > 0.1
+    for: 15m
+    labels:
+      severity: warning
+      service: ragdoc
+      slo: compression_stalled
+    annotations:
+      summary: "RagDoc compression 调用为 0 但 chat 在跑"
+      description: "ADR-0011 §6: chat 有流量 (≥0.1/s) 但 15min 内 compress 调用为 0。可能 historyCompressor Bean 未注入 (compress flag 未开) 或 conversationStore 故障 — 第 1 个 turn 之后的 ctx 都 fail save 后就没法触发 compress。"
+

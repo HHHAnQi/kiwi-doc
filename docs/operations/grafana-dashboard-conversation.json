@@ -1,0 +1,171 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "RagDoc Phase 1 多轮对话 (ADR-0011) — rewrite / topic shift / compression / history force-truncate + conversation-level trace 关联。",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "1. Query Rewrite Latency (p50/p95 by outcome)",
+      "description": "ADR-0011 §4: condense question rewrite。outcome: ok=LLM 成功; skip=history 空/鹦鹉学舌; failed=LLM 失败回退原 query。\nSLA: ok p95 < 1s (DeepSeek-V3 fallback LLM), failed 应平稳 (CircuitBreaker 工作)。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(ragdoc_conversation_rewrite_latency_seconds_bucket{outcome=\"ok\"}[5m])) by (le))",
+          "legendFormat": "ok p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_conversation_rewrite_latency_seconds_bucket{outcome=\"ok\"}[5m])) by (le))",
+          "legendFormat": "ok p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_conversation_rewrite_latency_seconds_bucket{outcome=\"failed\"}[5m])) by (le))",
+          "legendFormat": "failed p95",
+          "refId": "C"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(ragdoc_conversation_rewrite_latency_seconds_bucket{outcome=\"skip\"}[5m])) by (le))",
+          "legendFormat": "skip p95",
+          "refId": "D"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "2. Rewrite Outcome Rate",
+      "description": "ADR-0011 §4: 每秒 rewrite 调用次数按 outcome 分类\n报警: failed rate > 1 / 10s 持续 5min → oncall 检查 fallback LLM (DeepSeek-V3) 可用性",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(rate(ragdoc_conversation_rewrite_latency_seconds_count[5m])) by (outcome)",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "3. Topic Shift Detection (by outcome)",
+      "description": "ADR-0011 §5: 用户话题切换频率。detected 高 → 用户经常切话题 (history downsampling 有效); not_detected 高 → 正常多轮; detect_failed/embed_null 高 → embedding 服务挂。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(rate(ragdoc_conversation_topic_shift_total[5m])) by (detected)",
+          "legendFormat": "{{detected}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "4. History Compression (by outcome)",
+      "description": "ADR-0011 §6: 异步压缩链路统计。outcome: ok=成功; failed=LLM 异常; invalid=quality 拒(摘要<10char); skipped_no_need=debounce 兜底; save_failed=Redis 异常。\nG4 gate: ok / (ok+failed+invalid+save_failed) ≥ 0.80 (压缩成功率)。invalid 高 → 调 prompt 重构",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "targets": [
+        {
+          "expr": "sum(rate(ragdoc_conversation_compression_total[5m])) by (outcome)",
+          "legendFormat": "{{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "5. History Force-truncate (压缩链路健康报警)",
+      "description": "ADR-0011 §8.4: 极端兜底 (compress 失败 + buffer>5 turn 时 PromptAssembler 砍老的)。\n ALERT: 增长率 > 0 持续 5min → 压缩链路异常 (LLM 长期不可用 / Redis 挂 / Compress queue 满)",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "sum(increase(ragdoc_conversation_force_truncate_total[5m]))",
+          "legendFormat": "5min count",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "6. Compression Success Rate (G4 proxy)",
+      "description": "ADR-0011 §11 G4 代理指标: ok / (ok+failed+invalid+save_failed) ≥ 0.80。\n实际 G4 fidelity (关键实体保留率 ≥0.7) 需 offline 评测集跑 (C7 holdout), 这里是 production runtime proxy。",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "green", "value": 0.8 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [
+        {
+          "expr": "sum(rate(ragdoc_conversation_compression_total{outcome=\"ok\"}[5m])) / clamp_min(sum(rate(ragdoc_conversation_compression_total[5m])), 0.001)",
+          "legendFormat": "success rate",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["ragdoc", "phase-1", "conversation", "adr-0011"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "RagDoc Conversation (Phase 1 / ADR-0011)",
+  "uid": "ragdoc-conversation-p1",
+  "version": 1,
+  "weekStart": ""
+}
