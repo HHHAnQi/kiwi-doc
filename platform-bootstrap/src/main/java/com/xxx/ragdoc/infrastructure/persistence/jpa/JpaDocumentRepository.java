@@ -145,4 +145,14 @@ public class JpaDocumentRepository implements DocumentRepository {
         // 不限 status 因为此时新 doc 还在 UPLOADED, parsingTrigger 未跑完。READY 由 findDefaultReadyBySource 兜底。
         return jpa.existsBySourceAndIsDefaultTrueAndDeletedAtIsNull(source);
     }
+
+    @Override
+    public java.util.List<Document> findDocsPendingMilvusDelete(int limit) {
+        // P3-2: sweeper 用; 按 id asc 防同一文档跨周期被反复排在后面饿死。
+        return jpa.findByPendingMilvusDeleteTrueOrderByIdAsc(
+                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(DocumentMapper::toDomain)
+                .toList();
+    }
 }

@@ -67,4 +67,14 @@ public interface DocumentRepository {
      * 真正检索时由 {@link #findDefaultReadyBySource} 二次过滤 READY 状态来兜底。
      */
     boolean existsDefaultBySource(String source);
+
+    /**
+     * Phase 3 / P3-2: 拉取 pending_milvus_delete=true 的文档 (限制条数, 升序排 id 防跨周期重复同一条)。
+     *
+     * <p>MilvusDeleteSweeper 定时 (默认 60s) 调用, 重试软删时未能同步删除 Milvus 向量的文档。
+     * 成功删除后由 sweeper 调 {@link #save} 清 pending 标记; 仍失败则保持 pending 等下轮。
+     *
+     * @param limit 单次拉取上限 (sweeper 自管速率, 防止单批过大)
+     */
+    java.util.List<Document> findDocsPendingMilvusDelete(int limit);
 }

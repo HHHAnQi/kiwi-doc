@@ -58,4 +58,11 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
      * 返 true 则不抢 (维持老 default)。
      */
     boolean existsBySourceAndIsDefaultTrueAndDeletedAtIsNull(String source);
+
+    /**
+     * Phase 3 / P3-2: MilvusDeleteSweeper 定时拉取 pending_milvus_delete=true 的文档重试删除。
+     * 用 Pageable 控制单批上限 (Spring Data 不支持 TopN + 自定义 OrderBy 直接派生, 用 Pageable 更显式)。
+     */
+    java.util.List<DocumentEntity> findByPendingMilvusDeleteTrueOrderByIdAsc(
+            org.springframework.data.domain.Pageable pageable);
 }

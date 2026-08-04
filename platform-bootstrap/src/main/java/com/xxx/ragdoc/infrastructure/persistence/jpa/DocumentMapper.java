@@ -34,6 +34,10 @@ public final class DocumentMapper {
         if (Boolean.TRUE.equals(e.getIsDefault())) {
             d.markDefault();
         }
+        // Phase 3 / P3-2: pendingMilvusDelete 同样用业务方法回填
+        if (Boolean.TRUE.equals(e.getPendingMilvusDelete())) {
+            d.markPendingMilvusDelete();
+        }
         return d;
     }
 
@@ -47,6 +51,7 @@ public final class DocumentMapper {
                         ? existing.getDeletedAt() != null ? existing.getDeletedAt() : Instant.now()
                         : null);
         existing.setIsDefault(d.isDefault()); // Phase 3 / P3-1
+        existing.setPendingMilvusDelete(d.pendingMilvusDelete()); // Phase 3 / P3-2
         existing.setUpdatedAt(Instant.now());
         return existing;
     }
@@ -68,6 +73,7 @@ public final class DocumentMapper {
         e.setLanguage(d.language());
         e.setDocType(d.docType());
         e.setIsDefault(d.isDefault()); // Phase 3 / P3-1
+        e.setPendingMilvusDelete(d.pendingMilvusDelete()); // Phase 3 / P3-2
         return e;
     }
 }

@@ -50,6 +50,13 @@ public class DocumentEntity {
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
 
+    /**
+     * Phase 3 / P3-2: Milvus 向量是否待清理。 softDelete 同步删 chunks (原子),
+     * Milvus 走 circuit breaker 失败时标 true, MilvusDeleteSweeper 重试。
+     */
+    @Column(name = "pending_milvus_delete", nullable = false)
+    private Boolean pendingMilvusDelete = false;
+
     @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;
 
@@ -146,6 +153,14 @@ public class DocumentEntity {
 
     public void setIsDefault(Boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public Boolean getPendingMilvusDelete() {
+        return pendingMilvusDelete;
+    }
+
+    public void setPendingMilvusDelete(Boolean pendingMilvusDelete) {
+        this.pendingMilvusDelete = pendingMilvusDelete;
     }
 
     public Long getSizeBytes() {

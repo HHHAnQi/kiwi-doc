@@ -51,6 +51,17 @@ public class Document {
      */
     private boolean isDefault;
 
+    /**
+     * Phase 3 / P3-2 (修正版 Phase 3): Milvus 向量是否待清理。
+     *
+     * <p>用途: 软删文档时, chunks 在 @Transactional 内原子清, 但 Milvus 向量删除走 circuit breaker
+     * 可能熔断/超时, 不能阻塞 softDelete 主流程。失败时 markPendingMilvusDelete() 标记 pending=true,
+     * MilvusDeleteSweeper 定时扫 pending=true 重试, 成功后 clear()。
+     *
+     * <p>不变量: 新建 doc 永远 pending=false; reactivate 时 clear (避免历史脏标记触发 sweeper 误删)。
+     */
+    private boolean pendingMilvusDelete;
+
     // ============================================================
     // 工厂方法
     // ============================================================
@@ -297,6 +308,9 @@ public class Document {
         this.status = DocumentStatus.UPLOADED;
         this.retryCount = 0;
         this.errorMessage = null;
+        // P3-2: 复活时清除 pending Milvus delete 标记。
+        // 否则 sweeper 可能在 doc 已复活且 upsert 新向量后误删它们 (race)。
+        this.pendingMilvusDelete = false;
     }
 
     /** 持久化后回填主键。 */
@@ -411,6 +425,24 @@ public class Document {
     /** Phase 3 / P3-1: 取消默认标记 (set-default 把老的 default 取消时调)。 */
     public void unmarkDefault() {
         this.isDefault = false;
+    }
+
+    /**
+     * Phase 3 / P3-2: 软删文档后, Milvus 向量删除失败时由 DocumentManageService 调用,
+     * 标记 pending=true 让 sweeper 后续重试删除。
+     */
+    public void markPendingMilvusDelete() {
+        this.pendingMilvusDelete = true;
+    }
+
+    /** Phase 3 / P3-2: Milvus 删除 (sweeper 重试 / 同步路径) 成功后清除 pending 标记。 */
+    public void clearPendingMilvusDelete() {
+        this.pendingMilvusDelete = false;
+    }
+
+    /** Phase 3 / P3-2: 是否有待清理的 Milvus 向量; sweeper 用此过滤待重试文档。 */
+    public boolean pendingMilvusDelete() {
+        return pendingMilvusDelete;
     }
 
     @Override
