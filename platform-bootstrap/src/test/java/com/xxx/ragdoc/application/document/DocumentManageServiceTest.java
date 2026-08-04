@@ -164,6 +164,103 @@ class DocumentManageServiceTest {
     }
 
     @Nested
+    @DisplayName("setDefault")
+    class SetDefault {
+        @Test
+        @DisplayName("READY 文档可设为 default; 无原 default → 仅 mark 新 doc")
+        void newDefaultWhenNoExisting() {
+            Document doc = readyDoc(1L);
+            when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
+            when(documentRepository.findDefaultReadyBySource(doc.source())).thenReturn(Optional.empty());
+
+            manageService.setDefault(1L);
+
+            assertThat(doc.isDefault()).isTrue();
+            verify(documentRepository).save(doc);
+        }
+
+        @Test
+        @DisplayName("已 default 的 READY 文档 → 幂等返回, 不 save")
+        void idempotentSetDefault() {
+            Document doc = readyDoc(1L);
+            doc.markDefault();
+            when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
+
+            manageService.setDefault(1L);
+
+            verify(documentRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("原有别的 default → unmark 旧 + mark 新, 都 save")
+        void replacesOldDefault() {
+            Document newDoc = readyDoc(1L);
+            Document oldDefault = readyDoc(2L);
+            oldDefault.markDefault();
+            when(documentRepository.findById(1L)).thenReturn(Optional.of(newDoc));
+            when(documentRepository.findDefaultReadyBySource(newDoc.source()))
+                    .thenReturn(Optional.of(oldDefault));
+
+            manageService.setDefault(1L);
+
+            assertThat(newDoc.isDefault()).isTrue();
+            assertThat(oldDefault.isDefault()).isFalse();
+            verify(documentRepository).save(oldDefault);
+            verify(documentRepository).save(newDoc);
+        }
+
+        @Test
+        @DisplayName("非 READY 文档 (PARSING) → 409")
+        void nonReadyRejects() {
+            Document doc = parsedDoc(1L); // status=PARSING
+            when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
+
+            assertThatThrownBy(() -> manageService.setDefault(1L))
+                    .isInstanceOf(DomainException.class)
+                    .satisfies(
+                            ex ->
+                                    assertThat(((DomainException) ex).errorCode())
+                                            .isEqualTo(ErrorCode.DOC_NOT_FAILED));
+            verify(documentRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("unarchive")
+    class Unarchive {
+        @Test
+        @DisplayName("已软删文档 → reactivate + 触发 parsingTrigger")
+        void unarchiveSoftDeletedDoc() {
+            Document doc = readyDoc(1L);
+            doc.softDelete();
+            when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
+
+            manageService.unarchive(1L);
+
+            assertThat(doc.deleted()).isFalse();
+            assertThat(doc.status()).isEqualTo(DocumentStatus.UPLOADED); // reactivate 重置
+            assertThat(doc.pendingMilvusDelete()).isFalse(); // reactivate 清 pending
+            verify(documentRepository).save(doc);
+            verify(parsingTrigger).trigger(1L);
+        }
+
+        @Test
+        @DisplayName("未删的文档 unarchive → 409")
+        void unarchiveNonDeletedRejects() {
+            Document doc = readyDoc(1L);
+            when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
+
+            assertThatThrownBy(() -> manageService.unarchive(1L))
+                    .isInstanceOf(DomainException.class)
+                    .satisfies(
+                            ex ->
+                                    assertThat(((DomainException) ex).errorCode())
+                                            .isEqualTo(ErrorCode.DOC_NOT_FAILED));
+            verify(parsingTrigger, never()).trigger(any());
+        }
+    }
+
+    @Nested
     @DisplayName("retry")
     class Retry {
         @Test

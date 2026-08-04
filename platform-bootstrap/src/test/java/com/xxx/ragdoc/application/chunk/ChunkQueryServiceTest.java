@@ -94,7 +94,9 @@ class ChunkQueryServiceTest {
                         "unknown",
                         null,
                         "zh",
-                        "doc");
+                        "doc",
+                        false, // isDefault (P3-1)
+                        false); // pendingMilvusDelete (P3-2)
         when(documentRepository.findDetailById(docId)).thenReturn(Optional.of(detail));
     }
 

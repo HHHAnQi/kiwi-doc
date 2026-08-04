@@ -151,6 +151,76 @@ public class DocumentManageService {
         parsingTrigger.trigger(id);
     }
 
+    /**
+     * Phase 3 / P3-3: 把指定文档设为同 source 的默认版本。
+     *
+     * <p>不变量: 同 source + READY + !deleted 最多 1 条 isDefault=true。本方法:
+     *
+     * <ol>
+     *   <li>加载目标 doc; 校验 READY + 未删 → 否则 409。
+     *   <li>查该 source 当前 default (findDefaultReadyBySource); 若已是本 doc 幂等返; 若不同 unmark old + mark new。
+     *   <li>短事务 (REQUIRES_NEW) 原子提交两个 save, 避免并发设默认时数据竞态。
+     * </ol>
+     */
+    public void setDefault(Long id) {
+        Document doc = loadOrThrow(id);
+        if (doc.status() != com.xxx.ragdoc.domain.document.DocumentStatus.READY) {
+            throw new DomainException(
+                    ErrorCode.DOC_NOT_FAILED, "仅 READY 文档可设默认, 当前状态=" + doc.status());
+        }
+        if (doc.deleted()) {
+            throw new DomainException(ErrorCode.DOC_NOT_FAILED, "已软删的文档不可设默认");
+        }
+        if (doc.isDefault()) {
+            log.info("set_default.idempotent doc_id={}, source={}", id, doc.source());
+            return;
+        }
+        java.util.Optional<Document> oldDefaultOpt =
+                documentRepository.findDefaultReadyBySource(doc.source());
+        shortTx.executeWithoutResult(
+                status -> {
+                    oldDefaultOpt.ifPresent(
+                            old -> {
+                                old.unmarkDefault();
+                                documentRepository.save(old);
+                                log.info(
+                                        "set_default.unmark_old old_doc_id={}, source={}",
+                                        old.id().value(),
+                                        old.source());
+                            });
+                    doc.markDefault();
+                    documentRepository.save(doc);
+                });
+        log.info("set_default.done doc_id={}, source={}", id, doc.source());
+    }
+
+    /**
+     * Phase 3 / P3-3: 反归档 (= 复活) 一个已软删的文档。
+     *
+     * <p>语义: 等同 用户重新上传同 hash — 调 domain.reactivate() 复活 doc_id → 触发重切 chunks → chunks/Milvus
+     * 重新生成。本端点让运维无需重新上传就能恢复文档 (复用 P3-2 的 pending 标记 + sweeper 兜底)。
+     *
+     * <p>校验: 仅 deleted=true 的文档可 unarchive; 未删的 → 409。
+     */
+    public void unarchive(Long id) {
+        Document doc = loadOrThrow(id);
+        if (!doc.deleted()) {
+            throw new DomainException(ErrorCode.DOC_NOT_FAILED, "文档未删除, 无需 unarchive");
+        }
+        // 短事务原子完成 reactivate + save (域方法不变量保证 deleted=false + status=UPLOADED + 重置 retry/err/pending)
+        doc.reactivate();
+        shortTx.executeWithoutResult(status -> documentRepository.save(doc));
+        log.info(
+                "unarchive.reactivated doc_id={}, source={}, version={}",
+                id,
+                doc.source(),
+                doc.version());
+
+        // 触发重切 + 重 embed (chunks 表 saveAll 走自己的事务; Milvus upsert 走 Milvus client),
+        // 同 doc_id 在 parsingTrigger 内部会先 deleteByDocumentId 清旧向量再 upsert 新的。
+        parsingTrigger.trigger(id);
+    }
+
     private Document loadOrThrow(Long id) {
         return documentRepository
                 .findById(id)

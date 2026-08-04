@@ -20,7 +20,9 @@ public record DocumentDetailResponse(
         String source,
         String version,
         String language,
-        String docType) {
+        String docType,
+        boolean isDefault,
+        boolean pendingMilvusDelete) {
     public static DocumentDetailResponse from(DocumentDetail d) {
         return new DocumentDetailResponse(
                 d.docId(),
@@ -36,6 +38,8 @@ public record DocumentDetailResponse(
                 d.source(),
                 d.version(),
                 d.language(),
-                d.docType());
+                d.docType(),
+                d.isDefault(),
+                d.pendingMilvusDelete());
     }
 }

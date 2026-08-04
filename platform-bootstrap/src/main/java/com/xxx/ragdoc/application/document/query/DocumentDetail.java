@@ -10,6 +10,8 @@ import java.time.Instant;
  * @param version V3 业务元数据: 版本号, 可空
  * @param language V3 业务元数据: 语言
  * @param docType V3 业务元数据: 文档类型
+ * @param isDefault P3-1: 是否为同 source 默认版本
+ * @param pendingMilvusDelete P3-2: 软删后 Milvus 是否待清理
  */
 public record DocumentDetail(
         Long docId,
@@ -25,4 +27,6 @@ public record DocumentDetail(
         String source,
         String version,
         String language,
-        String docType) {}
+        String docType,
+        boolean isDefault,
+        boolean pendingMilvusDelete) {}

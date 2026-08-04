@@ -13,6 +13,8 @@ import java.time.Instant;
  * @param version V3 业务元数据: 版本号, 可空
  * @param language V3 业务元数据: 语言(zh/en), 缺省 'zh'
  * @param docType V3 业务元数据: 文档类型(doc/blog/release-notes/spec/demo), 缺省 'doc'
+ * @param isDefault P3-1: 是否为同 source 的默认版本; RetrieveService 在用户没传 version 时按此过滤
+ * @param pendingMilvusDelete P3-2: 软删后 Milvus 向量是否待清理; sweeper 周期收敛
  */
 public record DocumentSummary(
         Long docId,
@@ -25,4 +27,6 @@ public record DocumentSummary(
         String source,
         String version,
         String language,
-        String docType) {}
+        String docType,
+        boolean isDefault,
+        boolean pendingMilvusDelete) {}

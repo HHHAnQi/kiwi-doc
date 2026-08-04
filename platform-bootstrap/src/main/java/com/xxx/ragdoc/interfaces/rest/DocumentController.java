@@ -124,4 +124,18 @@ public class DocumentController {
         manageService.retry(id);
         return ResponseEntity.accepted().build();
     }
+
+    @PostMapping("/{id}/default")
+    @Operation(summary = "设为同 source 的默认版本 (RetrieveService fallback)")
+    public ResponseEntity<Void> setDefault(@PathVariable Long id) {
+        manageService.setDefault(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/unarchive")
+    @Operation(summary = "反归档: 复活软删文档并重新解析")
+    public ResponseEntity<Void> unarchive(@PathVariable Long id) {
+        manageService.unarchive(id);
+        return ResponseEntity.accepted().build();
+    }
 }

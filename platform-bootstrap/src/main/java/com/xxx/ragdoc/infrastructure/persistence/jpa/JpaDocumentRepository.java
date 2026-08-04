@@ -97,7 +97,9 @@ public class JpaDocumentRepository implements DocumentRepository {
                                 e.getSource(),
                                 e.getVersion(),
                                 e.getLanguage(),
-                                e.getDocType()));
+                                e.getDocType(),
+                                Boolean.TRUE.equals(e.getIsDefault()), // P3-1
+                                Boolean.TRUE.equals(e.getPendingMilvusDelete()))); // P3-2
     }
 
     @Override
@@ -124,7 +126,9 @@ public class JpaDocumentRepository implements DocumentRepository {
                                         e.getSource(),
                                         e.getVersion(),
                                         e.getLanguage(),
-                                        e.getDocType()));
+                                        e.getDocType(),
+                                        Boolean.TRUE.equals(e.getIsDefault()), // P3-1
+                                        Boolean.TRUE.equals(e.getPendingMilvusDelete()))); // P3-2
     }
 
     @Override

@@ -17,7 +17,9 @@ public record DocumentSummaryResponse(
         String source,
         String version,
         String language,
-        String docType) {
+        String docType,
+        boolean isDefault,
+        boolean pendingMilvusDelete) {
     public static DocumentSummaryResponse from(DocumentSummary s) {
         return new DocumentSummaryResponse(
                 s.docId(),
@@ -30,6 +32,8 @@ public record DocumentSummaryResponse(
                 s.source(),
                 s.version(),
                 s.language(),
-                s.docType());
+                s.docType(),
+                s.isDefault(),
+                s.pendingMilvusDelete());
     }
 }

@@ -44,7 +44,9 @@ class DocumentQueryServiceTest {
                         "sentinel",
                         null,
                         "zh",
-                        "doc");
+                        "doc",
+                        false, // isDefault (P3-1)
+                        false); // pendingMilvusDelete (P3-2)
         Page<com.xxx.ragdoc.application.document.query.DocumentSummary> stub =
                 new PageImpl<>(List.of(sample));
         when(documentRepository.list(eq(DocumentStatus.READY), eq("sentinel"), any()))
@@ -76,7 +78,9 @@ class DocumentQueryServiceTest {
                         "unknown",
                         null,
                         "zh",
-                        "doc");
+                        "doc",
+                        false, // isDefault (P3-1)
+                        false); // pendingMilvusDelete (P3-2)
         when(documentRepository.findDetailById(1L)).thenReturn(Optional.of(detail));
 
         DocumentDetail result = queryService.getDetail(1L);
