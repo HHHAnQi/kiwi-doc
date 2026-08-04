@@ -104,6 +104,22 @@ rag:
     #   原因可能是: 当前 corpus 仅 100 docs, pool 50 引入太多干扰; 待 corpus 扩 500+ 再试。
     candidate-pool: 20
     top-n: 5
+
+  # ─── Phase 1 多轮对话 / 压缩 (ADR-0011) ─────────────────────────
+  # enabled=false (默认) 时 ConversationStore=NoOp, ChatService 完全 stateless (baseline 不变)
+  # enabled=true 后 C2-C6 才生效: RedisConversationStore 启用 + rewrite/compress 路径走起
+  # 启用前置(详见 ADR-0011 checklist):
+  #   - Redis 6+ 容器跑 (docker-compose)
+  #   - LLM_FALLBACK_API_KEY env 配好 (rewrite/summary LLM 走 fallback route 省主 LLM token)
+  conversation:
+    enabled: ${RAG_CONVERSATION_ENABLED:false}
+    compress: ${RAG_CONVERSATION_COMPRESS:false}        # 异步压缩 master switch (C6 才生效)
+    compress-threshold: 6                                # buffer ≥6 turn 触发压缩
+    topic-shift-detect: ${RAG_TOPIC_SHIFT_DETECT:false}  # C5 才生效
+    topic-shift-threshold: 0.5                           # BGE-M3 cosine 阈值 (中文经验)
+    max-recent-turns: 3                                  # Tier B buffer window 大小
+    ttl-hours: 24                                        # conversation Redis TTL sliding
+
   # P3-A: 切片模式 feature flag。
   #   flat(默认): 同质 token-based(V2 原始路径)
   #   parent_child: 两层级(parent 全文喂 LLM + child 入索引精准检索, 参考 LlamaIndex HierarchicalNodeParser)
