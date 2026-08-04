@@ -253,6 +253,471 @@ public ChatResult chat(ChatCommand cmd, TraceId traceId, String conversationId) 
 
 ---
 
+## 8. 时序：读 / 写 / 压缩的精确触发点
+
+本节锁定 3 类操作的**唯一触发点**与**拒绝路径**。任何后续重构不得绕过这些约束。
+
+### 8.1 唯一读点（READ）
+
+```java
+public ChatResult chat(ChatCommand cmd, TraceId traceId, String conversationId) {
+    ConversationContext ctx = conversationStore.findById(conversationId)   // ← 唯一读点
+        .orElse(ConversationContext.empty(conversationId));
+    // ... 后续使用 ctx.recentTurns / ctx.rollingSummary
+}
+```
+
+| 维度 | 规则 |
+|---|---|
+| **触发时机** | 每次 `chat()` / `chatStream()` 入口（1 次 / turn） |
+| **读谁** | client 传的 `conversationId` 对应的 Redis Hash |
+| **没读到（empty / TTL 过期 / Redis 挂）** | `ConversationContext.empty()` → stateless 老路径，不挂 chat |
+| **读完做什么** | ①TopicShiftDetector ②QueryContextualizer ③PromptAssembler 注入 summary/history |
+
+**全工程只有这一处读 ConversationStore**，禁止 retrieve / trace 路径私自读 history（保持单一来源）。
+
+### 8.2 唯一写点（WRITE）+ 硬规则
+
+```java
+if (stateHint == StateHint.OK) {                                          // ← 硬规则
+    Turn thisTurn = new Turn(query, answer, chunkIds, OK, now);
+    ctx = ctx.appendTurn(thisTurn);
+    conversationStore.save(ctx);                                          // ← 唯一写点 (含 TTL refresh)
+    if (ctx.needsCompression(6)) {
+        historyCompressor.compress(conversationId);                       // ← 唯一压缩触发点
+    }
+}
+// 失败 / NO_RECALL / EMPTY_KB → 一律不写回
+```
+
+| 维度 | 规则 |
+|---|---|
+| **触发时机** | LLM 跑完、`stateHint == OK`、返回 response 之前（同事务） |
+| **附加效果** | 每次 save 自动刷新 24h TTL（sliding），活跃会话不会过期 |
+| **硬规则（G3 抗污染 gate）** | `LLM_DEGRADED` / `NO_RECALL` / `EMPTY_KB` 三类 turn **一律拒绝写入** |
+
+**为什么失败 turn 不能写**（G3 gate 的工程理由）：
+
+| StateHint | 不写的原因 |
+|---|---|
+| `LLM_DEGRADED` | 兜底文案 "LLM 出错了 [trace_id]" 进 history → 下次 rewrite LLM 把它当 fact 写进 standalone query → 召回乱 |
+| `NO_RECALL` | 返回的 "未找到相关内容" 文案进 history → 下次 rewrite LLM 基于错误前提改写 |
+| `EMPTY_KB` | 系统级状态，跟 conversation 无关，写进去纯噪声 |
+
+**反例可视化**（如果不做抗污染）：
+
+```
+turn 1: "Sentinel 默认 QPS?" → "10" (OK)
+turn 2: "那它和 Hystrix 比?" → "LLM 出错了 [trace=abc123]" (DEGRADED) [❌ 进 buffer]
+turn 3: 用户重试 → rewrite LLM 看到的 history 是:
+        Q: 那它和 Hystrix 比?
+        A: LLM 出错了 [trace=abc123]
+   ↓ rewrite 出: "Sentinel 出错 trace abc123 跟 Hystrix 对比"
+   ↓ retrieve 召回乱七八糟 (trace id 是字符串 noise)
+```
+
+→ 失败 turn **不存在"用户意图"**，进 memory = 让垃圾参与推理。这是企业级 RAG 与 demo 的分水岭，业界 LangChain / LlamaIndex 默认都没做。
+
+### 8.3 压缩 = 事后异步 + 拒绝"过程中实时"
+
+**只做事后异步触发**，不在对话过程中实时压缩。理由：拒绝给 chat 入口加 latency。
+
+考虑过但拒绝的 3 种"过程中实时"假设：
+
+| 假设 | 想象中的好处 | 真实问题 |
+|---|---|---|
+| **检索前预压缩**（load ctx 时发现 buffer 满先压） | 永远不会超 budget | 给 chat 入口加 +1-2s LLM 调用延迟，p95 从 8s → 10s，破 SLA |
+| **LLM prompt 超长后中途中断 + 压缩** | 精确 | LLM 已经在跑，中断浪费 token + 重试，用户体验崩溃 |
+| **TokenBudgetAllocator 预留 pre-check** | 防患于未然 | Phase 4 才做，本 Phase 用阈值 6 兜底 |
+
+**实际策略**：阈值 ≥6 异步提前压缩 → 下一 turn 进来时 buffer 已经压缩到只留最近 3 turn → **预储备**模式，比"实时检测溢出再压"更稳。
+
+### 8.4 极端情况兜底（压缩失败 + 用户连发 20 turn）
+
+万一首个压缩任务卡住 + 用户连续问 20 turn（buffer 不归档），2 层兜底：
+
+**第 1 层：PromptAssembler 硬 cut**
+
+```java
+public String build(...) {
+    int maxTurns = 5;  // prompt 里最多 5 turn, 超了从头砍
+    List<Turn> turns = ctx.recentTurns();
+    if (turns.size() > maxTurns) {
+        turns = turns.subList(turns.size() - maxTurns, turns.size());
+        log.warn("history.force_truncate size={} > max={}", turns.size(), maxTurns);
+        metrics.incrementCounter("ragdoc.conversation.force_truncate_total");
+    }
+    // ... 拼 prompt
+}
+```
+
+**第 2 层：Grafana 报警**
+
+```promql
+# buffer size > 10 持续 5min → oncall 介入
+max(ragdoc_conversation_buffer_size) by (conversation_id) > 10
+```
+
+→ **不存在"对话过程中触发压缩"的代码路径**。极端情况靠硬 cut + 报警兜底。
+
+### 8.5 完整时序图（一次成功 chat）
+
+```
+User: "那 Hystrix 呢"
+  │
+  ↓
+[chat 入口]
+  │
+  ├─[READ]─→ Redis findById("uuid-conv")
+  │          │
+  │          └─[empty / error → ctx = empty → stateless 走老路径]
+  │
+  ├─ TopicShiftDetector (跟 last turn 算 cosine, 决定要不要让 history 参与 rewrite)
+  │
+  ├─ QueryContextualizer (用 ctx.recentTurns)
+  │  └─ "Hystrix 默认 QPS 阈值是多少"  ← 暂存, 不落地
+  │
+  ├─ retrieve(standalone_query) → 5 chunks  ← 暂存, 不落地
+  │
+  ├─ PromptAssembler 拼 prompt:              ← 暂存, 一次性
+  │   [SYSTEM][SUMMARY][HISTORY][RETRIEVED][USER]
+  │
+  ├─ chatClient.chat(prompt) → answer        ← 暂存
+  │
+  ├─ stateHint == OK ?
+  │   ├─ YES
+  │   │   ├─[WRITE]─→ ctx.appendTurn → Redis save (TTL slide 24h)    ← ✨ 此处变记忆
+  │   │   └─ ctx.needsCompression(6)?
+  │   │       └─[COMPRESS @Async]─→ oldest N-3 turn 喂 LLM →
+  │   │                              rollingSummary 更新 → Redis save   ← ✨ 此处变远期记忆
+  │   └─ NO (LLM_DEGRADED / NO_RECALL / EMPTY_KB)
+  │       └─[NO WRITE]─→ 丢弃, 当作这 turn 没发生过                  ← 永远是暂存
+  │
+  └─ return ChatResult → User (不等压缩完成)
+```
+
+---
+
+## 9. 异步压缩工程实现
+
+### 9.1 独立线程池配置
+
+```java
+@Configuration
+public class ConversationAsyncConfig {
+
+    @Bean(name = "historyCompressorPool")
+    public Executor historyCompressorPool() {
+        ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
+        exec.setCorePoolSize(2);                              // 2 线程 (CPU 节俭)
+        exec.setMaxPoolSize(2);                               // 不弹性扩, 防雪崩
+        exec.setQueueCapacity(100);                           // 队列 100, 满了丢弃任务 (反正下次重试)
+        exec.setThreadNamePrefix("conv-compress-");
+        exec.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        // ↑ 队列满 → silent drop, 用户 chat 不挂
+        exec.initialize();
+        return exec;
+    }
+}
+```
+
+**5 个关键决策的工程理由**：
+
+| 决策 | 理由 |
+|---|---|
+| `corePool = maxPool = 2` | 不弹性扩。压缩是后台任务，扩到 8 线程只会把 LLM API 打爆（rate limit） |
+| `queueCapacity = 100` | 100 个等待任务上限，超过即丢；debounce 保证正常情况下队列不会真满 |
+| `DiscardPolicy` | 拒绝策略 = 静默丢（不抛异常 / 不阻塞调用线程）。用户 chat 完全感知不到压缩失败，下次 turn 还会再触发 |
+| **跟 Spring 默认 taskExecutor 隔离** | 压缩慢不阻塞其他 async 业务（trace send / metrics report / sse timeout 等） |
+| `@Async("historyCompressorPool")` 显式指定 bean | 不依赖 Spring 全局默认，配置强契约 |
+
+### 9.2 @Async 方法 + 双重 check
+
+```java
+@Async("historyCompressorPool")
+public CompletableFuture<Void> compress(String conversationId) {
+    ConversationContext ctx = store.findById(conversationId).orElse(null);
+    if (ctx == null || !ctx.needsCompression(6)) {
+        return CompletableFuture.completedFuture(null);   // ← 双重 check
+    }
+    // ... LLM 调用 + save
+    return CompletableFuture.completedFuture(null);
+}
+```
+
+调用方拿到 `CompletableFuture` 立即返回，线程池后台跑。**双重 check**：调用前检查一次（触发条件），线程池里执行时再检查一次（防 debounce 期间已被其他任务处理过）。
+
+### 9.3 Debounce 防重复触发（隐式 result cache）
+
+**场景**：用户连续发 6/7/8 turn，`compress` 被调用 3 次，队列里塞了 3 个任务。
+
+```java
+public boolean needsCompression(int threshold) {
+    return recentTurns.size() >= threshold
+        && (summaryUpdatedAt == null                    // 压缩完 ≥ 1 min 才允许再压
+            || Duration.between(summaryUpdatedAt, Instant.now()).toMinutes() >= 1);
+}
+```
+
+** debounce 机制**：第 1 个任务完成后更新 `summaryUpdatedAt`，第 2/3 个任务取出后 check 条件不成立直接 return。**这等价于"压缩结果缓存 1 分钟"**，避免重复 LLM 调用浪费 token。
+
+### 9.4 3 个独立 LLM 调用点的并行模型
+
+这是工程上的关键澄清：**系统里有 3 个 LLM 调用点，彼此独立 CircuitBreaker、独立线程、互不阻塞**。
+
+```
+LlmRouter 路由清单:
+  - primary:    GLM-4-plus       (用户看的主 answer)
+  - fallback:   DeepSeek-V3      (主 LLM 熔断后接替)
+  - rewrite:    DeepSeek-V3      (condense question, cb 实例 "rewrite-llm")
+  - summary:    DeepSeek-V3      (压缩 history, cb 实例 "summary-llm")
+```
+
+| LLM 实例 | 用途 | CircuitBreaker | 是否阻塞用户 response |
+|---|---|---|---|
+| main LLM (GLM-4-plus) | 答 user query | cb `llm-primary` / `llm-fallback` | ✓ 用户等 |
+| rewrite LLM (DeepSeek-V3) | 整理 standalone query | cb `rewrite-llm` | ✓ 用户等 (但 +200ms) |
+| **summary LLM (DeepSeek-V3)** | **压缩 history** | **cb `summary-llm`** | **❌ 用户不等, 异步后台** |
+
+**核心：压缩 LLM 跟回答 LLM 是不同调用 + 不同 cb + 不同线程**。压缩进行时用户的 main LLM 已答完返回，**完全并行**。
+
+### 9.5 压缩时序图
+
+```
+turn 6: user query "那 Nacos 呢"
+   │
+   t0    ┌─ chat() 开始
+   │     │
+   t1    │  rewrite-LLM: "Nacos 默认端口"                 [用户等]
+   │     │
+   t2    │  main-LLM:   跑 2.5s 生成 answer               [用户等]
+   │     │     │
+   │     │     │  ↑ 这段时间 summary-LLM 在干嘛?
+   │     │     │     ↓
+   │     │     │  ↑↑ 可能在跑前一个 turn 触发的压缩任务 (turn 5 触发 → 现在才轮到)
+   │     │     │     ↑↑ 与 main-LLM 并行, 互不干扰
+   │     │     │
+   t2.5  │  response ready, return 给用户
+   │     │
+   t2.6  │  save ctx (新加 turn 6)
+   │     │
+   t2.7  │  needsCompression? yes
+   │     │     ↓
+   │     │  submit @Async compress task (DiscardPolicy)
+   │     │     │
+   t3    │  return response to user
+   │
+   t3.x  [用户已离开 chat()]
+              │
+              │  ↓ ↓ ↓ 后台独立线程 (conv-compress-1)
+              │
+              │  summary-LLM: 把 turn 1-3 压缩成 summary (~1.5s)
+              │     │
+              │     ↓
+              │  ctx = ctx.withCompression(newSummary, [turn4,5,6])
+              │  store.save(ctx)
+              │
+   t5    [压缩完成, ctx 更新 Redis]
+```
+
+"上下文"（Context）的精确含义拆 2 层，避免概念混淆：
+
+| 上下文层 | 含义 | 压缩时是否还在生成 |
+|---|---|---|
+| **Prompt Context** (一次性) | 这一 turn 喂给 main LLM 的 token 序列 | 压缩在 turn **结束之后**跑，main LLM prompt context 已完成生成，不存在 |
+| **Memory Context** (持久化) | Redis 里的 rollingSummary + recentTurns | ✓ 压缩就是更新这个，但不影响当前 turn 的 prompt context |
+
+---
+
+## 10. Prompt Cache 策略
+
+"prompt cache" 有 3 种含义，本 Phase 各自的处理如下。
+
+### 10.1 含义 A：LLM provider 端 prompt cache（本 Phase 不特别设计）
+
+OpenAI / Anthropic / GLM / DeepSeek 都原生支持：prefix（system + 长 history + 长 retrieved context）hash 一样 → 后端识别 → 不重新算 attention → 加速 ~80%。API 层透明。
+
+**为什么本 Phase 不特别启用？**
+
+| 理由 | 说明 |
+|---|---|
+| 多轮场景命中率虚高 | [HISTORY] 是最大 token 段，每 turn 都变 → hash 必定 miss，缓存 prefix 没意义 |
+| risk > reward | 自缓存 prompt → 命中错位 → LLM 答非所问 → 用户感知。GLM / DeepSeek provider 内部 cache 比客户端自建正确 |
+| Anthropic 2025.06 推荐 | 只在 agent 长任务 + 长 system prompt 场景做 prompt cache。Chat RAG 单 turn < 4K token，缓存收益小于复杂度 |
+
+**升级路径**：Phase 4 ContextManager 重构后，prompt 结构稳定为 `[SYSTEM 固定][MEMORY 动态][TOOL][RETRIEVED][TASK][USER]`，那时 [SYSTEM] 1K+ token 是稳定 prefix，主动调 provider prompt cache API（GLM cache management / Anthropic prompt caching）才有收益。目标命中率 ≥ 50%（业界 long-context agent SOTA ~70%）。
+
+### 10.2 含义 B：客户端 Caffeine 模板缓存（本 Phase 做）
+
+```java
+@Component
+public class PromptAssembler {
+    private final Cache<String, String> templateCache;   // Caffeine 本地缓存
+
+    public String build(String query, List<Chunk> retrieved,
+                        ConversationContext ctx, boolean topicShift) {
+        String tmpl = templateCache.get("chat-prompt-template-v1", this::loadTemplate);
+        return format(tmpl, system, ctx.summary(), ctx.historyBlock(), retrievedBlock, query);
+    }
+}
+```
+
+**作用**：避免每次 chat 重复渲染模板字符串。单机 Caffeine cache，0 跨进程，微优化（不是核心）。
+
+### 10.3 含义 C：rewrite / summary prompt 自身的极简化（隐式 cache）
+
+本 Phase 真正相关的"prompt cache"是这条，已隐含在 QueryContextualizer / HistoryCompressor 的设计里，**没单独取名**。3 个体现：
+
+| 体现 | 做法 | 收益 |
+|---|---|---|
+| Rewrite prompt 极简化 | 模板 + instruction ~50 token，动态段只有 history + query | DeepSeek-V3 provider 内部对模板部分命中率高（不同 conversation 共享同一 instruction prefix） |
+| Summary prompt 限输出 | `max-tokens: 500, temperature: 0` | 防 LLM 啰嗦，单次 cost 上限可控 |
+| Compression debounce 1min | `summaryUpdatedAt` 当 result cache key | 重复 compress 调用不走 LLM，等价缓存 1 分钟 |
+
+### 10.4 本 Phase "prompt cache" 实际设计小结
+
+| 层面 | 实际做法 | 显式程度 |
+|---|---|---|
+| Provider cache (GLM / DeepSeek 原生) | 不改，依赖 provider 内部 | 隐式 |
+| 客户端 Caffeine 模板 cache | Caffeine cache key="chat-template-v1" | **显式** |
+| Rewrite / Summary 模板极简 | 模板 < 100 token，争取 provider 命中 | 显式但隐式 cache |
+| Debounce 1min | 重复 compress 防重复 LLM 调用 | 显式 |
+
+**不做激进 prompt cache**（如 hash entire prefix）—— 上面 3 个理由已论证收益小于复杂度。
+
+---
+
+## 11. Memory 与 Context 的关系
+
+### 11.1 一句话区分
+
+| | Memory | Context |
+|---|---|---|
+| **是** | 跨调用持久化的"回忆" | 一次 LLM 调用的"当下 token 序列" |
+| **存哪** | Redis（跨 turn / 跨调用） | 一次性 prompt（每 turn 重建） |
+| **关系** | Memory 写进 prompt 的瞬间 → 变成 Context 一部分 | Context 还有非 Memory 来源（retrieve / tool / system） |
+
+**Memory ≠ Context**。Memory 是 Context 的一个**来源**，不是同义词。
+
+### 11.2 上下文层级图
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ CONTEXT (送给 LLM 的 token 序列, 每次都重建)              │ ← LLM 真正消费的
+│  ┌───────────────────────────────────────────────────┐  │
+│  │ ① System prompt + rules                           │  │
+│  │ ② User current query                              │  │
+│  │ ③ Retrieved knowledge chunks (RAG)                │  │
+│  │ ④ Tool descriptions (Phase 5+ 才有)               │  │
+│  │ ⑤ Task spec (六格, Phase 5+ 才有)                 │  │
+│  │ ⑥ MEMORY ↗↘ (从持久化层取出来的"回忆")           │  │ ← Memory 是 Context 的子集
+│  │      ├── Short-term: chat history (Redis)         │  │
+│  │      ├── Long-term: user profile (Phase 6)        │  │
+│  │      └── Semantic: vectorized past turns (Phase 6)│  │
+│  │ ⑦ Working state (Phase 5+ 才有)                  │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                              ↕ 读写
+┌─────────────────────────────────────────────────────────┐
+│ MEMORY STORE (跨 turn / 跨 session 持久化)                │ ← Storage 层
+│   - Redis (短期 buffer window)                           │
+│   - Postgres (用户 profile, Phase 6)                     │
+│   - Vector DB (语义召回过往 turn, Phase 6)               │
+└─────────────────────────────────────────────────────────┘
+```
+
+Memory 没必出现在 Context 里（决定哪些 memory 该进当前 context、哪些要压缩、哪些要丢弃 = context engineering 的核心工作）。本 Phase 实现层 ⑥ 的 short-term（chat history），Phase 6 才做 long-term / semantic。
+
+### 11.3 内容生命周期（"暂存" vs "记忆"边界）
+
+按存储时长分 5 层生命周期：
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Tier 1: 当次 turn token (~3s)                            │
+│   ← LLM 单次 prompt token, 跑完即销毁                     │
+│   ← 不落地, 不缓存                                        │
+├─────────────────────────────────────────────────────────┤
+│ Tier 2: Buffer Window (~24h, 不跨 session)              │
+│   ← 最近 3 turn 原文, 24h TTL sliding                    │
+│   ← 这就是"近期记忆"                                      │
+├─────────────────────────────────────────────────────────┤
+│ Tier 3: Rolling Summary (~24h, 不跨 session)            │
+│   ← 老 turn 的 LLM 摘要, 24h TTL                         │
+│   ← 这就是"远期记忆"                                      │
+├─────────────────────────────────────────────────────────┤
+│ Tier 4 (Phase 6, 不在本 Phase 范围): Long-term User Profile│
+│   ← 跨 session, Postgres                                 │
+├─────────────────────────────────────────────────────────┤
+│ Tier 5 (Phase 6, 不在本 Phase 范围): Semantic Memory       │
+│   ← 跨 session 向量化老 turn, 独立 Milvus collection      │
+└─────────────────────────────────────────────────────────┘
+```
+
+本 Phase 实现 Tier 1-3，Tier 4/5 在 roadmap Phase 6。
+
+### 11.4 判定规则速查表
+
+| 内容类型 | 去向 | 生命周期 | 是否算"记忆" |
+|---|---|---|---|
+| 当次 turn 的 query + answer | LLM prompt | 1 次 LLM call | ❌ 暂存（瞬时） |
+| retrieve 回来的 5 个 chunk | LLM prompt | 1 次 LLM call | ❌ 暂存（瞬时） |
+| rewrite 出的 standalone query | 1 次 retrieve 调用 | < 1s | ❌ 暂存（瞬时） |
+| **`OK` 状态的 turn 写入 store** | **Redis Buffer Window** | **24h** | **✓ 近期记忆** |
+| **压缩后的 rollingSummary** | **Redis** | **24h** | **✓ 远期记忆** |
+| `LLM_DEGRADED` turn | 丢弃 | 0 | ❌ 拒收 |
+| `NO_RECALL` turn | 丢弃 | 0 | ❌ 拒收 |
+| 用户偏好 / 长期背景 | （Phase 6）Postgres | 跨 session | ✓ 长期记忆（本 Phase 不做） |
+
+### 11.5 "暂存"→"记忆"的精确边界（2 条）
+
+**一行话**：**写进 Redis 的就是记忆，没写进 Redis 的就是暂存**。
+
+#### 边界 ①：`conversationStore.save()` 调用
+
+```java
+if (stateHint == StateHint.OK) {
+    ctx = ctx.appendTurn(thisTurn);
+    conversationStore.save(ctx);    // ← 这条线之上是暂存, 之下是记忆
+}
+```
+
+调用前：本 turn 的 query/answer 只活在 JVM method 局部变量里，response 返给用户后方法栈销毁就没了。  
+调用后：进 Redis，下次 turn `findById` 能拿到。
+
+#### 边界 ②：24h TTL sliding
+
+```java
+public void save(ConversationContext ctx) {
+    redis.opsForValue().set(key(id), json, Duration.ofHours(24));  // ← sliding TTL
+}
+```
+
+- 用户活跃：每次 chat 都 save → TTL 一直刷新到 24h → 长会话不会过期
+- 用户离线超 24h：Redis 自动 GC → 下次 chat `findById` 返 empty → 当成新会话开始
+
+### 11.6 压缩在边界上的作用
+
+压缩 = 把 Tier 2 (Buffer Window) 的老 turn 转换为 Tier 3 (Rolling Summary)。**也只在 Redis 内转换，不影响"是否是记忆"的判定**：
+
+```
+[压缩前]
+  Redis[conv-id]:
+    recentTurns: [turn1, turn2, turn3, turn4, turn5, turn6]   ← 都是近期记忆
+    rollingSummary: null
+
+            ↓ 压缩 trigger (turn 6 完成后)
+
+[压缩后]
+  Redis[conv-id]:
+    recentTurns: [turn4, turn5, turn6]                ← 近期记忆 (Buffer)
+    rollingSummary: "用户问了 Sentinel QPS, bot 答 10; 问了 Hystrix, bot 答 ..."  ← 远期记忆 (Summary)
+```
+
+整个生命周期 24h TTL 内，所有内容**都是记忆**，只是从"近期"老化为"远期"。Tier 4/5 跨 session 的长期记忆 → Phase 6。
+
+---
+
 ## Alternatives Considered
 
 | 方案 | 优点 | 缺点 | 决策 |
