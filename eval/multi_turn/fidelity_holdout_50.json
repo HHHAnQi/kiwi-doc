@@ -1,0 +1,38 @@
+{
+  "question_id": "mt_g4_doc",
+  "gate": "G4",
+  "type": "fidelity_eval_generator_template",
+  "description": "G4 评测的关键实体保留率。本文件不是 50 个固定问题(手工写不实际)，而是模板 + 自动扩展器。",
+  "expected_flow": "ConversationContext 含 8 个或更多 turn (触发压缩) → 压缩完成后取 rollingSummary → 与原 turn 比对，保留的关键实体 ≥ 0.70 = G4 通过。",
+  "fidelity_threshold": 0.70,
+  "min_turns_before_compress": 8,
+  "compress_threshold_config": 6,
+  "key_entity_extractor": {
+    "_comment": "提取原 turn 的实体用于财富对比",
+    "rules": [
+      "组件名: Nacos / Sentinel / Dubbo / Seata / RocketMQ / Hystrix",
+      "版本号: 4.0.0 / 2.x / 1.8.6 (正则 \\d+\\.\\d+(\\.\\d+)?)",
+      "技术名词: TPS / QPS / RT / latency / quorum / raft / two-phase commit",
+      "数字数据: 默认端口号 (4-5 位整数) / 阈值 / 超时毫秒",
+      "特性关键 concept: undo_log / half message / namespace / cluster"
+    ]
+  },
+  "scoring": {
+    "fidelity_score": "summary 中包含的实体数 / ground truth 实体数",
+    "pass_per_session": "fidelity_score ≥ 0.70",
+    "aggregated_pass": "50 个 session 中至少 35 个 pass (70% overall)"
+  },
+  "seed_topics_for_long_conversation": [
+    "nacos_cluster_3node",
+    "sentinel_flowrule_qps",
+    "dubbo_spi_extension",
+    "seata_at_undolog",
+    "rocketmq_transaction_half",
+    "nacos_long_polling",
+    "sentinel_circuit_slow_ratio",
+    "dubbo_protocol_export",
+    "seata_tcc_try_confirm_cancel",
+    "rocketmq_consume_orderly"
+  ],
+  "run_note": "本 gate 不需要手工逐题写 ground truth; 实跑时 run_multi_turn_eval.py 用 8-turn 脚本(基于 seed_topics 拼) 跑 50 次 conversation, 自动比对 summary 实体。"
+}

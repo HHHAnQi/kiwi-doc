@@ -30,10 +30,15 @@ public record ChatRequest(
                 Integer topK,
         @Schema(description = "限定来源组件(dubbo/nacos/seata/rocketmq/sentinel), 可选") String source,
         @Schema(description = "限定版本, 可选") String version,
-        @Schema(description = "限定语言(zh/en), 可选") String language) {
+        @Schema(description = "限定语言(zh/en), 可选") String language,
+        @JsonAlias("conversationId")
+                @Schema(
+                        description =
+                                "Phase 1 (ADR-0011): 会话 ID, 可选; 不传=单轮 stateless, 传则启用多轮")
+                String conversationId) {
 
     /** 老调用方兼容构造(无元数据过滤)。 */
     public ChatRequest(String query, Long docId, Integer topK) {
-        this(query, docId, topK, null, null, null);
+        this(query, docId, topK, null, null, null, null);
     }
 }

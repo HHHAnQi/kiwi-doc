@@ -1,0 +1,32 @@
+{
+  "question_id": "mt_g5_doc",
+  "gate": "G5",
+  "type": "topic_shift_eval_generator_template",
+  "description": "G5 评测: topic shift 后 retrieve 召回正确率 ≥ 0.80。本文件是模板; run_multi_turn_eval.py 用它生成具体 session。",
+  "expected_flow": "对话中后段切换话题 (cosine<0.5) → 验证 topic shift 后 query 用原 input, 但 retrieve 仍能召回正确 chunk (即不被前段话题污染)。",
+  "recall_at_3_threshold": 0.80,
+  "min_sessions": 50,
+  "shift_position": "second_half",
+  "scoring": {
+    "pass_per_session": "shift 后的回答包含 ground_truth_answer 关键 fact (≥50% 重叠)",
+    "aggregated_pass": "50 session 中至少 40 个 pass (80% overall) = G5 通过"
+  },
+  "topic_pairs": [
+    {"from_topic": "nacos", "to_topic": "rocketmq", "query_pair_examples": [
+      {"role": "user", "content": "Nacos 默认端口是多少?"}, {"role": "user", "content": "RocketMQ 怎么保证顺序?", "expect_standalone": "RocketMQ 如何保证消息顺序?"}
+    ]},
+    {"from_topic": "sentinel", "to_topic": "seata", "query_pair_examples": [
+      {"role": "user", "content": "Sentinel 的限流策略有哪些?"}, {"role": "user", "content": "Seata AT 模式怎么回滚?", "expect_standalone": "Seata AT 模式如何处理回滚?"}
+    ]},
+    {"from_topic": "dubbo", "to_topic": "nacos", "query_pair_examples": [
+      {"role": "user", "content": "Dubbo 默认序列化用什么?"}, {"role": "user", "content": "Nacos 集群部署要几节点?", "expect_standalone": "Nacos 集群部署要几个节点?"}
+    ]},
+    {"from_topic": "rocketmq", "to_topic": "sentinel", "query_pair_examples": [
+      {"role": "user", "content": "RocketMQ 死信队列怎么处理?"}, {"role": "user", "content": "Sentinel 慢调用比例熔断怎么算?", "expect_standalone": "Sentinel 慢调用比例熔断策略如何计算触发?"}
+    ]},
+    {"from_topic": "seata", "to_topic": "dubbo", "query_pair_examples": [
+      {"role": "user", "content": "Seata TCC 三个阶段是什么?"}, {"role": "user", "content": "Dubbo SPI 和 Java SPI 有什么区别?", "expect_standalone": "Dubbo SPI 和 Java SPI 有什么区别?"}
+    ]}
+  ],
+  "run_note": "run_multi_turn_eval.py 用 5 个 topic_pair × 10 个变体 = 50 个 session, 每 session 2 turn。判定: turn2 是否被 rewrite 成 standalone 且 retrieve 返回正确 chunk。"
+}

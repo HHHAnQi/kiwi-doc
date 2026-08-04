@@ -64,7 +64,9 @@ public class ChatController {
                         request.source(),
                         request.version(),
                         request.language());
-        ChatResult result = chatService.chat(cmd, tid);
+        // Phase 1 / C7: request.conversationId 转发到 ChatService 多轮路径
+        // (老调用方不传 conversationId 时为 null → stateless 老路径 = baseline 行为)
+        ChatResult result = chatService.chat(cmd, tid, request.conversationId());
 
         return ChatResponse.from(result);
     }

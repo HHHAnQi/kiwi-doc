@@ -14,6 +14,16 @@ spring:
       write-dates-as-timestamps: false
     # api-contracts.md 全用 snake_case; 让 Jackson 自动驼峰↔蛇形互转
     property-naming-strategy: SNAKE_CASE
+  # Phase 1 / C7 (ADR-0011): RedisConversationStore 持久化多轮 history。
+  # 默认 enabled=false 时 ConversationStore=NoOp 不连 Redis (autoconfigure 自动跳过)。
+  # enabled=true 时本配置接 redis 容器 (compose 映射 mac 6380 → 容器 6379)。
+  # 用 spring-profile 覆盖更灵活但当前部署简单: 一个共用配置覆盖 dev 即可。
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
 
 server:
   port: 8080
