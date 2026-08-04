@@ -4,6 +4,7 @@ import com.xxx.ragdoc.application.document.command.UploadCommand;
 import com.xxx.ragdoc.application.document.command.UploadResult;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.FileStorage;
+import com.xxx.ragdoc.application.document.port.MetadataExtractor;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.common.exception.ErrorCode;
 import com.xxx.ragdoc.domain.document.Document;
@@ -42,6 +43,10 @@ public class DocumentUploadService {
     private final DocumentRepository documentRepository;
     private final FileStorage fileStorage;
     private final ParsingTrigger parsingTrigger;
+    /**
+     * P2-1: 上传元数据 rule-based 抽取 (源组件 / 版本号 / 文档类型 / 语言)。只填空白, 不覆盖用户显式输入。
+     */
+    private final MetadataExtractor metadataExtractor;
 
     /**
      * 编程式短事务: 只持有写 doc 行的部分(MS 级), 不包 MinIO/parse/embed。
@@ -56,10 +61,12 @@ public class DocumentUploadService {
             DocumentRepository documentRepository,
             FileStorage fileStorage,
             ParsingTrigger parsingTrigger,
+            MetadataExtractor metadataExtractor,
             PlatformTransactionManager txManager) {
         this.documentRepository = documentRepository;
         this.fileStorage = fileStorage;
         this.parsingTrigger = parsingTrigger;
+        this.metadataExtractor = metadataExtractor;
         this.shortTxWrite = new TransactionTemplate(txManager);
         // 短事务: 仅包 doc 写, 不传播外层(虽然 upload() 本身不带 @Transactional, 防御未来变更)
         this.shortTxWrite.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -67,6 +74,9 @@ public class DocumentUploadService {
 
     /** Disable class-level @Transactional(P3-A 重灌死锁根因)。事务边界下沉到 doc 写入段, parse 在事务外。 */
     public UploadResult upload(UploadCommand cmd) {
+        // P2-1: 自动抽取 metadata 减少手动输入。只填空白字段, 用户显式传的始终胜出。
+        // 在 validate / 业务合法性校验前执行, 让下游所有逻辑用 enriched cmd。
+        cmd = metadataExtractor.enrich(cmd);
         validate(cmd);
 
         ContentHash hash = computeSha256(cmd.content());
