@@ -62,7 +62,7 @@ class QueryContextualizerTest {
         assertThat(r.outcome()).isEqualTo("skip");
         assertThat(r.retrieveQuery()).isEqualTo("Sentinel 默认 QPS?");
         verifyNoInteractions(routeClient);
-        verify(metrics).recordRewriteLatency(0L, "skip");
+        verify(metrics).recordRewriteLatency(anyLong(), eq("skip"));
     }
 
     @Test

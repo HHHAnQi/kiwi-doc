@@ -94,8 +94,11 @@ public class QueryContextualizer {
 
         if (recentTurns == null || recentTurns.isEmpty()) {
             // 第 1 turn 不用 rewrite, 避免浪费 LLM call
-            metrics.recordRewriteLatency(0, "skip");
-            return ContextualizeResult.skipped(currQuery, 0);
+            // durationMs 仍 sync t0 取, 让 metric 与其他 path 同分桶 (空 history 的 latency 应接近 0,
+            // 与 LLM 跳过路径互相对照)
+            long elapsed = System.currentTimeMillis() - t0;
+            metrics.recordRewriteLatency(elapsed, "skip");
+            return ContextualizeResult.skipped(currQuery, elapsed);
         }
 
         String prompt = buildPrompt(currQuery, recentTurns);
