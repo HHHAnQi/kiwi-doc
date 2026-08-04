@@ -21,6 +21,7 @@ import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import com.xxx.ragdoc.infrastructure.conversation.PromptAssembler;
 import com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer;
+import com.xxx.ragdoc.infrastructure.conversation.TopicShiftDetector;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -72,6 +73,9 @@ public class ChatService {
     private ConversationStore conversationStore;
     private QueryContextualizer queryContextualizer;
     private PromptAssembler promptAssembler;
+    // Phase 1 / C5 (ADR-0011 §5): topic shift 检测器, rag.conversation.topic-shift-detect=true
+    // 时注入。null 时视为永远 false (无 shift, 走正常多轮 rewrite)
+    private TopicShiftDetector topicShiftDetector;
 
     @Autowired(required = false)
     public void setConversationDeps(
@@ -86,6 +90,14 @@ public class ChatService {
                 conversationStore == null ? "none" : conversationStore.getClass().getSimpleName(),
                 queryContextualizer == null ? "none" : "QueryContextualizer",
                 promptAssembler == null ? "none" : "PromptAssembler");
+    }
+
+    @Autowired(required = false)
+    public void setTopicShiftDetector(TopicShiftDetector topicShiftDetector) {
+        this.topicShiftDetector = topicShiftDetector;
+        log.info(
+                "chat.topic_shift_detector_enabled={}",
+                topicShiftDetector != null);
     }
 
     /** 多轮对话是否启用 (3 件 Bean 全注入才表 enabled, 防 Redis 没起但 flag ON 的不一致)。 */
@@ -140,7 +152,7 @@ public class ChatService {
         String answer;
         List<ChatResult.Citation> citations = List.of();
 
-        // Phase 1 / C4 (ADR-0011 §7): 加载 ConversationContext + Query rewrite
+        // Phase 1 / C4+C5 (ADR-0011 §5 §7): 加载 ConversationContext + Query rewrite + Topic shift
         // (multi-turn 模式且 conversationId 非空才走; flag OFF 或没 ctx → stateless 老路径)
         ConversationContext ctx = null;
         boolean topicShift = false;
@@ -157,25 +169,29 @@ public class ChatService {
                                         ConversationContext fresh = ConversationContext.empty(conversationId);
                                         return fresh;
                                     });
-            // 注意: 简化版 V1 暂不接 TopicShiftDetector (C5 加), 此处 topicShift 永远 false
-            if (ctx.isEnabled()) {
+            // Phase 1 / C5: 检测 topic shift (detector 在且 ctx 非首 turn 时才跑)
+            // shift=true 时跳过 history rewrite (但不强制 clear ctx, 保留 summary 作弱远期背景)
+            if (topicShiftDetector != null) {
+                topicShift = topicShiftDetector.isTopicShift(cmd.query(), ctx);
+            }
+            if (ctx.isEnabled() && !topicShift) {
                 rewriteResult = queryContextualizer.contextualize(cmd.query(), ctx.recentTurns());
                 retrieveQuery = rewriteResult.retrieveQuery();
-                traceObserver.observe(
-                        lfTrace,
-                        TraceObserver.ObservationType.DECISION,
-                        "query.rewrite",
-                        cmd.query(),
-                        Map.of(
-                                "rewritten",
-                                retrieveQuery,
-                                "outcome",
-                                rewriteResult.outcome(),
-                                "topic_shift",
-                                false),
-                        rewriteResult.durationMs(),
-                        null);
             }
+            traceObserver.observe(
+                    lfTrace,
+                    TraceObserver.ObservationType.DECISION,
+                    "query.rewrite",
+                    cmd.query(),
+                    Map.of(
+                            "rewritten",
+                            retrieveQuery,
+                            "outcome",
+                            rewriteResult == null ? "skip_topic_shift" : rewriteResult.outcome(),
+                            "topic_shift",
+                            topicShift),
+                    rewriteResult == null ? 0 : rewriteResult.durationMs(),
+                    null);
         }
         final String finalRetrieveQuery = retrieveQuery;
 
