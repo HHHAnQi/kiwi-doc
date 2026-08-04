@@ -42,4 +42,22 @@ public class ChatMessages {
      * 单独贡献未验证(Phase 2.A 与 A1 同跑), 待 Phase 2.B 单独 A/B。
      */
     private boolean litmReorder = false;
+
+    // ─── Phase 2.B / P2-2: PromptV2 (citation 强迫 + grounding 收紧) ───────────
+    // Baseline prompt 业内 -0.86 faithfulness / 0.67 precision (eval/EVAL_BASELINE_CERT.md);
+    // V2 加强: (a) 强制每个事实 [n] citation, (b) '片段不存在就不能说' 规则, (c) 收紧 fallback 触发条件。
+    // Holdout gate = eval/holdout.jsonl 80 条 (生产冷启动 = 0 baseline 对照), 比较 faithfulness ≥ +5pp。
+    // flag 默认 OFF; eval 跑留一 ≮ baseline 才开。
+
+    /**
+     * Phase 2.B / P2-2: V2 prompt 启用 flag。优先级: promptV2 > promptRelaxRefusal > baseline。
+     * V2 启用时 promptRelaxRefusal 不生效 (V2 ≠ relaxed, 是更严格而非更宽松)。
+     */
+    private boolean promptV2 = false;
+
+    /**
+     * Phase 2.B / P2-2: V2 是否强制要求 LLM 在每个事实后面标 citation [n]。
+     * ON=任何非通用陈述都要有 [n]; OFF=只关键事实。default ON, 可经此 flag 关闭做 A/B。
+     */
+    private boolean promptV2Citation = true;
 }

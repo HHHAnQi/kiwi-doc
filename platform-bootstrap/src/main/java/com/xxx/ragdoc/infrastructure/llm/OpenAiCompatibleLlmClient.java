@@ -177,9 +177,7 @@ public class OpenAiCompatibleLlmClient implements com.xxx.ragdoc.application.cha
     // ─── prompt + body 构造 (与 DashScopeChatClient 老实现等价, 提拆出) ─────
 
     private ObjectNode buildOpenAiBody(String query, List<String> context, boolean stream) {
-        String systemPrompt = (chatMessages != null && chatMessages.isPromptRelaxRefusal())
-                ? buildRelaxedPrompt()
-                : buildBaselinePrompt();
+        String systemPrompt = buildSystemPrompt();
 
         StringBuilder ctxBuilder = new StringBuilder();
         int totalChars = 0;
@@ -249,5 +247,61 @@ public class OpenAiCompatibleLlmClient implements com.xxx.ragdoc.application.cha
                 + "不要因'片段没逐字命中问题'就拒答;\n"
                 + "6. 片段可能因 PDF 抽取含多余空行, 这是格式噪声, 忽略它聚焦正文;\n"
                 + "7. 严禁编造任何片段中没有的版本号、数值、配置项名;";
+    }
+
+    /**
+     * Phase 2.B / P2-2: prompt 优先级选择。
+     *
+     * <p>V2 (promptV2=true) > relaxed (promptRelaxRefusal=true) > baseline (default)
+     *
+     * <p>V2 与 relaxed 互斥: V2 是 stricter 版本 (强化 citation + grounding), relaxed 是 looser 版本;
+     * 同时不应启用 (V2 优先)。
+     */
+    private String buildSystemPrompt() {
+        if (chatMessages == null) return buildBaselinePrompt();
+        if (chatMessages.isPromptV2()) return buildV2Prompt();
+        if (chatMessages.isPromptRelaxRefusal()) return buildRelaxedPrompt();
+        return buildBaselinePrompt();
+    }
+
+    /**
+     * Phase 2.B / P2-2: V2 prompt 设计目标: faithfulness ≥ +5pp, precision ≥ +3pp
+     * (vs baseline)。
+     *
+     * <p>三处强化:
+     *
+     * <ol>
+     *   <li><b>citation 强迫</b> (promptV2Citation): 任何非通用代词/连接词的所有事实 → 必须标 [n]。
+     *       不标 = 视为编造, 由 G3 isLlmRefusal / RAGAS faithfulness 检出。
+     *   <li><b>grounding 规则</b>: 片段中不存在的版本号 / 数值 / API 名 / 步骤 → 严禁出现。
+     *       比 baseline 第 6 条更具体 (列出 forbidden categories)。
+     *   <li><b>收紧 fallback 触发</b>: baseline 第 5 条 "片段完全无关时答无"; V2 把判据改为
+     *       "片段语义不达问题至少一条关键事实" 才答无, 防误判 code-only / 长篇段。
+     * </ol>
+     */
+    private String buildV2Prompt() {
+        boolean requireCitation =
+                chatMessages != null ? chatMessages.isPromptV2Citation() : true;
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是 Spring Cloud Alibaba 技术文档助手。我会按 [n] 标注检索片段。回答规则(严格遵守):\n");
+        sb.append("1. 直接答问, 2-4 句要点, 不复述问题, 不写教程;\n");
+        sb.append("2. 仅说片段里明确写到的事实。版本号 / 数值 / 配置项名 / API 名 / 步骤"
+                + " / 类名 / 方法名必须**逐字**来自片段, 不得改写、组合、推断;\n");
+        sb.append("3. 片段含答案但只覆盖部分角度时, 只答覆盖到的部分, 其余角度如实省略, 不补不猜;\n");
+        if (requireCitation) {
+            sb.append("4. 任何非助词、非连接词的事实陈述, 末尾或自然停顿处必须文案 [n] (n = 出处片段序号)。"
+                    + " 一句话可叠 [1][3]; 不带 citation 的具体数值/版本号视为编造;\n");
+        } else {
+            sb.append("4. 关键配置项 / 版本号 / API 名 后面宜标 [n] (n = 出处片段序号), 并非强制;\n");
+        }
+        sb.append("5. fallback 判定 —— 仅当满足以下任一才回答 \"知识库中没有相关内容\":\n");
+        sb.append("   a. 所有 [n] 片段都在不同技术领域 (问 Nacos 但片段全讲 RocketMQ 那级);\n");
+        sb.append("   b. 片段仅为目录页、版权页、纯空格式噪声 (无任何术语名词);\n");
+        sb.append("   c. 片段无明显匹配关键词且无任何可识别的代码/配置/类名片段;\n");
+        sb.append("   不符合上述三条, 即使片段未逐字命中问题, 也基于片段语义给出 1-2 句最相关的对话;\n");
+        sb.append("6. 片段可能因 PDF 抽取含多余空行 — 这是格式噪声, 忽略它;\n");
+        sb.append("7. 严禁编造片段中未出现的: 版本号、数值、API、配置项名、类名. "
+                + "若片段没有, 直接说 \"片段中未提及\" 并答 fallback 文案.");
+        return sb.toString();
     }
 }
