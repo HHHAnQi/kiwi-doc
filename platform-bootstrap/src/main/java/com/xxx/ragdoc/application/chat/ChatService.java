@@ -19,11 +19,12 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
-import com.xxx.ragdoc.infrastructure.conversation.ConversationProperties;
-import com.xxx.ragdoc.infrastructure.conversation.HistoryCompressor;
-import com.xxx.ragdoc.infrastructure.conversation.PromptAssembler;
-import com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer;
-import com.xxx.ragdoc.infrastructure.conversation.TopicShiftDetector;
+// 架构债清理: 移除 infrastructure.conversation.* 直依赖, 改用 application 层端口 + ChatService 同包的 ConversationProperties
+import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
+import com.xxx.ragdoc.application.chat.conversation.port.HistoryCompressorPort;
+import com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort;
+import com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort;
+import com.xxx.ragdoc.application.chat.conversation.port.TopicShiftDetectorPort;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -68,7 +69,8 @@ public class ChatService {
     private final TraceObserver traceObserver;
 
     // Phase 3.A: 5 SLO 计量。同步 chat 在 finish 里 record, chatStream 在 stream_done/failed/doFinally record。
-    private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
+    // 架构债清理: 用 application 层端口 MetricsPort, 不直接持 infrastructure.RagdocMetrics。
+    private final com.xxx.ragdoc.application.metrics.MetricsPort metrics;
 
     // Phase 1 / C6: 用 ConversationProperties.compressThreshold 做 ChatService 内触发判定,
     // 防硬编码 6 但用户改 8 (compress 内部 needsCompression 拿不到更精确的紧致触发).
@@ -80,20 +82,20 @@ public class ChatService {
     // Phase 1 / C4 (ADR-0011 §7): 多轮对话 3 件 optional Bean, rag.conversation.enabled=false 时
     // 不注入, 全 null → chat() 完全走 stateless 老路径 (baseline ±3pp gate 不破)
     private ConversationStore conversationStore;
-    private QueryContextualizer queryContextualizer;
-    private PromptAssembler promptAssembler;
+    private QueryContextualizerPort queryContextualizer;
+    private PromptAssemblerPort promptAssembler;
     // Phase 1 / C5 (ADR-0011 §5): topic shift 检测器, rag.conversation.topic-shift-detect=true
     // 时注入。null 时视为永远 false (无 shift, 走正常多轮 rewrite)
-    private TopicShiftDetector topicShiftDetector;
+    private TopicShiftDetectorPort topicShiftDetector;
     // Phase 1 / C6 (ADR-0011 §6 §9): 异步历史压缩器, rag.conversation.compress=true 时注入。
     // null 时不触发压缩 (buffer 大小靠 PromptAssembler MAX=5 硬 cut 单层兜底)
-    private HistoryCompressor historyCompressor;
+    private HistoryCompressorPort historyCompressor;
 
     @Autowired(required = false)
     public void setConversationDeps(
             ConversationStore conversationStore,
-            QueryContextualizer queryContextualizer,
-            PromptAssembler promptAssembler) {
+            QueryContextualizerPort queryContextualizer,
+            PromptAssemblerPort promptAssembler) {
         this.conversationStore = conversationStore;
         this.queryContextualizer = queryContextualizer;
         this.promptAssembler = promptAssembler;
@@ -105,7 +107,7 @@ public class ChatService {
     }
 
     @Autowired(required = false)
-    public void setTopicShiftDetector(TopicShiftDetector topicShiftDetector) {
+    public void setTopicShiftDetector(TopicShiftDetectorPort topicShiftDetector) {
         this.topicShiftDetector = topicShiftDetector;
         log.info(
                 "chat.topic_shift_detector_enabled={}",
@@ -113,7 +115,7 @@ public class ChatService {
     }
 
     @Autowired(required = false)
-    public void setHistoryCompressor(HistoryCompressor historyCompressor) {
+    public void setHistoryCompressor(HistoryCompressorPort historyCompressor) {
         this.historyCompressor = historyCompressor;
         log.info("chat.history_compressor_enabled={}", historyCompressor != null);
     }

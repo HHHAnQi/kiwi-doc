@@ -47,7 +47,8 @@ public class RetrieveService {
     private final RerankClient rerankClient;
     private final RerankProperties rerankProps;
     // Phase 3.A: retrieve SLO 计量(retrieve_total_latency / recall_count / rerank_latency)
-    private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
+    // 架构债清理: 用 application 层端口 MetricsPort, 不直接持 infrastructure.RagdocMetrics。
+    private final com.xxx.ragdoc.application.metrics.MetricsPort metrics;
     // P3-1: 查 default version 用于 fallback
     private final DocumentRepository documentRepository;
 

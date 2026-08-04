@@ -24,10 +24,46 @@ import org.junit.jupiter.api.Test;
 @DisplayName("RetrieveService - 第③段 reranker 集成")
 class RetrieveServiceTest {
 
-    /** Phase 3.A: 给 RetrieveService 注入一个真实(简单) MeterRegistry-backed metrics, mock 它没意义。 */
-    private static com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics newRagdocMetrics() {
-        return new com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics(
-                new io.micrometer.core.instrument.simple.SimpleMeterRegistry());
+    /**
+     * Phase 3.A: 给 RetrieveService 注入一个 noop MetricsPort。RetrieveService 调 metrics.record* 是
+     * 观察路径, 测试不断言 metric 值, 用 noop 实现可避免 test code 触及 infrastructure.RagdocMetrics 类型,
+     * 让 ArchUnit "application 不依赖 infrastructure" 规则 satisfied。
+     */
+    private static com.xxx.ragdoc.application.metrics.MetricsPort newRagdocMetrics() {
+        return new com.xxx.ragdoc.application.metrics.MetricsPort() {
+            @Override
+            public void recordChatTotal(long durationMs, String outcome) {}
+
+            @Override
+            public void recordChatFirstToken(long latencyMs) {}
+
+            @Override
+            public void incrementLlmCall(String route) {}
+
+            @Override
+            public void recordRetrieveRecall(int count) {}
+
+            @Override
+            public void recordRerankLatency(long durationMs, boolean success) {}
+
+            @Override
+            public void recordRetrieveTotal(long durationMs) {}
+
+            @Override
+            public void recordRewriteLatency(long durationMs, String outcome) {}
+
+            @Override
+            public void incrementTopicShift(String detected) {}
+
+            @Override
+            public void incrementCompression(String outcome) {}
+
+            @Override
+            public void incrementHistoryForceTruncate() {}
+
+            @Override
+            public void recordTokens(int promptTokens, int completionTokens, String route, String model) {}
+        };
     }
 
     /** 工具: mock chunkRepository.findByIdIn 在被传入任一 ids 时, 走查表逐条返回。 */

@@ -1,8 +1,10 @@
 package com.xxx.ragdoc.infrastructure.conversation;
 
+import com.xxx.ragdoc.application.chat.ConversationProperties;
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
+import com.xxx.ragdoc.application.chat.conversation.port.TopicShiftDetectorPort;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +41,7 @@ import org.springframework.stereotype.Component;
         name = "topic-shift-detect",
         havingValue = "true")
 @RequiredArgsConstructor
-public class TopicShiftDetector {
+public class TopicShiftDetector implements TopicShiftDetectorPort {
 
     private final EmbeddingClient embeddingClient;
     private final ConversationProperties props;

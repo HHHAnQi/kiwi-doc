@@ -1,8 +1,10 @@
 package com.xxx.ragdoc.infrastructure.conversation;
 
+import com.xxx.ragdoc.application.chat.ConversationProperties;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
 import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
+import com.xxx.ragdoc.application.chat.conversation.port.HistoryCompressorPort;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.infrastructure.llm.LlmRouter;
 import com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics;
@@ -44,7 +46,7 @@ import org.springframework.stereotype.Component;
         prefix = "rag.conversation",
         name = "compress",
         havingValue = "true")
-public class HistoryCompressor {
+public class HistoryCompressor implements HistoryCompressorPort {
 
     /** 摘要 LLM 输出最小长度, 短于此视为 LLM 异常 → 拒收。 */
     private static final int MIN_SUMMARY_LEN = 10;

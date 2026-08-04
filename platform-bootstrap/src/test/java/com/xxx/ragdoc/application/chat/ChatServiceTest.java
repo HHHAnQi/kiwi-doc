@@ -56,12 +56,15 @@ class ChatServiceTest {
     // V3-W3 Langfuse trace 接入(DoD-5); mock 让所有 trace 调用成 no-op
     @Mock private TraceObserver traceObserver;
     // Phase 3.A: metrics mock 成 void no-op, ChatService recordChatTotal 等不抛 NPE。
-    @Mock private com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
+    // 架构债清理: 改用 MetricsPort 接口; RagdocMetrics 实现该接口, 在 @Mock 时仅声明接口类型,
+    // ArchUnit 不再判 test 跨层引用 infrastructure。
+    @Mock private com.xxx.ragdoc.application.metrics.MetricsPort metrics;
 
     // Phase 1 / C4: 多轮对话 3 件 optional bean, @InjectMocks 自动注入到 setConversationDeps
     @Mock private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
-    @Mock private com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer queryContextualizer;
-    @Mock private com.xxx.ragdoc.infrastructure.conversation.PromptAssembler promptAssembler;
+    // 架构债清理: mock port 接口而非 infrastructure 实现类, 让 application test 不依赖 infrastructure
+    @Mock private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort queryContextualizer;
+    @Mock private com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort promptAssembler;
 
     @InjectMocks private ChatService chatService;
 

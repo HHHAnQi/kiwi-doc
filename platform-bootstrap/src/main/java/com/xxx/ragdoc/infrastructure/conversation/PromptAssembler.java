@@ -2,6 +2,7 @@ package com.xxx.ragdoc.infrastructure.conversation;
 
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
+import com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort;
 import com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ import org.springframework.stereotype.Component;
         name = "enabled",
         havingValue = "true")
 @RequiredArgsConstructor
-public class PromptAssembler {
+public class PromptAssembler implements PromptAssemblerPort {
 
     /** 硬 cut: prompt 里 history 最多多少 turn (极端情况兜底, 见 §8.4)。 */
     private static final int MAX_HISTORY_TRUNCATE = 5;

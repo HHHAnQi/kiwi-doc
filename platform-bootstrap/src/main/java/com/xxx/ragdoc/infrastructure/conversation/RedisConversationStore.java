@@ -3,6 +3,7 @@ package com.xxx.ragdoc.infrastructure.conversation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.xxx.ragdoc.application.chat.ConversationProperties;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
 import java.time.Duration;

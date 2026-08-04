@@ -1,5 +1,6 @@
 package com.xxx.ragdoc.infrastructure.metrics;
 
+import com.xxx.ragdoc.application.metrics.MetricsPort;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -34,7 +35,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class RagdocMetrics {
+public class RagdocMetrics implements MetricsPort {
 
     private final MeterRegistry registry;
 

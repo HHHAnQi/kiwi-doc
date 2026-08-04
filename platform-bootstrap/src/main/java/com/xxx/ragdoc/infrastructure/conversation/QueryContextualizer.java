@@ -3,6 +3,7 @@ package com.xxx.ragdoc.infrastructure.conversation;
 import com.xxx.ragdoc.application.chat.conversation.ContextualizeResult;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
+import com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.infrastructure.llm.LlmRouter;
 import com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics;
@@ -40,7 +41,7 @@ import org.springframework.stereotype.Component;
         prefix = "rag.conversation",
         name = "enabled",
         havingValue = "true")
-public class QueryContextualizer {
+public class QueryContextualizer implements QueryContextualizerPort {
 
     /** 取 history 最近 N turn 喂 rewrite LLM, 控制 prompt input token (~500)。
      *  不用 rollingSummary: 是压缩过的, 喂 rewrite LLM 反而扰指代消解。 */
