@@ -157,13 +157,18 @@ class ConversationContextTest {
         return new ConversationContext.Turn(q, a, List.of(1L), StateHint.OK, Instant.now());
     }
 
-    /** 构造有 N 个 OK turn 的 ctx, summaryUpdatedAt 控制为传入值。 */
+    /**
+     * 构造有 N 个 OK turn 的 ctx, summaryUpdatedAt 控制为传入值。
+     *
+     * <p>用 {@link ConversationContext#withCompression} 路径植入 summaryUpdatedAt — 这是该字段
+     * 唯一可写的合法 path(实际生产中只有异步压缩任务会写)。保留所有 turn 不丢, 测试只看
+     * needsCompression 阈值判定。
+     */
     private static ConversationContext ctxWithTurns(int n, Instant summaryUpdatedAt) {
         ConversationContext ctx = ConversationContext.empty("conv-test");
         for (int i = 0; i < n; i++) {
             ctx = ctx.appendTurn(okTurn("Q" + i, "A" + i));
         }
-        // 用反射方式重设 summaryUpdatedAt 不优雅, 改用 withCompression
         if (summaryUpdatedAt != null) {
             String existingSummary = ctx.rollingSummary();
             ctx = ctx.withCompression(existingSummary, ctx.recentTurns(), summaryUpdatedAt);

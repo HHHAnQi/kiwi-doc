@@ -24,12 +24,12 @@ import java.util.Objects;
  *
  * <h3>不可变设计</h3>
  *
- * record 不可变, 任何状态变更走 {@link #appendTurn(Turn)} / {@link #withCompression(String, List,
- * Instant)} 等 with- 方法返回新实例。这避免了:
+ * final class + private final 字段 + 构造器一次定型, 任何状态变更走 {@link #appendTurn(Turn)}
+ * / {@link #withCompression(String, List, Instant)} 等 with- 方法返回新实例。这避免了:
  *
  * <ul>
  *   <li>异步压缩线程与主 chat 线程 race condition
- *   <li>多 turn 期间 ctx 被误改
+ *   <li>多 turn 期间 ctx 被误改 (history.json 反序列化回的实例随时被复读)
  * </ul>
  *
  * @author Phase 1 / C1 (ADR-0011)
