@@ -120,11 +120,30 @@ public class LlmRouter implements ChatClient {
         return fallback != null && fallbackCb != null;
     }
 
+    /**
+     * Phase 3 / P3-5: 上一次 chat 路由到的客户端 (primary / fallback null=未跑过)。 volatile 弱一致;
+     * ChatService 在 chat() 返回后立即取 lastUsage → 这里也立即返最近一次的客户端 usage。
+     */
+    private volatile OpenAiCompatibleLlmClient lastUsedClient;
+
+    @Override
+    public java.util.Optional<com.xxx.ragdoc.application.chat.port.ChatClient.TokenUsage> lastUsage() {
+        OpenAiCompatibleLlmClient c = lastUsedClient;
+        return c == null ? java.util.Optional.empty() : c.lastUsage();
+    }
+
+    @Override
+    public String currentModel() {
+        OpenAiCompatibleLlmClient c = lastUsedClient;
+        return c == null ? "unknown" : c.currentModel();
+    }
+
     @Override
     public String chat(String query, List<String> context) throws Exception {
         try {
-            return primaryCb.executeSupplier(() -> {
+                    return primaryCb.executeSupplier(() -> {
                 try {
+                    lastUsedClient = primary;
                     return primary.chat(query, context);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -138,6 +157,7 @@ public class LlmRouter implements ChatClient {
             log.warn("llm.router.primary_failed_to_fallback reason={}", rootCause(primaryErr));
             return fallbackCb.executeSupplier(() -> {
                 try {
+                    lastUsedClient = fallback;
                     return fallback.chat(query, context);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
