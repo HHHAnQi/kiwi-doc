@@ -71,7 +71,19 @@ public class TopicShiftDetector {
                 metrics.incrementTopicShift("embed_null");
                 return false;
             }
-            double sim = cosine(currEmb.denseVector(), lastEmb.denseVector());
+            float[] a = currEmb.denseVector();
+            float[] b = lastEmb.denseVector();
+            if (a == null
+                    || b == null
+                    || a.length == 0
+                    || a.length != b.length) {
+                // 维度不等 = embedding 异常 (BGE-M3 dim 恒 1024),
+                // 不让 cosine 算出 0 误判为 shift, 直接走异常 fallback
+                throw new IllegalStateException(
+                        "embed dim mismatch: " + (a == null ? 0 : a.length) + " vs "
+                                + (b == null ? 0 : b.length));
+            }
+            double sim = cosine(a, b);
             boolean shift = sim < props.getTopicShiftThreshold();
             metrics.incrementTopicShift(shift ? "detected" : "not_detected");
             if (shift) {
@@ -79,7 +91,7 @@ public class TopicShiftDetector {
             }
             return shift;
         } catch (Exception e) {
-            // detector 不挂 chat — embed 失败 / 网络异常 → 视为无 shift, 让 rewrite 正常跑
+            // detector 不挂 chat — embed 失败 / 网络异常 / dim 不等 → 视为无 shift, 让 rewrite 正常跑
             log.warn(
                     "topic_shift.detect_failed fallback to no-shift, reason={}",
                     e.getMessage());
@@ -88,9 +100,13 @@ public class TopicShiftDetector {
         }
     }
 
-    /** cosine similarity; 两向量维度不等返回 0 (异常情况, 几乎不可能但防 NPE)。 */
+    /**
+     * cosine similarity.
+     *
+     * <p>调用方必须保证 a/b 非空且维度相等 (本类的 isTopicShift 已校验); 本方法只做 dot / norm 计算。
+     * 若 a/b 为零向量 (norm=0) 返回 0, 极少情况 (几乎不可能, 唯一可能 dim 全 0 的极少 embedding model)。
+     */
     private static double cosine(float[] a, float[] b) {
-        if (a == null || b == null || a.length == 0 || a.length != b.length) return 0;
         double dot = 0, na = 0, nb = 0;
         for (int i = 0; i < a.length; i++) {
             dot += (double) a[i] * b[i];

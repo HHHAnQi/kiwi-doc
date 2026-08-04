@@ -115,7 +115,8 @@ class TopicShiftDetectorTest {
     }
 
     @Test
-    void 向量维度不等_cosine为0_应判为shift_因0小于阈值() {
+    void 向量维度不等_应抛异常fallback_false_metric_detect_failed() {
+        // 维度不等 = embedding 异常 (BGE-M3 dim 恒 1024), 不让 cosine 算出 0 误判 shift
         when(embeddingClient.embed(any()))
                 .thenReturn(emb(new float[] {1.0f, 0.0f, 0.0f}))
                 .thenReturn(emb(new float[] {0.0f, 1.0f}));
@@ -123,9 +124,8 @@ class TopicShiftDetectorTest {
         ConversationContext ctx = ConversationContext.empty("c1").appendTurn(turn("Q"));
         boolean shift = detector.isTopicShift("Q2", ctx);
 
-        // cos(0) = 0 < 0.5 阈值 → 视为 shift. 异常极少出现, 不影响生产 (BGE-M3 维度恒 1024)
-        assertThat(shift).isTrue();
-        verify(metrics).incrementTopicShift("detected");
+        assertThat(shift).isFalse();
+        verify(metrics).incrementTopicShift("detect_failed");
     }
 
     @Test
