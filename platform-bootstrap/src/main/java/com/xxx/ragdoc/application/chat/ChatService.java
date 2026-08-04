@@ -19,6 +19,7 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import com.xxx.ragdoc.infrastructure.conversation.HistoryCompressor;
 import com.xxx.ragdoc.infrastructure.conversation.PromptAssembler;
 import com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer;
 import com.xxx.ragdoc.infrastructure.conversation.TopicShiftDetector;
@@ -76,6 +77,9 @@ public class ChatService {
     // Phase 1 / C5 (ADR-0011 §5): topic shift 检测器, rag.conversation.topic-shift-detect=true
     // 时注入。null 时视为永远 false (无 shift, 走正常多轮 rewrite)
     private TopicShiftDetector topicShiftDetector;
+    // Phase 1 / C6 (ADR-0011 §6 §9): 异步历史压缩器, rag.conversation.compress=true 时注入。
+    // null 时不触发压缩 (buffer 大小靠 PromptAssembler MAX=5 硬 cut 单层兜底)
+    private HistoryCompressor historyCompressor;
 
     @Autowired(required = false)
     public void setConversationDeps(
@@ -98,6 +102,12 @@ public class ChatService {
         log.info(
                 "chat.topic_shift_detector_enabled={}",
                 topicShiftDetector != null);
+    }
+
+    @Autowired(required = false)
+    public void setHistoryCompressor(HistoryCompressor historyCompressor) {
+        this.historyCompressor = historyCompressor;
+        log.info("chat.history_compressor_enabled={}", historyCompressor != null);
     }
 
     /** 多轮对话是否启用 (3 件 Bean 全注入才表 enabled, 防 Redis 没起但 flag ON 的不一致)。 */
@@ -348,6 +358,7 @@ public class ChatService {
 
         // Phase 1 / C4 (ADR-0011 §6 + §8.2 G3): 写回 history — 仅当 OK turn 才允许 (硬 gate 防污染)
         // LLM_DEGRADED / NO_RECALL / EMPTY_KB 一律不写, 否则下游 rewrite 把"出错了"当 fact 污染指代消解
+        ConversationContext updatedCtx = null; // 用于 compress 触发判定
         if (hint == StateHint.OK
                 && ctx != null
                 && isMultiTurnEnabled()
@@ -358,11 +369,29 @@ public class ChatService {
                         citations.stream().map(ChatResult.Citation::chunkId).toList();
                 Turn thisTurn =
                         new Turn(cmd.query(), answer, citedChunkIds, StateHint.OK, Instant.now());
-                ConversationContext updated = ctx.appendTurn(thisTurn);
-                conversationStore.save(updated);
+                updatedCtx = ctx.appendTurn(thisTurn);
+                conversationStore.save(updatedCtx);
             } catch (Exception e) {
                 // 兜底: store 异常已在 ConversationStore 内 silent log, 此处再防一道 setProperty
                 log.warn("chat.history_write_failed conv_id={}, reason={}", conversationId, e.getMessage());
+            }
+        }
+
+        // Phase 1 / C6 (ADR-0011 §6 §9): 异步触发压缩 (fire-and-forget)
+        // 仅当: ctx 写回成功 + compress 实例注入 + needsCompression 满足才走
+        // compress 内部还有 needsCompression 双重 check, 防 submit 之后 ctx 已被并发的别的 task 处理过
+        if (updatedCtx != null
+                && historyCompressor != null
+                && updatedCtx.recentTurns() != null
+                && updatedCtx.recentTurns().size() >= 6) {
+            try {
+                historyCompressor.compress(conversationId);
+            } catch (Exception e) {
+                // fire-and-forget 异常不应影响 chat 返回 (DiscardPolicy 队列满也作 silent)
+                log.debug(
+                        "chat.compress_submit_skipped conv_id={}, reason={}",
+                        conversationId,
+                        e.getMessage());
             }
         }
 
