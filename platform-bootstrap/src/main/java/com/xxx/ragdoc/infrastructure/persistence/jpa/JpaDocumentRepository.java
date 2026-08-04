@@ -126,4 +126,23 @@ public class JpaDocumentRepository implements DocumentRepository {
                                         e.getLanguage(),
                                         e.getDocType()));
     }
+
+    @Override
+    public Optional<Document> findDefaultReadyBySource(String source) {
+        if (source == null || source.isBlank()) return Optional.empty();
+        // Phase 3 / P3-1: default version fallback 用于 retrieve 时按 source 找最新默认版本过滤,
+        // 避免跨版本混查。约定: 同 source + READY + !deleted 最多 1 条 is_default=true.
+        return jpa
+                .findFirstBySourceAndStatusAndIsDefaultTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        source, DocumentStatus.READY.name())
+                .map(DocumentMapper::toDomain);
+    }
+
+    @Override
+    public boolean existsDefaultBySource(String source) {
+        if (source == null || source.isBlank()) return false;
+        // P3-1: DocumentUploadService 调用, 判断是否需要标新 doc 为 default。
+        // 不限 status 因为此时新 doc 还在 UPLOADED, parsingTrigger 未跑完。READY 由 findDefaultReadyBySource 兜底。
+        return jpa.existsBySourceAndIsDefaultTrueAndDeletedAtIsNull(source);
+    }
 }

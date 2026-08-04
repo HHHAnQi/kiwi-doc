@@ -43,4 +43,28 @@ public interface DocumentRepository {
 
     /** 按 id 加载详情(含 chunk_count 关联统计, 不含 chunk 内容)。 */
     Optional<DocumentDetail> findDetailById(Long id);
+
+    /**
+     * Phase 3 / P3-1 (修正版 Phase 3): 按业务 source 找当前默认版本 (is_default=true, READY, 未软删)。
+     *
+     * <p>用途: RetrieveService 在用户没显式传 version 时 fallback 找 default 版本过滤, 避免跨版本混查
+     * (Spring Boot 2 javax vs Spring Boot 3 jakarta).
+     *
+     * <p>不变量: 同 source + READY + !deleted 最多 1 条 is_default=true.
+     * 实现参见 {@code JpaDocumentRepository.findDefaultReadyBySource}.
+     *
+     * @return 不存在 default 版本 (新 source 未上传 / 全软删) 返 empty, 调用方降级全库检索。
+     */
+    Optional<Document> findDefaultReadyBySource(String source);
+
+    /**
+     * Phase 3 / P3-1: source 下是否已存在任意 default 文档 (任意状态, 排除软删)。
+     *
+     * <p>DocumentUploadService 在新建 doc 时调用: 若 source 已有 default (即使非 READY) 则不抢占;
+     * 反之 (source 首次上传 / 老 default 被软删) 则把新 doc 标 isDefault=true。
+     *
+     * <p>不限定 status 是因为 parsingTrigger 还未跑完 (doc 还在 UPLOADED 状态), 用 READY 过滤会误判抢 default;
+     * 真正检索时由 {@link #findDefaultReadyBySource} 二次过滤 READY 状态来兜底。
+     */
+    boolean existsDefaultBySource(String source);
 }

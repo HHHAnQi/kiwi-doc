@@ -40,6 +40,16 @@ public class Document {
     private String errorMessage;
     private List<Chunk> chunks;
     private boolean deleted;
+    /**
+     * Phase 3 / P3-1 (修正版 Phase 3): 是否为同 source 的默认版本。
+     *
+     * <p>用途: 用户不传 explicit version 时 RetrieveService 按 is_default fallback 过滤,
+     * 避免跨版本混查 (Spring Boot 2 javax vs Spring Boot 3 jakarta)。
+     *
+     * <p>不变量: 同 source + status=READY + deleted=false 时, 最多 1 条 isDefault=true
+     * (DocumentUploadService.upload + AdminEndpoint.setDefault 共同保证)。
+     */
+    private boolean isDefault;
 
     // ============================================================
     // 工厂方法
@@ -381,6 +391,26 @@ public class Document {
 
     public boolean canRetry() {
         return status == DocumentStatus.FAILED && retryCount < 1;
+    }
+
+    /** Phase 3 / P3-1: 是否为同 source 的默认版本。 */
+    public boolean isDefault() {
+        return isDefault;
+    }
+
+    /**
+     * Phase 3 / P3-1: 标记为同 source 默认版本 (admin set-default 调用)。
+     *
+     * <p>不变量: 调用方 (DocumentManageService.setDefault) 必须保证先把同 source 老的 default
+     * 标 isDefault=false 才调本方法, 维持 "同 source + READY + !deleted 最多 1 default"。
+     */
+    public void markDefault() {
+        this.isDefault = true;
+    }
+
+    /** Phase 3 / P3-1: 取消默认标记 (set-default 把老的 default 取消时调)。 */
+    public void unmarkDefault() {
+        this.isDefault = false;
     }
 
     @Override

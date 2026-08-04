@@ -46,6 +46,10 @@ public class DocumentEntity {
     @Column(name = "doc_type", nullable = false, length = 16)
     private String docType = "doc";
 
+    /** Phase 3 / P3-1: 是否为同 source 的默认版本。 RetrieveService 没 user explicit version 时按此过滤。 */
+    @Column(name = "is_default", nullable = false)
+    private Boolean isDefault = false;
+
     @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;
 
@@ -134,6 +138,14 @@ public class DocumentEntity {
 
     public void setDocType(String docType) {
         this.docType = docType;
+    }
+
+    public Boolean getIsDefault() {
+        return isDefault;
+    }
+
+    public void setIsDefault(Boolean isDefault) {
+        this.isDefault = isDefault;
     }
 
     public Long getSizeBytes() {

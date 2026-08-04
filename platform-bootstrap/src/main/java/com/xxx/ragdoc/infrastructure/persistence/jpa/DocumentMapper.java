@@ -14,7 +14,7 @@ public final class DocumentMapper {
 
     /** 从 Entity 重建聚合根。 */
     public static Document toDomain(DocumentEntity e) {
-        return Document.restore(
+        Document d = Document.restore(
                 new DocumentId(e.getId()),
                 new ContentHash(e.getContentHash()),
                 e.getOriginalFilename(),
@@ -30,6 +30,11 @@ public final class DocumentMapper {
                 e.getVersion(),
                 e.getLanguage(),
                 e.getDocType());
+        // Phase 3 / P3-1: isDefault 通过业务方法回填 (Document.restore 签名不动, 向后兼容)
+        if (Boolean.TRUE.equals(e.getIsDefault())) {
+            d.markDefault();
+        }
+        return d;
     }
 
     /** 把聚合根状态回写到 Entity(用于 update)。 id 来自聚合根(已 assign); 元信息(hash/filename 等)V1 只读,不回写。 */
@@ -41,6 +46,7 @@ public final class DocumentMapper {
                 d.isDeleted()
                         ? existing.getDeletedAt() != null ? existing.getDeletedAt() : Instant.now()
                         : null);
+        existing.setIsDefault(d.isDefault()); // Phase 3 / P3-1
         existing.setUpdatedAt(Instant.now());
         return existing;
     }
@@ -61,6 +67,7 @@ public final class DocumentMapper {
         e.setVersion(d.version());
         e.setLanguage(d.language());
         e.setDocType(d.docType());
+        e.setIsDefault(d.isDefault()); // Phase 3 / P3-1
         return e;
     }
 }

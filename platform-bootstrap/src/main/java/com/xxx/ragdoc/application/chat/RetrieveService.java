@@ -5,14 +5,17 @@ import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
+import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import com.xxx.ragdoc.domain.document.Chunk;
+import com.xxx.ragdoc.domain.document.Document;
 import jakarta.annotation.PostConstruct;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,8 @@ public class RetrieveService {
     private final RerankProperties rerankProps;
     // Phase 3.A: retrieve SLO 计量(retrieve_total_latency / recall_count / rerank_latency)
     private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
+    // P3-1: 查 default version 用于 fallback
+    private final DocumentRepository documentRepository;
 
     /**
      * V3-W3 加固: 启动期自检 + 打日志明示 reranker 实际配置。防止 .env / dev.yml / 环境变量多重覆盖 静默让 reranker base_url 错配,
@@ -82,8 +87,31 @@ public class RetrieveService {
         EmbeddingResult queryEmbedding = embeddingClient.embed(cmd.query());
 
         // 2. ① + ② 召回(fetchK 条) + 元数据过滤
+        //    P3-1 P0 fix: 跨版本混查 bug 修复
+        //    用户没传 version 但传了 source → 找 source 的 default version fallback,
+        //    避免 javax (Spring Boot 2) vs jakarta (Spring Boot 3) 同 source 混查产生用户信任崩塌。
+        //    调用方没传 source / source 无 default (新 source 未上传 / 全软删) → 不强加 version, 走全库检索。
+        String effectiveVersion = cmd.version();
+        boolean usedDefaultVersion = false;
+        if (effectiveVersion == null && cmd.source() != null) {
+            Optional<Document> defaultDoc = documentRepository.findDefaultReadyBySource(cmd.source());
+            if (defaultDoc.isPresent()) {
+                effectiveVersion = defaultDoc.get().version();
+                usedDefaultVersion = effectiveVersion != null;
+                if (usedDefaultVersion) {
+                    log.info(
+                            "retrieve.default_version_fallback source={}, default_version={}",
+                            cmd.source(),
+                            effectiveVersion);
+                }
+            } else {
+                log.debug(
+                        "retrieve.no_default_version source={}, fallback skipped (no default READY doc)",
+                        cmd.source());
+            }
+        }
         VectorStore.MetadataFilter filter =
-                new VectorStore.MetadataFilter(cmd.source(), cmd.version(), cmd.language());
+                new VectorStore.MetadataFilter(cmd.source(), effectiveVersion, cmd.language());
         List<ScoredChunk> hits =
                 vectorStore.search(
                         queryEmbedding,
@@ -233,12 +261,13 @@ public class RetrieveService {
         }
 
         log.info(
-                "retrieve.done fetchK={}, rerank={}, hits={}, topK={}, rerank_state={}",
+                "retrieve.done fetchK={}, rerank={}, hits={}, topK={}, rerank_state={}, default_version={}",
                 fetchK,
                 rerankEnabled,
                 citations.size(),
                 userTopK,
-                rerankState);
+                rerankState,
+                usedDefaultVersion ? effectiveVersion : "n/a");
         // Phase 3.A: retrieve SLO 计量(retrieve_total_latency + recall_count)
         metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
         metrics.recordRetrieveRecall(citations.size());

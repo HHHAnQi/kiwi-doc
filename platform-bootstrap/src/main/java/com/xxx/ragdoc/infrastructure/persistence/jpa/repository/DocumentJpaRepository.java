@@ -40,4 +40,22 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
             """)
     Page<DocumentEntity> listForSummary(
             @Param("status") String status, @Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * Phase 3 / P3-1: 按 source 找 is_default=true 且 READY 未软删的最新一条。
+     *
+     * <p>理论返回 0 或 1 条 (同 source 至多 1 个 default, DocumentUploadService + set-default 保证);
+     * 加 OrderBy + findFirst 防御数据异常 (DBA 误操作产生 2 条 default 时取最新, 不抛错)。
+     */
+    Optional<DocumentEntity>
+            findFirstBySourceAndStatusAndIsDefaultTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
+                    String source, String status);
+
+    /**
+     * Phase 3 / P3-1: source 下是否已存在任意未软删的 default 文档 (不限 status)。
+     *
+     * <p>DocumentUploadService 调用: 新增 doc 时若本查询返 false, 则把新 doc 标 default;
+     * 返 true 则不抢 (维持老 default)。
+     */
+    boolean existsBySourceAndIsDefaultTrueAndDeletedAtIsNull(String source);
 }

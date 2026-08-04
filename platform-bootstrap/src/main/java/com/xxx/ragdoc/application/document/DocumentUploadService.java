@@ -92,6 +92,19 @@ public class DocumentUploadService {
             }
             // 软删命中: reactivate 包在短事务里, commit 释放锁
             d.reactivate();
+            // P3-1: reactivate 后, 若该 doc 之前的 isDefault=true 因为是 same-session reload 仍保留;
+            // 但若之前 false 且 source 内其他 default 也被软删/不存在, 需要重新标 default,
+            // 否则 RetrieveService 在该 source 找不到 default 走全库混查 (P0 bug 复发)。
+            // existsDefaultBySource 查的是 deletedAt IS NULL 的 default, 此时 reactivate 已 setDeleted=false,
+            // 若本 doc 之前 isDefault=true 它已被计入, 调值=true 不抢;
+            // 若本 doc isDefault=false 且无其他 default → 重标它。
+            if (!d.isDefault() && !documentRepository.existsDefaultBySource(d.source())) {
+                d.markDefault();
+                log.info(
+                        "upload.reactivate_mark_default doc_id={}, source={}, reason=no_existing_default",
+                        d.id().value(),
+                        d.source());
+            }
             shortTxWrite.executeWithoutResult(status -> documentRepository.save(d));
             log.info(
                     "upload.reactivate doc_id={}, hash={}, before=DELETED",
@@ -129,6 +142,17 @@ public class DocumentUploadService {
                         cmd.version(),
                         cmd.language(),
                         cmd.docType());
+        // P3-1: source 首次上传 / 老 default 全软删 → 自动标新 doc 为 default。
+        // 同 source 已有 default 文档 → 不抢 (维持老 default, 避免并发上传导致多 default 竞态)。
+        // 不限 status (因为新 doc 当前是 UPLOADED, parsingTrigger 还没跑完; READY 二次过滤由
+        // RetrieveService.findDefaultReadyBySource 兜底)。
+        boolean shouldMarkDefault = !documentRepository.existsDefaultBySource(draft.source());
+        if (shouldMarkDefault) {
+            draft.markDefault();
+            log.info(
+                    "upload.mark_default source={}, reason=no_existing_default",
+                    draft.source());
+        }
         Document document = shortTxWrite.execute(status -> documentRepository.save(draft));
 
         // ============ 落 MinIO(无锁) ============
