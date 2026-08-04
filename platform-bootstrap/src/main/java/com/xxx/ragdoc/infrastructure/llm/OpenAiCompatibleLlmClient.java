@@ -37,6 +37,12 @@ public class OpenAiCompatibleLlmClient implements com.xxx.ragdoc.application.cha
     private final WebClient cachedClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Phase 3 / P3-5: 上一次同步 chat 调用的 usage (volatile 弱一致)。SSE / 并发同步调用时 last-write-wins,
+     * best-effort 取值; caller 应在 chat() 返回后立即取出。null 表示响应 usage 块缺失/解析失败。
+     */
+    private volatile com.xxx.ragdoc.application.chat.port.ChatClient.TokenUsage lastUsage;
+
     // WebClient 缓存: ConcurrentHashMap 防止 @PostConstruct 期多线程并发创建多个 WebClient。
     private static final Map<String, WebClient> CLIENT_POOL = new ConcurrentHashMap<>();
 
@@ -62,6 +68,21 @@ public class OpenAiCompatibleLlmClient implements com.xxx.ragdoc.application.cha
 
     public String getModel() {
         return route.getModel();
+    }
+
+    /** Phase 3 / P3-5: token counter tag 用, 不分业务分支。 */
+    @Override
+    public String currentModel() {
+        return route.getModel();
+    }
+
+    /**
+     * Phase 3 / P3-5: 调用方同步 chat 之后立即取; 不保证并发 / 长间隔后的准确性。
+     * 返回 empty 表示响应 usage 缺失或还没跑过 chat。
+     */
+    @Override
+    public java.util.Optional<com.xxx.ragdoc.application.chat.port.ChatClient.TokenUsage> lastUsage() {
+        return java.util.Optional.ofNullable(lastUsage);
     }
 
     // ─── ChatClient 接口实现 ────────────────────────────────
@@ -90,8 +111,32 @@ public class OpenAiCompatibleLlmClient implements com.xxx.ragdoc.application.cha
             throw new IllegalStateException("LLM 响应无 choices: " + respJson);
         }
         String content = choices.get(0).path("message").path("content").asText("");
-        log.info("llm.chat_done route={}, model={}, query_len={}, answer_len={}",
-                route.getName(), route.getModel(), query.length(), content.length());
+        // Phase 3 / P3-5: 解析 usage 块 (OpenAI 兼容标配, 所有主流后端都返回)。失败不抛错, 仅清空 lastUsage。
+        JsonNode usage = root.path("usage");
+        if (!usage.isMissingNode() && usage.isObject()) {
+            int prompt = usage.path("prompt_tokens").asInt(0);
+            int completion = usage.path("completion_tokens").asInt(0);
+            int total = usage.path("total_tokens").asInt(prompt + completion);
+            lastUsage =
+                    new com.xxx.ragdoc.application.chat.port.ChatClient.TokenUsage(
+                            prompt, completion, total);
+            log.info(
+                    "llm.chat_done route={}, model={}, query_len={}, answer_len={}, prompt_tok={}, completion_tok={}",
+                    route.getName(),
+                    route.getModel(),
+                    query.length(),
+                    content.length(),
+                    prompt,
+                    completion);
+        } else {
+            lastUsage = null;
+            log.info(
+                    "llm.chat_done route={}, model={}, query_len={}, answer_len={}, usage=missing",
+                    route.getName(),
+                    route.getModel(),
+                    query.length(),
+                    content.length());
+        }
         return content;
     }
 

@@ -112,6 +112,58 @@ public class RagdocMetrics {
         registry.counter("ragdoc.conversation.force_truncate_total").increment();
     }
 
+    // ───── Phase 3 / P3-5: cost observability ─────
+
+    /**
+     * Phase 3 / P3-5: LLM 调用 token 使用量 counter。
+     *
+     * <p>Grafana 通过 PromQL 按 model 单价换算近似成本 (USD/天 / 周累计):
+     * <pre>
+     *   # 例: 7d 总成本估算
+     *   sum_over_time(ragdoc_llm_token_total{type="prompt"}[7d]) * $GLM_PRICE_PER_K_PROMPT / 1000
+     *   + sum_over_time(ragdoc_llm_token_total{type="completion"}[7d]) * $GLM_PRICE_PER_K_COMPLETION / 1000
+     * </pre>
+     *
+     * <p>tags:
+     *
+     * <ul>
+     *   <li>{@code type=prompt|completion}: 区分提示词与生成消耗 (completion 通常贵 2-4x)
+     *   <li>{@code route}: 路由名 (llm-primary / llm-fallback / rewrite-llm …), 区分降级 vs 主链路成本
+     *   <li>{@code model}: 模型名 (glm-4-plus / deepseek-chat / qwen-max), 单价各异
+     * </ul>
+     *
+     * @param promptTokens 系统提示 + context + 用户问题 消耗 token
+     * @param completionTokens LLM 生成答案消耗 token
+     * @param route 路由名 (ChatService 传入, 区分 primary/fallback/rewrite)
+     * @param model 实际请求的 model 字段 (路由配置内的 route.getModel())
+     */
+    public void recordTokens(int promptTokens, int completionTokens, String route, String model) {
+        if (promptTokens > 0) {
+            registry
+                    .counter(
+                            "ragdoc.llm.token_total",
+                            "type",
+                            "prompt",
+                            "route",
+                            route == null ? "unknown" : route,
+                            "model",
+                            model == null ? "unknown" : model)
+                    .increment(promptTokens);
+        }
+        if (completionTokens > 0) {
+            registry
+                    .counter(
+                            "ragdoc.llm.token_total",
+                            "type",
+                            "completion",
+                            "route",
+                            route == null ? "unknown" : route,
+                            "model",
+                            model == null ? "unknown" : model)
+                    .increment(completionTokens);
+        }
+    }
+
     // 注: 当前活跃 conversation 数 (gauge) C2 不实现。Micrometer Gauge 要求 supplier / 弱引用,
     //     传 long value 每次重新注册会拿不到更新值, 别扭。
     //     C8 配 Grafana 时再做 — 届时 RedisConversationStore 维护 AtomicLong 引用, Gauge 跟踪它。

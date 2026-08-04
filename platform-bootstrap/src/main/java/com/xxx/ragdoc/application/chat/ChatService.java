@@ -345,6 +345,23 @@ public class ChatService {
                     return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
                 }
                 long llmMs = System.currentTimeMillis() - t1;
+                // Phase 3 / P3-5: 在 llmMs 拿到后立即取 usage (chat() 返回到下一次同步调用之间是窗口)。
+                // 仅 OpenAiCompatibleLlmClient 实现; 老 DashScope / NoOp 实现返 empty, 完全后向兼容。
+                chatClient.lastUsage()
+                        .ifPresent(
+                                u -> {
+                                    metrics.recordTokens(
+                                            u.promptTokens(),
+                                            u.completionTokens(),
+                                            "llm-primary",
+                                            chatClient.currentModel());
+                                    log.debug(
+                                            "chat.token_usage trace_id={}, prompt={}, completion={}, total={}",
+                                            traceId.value(),
+                                            u.promptTokens(),
+                                            u.completionTokens(),
+                                            u.totalTokens());
+                                });
                 traceObserver.observe(
                         lfTrace,
                         TraceObserver.ObservationType.LLM,

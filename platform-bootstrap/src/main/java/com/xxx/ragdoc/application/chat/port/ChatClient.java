@@ -1,5 +1,6 @@
 package com.xxx.ragdoc.application.chat.port;
 
+import java.util.Optional;
 import reactor.core.publisher.Flux;
 
 /**
@@ -34,4 +35,41 @@ public interface ChatClient {
      * @return Flux of incremental token chunks
      */
     Flux<String> chatStream(String query, java.util.List<String> context);
+
+    /**
+     * Phase 3 / P3-5: 当前 client 绑定的 model 名 (用于 token counter tag, 区分 glm-4-plus / deepseek / qwen)。
+     *
+     * <p>实现侧固定返回 route 配置中的 model; 老 adapter / NoOp 返 "unknown"。调用方不应据此切换业务分支。
+     */
+    default String currentModel() {
+        return "unknown";
+    }
+
+    /**
+     * Phase 3 / P3-5: 上一次同步 {@link #chat} 调用返回的 token 使用量。SSE / 老 adapter 不实现 → 返 empty。
+     *
+     * <p>线程安全注意: 实现侧每个 client 实例仅服务一次同步调用序列 (Spring 单例 + 并发触发时, caller
+     * 在 chat() 返回后立即取 lastUsage, 不应跨调用读取), 是 best-effort 观测, 不保证严格一致。
+     * 实现侧用 ThreadLocal / volatile 都可, OpenAiCompatibleLlmClient 用 volatile lastUsage (last-write-wins)。
+     *
+     * <p>调用方应在 chat() 返回后立即调用本方法, 间隔越长丢失概率越大。
+     */
+    default Optional<TokenUsage> lastUsage() {
+        return Optional.empty();
+    }
+
+    /**
+     * Phase 3 / P3-5: OpenAI 兼容 LLM 响应 usage 块 (prompt_tokens / completion_tokens / total_tokens)。
+     *
+     * @param promptTokens 系统提示 + 上下文 + 用户问题 消耗的 token 数
+     * @param completionTokens LLM 生成答案的 token 数
+     * @param totalTokens prompt + completion 之和, 兼容 OpenAI 标准; 可由 prompt+completion 推算
+     */
+    record TokenUsage(int promptTokens, int completionTokens, int totalTokens) {
+
+        /** 当响应 usage 块缺失 / 解析失败时, 返此占位表示"无 token 信息"。 */
+        public static TokenUsage unknown() {
+            return new TokenUsage(0, 0, 0);
+        }
+    }
 }

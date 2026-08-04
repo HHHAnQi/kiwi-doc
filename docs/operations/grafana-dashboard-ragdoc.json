@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "RagDoc Phase 3.A — 5 SLO panels (chat first_token / total / retrieve recall / rerank / llm call_total).",
+  "description": "RagDoc Phase 3.A — 5 SLO panels (chat first_token / total / retrieve recall / rerank / llm call_total) + Phase 3 / P3-5 cost observability (token rate + daily cost approximation).",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -125,6 +125,52 @@
           "expr": "sum(rate(ragdoc_llm_call_total_total[5m])) by (outcome)",
           "legendFormat": "{{outcome}}",
           "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "6. P3-5 LLM Token Rate (5m, by type & model)",
+      "description": "RagdocMetrics.recordTokens() 上报。同步 /chat 路径有效; SSE /chat/sse 暂未上报 (Phase 3 / P3-5 决策)。tags: type=prompt|completion, route=llm-primary, model=glm-4-plus|deepseek-chat…",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "fieldConfig": {
+        "defaults": { "unit": "short" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(ragdoc_llm_token_total_total[5m])) by (type, model)",
+          "legendFormat": "{{type}} / {{model}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "title": "7. P3-5 Approx Daily Cost (¥, by model)",
+      "description": "近 24h 累计 token × 单价估算 (best-effort)。模型单价需按上线时 Zhipu/DeepSeek 官网公告调整 — 默认值: glm-4-plus ¥0.05/1K (in & out 一档), deepseek-chat ¥0.001/1K in + ¥0.002/1K out, qwen-max ¥0.04/1K。",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "fieldConfig": {
+        "defaults": { "unit": "currencyCNY" },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "(sum(increase(ragdoc_llm_token_total_total{model=\"glm-4-plus\", type=\"prompt\"}[24h])) + sum(increase(ragdoc_llm_token_total_total{model=\"glm-4-plus\", type=\"completion\"}[24h]))) * 0.05 / 1000",
+          "legendFormat": "glm-4-plus (¥0.05/1K)",
+          "refId": "A"
+        },
+        {
+          "expr": "(sum(increase(ragdoc_llm_token_total_total{model=\"deepseek-chat\", type=\"prompt\"}[24h])) * 0.001 + sum(increase(ragdoc_llm_token_total_total{model=\"deepseek-chat\", type=\"completion\"}[24h])) * 0.002) / 1000",
+          "legendFormat": "deepseek-chat (¥0.001/0.002 per 1K)",
+          "refId": "B"
+        },
+        {
+          "expr": "((sum(increase(ragdoc_llm_token_total_total{model!=\"glm-4-plus\", model!=\"deepseek-chat\", type=\"prompt\"}[24h])) + sum(increase(ragdoc_llm_token_total_total{model!=\"glm-4-plus\", model!=\"deepseek-chat\", type=\"completion\"}[24h]))) * 0.04) / 1000",
+          "legendFormat": "其他 (¥0.04/1K, qwen-max 占位)",
+          "refId": "C"
         }
       ]
     }
