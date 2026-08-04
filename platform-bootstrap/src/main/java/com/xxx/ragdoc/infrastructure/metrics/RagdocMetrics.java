@@ -76,4 +76,50 @@ public class RagdocMetrics {
     public void recordRetrieveTotal(long durationMs) {
         registry.timer("ragdoc.retrieve.total_latency").record(durationMs, TimeUnit.MILLISECONDS);
     }
+
+    // ───── Phase 1 / C2 (ADR-0011 §11): conversation / memory SLO ─────
+
+    /**
+     * Rewrite LLM (condense question) 调用 latency。
+     *
+     * @param outcome skip=history 空直接跳过; ok=LLM 成功; failed=LLM 失败回退原 query
+     */
+    public void recordRewriteLatency(long durationMs, String outcome) {
+        registry.timer("ragdoc.conversation.rewrite_latency", "outcome", outcome)
+                .record(durationMs, TimeUnit.MILLISECONDS);
+    }
+
+    /** Topic shift 检测结果 (similarity < threshold 即 true)。 */
+    public void incrementTopicShift(String detected) {
+        registry.counter("ragdoc.conversation.topic_shift_total", "detected", detected).increment();
+    }
+
+    /**
+     * 压缩结果 count.
+     *
+     * @param outcome ok=压缩成功; failed=LLM/Redis 异常; invalid=quality gate 拒绝(摘要太短); skipped=debounce / size 不足
+     */
+    public void incrementCompression(String outcome) {
+        registry.counter("ragdoc.conversation.compression_total", "outcome", outcome).increment();
+    }
+
+    /**
+     * 历史硬 cut 次数 (ADR-0011 §8.4 极端兜底: buffer > 5 时 PromptAssembler 砍)。
+     *
+     * <p>Grafana 报警: 增长率 > 0 持续 5min → oncall 介入(压缩链异常)。
+     */
+    public void incrementHistoryForceTruncate() {
+        registry.counter("ragdoc.conversation.force_truncate_total").increment();
+    }
+
+    /**
+     * 当前活跃 conversation 数 (gauge)。
+     *
+     * <p>实现说明: 此方法只在 ConversationStore 启动 / 关闭时调, 用 Gauge.builder 注册原子引用。
+     * 简化版本: 仅暴露 Redis 已存活 conversation 数 (size 探活), 由 RedisConversationStore 内部维护。
+     * 留给 V2 接: 接 Redis SCAN / DBSIZE。
+     */
+    public void setActiveConversations(long count) {
+        registry.gauge("ragdoc.conversation.active_total", io.micrometer.core.instrument.Tags.empty(), count);
+    }
 }

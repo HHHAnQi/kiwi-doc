@@ -1,5 +1,7 @@
 package com.xxx.ragdoc.application.chat.conversation;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -48,16 +50,17 @@ public final class ConversationContext {
     private final Instant lastActiveAt;
     private final Instant summaryUpdatedAt; // 可空, debounce 用
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
     public ConversationContext(
-            String conversationId,
-            String userId,
-            String tenantScope,
-            List<Turn> recentTurns,
-            String rollingSummary,
-            int totalTurnCount,
-            Instant createdAt,
-            Instant lastActiveAt,
-            Instant summaryUpdatedAt) {
+            @JsonProperty("conversationId") String conversationId,
+            @JsonProperty("userId") String userId,
+            @JsonProperty("tenantScope") String tenantScope,
+            @JsonProperty("recentTurns") List<Turn> recentTurns,
+            @JsonProperty("rollingSummary") String rollingSummary,
+            @JsonProperty("totalTurnCount") int totalTurnCount,
+            @JsonProperty("createdAt") Instant createdAt,
+            @JsonProperty("lastActiveAt") Instant lastActiveAt,
+            @JsonProperty("summaryUpdatedAt") Instant summaryUpdatedAt) {
         this.conversationId =
                 Objects.requireNonNull(conversationId, "conversationId 不能为空");
         this.userId = userId;
@@ -147,38 +150,47 @@ public final class ConversationContext {
         return state == StateHint.OK;
     }
 
+    @JsonProperty("conversationId")
     public String conversationId() {
         return conversationId;
     }
 
+    @JsonProperty("userId")
     public String userId() {
         return userId;
     }
 
+    @JsonProperty("tenantScope")
     public String tenantScope() {
         return tenantScope;
     }
 
+    @JsonProperty("recentTurns")
     public List<Turn> recentTurns() {
         return recentTurns;
     }
 
+    @JsonProperty("rollingSummary")
     public String rollingSummary() {
         return rollingSummary;
     }
 
+    @JsonProperty("totalTurnCount")
     public int totalTurnCount() {
         return totalTurnCount;
     }
 
+    @JsonProperty("createdAt")
     public Instant createdAt() {
         return createdAt;
     }
 
+    @JsonProperty("lastActiveAt")
     public Instant lastActiveAt() {
         return lastActiveAt;
     }
 
+    @JsonProperty("summaryUpdatedAt")
     public Instant summaryUpdatedAt() {
         return summaryUpdatedAt;
     }
@@ -200,11 +212,11 @@ public final class ConversationContext {
 
     /** 单 turn 记录。state ≠ OK 的 turn 不会进 ConversationContext (G3 抗污染)。 */
     public record Turn(
-            String userQuery,
-            String botAnswer,
-            List<Long> citedChunkIds,
-            StateHint state,
-            Instant at) {
+            @JsonProperty("userQuery") String userQuery,
+            @JsonProperty("botAnswer") String botAnswer,
+            @JsonProperty("citedChunkIds") List<Long> citedChunkIds,
+            @JsonProperty("state") StateHint state,
+            @JsonProperty("at") Instant at) {
         public Turn {
             Objects.requireNonNull(userQuery, "userQuery 不能为空");
             Objects.requireNonNull(botAnswer, "botAnswer 不能为空");

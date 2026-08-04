@@ -57,6 +57,11 @@ dependencies {
     implementation("io.github.resilience4j:resilience4j-reactor:2.2.0")
     implementation("org.springframework.boot:spring-boot-starter-aop")  // Resilience4j @CircuitBreaker AOP 支持
 
+    // Phase 1 / C2 (2026-08-04, ADR-0011 §3): RedisConversationStore 用。
+    // 默认 optional (rag.conversation.enabled=false 时 NoOp 接管, 不连 Redis)。
+    // 启用 conversation 后, 由 spring.data.redis.* 配置接入。
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
     // ArchUnit
     testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 
