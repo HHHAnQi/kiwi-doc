@@ -19,6 +19,7 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import com.xxx.ragdoc.infrastructure.conversation.ConversationProperties;
 import com.xxx.ragdoc.infrastructure.conversation.HistoryCompressor;
 import com.xxx.ragdoc.infrastructure.conversation.PromptAssembler;
 import com.xxx.ragdoc.infrastructure.conversation.QueryContextualizer;
@@ -68,6 +69,13 @@ public class ChatService {
 
     // Phase 3.A: 5 SLO 计量。同步 chat 在 finish 里 record, chatStream 在 stream_done/failed/doFinally record。
     private final com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics metrics;
+
+    // Phase 1 / C6: 用 ConversationProperties.compressThreshold 做 ChatService 内触发判定,
+    // 防硬编码 6 但用户改 8 (compress 内部 needsCompression 拿不到更精确的紧致触发).
+    // props 只在 conversation.enabled=true 时注入 (@ConditionalOnProperty on properties bean);
+    // 多轮路径已用 isMultiTurnEnabled 守门, props null 时 historyCompressor 也 null, 不进本 if.
+    @Autowired(required = false)
+    private ConversationProperties conversationProperties;
 
     // Phase 1 / C4 (ADR-0011 §7): 多轮对话 3 件 optional Bean, rag.conversation.enabled=false 时
     // 不注入, 全 null → chat() 完全走 stateless 老路径 (baseline ±3pp gate 不破)
@@ -378,12 +386,13 @@ public class ChatService {
         }
 
         // Phase 1 / C6 (ADR-0011 §6 §9): 异步触发压缩 (fire-and-forget)
-        // 仅当: ctx 写回成功 + compress 实例注入 + needsCompression 满足才走
-        // compress 内部还有 needsCompression 双重 check, 防 submit 之后 ctx 已被并发的别的 task 处理过
+        // 仅当: ctx 写回成功 + compress 实例注入 + 当前 buffer >= compressThreshold 才走
+        // compress 内部 needsCompression 还有双重 check (debounce 1min + size≥threshold), 防 race
+        int threshold = conversationProperties != null ? conversationProperties.getCompressThreshold() : 6;
         if (updatedCtx != null
                 && historyCompressor != null
                 && updatedCtx.recentTurns() != null
-                && updatedCtx.recentTurns().size() >= 6) {
+                && updatedCtx.recentTurns().size() >= threshold) {
             try {
                 historyCompressor.compress(conversationId);
             } catch (Exception e) {
