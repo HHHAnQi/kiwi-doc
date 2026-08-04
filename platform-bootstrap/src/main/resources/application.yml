@@ -91,6 +91,12 @@ resilience4j:
         base-config: default
       milvus:
         base-config: default
+      # Phase 1 / C3+C6 (ADR-0011): rewrite 用 condense question, summary 用 history compress,
+      # 都走 fallback LLM (便宜); 与主 LLM 隔离 cb pool 防相互拖垮。
+      rewrite-llm:
+        base-config: default
+      summary-llm:
+        base-config: default
   retry:
     configs:
       default:

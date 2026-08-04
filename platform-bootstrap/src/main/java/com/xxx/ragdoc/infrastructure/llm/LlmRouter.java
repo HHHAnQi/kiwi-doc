@@ -96,6 +96,30 @@ public class LlmRouter implements ChatClient {
         return r;
     }
 
+    /**
+     * Phase 1 / C3 (ADR-0011 §9.4): 取按 role 名 (primary / fallback) 的底层 client。
+     *
+     * <p>给非主 chat 路径用 (例: 多轮 QueryContextualizer 用 fallback LLM 跑 condense rewrite, 省主 route token;
+     * HistoryCompressor 用 fallback 跑压缩 summary)。调用方自行加 cb / retry 逻辑, 不复用主 chat 的 cb pool。
+     *
+     * @return 指定 route 的 client; fallback 未配置时返回 primary (rare, 调用方需容忍)
+     */
+    public OpenAiCompatibleLlmClient getRouteClient(String role) {
+        if ("primary".equalsIgnoreCase(role)) return primary;
+        if ("fallback".equalsIgnoreCase(role)) return fallback != null ? fallback : primary;
+        // 模糊匹配 role 名: 优先按 routes 配的 name 字段
+        LlmRouteProperties.Route matched = routeProps.findByRole(role);
+        if (matched != null && fallback != null && matched.getName().equals(fallback.getRouteName())) {
+            return fallback;
+        }
+        return primary;
+    }
+
+    /** 是否配置了 fallback (即 fallback route 已 init, 非 null)。 */
+    public boolean isFallbackConfigured() {
+        return fallback != null && fallbackCb != null;
+    }
+
     @Override
     public String chat(String query, List<String> context) throws Exception {
         try {
@@ -135,10 +159,6 @@ public class LlmRouter implements ChatClient {
                     return fallback.chatStream(query, context)
                             .transformDeferred(CircuitBreakerOperator.of(fallbackCb));
                 });
-    }
-
-    private boolean isFallbackConfigured() {
-        return fallback != null && fallbackCb != null;
     }
 
     private static boolean isBlank(String s) {
