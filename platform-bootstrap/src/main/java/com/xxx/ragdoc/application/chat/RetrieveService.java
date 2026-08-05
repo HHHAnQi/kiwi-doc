@@ -5,6 +5,8 @@ import com.xxx.ragdoc.application.auth.PermissionResolverPort;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.conversation.EnhanceResult;
 import com.xxx.ragdoc.application.chat.conversation.port.QueryProcessorPort;
+import com.xxx.ragdoc.application.chat.evidence.Evidence;
+import com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
@@ -75,7 +77,9 @@ public class RetrieveService {
     public void setQueryEnhancePort(QueryProcessorPort queryEnhancePort) {
         this.queryEnhancePort = queryEnhancePort;
         if (queryEnhancePort != null) {
-            log.info("RetrieveService.queryEnhancePort injected: {}", queryEnhancePort.getClass().getName());
+            log.info(
+                    "RetrieveService.queryEnhancePort injected: {}",
+                    queryEnhancePort.getClass().getName());
         }
     }
 
@@ -139,7 +143,9 @@ public class RetrieveService {
         com.xxx.ragdoc.application.auth.AccessScope scope =
                 permissionResolver.resolveAccessScope(principal);
         Set<Long> allowedDocIds = scope.allowedDocumentIds();
-        if (!scope.isUnrestrictedWithinTenant() && allowedDocIds != null && allowedDocIds.isEmpty()) {
+        if (!scope.isUnrestrictedWithinTenant()
+                && allowedDocIds != null
+                && allowedDocIds.isEmpty()) {
             log.info(
                     "retrieve.blocked_no_readable_doc user={}, tenant={}",
                     principal.userId(),
@@ -181,7 +187,8 @@ public class RetrieveService {
         String effectiveVersion = cmd.version();
         boolean usedDefaultVersion = false;
         if (effectiveVersion == null && cmd.source() != null) {
-            Optional<Document> defaultDoc = documentRepository.findDefaultReadyBySource(cmd.source());
+            Optional<Document> defaultDoc =
+                    documentRepository.findDefaultReadyBySource(cmd.source());
             if (defaultDoc.isPresent()) {
                 effectiveVersion = defaultDoc.get().version();
                 usedDefaultVersion = effectiveVersion != null;
@@ -209,7 +216,8 @@ public class RetrieveService {
         Retriever.Query rq =
                 new Retriever.Query(
                         queryEmbedding,
-                        effectiveQuery, // Task 6: enhance 后的 query (retrieval 用); 未 enhance 时 == cmd.query()
+                        effectiveQuery, // Task 6: enhance 后的 query (retrieval 用); 未 enhance 时 ==
+                        // cmd.query()
                         cmd.docId(),
                         fetchK,
                         filter.isEmpty() ? null : filter,
@@ -234,6 +242,32 @@ public class RetrieveService {
         // 过滤掉查不到 chunk 元数据的 hit(保序)
         List<ScoredChunk> validHits =
                 hits.stream().filter(h -> chunkMap.containsKey(h.chunkId())).toList();
+
+        // PR-1 / EMS-PR1: initialRetrieval 段证据 (rerank 前, 严格 validHits 序)
+        //   - tenantId 来自 Principal (服务端注入, 不接受 caller 传)
+        //   - 无 rerankScore; retrievalScore = hybrid/dense 分数
+        //   - documentVersion 用本检索上下文解析出的 effectiveVersion (cmd.version 或 default fallback)
+        final String tenantId = principal.tenantId();
+        final String docVersionForEvidence = effectiveVersion;
+        List<Evidence> initialEvidences =
+                validHits.stream()
+                        .map(
+                                h -> {
+                                    Chunk c = chunkMap.get(h.chunkId());
+                                    return Evidence.of(
+                                            tenantId,
+                                            c.documentId(),
+                                            c.id(),
+                                            docVersionForEvidence,
+                                            c.content(),
+                                            (double) h.score(),
+                                            null,
+                                            "retriever",
+                                            java.util.Map.of(
+                                                    "page", c.page(),
+                                                    "sectionPath", c.sectionPath()));
+                                })
+                        .toList();
 
         // 4. ③ 可选: cross-encoder reranker 精排, 取 topN(=userTopK)
         //    失败时降级到原 hybrid 序(不破坏主流程, 只 log)
@@ -296,6 +330,34 @@ public class RetrieveService {
             finalHits = finalHits.subList(0, userTopK);
         }
 
+        // PR-1 / EMS-PR1: postRerank 段证据 — 终序 finalHits (rerank 应用后或回退原序)
+        //   - rerankState="applied" 时 retrievalScore 取自 finalHits 的 hybrid score,
+        //     rerankScore 取该 hit 自带的 rerank score (rerankClient 返回)
+        //   - 其它 rerankState 时 rerankScore=null, 取 finalHits 自身 score
+        final boolean rerankApplied = "applied".equals(rerankState);
+        final List<Evidence> postRerankEvidences =
+                finalHits.stream()
+                        .map(
+                                h -> {
+                                    Chunk c = chunkMap.get(h.chunkId());
+                                    Double rerankScore = rerankApplied ? (double) h.score() : null;
+                                    Double retrievalScore =
+                                            rerankApplied ? null : (double) h.score();
+                                    return Evidence.of(
+                                            tenantId,
+                                            c.documentId(),
+                                            c.id(),
+                                            docVersionForEvidence,
+                                            c.content(),
+                                            retrievalScore,
+                                            rerankScore,
+                                            rerankApplied ? "reranker" : "retriever",
+                                            java.util.Map.of(
+                                                    "page", c.page(),
+                                                    "sectionPath", c.sectionPath()));
+                                })
+                        .toList();
+
         // 5. 组装 Citation(按 finalHits 顺序)
         //    P3-A Parent-Child 回链: 若命中 chunk 有 parentChunkId, 反查 parent 全文作 llmContext
         //    (child 短仅用于精检索; parent 长是完整段, 喂 LLM 信息充足 → context_recall ↑)
@@ -317,6 +379,14 @@ public class RetrieveService {
         }
 
         List<Citation> citations = new ArrayList<>(finalHits.size());
+        // PR-1 / EMS-PR1: finalContext 段证据 与 citations 严格同序同长 —— 这就是真正喂给 LLM 的 context
+        // 映射, 让评测与 trace 与 Chat 实际 Context 完全一致 (EMS-PR1 硬约束)。
+        //   - content 用 llmContext (parent 全文或 chunk 自身)
+        //   - parent-child 模式按 seenParents 自然去重 (P3-A, 与 citations 同步)
+        //   - 不在 flat 模式做 contentHash 去重: 否则 finalContext 与 ChatService 拼 context 数量对不上;
+        //     评测可自行用 evidence.contentHash 判断重复。
+        java.util.List<Evidence> finalContextEvidences =
+                new java.util.ArrayList<>(finalHits.size());
         java.util.Set<Long> seenParents = new java.util.HashSet<>(); // 同 parent 去重(P3-A)
         for (ScoredChunk hit : finalHits) {
             Chunk c = chunkMap.get(hit.chunkId());
@@ -325,6 +395,7 @@ public class RetrieveService {
             String snippet = truncate(c.content(), 200);
             // llmContext: P3-A 下, 优先 parent 全文(~2000字); flat 模式或无 parent 用 chunk 自己
             String llmContext = c.content();
+            Chunk contextChunk = c; // 默认: 喂 LLM 的就是 child 自己
             if (c.parentChunkId() != null) {
                 Chunk parent = parentMap.get(c.parentChunkId());
                 if (parent != null) {
@@ -332,6 +403,7 @@ public class RetrieveService {
                     if (seenParents.contains(parent.id())) continue;
                     seenParents.add(parent.id());
                     llmContext = parent.content();
+                    contextChunk = parent;
                     // 引用 id 仍标 child(便于前端溯源到精确检索位置), 但 llmContext 是 parent
                     citations.add(
                             new Citation(
@@ -342,6 +414,14 @@ public class RetrieveService {
                                     llmContext,
                                     hit.score(),
                                     c.sectionPath()));
+                    addFinalContextEvidence(
+                            finalContextEvidences,
+                            tenantId,
+                            docVersionForEvidence,
+                            c,
+                            contextChunk,
+                            hit,
+                            rerankApplied);
                     continue;
                 }
             }
@@ -354,6 +434,14 @@ public class RetrieveService {
                             llmContext,
                             hit.score(),
                             c.sectionPath()));
+            addFinalContextEvidence(
+                    finalContextEvidences,
+                    tenantId,
+                    docVersionForEvidence,
+                    c,
+                    contextChunk,
+                    hit,
+                    rerankApplied);
         }
 
         log.info(
@@ -367,7 +455,40 @@ public class RetrieveService {
         // Phase 3.A: retrieve SLO 计量(retrieve_total_latency + recall_count)
         metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
         metrics.recordRetrieveRecall(citations.size());
-        return new RetrieveResult(citations, rerankState, top1HybridScore, top1RerankScore);
+        EvidenceSnapshot snapshot =
+                new EvidenceSnapshot(
+                        initialEvidences, postRerankEvidences, finalContextEvidences, rerankState);
+        return new RetrieveResult(
+                citations, rerankState, top1HybridScore, top1RerankScore, snapshot);
+    }
+
+    /**
+     * PR-1: 向 finalContext 段追加一条 Evidence, 与 citations 同序产出。 chunkId 标 childChunk.id() 维持与 Citation
+     * 一致溯源键; content 用 contextChunk.content() (parent 全文或 chunk 自身)。
+     */
+    private static void addFinalContextEvidence(
+            java.util.List<Evidence> sink,
+            String tenantId,
+            String docVersion,
+            Chunk childChunk,
+            Chunk contextChunk,
+            ScoredChunk hit,
+            boolean rerankApplied) {
+        Double rerankScore = rerankApplied ? (double) hit.score() : null;
+        Double retrievalScore = rerankApplied ? null : (double) hit.score();
+        sink.add(
+                Evidence.of(
+                        tenantId,
+                        childChunk.documentId(),
+                        childChunk.id(),
+                        docVersion,
+                        contextChunk.content(),
+                        retrievalScore,
+                        rerankScore,
+                        "context",
+                        java.util.Map.of(
+                                "page", childChunk.page(),
+                                "sectionPath", childChunk.sectionPath())));
     }
 
     private static String truncate(String s, int max) {
@@ -399,14 +520,30 @@ public class RetrieveService {
             float score,
             List<String> sectionPath) {}
 
-    /** 召回结果。items 空表示 NO_RECALL。 */
+    /**
+     * 召回结果。items 空表示 NO_RECALL。
+     *
+     * <p>PR-1 / EMS-PR1: 附带 {@link EvidenceSnapshot} 让评测/Trace 严格基于 Chat 实际 Context, 不再独立调 {@code
+     * /retrieve}。所有老 4 参构造继续工作 (= empty snapshot, 不破坏现有调用方)。
+     */
     public record RetrieveResult(
             List<Citation> items,
             String rerankState,
             float top1HybridScore,
-            float top1RerankScore) {
+            float top1RerankScore,
+            EvidenceSnapshot evidenceSnapshot) {
+
+        /** 老 4 参构造器 — 没有 Evidence 快照的场景 (空快照, 向后兼容测试与 A/B runner)。 */
+        public RetrieveResult(
+                List<Citation> items,
+                String rerankState,
+                float top1HybridScore,
+                float top1RerankScore) {
+            this(items, rerankState, top1HybridScore, top1RerankScore, EvidenceSnapshot.empty());
+        }
+
         public static RetrieveResult empty() {
-            return new RetrieveResult(List.of(), "not_enabled", 0f, 0f);
+            return new RetrieveResult(List.of(), "not_enabled", 0f, 0f, EvidenceSnapshot.empty());
         }
     }
 }

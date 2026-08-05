@@ -1,6 +1,7 @@
 package com.xxx.ragdoc.interfaces.rest.dto;
 
 import com.xxx.ragdoc.application.chat.command.ChatResult;
+import com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 
@@ -8,6 +9,9 @@ import java.util.List;
  * chat 接口响应 DTO。 契约见 docs/features/api-contracts.md §D1。
  *
  * <p>所有路径(成功 / 业务降级)统一用 200 + 此结构, body schema 单一, 客户端易处理。
+ *
+ * <p>PR-1 / EMS-PR1: 不再回传内部 EvidenceSnapshot, 除非 {@code includeEvidence=true} (调试总闸 +
+ * 请求头双控)。普通响应只发安全 Citation。
  */
 @Schema(name = "ChatResponse")
 public record ChatResponse(
@@ -15,8 +19,19 @@ public record ChatResponse(
         @Schema(description = "引用列表(V1 永远为空数组)") List<Citation> citations,
         @Schema(description = "业务状态, OK/EMPTY_KB/NO_RECALL/LLM_DEGRADED", example = "EMPTY_KB")
                 String stateHint,
-        @Schema(description = "用于 feedback 反馈关联") String traceId) {
+        @Schema(description = "用于 feedback 反馈关联") String traceId,
+        @Schema(description = "PR-1: 真实 Evidence 三段快照(仅调试开启时存在; 普通响应不会出现此字段)")
+                EvidenceSnapshot evidence) {
+    /** 默认转换: 不带 evidence, 与历史客户端 4 字段响应兼容。 */
     public static ChatResponse from(ChatResult r) {
+        return from(r, false);
+    }
+
+    /**
+     * PR-1: 显式控制是否暴露 evidence。caller (ChatController) 在 {@code rag.evidence.debug-enabled=true}
+     * 且请求带 {@code X-Debug-Evidence: true} 时传 true; 其它情况一律不暴露。
+     */
+    public static ChatResponse from(ChatResult r, boolean includeEvidence) {
         List<Citation> citations =
                 r.citations().stream()
                         .map(
@@ -29,7 +44,9 @@ public record ChatResponse(
                                                 c.llmContext(),
                                                 c.sectionPath()))
                         .toList();
-        return new ChatResponse(r.answer(), citations, r.stateHint().name(), r.traceId().value());
+        EvidenceSnapshot evidenceToExpose = includeEvidence ? r.evidenceSnapshot() : null;
+        return new ChatResponse(
+                r.answer(), citations, r.stateHint().name(), r.traceId().value(), evidenceToExpose);
     }
 
     /**

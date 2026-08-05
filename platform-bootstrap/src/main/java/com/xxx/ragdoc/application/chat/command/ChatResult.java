@@ -1,5 +1,6 @@
 package com.xxx.ragdoc.application.chat.command;
 
+import com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot;
 import com.xxx.ragdoc.application.chat.verification.VerificationResult;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
@@ -16,7 +17,13 @@ public record ChatResult(
         StateHint stateHint,
         TraceId traceId,
         /** Task 7: 引用核验结果, null=未启用 verifier (默认 disabled)。前端/评测 可读 outcome + min_score。 */
-        VerificationResult verification) {
+        VerificationResult verification,
+        /**
+         * PR-1 / EMS-PR1: 本次 chat 实际使用的证据三段快照。null = NO_RECALL/EMPTY_KB/未启用 / Operate-on-demand。
+         * 暴露与否由 {@link com.xxx.ragdoc.interfaces.rest.dto.ChatResponse} + {@code
+         * EvidenceDebugProperties} 在 Controller 出口处统一把关, 普通 200 响应不会序列化此字段。
+         */
+        EvidenceSnapshot evidenceSnapshot) {
 
     /**
      * Citation 元素(简化版, 与 api-contracts.md §D1 对齐)。 V1 chat 永远 citations=空, 因不调召回。
@@ -51,13 +58,23 @@ public record ChatResult(
     }
 
     /** Task 7 前 4 字段兼容构造 (verification=null)。 */
-    public static ChatResult of(String answer, List<Citation> citations, StateHint hint, TraceId traceId) {
-        return new ChatResult(answer, citations, hint, traceId, null);
+    public static ChatResult of(
+            String answer, List<Citation> citations, StateHint hint, TraceId traceId) {
+        return new ChatResult(answer, citations, hint, traceId, null, null);
     }
 
     /** V1 短命令: 空 citations + 无 verification。 */
     public static ChatResult of(StateHint hint, String answer, TraceId traceId) {
-        return new ChatResult(answer, List.of(), hint, traceId, null);
+        return new ChatResult(answer, List.of(), hint, traceId, null, null);
+    }
+
+    /** PR-1: Task7 前 5 字段兼容 (evidenceSnapshot=null, 不破坏既有 callers)。 */
+    public ChatResult(
+            String answer,
+            List<Citation> citations,
+            StateHint stateHint,
+            TraceId traceId,
+            VerificationResult verification) {
+        this(answer, citations, stateHint, traceId, verification, null);
     }
 }
-

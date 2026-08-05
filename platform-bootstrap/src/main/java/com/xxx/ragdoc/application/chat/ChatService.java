@@ -3,10 +3,14 @@ package com.xxx.ragdoc.application.chat;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.conversation.ContextualizeResult;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
-import com.xxx.ragdoc.application.chat.conversation.ContextualizeResult;
 import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
+import com.xxx.ragdoc.application.chat.conversation.port.HistoryCompressorPort;
+import com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort;
+import com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort;
+import com.xxx.ragdoc.application.chat.conversation.port.TopicShiftDetectorPort;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
@@ -19,12 +23,8 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
-// 架构债清理: 移除 infrastructure.conversation.* 直依赖, 改用 application 层端口 + ChatService 同包的 ConversationProperties
-import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
-import com.xxx.ragdoc.application.chat.conversation.port.HistoryCompressorPort;
-import com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort;
-import com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort;
-import com.xxx.ragdoc.application.chat.conversation.port.TopicShiftDetectorPort;
+// 架构债清理: 移除 infrastructure.conversation.* 直依赖, 改用 application 层端口 + ChatService 同包的
+// ConversationProperties
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -68,7 +68,8 @@ public class ChatService {
     // V3-W3 Langfuse trace 接入(DoD-5); NoOpTraceObserver 兜底零开销
     private final TraceObserver traceObserver;
 
-    // Phase 3.A: 5 SLO 计量。同步 chat 在 finish 里 record, chatStream 在 stream_done/failed/doFinally record。
+    // Phase 3.A: 5 SLO 计量。同步 chat 在 finish 里 record, chatStream 在 stream_done/failed/doFinally
+    // record。
     // 架构债清理: 用 application 层端口 MetricsPort, 不直接持 infrastructure.RagdocMetrics。
     private final com.xxx.ragdoc.application.metrics.MetricsPort metrics;
 
@@ -109,9 +110,7 @@ public class ChatService {
     @Autowired(required = false)
     public void setTopicShiftDetector(TopicShiftDetectorPort topicShiftDetector) {
         this.topicShiftDetector = topicShiftDetector;
-        log.info(
-                "chat.topic_shift_detector_enabled={}",
-                topicShiftDetector != null);
+        log.info("chat.topic_shift_detector_enabled={}", topicShiftDetector != null);
     }
 
     @Autowired(required = false)
@@ -126,7 +125,8 @@ public class ChatService {
 
     @Autowired(required = false)
     public void setCitationVerifier(
-            com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort citationVerifier) {
+            com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort
+                    citationVerifier) {
         this.citationVerifier = citationVerifier;
         log.info("chat.citation_verifier_enabled={}", citationVerifier != null);
     }
@@ -137,9 +137,7 @@ public class ChatService {
 
     /** 多轮对话是否启用 (3 件 Bean 全注入才表 enabled, 防 Redis 没起但 flag ON 的不一致)。 */
     private boolean isMultiTurnEnabled() {
-        return conversationStore != null
-                && queryContextualizer != null
-                && promptAssembler != null;
+        return conversationStore != null && queryContextualizer != null && promptAssembler != null;
     }
 
     @Transactional
@@ -151,8 +149,8 @@ public class ChatService {
     /**
      * Phase 1 / C4 (ADR-0011 §7): 多轮 chat 入口。
      *
-     * <p>{@code conversationId} 为 null/blank → stateless 老路径 (baseline 0 变化);
-     * 否则 = 多轮模式, load ctx → rewrite → retrieve → LLM → 写回 history (仅 OK turn)。
+     * <p>{@code conversationId} 为 null/blank → stateless 老路径 (baseline 0 变化); 否则 = 多轮模式, load ctx →
+     * rewrite → retrieve → LLM → 写回 history (仅 OK turn)。
      */
     @Transactional
     public ChatResult chat(ChatCommand cmd, TraceId traceId, String conversationId) {
@@ -172,8 +170,7 @@ public class ChatService {
         startTraceMeta.put("conversation_id", conversationId == null ? "(none)" : conversationId);
         // Task 9 / V15 trace enrichment: user_id (从 V9 AuthContext 拿, 让 Langfuse UI 按 user 关联)
         startTraceMeta.put(
-                "user_id",
-                com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId());
+                "user_id", com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId());
         // Task 9: prompt_version + model_version 提前占位 (LLM observation 再覆盖实际值)
         startTraceMeta.put("prompt_version", resolvePromptVersion());
         startTraceMeta.put("model_version", chatClient.currentModel());
@@ -185,9 +182,11 @@ public class ChatService {
             // 这里只先放 default, ctx 实际 load 后再补 trace 的 enrichment 留 V2 (防复杂度爆炸)
             startTraceMeta.put("compress_threshold", conversationProperties.getCompressThreshold());
         }
-        String lfTrace = traceObserver.startTrace(traceId.value(),
-                com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId(),
-                startTraceMeta);
+        String lfTrace =
+                traceObserver.startTrace(
+                        traceId.value(),
+                        com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId(),
+                        startTraceMeta);
 
         // 1. 限定 doc_id 时校验存在 + READY(4xx 客户端错误走异常)
         if (cmd.docId() != null) {
@@ -224,7 +223,8 @@ public class ChatService {
                                     () -> {
                                         // ctx 不存在 / TTL 过期 / store 异常 → 新建空 ctx
                                         // (ConversationStore.findById 内部已 silent fallback)
-                                        ConversationContext fresh = ConversationContext.empty(conversationId);
+                                        ConversationContext fresh =
+                                                ConversationContext.empty(conversationId);
                                         return fresh;
                                     });
             // Phase 1 / C5: 检测 topic shift (detector 在且 ctx 非首 turn 时才跑)
@@ -254,6 +254,8 @@ public class ChatService {
         final String finalRetrieveQuery = retrieveQuery;
 
         // 2. 决策 EMPTY_KB (无 READY 文档直接兜底, 不进 LLM 不召回不 rewrite — 防浪费)
+        // PR-1: 在外层声明 evidence 快照引用, 供 finishAndRecord 落 trace 同步落库 (else 块外引用)。
+        com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot evidenceForTrace = null;
         if (documentRepository.countByStatus(DocumentStatus.INDEXED) == 0) {
             hint = StateHint.EMPTY_KB;
             answer = chatMessages.getEmptyKbMessage();
@@ -267,15 +269,18 @@ public class ChatService {
                     null);
         } else {
             // 3. 真实召回(query → embed → Milvus dense ANN → MySQL 回查)
-            // Phase 1 / C4: 多轮场景下 retrieve query 是 rewrite 后的 standalone query (LLM prompt 仍用原 cmd.query)
+            // Phase 1 / C4: 多轮场景下 retrieve query 是 rewrite 后的 standalone query (LLM prompt 仍用原
+            // cmd.query)
             long t0 = System.currentTimeMillis();
             ChatCommand retrieveCmd =
                     finalRetrieveQuery.equals(cmd.query())
                             ? cmd
                             : cmd.withQuery(finalRetrieveQuery);
             RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(retrieveCmd);
+            evidenceForTrace = retrieve.evidenceSnapshot();
             long retrieveMs = System.currentTimeMillis() - t0;
-            // Task 9 / V15 trace enrichment: 把 retrieved_chunks (id+score) + retrieval_score + rerank
+            // Task 9 / V15 trace enrichment: 把 retrieved_chunks (id+score) + retrieval_score +
+            // rerank
             // _score 全塞进 metadata, 让一次 badcase 在 Langfuse UI 里点链看完整召回细节。
             java.util.Map<String, Object> retrieveMeta = new java.util.HashMap<>();
             retrieveMeta.put("rerank_state", retrieve.rerankState());
@@ -296,6 +301,39 @@ public class ChatService {
                 chunkMeta.add(m);
             }
             retrieveMeta.put("retrieved_chunks", chunkMeta);
+            // PR-1 / EMS-PR1: 把 Evidence 三段快照的统计 + 唯一 ID 上 Langfuse observation metadata,
+            // 让一次 badcase 在 UI 内能映射 trace→evidence→citation 链。tenantId / 全文不进 trace。
+            java.util.Map<String, Object> evidenceMeta = new java.util.LinkedHashMap<>();
+            com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot snap =
+                    retrieve.evidenceSnapshot();
+            evidenceMeta.put("rerank_state", snap.rerankState());
+            evidenceMeta.put(
+                    "initial_count",
+                    snap.initialRetrieval() == null ? 0 : snap.initialRetrieval().size());
+            evidenceMeta.put(
+                    "post_rerank_count", snap.postRerank() == null ? 0 : snap.postRerank().size());
+            evidenceMeta.put(
+                    "final_context_count",
+                    snap.finalContext() == null ? 0 : snap.finalContext().size());
+            evidenceMeta.put(
+                    "evidence_ids",
+                    (snap.finalContext() == null
+                            ? java.util.List.<String>of()
+                            : snap.finalContext().stream()
+                                    .map(
+                                            com.xxx.ragdoc.application.chat.evidence.Evidence
+                                                    ::evidenceId)
+                                    .toList()));
+            evidenceMeta.put(
+                    "content_hashes",
+                    (snap.finalContext() == null
+                            ? java.util.List.<String>of()
+                            : snap.finalContext().stream()
+                                    .map(
+                                            com.xxx.ragdoc.application.chat.evidence.Evidence
+                                                    ::contentHash)
+                                    .toList()));
+            retrieveMeta.put("evidence", evidenceMeta);
             traceObserver.observe(
                     lfTrace,
                     TraceObserver.ObservationType.RETRIEVE,
@@ -334,7 +372,8 @@ public class ChatService {
                 // 喂 LLM 用 chunk 全文(llmContext), 不是给前端的 200 字 snippet。
                 // 早期两者共用 snippet 致双重截断 maxContextChars 才是真正该用的总闸。
                 List<String> context = new ArrayList<>();
-                // Phase 1 / C4 (ADR-0011 §7): 多轮 prompt ordering — history block 作为 context 第 1 entry
+                // Phase 1 / C4 (ADR-0011 §7): 多轮 prompt ordering — history block 作为 context 第 1
+                // entry
                 // 让 LLM 把它当 context 读, 主 LLM 不感知多轮 (OpenAiCompatibleLlmClient 完全不动)
                 if (ctx != null && ctx.isEnabled()) {
                     String historyBlock = promptAssembler.buildHistoryBlock(ctx, topicShift);
@@ -377,14 +416,24 @@ public class ChatService {
                             llmMs,
                             null);
                     hint = StateHint.LLM_DEGRADED;
-                     answer = chatMessages.getLlmDegradedMessage() + traceId.value();
-                     // 注意: LLM 降级时 citations 仍返回, 用户可看检索到的片段
-                     traceObserver.endTrace(
-                             lfTrace,
-                             java.util.Map.of(
-                                     "state_hint", hint.name(),
-                                     "chat_latency_ms", System.currentTimeMillis() - t0Chat));
-                     return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
+                    answer = chatMessages.getLlmDegradedMessage() + traceId.value();
+                    // 注意: LLM 降级时 citations 仍返回, 用户可看检索到的片段
+                    traceObserver.endTrace(
+                            lfTrace,
+                            java.util.Map.of(
+                                    "state_hint",
+                                    hint.name(),
+                                    "chat_latency_ms",
+                                    System.currentTimeMillis() - t0Chat));
+                    return finishAndRecord(
+                            cmd,
+                            traceId,
+                            hint,
+                            answer,
+                            citations,
+                            t0Chat,
+                            null,
+                            retrieve.evidenceSnapshot());
                 }
                 long llmMs = System.currentTimeMillis() - t1;
                 // Phase 3 / P3-5: 在 llmMs 拿到后立即取 usage (chat() 返回到下一次同步调用之间是窗口)。
@@ -468,16 +517,23 @@ public class ChatService {
             if (verification != null) {
                 // 把 scores 写回 citations (供前端/评测观察)
                 citations = annotateCitationScores(citations, verification);
-                if (verification.outcome() == com.xxx.ragdoc.application.chat.verification.VerificationResult.Outcome.FAIL) {
-                    // FAIL 处理: REFUSE / REGENERATE / WARN_ONLY (在 runCitationVerification 内部决策; 这里只更新 hint)
+                if (verification.outcome()
+                        == com.xxx.ragdoc.application.chat.verification.VerificationResult.Outcome
+                                .FAIL) {
+                    // FAIL 处理: REFUSE / REGENERATE / WARN_ONLY (在 runCitationVerification 内部决策;
+                    // 这里只更新 hint)
                     if (verification.errorMessage() == null
                             || !verification.errorMessage().startsWith("WARN_ONLY")) {
                         // runCitationVerification 返 FAIL 且非 WARN_ONLY: hint 改 VERIFY_FAILED
-                        // (REGENERATE 已 exhausted, REFUSE 直接拒; WARN_ONLY errorMessage 标 "WARN_ONLY")
+                        // (REGENERATE 已 exhausted, REFUSE 直接拒; WARN_ONLY errorMessage 标
+                        // "WARN_ONLY")
                         hint = StateHint.VERIFY_FAILED;
                         if (citationVerifierProperties.getOnFail()
-                                == com.xxx.ragdoc.application.chat.CitationVerifierProperties.OnFail.REFUSE) {
-                            answer = chatMessages.verifierRefusal(citationVerifierProperties.getScoreThreshold());
+                                == com.xxx.ragdoc.application.chat.CitationVerifierProperties.OnFail
+                                        .REFUSE) {
+                            answer =
+                                    chatMessages.verifierRefusal(
+                                            citationVerifierProperties.getScoreThreshold());
                         }
                     }
                 }
@@ -501,14 +557,18 @@ public class ChatService {
                 conversationStore.save(updatedCtx);
             } catch (Exception e) {
                 // 兜底: store 异常已在 ConversationStore 内 silent log, 此处再防一道 setProperty
-                log.warn("chat.history_write_failed conv_id={}, reason={}", conversationId, e.getMessage());
+                log.warn(
+                        "chat.history_write_failed conv_id={}, reason={}",
+                        conversationId,
+                        e.getMessage());
             }
         }
 
         // Phase 1 / C6 (ADR-0011 §6 §9): 异步触发压缩 (fire-and-forget)
         // 仅当: ctx 写回成功 + compress 实例注入 + 当前 buffer >= compressThreshold 才走
         // compress 内部 needsCompression 还有双重 check (debounce 1min + size≥threshold), 防 race
-        int threshold = conversationProperties != null ? conversationProperties.getCompressThreshold() : 6;
+        int threshold =
+                conversationProperties != null ? conversationProperties.getCompressThreshold() : 6;
         if (updatedCtx != null
                 && historyCompressor != null
                 && updatedCtx.recentTurns() != null
@@ -527,9 +587,12 @@ public class ChatService {
         traceObserver.endTrace(
                 lfTrace,
                 java.util.Map.of(
-                        "state_hint", hint.name(),
-                        "chat_latency_ms", System.currentTimeMillis() - t0Chat));
-        return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat, verification);
+                        "state_hint",
+                        hint.name(),
+                        "chat_latency_ms",
+                        System.currentTimeMillis() - t0Chat));
+        return finishAndRecord(
+                cmd, traceId, hint, answer, citations, t0Chat, verification, evidenceForTrace);
     }
 
     /**
@@ -574,21 +637,31 @@ public class ChatService {
         }
 
         // Phase 1.E (2026-08-03): SSE 路径 Langfuse trace 入口
-        // Phase 3.A: sseChatT0 = SSE 端到端 latency 基准(EMPTY_KB/NO_RECALL/OK/DEGRADED 全覆盖 via doFinally)
+        // Phase 3.A: sseChatT0 = SSE 端到端 latency 基准(EMPTY_KB/NO_RECALL/OK/DEGRADED 全覆盖 via
+        // doFinally)
         long sseChatT0 = System.currentTimeMillis();
         String lfTrace =
-                traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query(), "path", "sse"));
+                traceObserver.startTrace(
+                        traceId.value(), null, Map.of("query", cmd.query(), "path", "sse"));
 
         // 2. EMPTY_KB 同步降级: Flux.just(DoneEvent state=EMPTY_KB)
         if (documentRepository.countByStatus(DocumentStatus.INDEXED) == 0) {
-            traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
-                    "decision.empty_kb", null, null, 0, null);
-             traceObserver.endTrace(
-                     lfTrace,
-                     Map.of(
-                             "state_hint", StateHint.EMPTY_KB.name(),
-                             "chat_latency_ms", System.currentTimeMillis() - sseChatT0));
-             metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
+            traceObserver.observe(
+                    lfTrace,
+                    TraceObserver.ObservationType.DECISION,
+                    "decision.empty_kb",
+                    null,
+                    null,
+                    0,
+                    null);
+            traceObserver.endTrace(
+                    lfTrace,
+                    Map.of(
+                            "state_hint",
+                            StateHint.EMPTY_KB.name(),
+                            "chat_latency_ms",
+                            System.currentTimeMillis() - sseChatT0));
+            metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.EMPTY_KB.name()));
         }
@@ -597,24 +670,36 @@ public class ChatService {
         long sseT0 = System.currentTimeMillis(); // retrieve 内部子段(已含 startTrace 后)
         RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
         long sseRetrieveMs = System.currentTimeMillis() - sseT0;
-        traceObserver.observe(lfTrace, TraceObserver.ObservationType.RETRIEVE,
-                "retrieve", cmd.query(),
+        traceObserver.observe(
+                lfTrace,
+                TraceObserver.ObservationType.RETRIEVE,
+                "retrieve",
+                cmd.query(),
                 Map.of(
                         "hits", retrieve.items().size(),
                         "rerank_state", retrieve.rerankState(),
                         "top1_hybrid_score", retrieve.top1HybridScore(),
                         "top1_rerank_score", retrieve.top1RerankScore()),
-                sseRetrieveMs, null);
+                sseRetrieveMs,
+                null);
 
         if (retrieve.items().isEmpty()) {
             // NO_RECALL 同步降级
-            traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
-                    "decision.no_recall", null, null, sseRetrieveMs, null);
+            traceObserver.observe(
+                    lfTrace,
+                    TraceObserver.ObservationType.DECISION,
+                    "decision.no_recall",
+                    null,
+                    null,
+                    sseRetrieveMs,
+                    null);
             traceObserver.endTrace(
                     lfTrace,
                     Map.of(
-                            "state_hint", StateHint.NO_RECALL.name(),
-                            "chat_latency_ms", System.currentTimeMillis() - sseChatT0));
+                            "state_hint",
+                            StateHint.NO_RECALL.name(),
+                            "chat_latency_ms",
+                            System.currentTimeMillis() - sseChatT0));
             metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.NO_RECALL.name()));
@@ -660,87 +745,148 @@ public class ChatService {
         reactor.core.publisher.Flux<ChatStreamEvent> tokens =
                 chatClient
                         .chatStream(cmd.query(), context)
-                        .doOnNext(delta -> {
-                            // 首个 token — 标记 LLM first_token observation
-                            if (acc.length() == 0) {
-                                long firstTokenMs = System.currentTimeMillis() - sseLlmT0;
-                                traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
-                                        "llm.first_token", null, null, firstTokenMs, null);
-                                metrics.recordChatFirstToken(firstTokenMs);
-                            }
-                        })
+                        .doOnNext(
+                                delta -> {
+                                    // 首个 token — 标记 LLM first_token observation
+                                    if (acc.length() == 0) {
+                                        long firstTokenMs = System.currentTimeMillis() - sseLlmT0;
+                                        traceObserver.observe(
+                                                lfTrace,
+                                                TraceObserver.ObservationType.LLM,
+                                                "llm.first_token",
+                                                null,
+                                                null,
+                                                firstTokenMs,
+                                                null);
+                                        metrics.recordChatFirstToken(firstTokenMs);
+                                    }
+                                })
                         .map(
                                 delta -> {
                                     acc.append(delta);
                                     return (ChatStreamEvent) new ChatStreamEvent.DeltaEvent(delta);
                                 })
+                        // 关键: OK 终态必须在 onErrorResume 之前接入, 这样 LLM 出错时错误冒泡
+                        // 跳过 concatWith(OK defer), 由末尾的 onErrorResume 统一转为唯一的 DEGRADED 终态。
+                        // (PR-0 修复: 之前 onErrorResume 在 concatWith 之前, 吞掉错误后 concatWith 仍执行
+                        // → 一个流连发 DoneEvent(DEGRADED) + DoneEvent(OK) 两个终态, 违反 SSE 单终态不变量)
+                        .concatWith(
+                                reactor.core.publisher.Flux.defer(
+                                        () -> {
+                                            long llmTotalMs = System.currentTimeMillis() - sseLlmT0;
+                                            traceObserver.observe(
+                                                    lfTrace,
+                                                    TraceObserver.ObservationType.LLM,
+                                                    "llm.stream_done",
+                                                    null,
+                                                    Map.of("answer_len", acc.length()),
+                                                    llmTotalMs,
+                                                    null);
+                                            traceObserver.observe(
+                                                    lfTrace,
+                                                    TraceObserver.ObservationType.DECISION,
+                                                    "decision.ok",
+                                                    null,
+                                                    null,
+                                                    llmTotalMs,
+                                                    null);
+                                            // Phase 3.A: SSE outcome 设 ok 供 doFinally record total
+                                            sseOutcome.set("ok");
+                                            // 流正常结束 → 落 trace + 发 DoneEvent
+                                            persistTrace(
+                                                    cmd,
+                                                    traceId,
+                                                    acc.toString(),
+                                                    StateHint.OK,
+                                                    retrieve.evidenceSnapshot());
+                                            return reactor.core.publisher.Flux.just(
+                                                    new ChatStreamEvent.DoneEvent(
+                                                            traceId.value(), StateHint.OK.name()));
+                                        }))
                         .onErrorResume(
                                 e -> {
                                     long errMs = System.currentTimeMillis() - sseLlmT0;
-                                    log.warn("chat.stream_llm_failed trace_id={}, err={}", traceId.value(), e.getMessage());
-                                    traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
-                                            "llm.stream_failed", null, null, errMs,
+                                    log.warn(
+                                            "chat.stream_llm_failed trace_id={}, err={}",
+                                            traceId.value(),
+                                            e.getMessage());
+                                    traceObserver.observe(
+                                            lfTrace,
+                                            TraceObserver.ObservationType.LLM,
+                                            "llm.stream_failed",
+                                            null,
+                                            null,
+                                            errMs,
                                             Map.of("error", (Object) e.getMessage()));
-                                    traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
-                                            "decision.llm_degraded", null, null, errMs, null);
+                                    traceObserver.observe(
+                                            lfTrace,
+                                            TraceObserver.ObservationType.DECISION,
+                                            "decision.llm_degraded",
+                                            null,
+                                            null,
+                                            errMs,
+                                            null);
                                     // Phase 3.A: SSE outcome 设 degraded 供 doFinally record total
                                     sseOutcome.set("degraded");
-                                    // LLM 失败时落降级 trace + 发 DoneEvent(LLM_DEGRADED)
-                                    persistTrace(cmd, traceId, acc.toString(), StateHint.LLM_DEGRADED);
+                                    // LLM 失败时落降级 trace + 发唯一的 DoneEvent(LLM_DEGRADED)
+                                    persistTrace(
+                                            cmd,
+                                            traceId,
+                                            acc.toString(),
+                                            StateHint.LLM_DEGRADED,
+                                            retrieve.evidenceSnapshot());
                                     return reactor.core.publisher.Flux.just(
                                             new ChatStreamEvent.DoneEvent(
                                                     traceId.value(),
                                                     StateHint.LLM_DEGRADED.name()));
                                 })
-                        .concatWith(
-                                reactor.core.publisher.Flux.defer(
-                                        () -> {
-                                            long llmTotalMs = System.currentTimeMillis() - sseLlmT0;
-                                            traceObserver.observe(lfTrace, TraceObserver.ObservationType.LLM,
-                                                    "llm.stream_done",
-                                                    null, Map.of("answer_len", acc.length()), llmTotalMs, null);
-                                            traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
-                                                    "decision.ok", null, null, llmTotalMs, null);
-                                            // Phase 3.A: SSE outcome 设 ok 供 doFinally record total
-                                            sseOutcome.set("ok");
-                                            // 流正常结束 → 落 trace + 发 DoneEvent
-                                            persistTrace(cmd, traceId, acc.toString(), StateHint.OK);
-                                            return reactor.core.publisher.Flux.just(
-                                                    new ChatStreamEvent.DoneEvent(
-                                                            traceId.value(), StateHint.OK.name()));
-                                        }))
-                        // Phase 1.E: 不论成功还是失败, 最后 endTrace。最后一个 observable 派发后 doFinally 在 cancel/complete/error 都触发。
-                        .doFinally(signal -> {
-                            StateHint finalHint = StateHint.OK;
-                            try {
-                                String entered = acc.toString();
-                                if (entered.isEmpty()) {
-                                    // flux 中途 cancel / onError 都可能 acc 空, 视为 degraded
-                                    finalHint = StateHint.LLM_DEGRADED;
-                                }
-                            } catch (Throwable ignore) {
-                                finalHint = StateHint.LLM_DEGRADED;
-                            }
-                            traceObserver.endTrace(
-                                    lfTrace,
-                                    Map.of(
-                                            "state_hint", finalHint.name(),
-                                            "chat_latency_ms", System.currentTimeMillis() - sseChatT0));
-                            // Phase 3.A: SSE chat_total_latency。stream_done=ok / onErrorResume=degraded 已 set;
-                            // 上游 cancel / acc 空 兜底 degraded。outcome null 时按 finalHint 派生。
-                            String outcome = sseOutcome.get();
-                            if (outcome == null) {
-                                outcome = (finalHint == StateHint.OK) ? "ok" : "degraded";
-                            }
-                            metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, outcome);
-                        });
+                        // Phase 1.E: 不论成功还是失败, 最后 endTrace。最后一个 observable 派发后 doFinally 在
+                        // cancel/complete/error 都触发。
+                        .doFinally(
+                                signal -> {
+                                    StateHint finalHint = StateHint.OK;
+                                    try {
+                                        String entered = acc.toString();
+                                        if (entered.isEmpty()) {
+                                            // flux 中途 cancel / onError 都可能 acc 空, 视为 degraded
+                                            finalHint = StateHint.LLM_DEGRADED;
+                                        }
+                                    } catch (Throwable ignore) {
+                                        finalHint = StateHint.LLM_DEGRADED;
+                                    }
+                                    traceObserver.endTrace(
+                                            lfTrace,
+                                            Map.of(
+                                                    "state_hint",
+                                                    finalHint.name(),
+                                                    "chat_latency_ms",
+                                                    System.currentTimeMillis() - sseChatT0));
+                                    // Phase 3.A: SSE chat_total_latency。stream_done=ok /
+                                    // onErrorResume=degraded 已 set;
+                                    // 上游 cancel / acc 空 兜底 degraded。outcome null 时按 finalHint 派生。
+                                    String outcome = sseOutcome.get();
+                                    if (outcome == null) {
+                                        outcome = (finalHint == StateHint.OK) ? "ok" : "degraded";
+                                    }
+                                    metrics.recordChatTotal(
+                                            System.currentTimeMillis() - sseChatT0, outcome);
+                                });
 
         // 异常路径也要落 trace(LLM_DEGRADED 时 acc 包含部分答案; onErrorResume 已转 DoneEvent)
         return reactor.core.publisher.Flux.<ChatStreamEvent>just(head).concatWith(tokens);
     }
 
-    /** 异步落 chat_traces: 流结束/失败时调, 用 REQUIRES_NEW 短事务同 {@link #finish} 设计。 */
-    private void persistTrace(ChatCommand cmd, TraceId traceId, String answer, StateHint hint) {
+    /**
+     * 异步落 chat_traces: 流结束/失败时调, 用 REQUIRES_NEW 短事务同 {@link #finish} 设计。
+     *
+     * <p>PR-1 / EMS-PR1: 同时落 Evidence 快照, 让 SSE 流出的 trace 也能由 trace_id 还原证据。
+     */
+    private void persistTrace(
+            ChatCommand cmd,
+            TraceId traceId,
+            String answer,
+            StateHint hint,
+            com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot evidenceSnapshot) {
         try {
             ChatTrace trace =
                     new ChatTrace(
@@ -750,7 +896,12 @@ public class ChatService {
                             answer.length(),
                             hint,
                             null);
-            chatTracesRepository.save(trace);
+            // snapshot=null 时走单参 save (保持 mock 测试兼容); 非 null 走双参 save
+            if (evidenceSnapshot == null) {
+                chatTracesRepository.save(trace);
+            } else {
+                chatTracesRepository.save(trace, evidenceSnapshot);
+            }
             log.info("chat.stream_end trace_id={}, state_hint={}", traceId.value(), hint);
         } catch (Exception e) {
             // 落库失败绝不阻塞前端流; 只 log
@@ -768,7 +919,7 @@ public class ChatService {
             StateHint hint,
             String answer,
             List<ChatResult.Citation> citations) {
-        return finish(cmd, traceId, hint, answer, citations, null);
+        return finish(cmd, traceId, hint, answer, citations, null, null);
     }
 
     /** Task 7: 重载收尾, 含 verification 透传给 ChatResult. */
@@ -779,6 +930,23 @@ public class ChatService {
             String answer,
             List<ChatResult.Citation> citations,
             com.xxx.ragdoc.application.chat.verification.VerificationResult verification) {
+        return finish(cmd, traceId, hint, answer, citations, verification, null);
+    }
+
+    /**
+     * PR-1 / EMS-PR1: 完整收尾 — 同时落 trace 与真实 Evidence 快照。
+     *
+     * @param verification Task 7 引用核验结果; nullable
+     * @param evidenceSnapshot 本次 chat 实际使用的 Evidence 三段快照; null = NO_RECALL/EMPTY_KB/未启用
+     */
+    private ChatResult finish(
+            ChatCommand cmd,
+            TraceId traceId,
+            StateHint hint,
+            String answer,
+            List<ChatResult.Citation> citations,
+            com.xxx.ragdoc.application.chat.verification.VerificationResult verification,
+            com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot evidenceSnapshot) {
         ChatTrace trace =
                 new ChatTrace(
                         traceId,
@@ -787,9 +955,15 @@ public class ChatService {
                         answer.length(),
                         hint,
                         null);
-        chatTracesRepository.save(trace);
+        // snapshot=null 时走单参 save — 保持与既有 ChatServiceTest/ConversationStore mock 的兼容
+        // (那些测试已 stub save(ChatTrace), 走双参 default delegator 会让 verify 失败)。
+        if (evidenceSnapshot == null) {
+            chatTracesRepository.save(trace);
+        } else {
+            chatTracesRepository.save(trace, evidenceSnapshot);
+        }
         log.info("chat.end trace_id={}, state_hint={}", traceId.value(), hint);
-        return new ChatResult(answer, citations, hint, traceId, verification);
+        return new ChatResult(answer, citations, hint, traceId, verification, evidenceSnapshot);
     }
 
     /**
@@ -822,7 +996,21 @@ public class ChatService {
             List<ChatResult.Citation> citations,
             long t0Chat,
             com.xxx.ragdoc.application.chat.verification.VerificationResult verification) {
-        ChatResult r = finish(cmd, traceId, hint, answer, citations, verification);
+        return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat, verification, null);
+    }
+
+    /** PR-1 / EMS-PR1: 增加 evidenceSnapshot 透传 — 让 trace + evidence 一同落库, 可由 trace_id 还原。 */
+    private ChatResult finishAndRecord(
+            ChatCommand cmd,
+            TraceId traceId,
+            StateHint hint,
+            String answer,
+            List<ChatResult.Citation> citations,
+            long t0Chat,
+            com.xxx.ragdoc.application.chat.verification.VerificationResult verification,
+            com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot evidenceSnapshot) {
+        ChatResult r =
+                finish(cmd, traceId, hint, answer, citations, verification, evidenceSnapshot);
         String outcome =
                 switch (hint) {
                     case OK -> "ok";
@@ -836,13 +1024,11 @@ public class ChatService {
     /**
      * Phase 1 / C7 G3 修复 (2026-08-04 实跑发现): 检测 LLM 真返回的"无相关内容"拒答文案。
      *
-     * <p>问题: OpenAiCompatibleLlmClient / DashScopeChatClient 的 system prompt 内嵌规则
-     * "片段与问题完全无关时, 一句话回答{{知识库中没有相关内容}}"。LLM 偶尔触发 → 看似 state=OK
-     * 但 answer 实质是降级文案。G3 抗污染 gate 按 state_hint=OK 写入 history → rewrite LLM
-     * 把这条当 fact 污染下次 (实跑 6/10 G3 case 失效)。
+     * <p>问题: OpenAiCompatibleLlmClient / DashScopeChatClient 的 system prompt 内嵌规则 "片段与问题完全无关时,
+     * 一句话回答{{知识库中没有相关内容}}"。LLM 偶尔触发 → 看似 state=OK 但 answer 实质是降级文案。G3 抗污染 gate 按 state_hint=OK 写入
+     * history → rewrite LLM 把这条当 fact 污染下次 (实跑 6/10 G3 case 失效)。
      *
-     * <p>修: 检测 answer ≤ 20 char + 含指定 marker → 视为 LLM_DEGRADED, 不计为 OK turn
-     * (G3 拒写 history)。
+     * <p>修: 检测 answer ≤ 20 char + 含指定 marker → 视为 LLM_DEGRADED, 不计为 OK turn (G3 拒写 history)。
      *
      * <p>False positive 风险: 真正常回答 ≤20 字 + 含这些 marker 极少 (length gate 守门)。
      */
@@ -851,15 +1037,16 @@ public class ChatService {
     /**
      * 运行 citation 验证; 返 null 表示未启用 (properties disabled 或 verifier bean 未注入)。
      *
-     * <p>语义: WARN_ONLY 时 FAIL 也返 VerificationResult.outcome=FAIL, errorMessage 标 "WARN_ONLY: ..."
-     * 让 caller 据此不改 hint; REFUSE/REGENERATE (耗尽) 时 outcome=FAIL + 无 WARN_ONLY 前缀。
+     * <p>语义: WARN_ONLY 时 FAIL 也返 VerificationResult.outcome=FAIL, errorMessage 标 "WARN_ONLY: ..." 让
+     * caller 据此不改 hint; REFUSE/REGENERATE (耗尽) 时 outcome=FAIL + 无 WARN_ONLY 前缀。
      *
-     * <p>REGENERATE 暂不真调 LLM 二次 (避免影响 streaming / token accounting 路径),
-     * 当作 REFUSE 处理 (javadoc 标注 + properties field 保留以便 Phase 3.B 接入)。
+     * <p>REGENERATE 暂不真调 LLM 二次 (避免影响 streaming / token accounting 路径), 当作 REFUSE 处理 (javadoc 标注 +
+     * properties field 保留以便 Phase 3.B 接入)。
      */
     private com.xxx.ragdoc.application.chat.verification.VerificationResult runCitationVerification(
             String answer, java.util.List<ChatResult.Citation> citations) {
-        if (citationVerifier == null || citationVerifierProperties == null
+        if (citationVerifier == null
+                || citationVerifierProperties == null
                 || !citationVerifierProperties.isEnabled()) {
             return null;
         }
@@ -867,20 +1054,33 @@ public class ChatService {
             return null;
         }
         // 把 citations 转成 evidence list (用 llmContext 优先, fallback snippet)
-        java.util.List<com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort.Evidence> evidences =
-                citations.stream()
-                        .map(c -> new com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort.Evidence(
-                                c.chunkId() == null ? 0L : c.chunkId(),
-                                c.llmContext() == null ? c.snippet() : c.llmContext()))
-                        .toList();
+        java.util.List<
+                        com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort
+                                .Evidence>
+                evidences =
+                        citations.stream()
+                                .map(
+                                        c ->
+                                                new com.xxx.ragdoc.application.chat.verification
+                                                        .port.CitationVerifierPort.Evidence(
+                                                        c.chunkId() == null ? 0L : c.chunkId(),
+                                                        c.llmContext() == null
+                                                                ? c.snippet()
+                                                                : c.llmContext()))
+                                .toList();
         com.xxx.ragdoc.application.chat.verification.VerificationResult r =
                 citationVerifier.verify(answer, evidences);
-        if (r.outcome() == com.xxx.ragdoc.application.chat.verification.VerificationResult.Outcome.FAIL
+        if (r.outcome()
+                        == com.xxx.ragdoc.application.chat.verification.VerificationResult.Outcome
+                                .FAIL
                 && citationVerifierProperties.getOnFail()
-                        == com.xxx.ragdoc.application.chat.CitationVerifierProperties.OnFail.WARN_ONLY) {
+                        == com.xxx.ragdoc.application.chat.CitationVerifierProperties.OnFail
+                                .WARN_ONLY) {
             // WARN_ONLY: caller 据 errorMessage 不改 hint
             return new com.xxx.ragdoc.application.chat.verification.VerificationResult(
-                    r.outcome(), r.overallScore(), r.citationScores(),
+                    r.outcome(),
+                    r.overallScore(),
+                    r.citationScores(),
                     "WARN_ONLY:fail_score=" + r.overallScore());
         }
         return r;
@@ -891,7 +1091,8 @@ public class ChatService {
             java.util.List<ChatResult.Citation> citations,
             com.xxx.ragdoc.application.chat.verification.VerificationResult verification) {
         if (citations == null || citations.isEmpty()) return citations;
-        if (verification == null || verification.citationScores() == null
+        if (verification == null
+                || verification.citationScores() == null
                 || verification.citationScores().isEmpty()) {
             return citations;
         }
@@ -900,13 +1101,19 @@ public class ChatService {
             scoreByChunkId.put(s.chunkId(), s.score());
         }
         return citations.stream()
-                .map(c -> {
-                    Double s = c.chunkId() == null ? null : scoreByChunkId.get(c.chunkId());
-                    if (s == null) return c;
-                    return new ChatResult.Citation(
-                            c.chunkId(), c.docId(), c.page(), c.snippet(),
-                            c.llmContext(), c.sectionPath(), s);
-                })
+                .map(
+                        c -> {
+                            Double s = c.chunkId() == null ? null : scoreByChunkId.get(c.chunkId());
+                            if (s == null) return c;
+                            return new ChatResult.Citation(
+                                    c.chunkId(),
+                                    c.docId(),
+                                    c.page(),
+                                    c.snippet(),
+                                    c.llmContext(),
+                                    c.sectionPath(),
+                                    s);
+                        })
                 .toList();
     }
 
@@ -915,8 +1122,8 @@ public class ChatService {
     /**
      * 解析当前生效的 prompt 模板版本字符串, 给 Langfuse observation 标记。
      *
-     * <p>规则: V2 > relaxed > baseline; 与 {@code OpenAiCompatibleLlmClient.buildSystemPrompt}
-     * (line 269-271 of LlmClient) 同源语义。
+     * <p>规则: V2 > relaxed > baseline; 与 {@code OpenAiCompatibleLlmClient.buildSystemPrompt} (line
+     * 269-271 of LlmClient) 同源语义。
      */
     private String resolvePromptVersion() {
         if (chatMessages != null && chatMessages.isPromptV2()) {
@@ -958,10 +1165,8 @@ public class ChatService {
     /**
      * Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (Liu et al. 2023).
      *
-     * <p>LLM 在长 context 中间位置提取能力弱于头/尾。把 score 排序后的 context list 重排为:
-     *   out[0]   = sortedDesc[0]   (最高分 → 头)
-     *   out[n-1] = sortedDesc[1]   (次高分 → 尾)
-     *   out[1..n-2] = sortedDesc[2..n-1] 按 odd 交替填充中段,让较高分靠近边界
+     * <p>LLM 在长 context 中间位置提取能力弱于头/尾。把 score 排序后的 context list 重排为: out[0] = sortedDesc[0] (最高分 →
+     * 头) out[n-1] = sortedDesc[1] (次高分 → 尾) out[1..n-2] = sortedDesc[2..n-1] 按 odd 交替填充中段,让较高分靠近边界
      *
      * <p>不变性: 输入 size ≤ 2 时直接返回。thread-safe 纯函数。
      */
@@ -971,18 +1176,18 @@ public class ChatService {
         }
         int n = sortedDesc.size();
         List<String> out = new ArrayList<>(n);
-        out.add(sortedDesc.get(0));  // 头: 最高分
+        out.add(sortedDesc.get(0)); // 头: 最高分
         // 中段: i=2 到 n-1, 偶 i 前插入, 奇 i 后追加 (让 2,3 都靠近头/尾, 较高 i 远离)
         java.util.ArrayDeque<String> mid = new java.util.ArrayDeque<>();
         for (int i = 2; i < n; i++) {
             if ((i & 1) == 0) {
-                mid.addFirst(sortedDesc.get(i));  // i=2,4,...靠头侧
+                mid.addFirst(sortedDesc.get(i)); // i=2,4,...靠头侧
             } else {
-                mid.addLast(sortedDesc.get(i));   // i=3,5,...靠尾侧
+                mid.addLast(sortedDesc.get(i)); // i=3,5,...靠尾侧
             }
         }
         out.addAll(mid);
-        out.add(sortedDesc.get(1));  // 尾: 次高分
+        out.add(sortedDesc.get(1)); // 尾: 次高分
         return out;
     }
 }

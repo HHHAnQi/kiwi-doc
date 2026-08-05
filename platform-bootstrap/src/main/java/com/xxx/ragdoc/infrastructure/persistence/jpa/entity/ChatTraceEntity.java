@@ -30,6 +30,14 @@ public class ChatTraceEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
+    /**
+     * PR-1 / EMS-PR1: 真实 Evidence 快照 (JSON), 序列化的 {@link
+     * com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot} 三段证据。 NULL 表示未启用 / NO_RECALL /
+     * EMPTY_KB 等无证据场景。
+     */
+    @Column(name = "evidence_snapshot", columnDefinition = "JSON")
+    private String evidenceSnapshot;
+
     // ===== getters / setters =====
 
     public String getTraceId() {
@@ -78,5 +86,13 @@ public class ChatTraceEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getEvidenceSnapshot() {
+        return evidenceSnapshot;
+    }
+
+    public void setEvidenceSnapshot(String evidenceSnapshot) {
+        this.evidenceSnapshot = evidenceSnapshot;
     }
 }

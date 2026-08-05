@@ -2,6 +2,7 @@ package com.xxx.ragdoc.interfaces.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxx.ragdoc.application.chat.ChatService;
+import com.xxx.ragdoc.application.chat.EvidenceDebugProperties;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
@@ -44,6 +45,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class ChatController {
 
     private final ChatService chatService;
+    private final EvidenceDebugProperties evidenceDebugProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PostMapping
@@ -52,7 +54,12 @@ public class ChatController {
             description =
                     "V1 仅返回 EMPTY_KB / NO_RECALL 兜底; V2 接入真实召回与 LLM "
                             + "后支持 OK / LLM_DEGRADED; V3-W1 加 /chat/sse 流式版本")
-    public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
+    public ChatResponse chat(
+            @Valid @RequestBody ChatRequest request,
+            @org.springframework.web.bind.annotation.RequestHeader(
+                            value = "X-Debug-Evidence",
+                            required = false)
+                    String debugEvidenceHeader) {
         String traceId = MDC.get(TraceIdFilter.MDC_TRACE_KEY);
         TraceId tid = new TraceId(traceId);
 
@@ -68,7 +75,12 @@ public class ChatController {
         // (老调用方不传 conversationId 时为 null → stateless 老路径 = baseline 行为)
         ChatResult result = chatService.chat(cmd, tid, request.conversationId());
 
-        return ChatResponse.from(result);
+        // PR-1 / EMS-PR1: 仅当服务端 rag.evidence.debug-enabled=true 且请求显式带
+        // X-Debug-Evidence: true 时, 响应才包含真实 Evidence 快照。其它一律走安全 Citation 路径。
+        boolean includeEvidence =
+                evidenceDebugProperties.isDebugEnabled()
+                        && "true".equalsIgnoreCase(debugEvidenceHeader);
+        return ChatResponse.from(result, includeEvidence);
     }
 
     /**
