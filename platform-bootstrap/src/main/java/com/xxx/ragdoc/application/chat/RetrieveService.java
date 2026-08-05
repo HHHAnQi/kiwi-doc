@@ -3,6 +3,8 @@ package com.xxx.ragdoc.application.chat;
 import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.auth.PermissionResolverPort;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
+import com.xxx.ragdoc.application.chat.conversation.EnhanceResult;
+import com.xxx.ragdoc.application.chat.conversation.port.QueryProcessorPort;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
@@ -61,6 +63,21 @@ public class RetrieveService {
     // Task 5 / V11 Hybrid Retrieval: 检索端口(DENSE/HYBRID 路由 + RRF 融合)。
     // 替代直接 vectorStore.search — 让 AB 实验能 per-request override mode。
     private final Retriever retriever;
+    // Task 6 / V12 Query Enhancement: 单轮 query rewrite + expansion 端口 (可选注入)。
+    // 用 setter 注入 — {@code @ConditionalOnProperty enabled=true} 时 Bean 存在, 这里有值;
+    // 默认 disabled 时 Bean 不装配, setter 不调用, 字段保持 null, retrieve 跳过 enhance。
+    private QueryProcessorPort queryEnhancePort;
+    // Task 6: properties 用 holders (default disabled, 仅查阅, 不影响 ConditionalOnMissingBean)。
+    private final QueryEnhanceProperties queryEnhanceProps;
+
+    /** Task 6: 注入 QueryProcessorPort — 仅在 rag.query-enhance.enabled=true 时由 Spring 调用。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setQueryEnhancePort(QueryProcessorPort queryEnhancePort) {
+        this.queryEnhancePort = queryEnhancePort;
+        if (queryEnhancePort != null) {
+            log.info("RetrieveService.queryEnhancePort injected: {}", queryEnhancePort.getClass().getName());
+        }
+    }
 
     /**
      * V3-W3 加固: 启动期自检 + 打日志明示 reranker 实际配置。防止 .env / dev.yml / 环境变量多重覆盖 静默让 reranker base_url 错配,
@@ -88,7 +105,7 @@ public class RetrieveService {
      * @return 召回结果(可能为空 items, 但召回操作本身成功)
      */
     public RetrieveResult retrieve(ChatCommand cmd) {
-        return retrieve(cmd, null);
+        return retrieve(cmd, null, null);
     }
 
     /**
@@ -98,6 +115,16 @@ public class RetrieveService {
      * @param mode 检索模式 null=走全局 {@code rag.retrieve.mode}; 否则强制 dense/hybrid
      */
     public RetrieveResult retrieve(ChatCommand cmd, Retriever.Mode mode) {
+        return retrieve(cmd, mode, null);
+    }
+
+    /**
+     * Task 5 + Task 6: 完整重载, 支持检索模式 + query 增强 per-request override。
+     *
+     * @param mode 检索模式 null=全局默认; dense/hybrid=override
+     * @param enhance null=走全局 {@code rag.query-enhance.enabled}; true=强制 enhance; false=强制关闭
+     */
+    public RetrieveResult retrieve(ChatCommand cmd, Retriever.Mode mode, Boolean enhance) {
         long retrieveT0 = System.currentTimeMillis(); // Phase 3.A: retrieve_total_latency
         // 用户 topK 是"最终想要几条"; 启用 reranker 时底层扩大到 candidatePool 条
         int userTopK = (cmd.topK() == null) ? 5 : cmd.topK();
@@ -120,8 +147,29 @@ public class RetrieveService {
             return RetrieveResult.empty();
         }
 
-        // 1. query → embed(单条)
-        EmbeddingResult queryEmbedding = embeddingClient.embed(cmd.query());
+        // Task 6 / V12 Query Enhancement: 在 embed 前可选 rewrite + expansion
+        //   enhance 决策: per-request enhance==true → 强制; enhance==false → 强制关;
+        //   enhance==null → 走全局 rag.query-enhance.enabled (默认 false)
+        String effectiveQuery = cmd.query();
+        if (shouldEnhance(enhance)) {
+            if (queryEnhancePort == null) {
+                // bean 未装配 (rag.query-enhance.enabled=false) → 静默降级 fallback
+                log.debug("retrieve.query_enhance bean_absent, using original query");
+            } else {
+                EnhanceResult er = queryEnhancePort.enhance(cmd.query(), principal);
+                effectiveQuery = er.primaryQuery();
+                if (!"ok".equals(er.outcome())) {
+                    log.info(
+                            "retrieve.query_enhance_non_ok outcome={}, fallback_using_original={}, reason={}",
+                            er.outcome(),
+                            effectiveQuery.equals(cmd.query()),
+                            er.errorMessage());
+                }
+            }
+        }
+
+        // 1. query → embed(单条), 用 enhance 后的 query
+        EmbeddingResult queryEmbedding = embeddingClient.embed(effectiveQuery);
 
         // 2. ① + ② 召回(fetchK 条) + 元数据过滤
         //    P3-1 P0 fix: 跨版本混查 bug 修复
@@ -159,7 +207,7 @@ public class RetrieveService {
         Retriever.Query rq =
                 new Retriever.Query(
                         queryEmbedding,
-                        cmd.query(),
+                        effectiveQuery, // Task 6: enhance 后的 query (retrieval 用); 未 enhance 时 == cmd.query()
                         cmd.docId(),
                         fetchK,
                         filter.isEmpty() ? null : filter,
@@ -323,6 +371,20 @@ public class RetrieveService {
     private static String truncate(String s, int max) {
         if (s == null) return "";
         return s.length() > max ? s.substring(0, max) + "…" : s;
+    }
+
+    /**
+     * Task 6: 是否执行 query enhance。
+     *
+     * <ul>
+     *   <li>per-request enhance=true → 强制 (无视 props.enabled)
+     *   <li>per-request enhance=false → 强制关
+     *   <li>null → 跰全局 {@link QueryEnhanceProperties#isEnabled()}
+     * </ul>
+     */
+    private boolean shouldEnhance(Boolean enhanceOverride) {
+        if (enhanceOverride != null) return enhanceOverride;
+        return queryEnhanceProps.isEnabled();
     }
 
     /** Citation 引用条目(与 {@code ChatResult.Citation} 同形, 但属 application 层 - RetrieveService 产出)。 */

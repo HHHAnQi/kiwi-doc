@@ -67,12 +67,12 @@ class RetrieveExperimentControllerUnitTest {
             com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest req =
                     new com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest(
                             "test query", null, 5, null, null, null, "hybrid");
-            when(retrieveService.retrieve(any(), any()))
+            when(retrieveService.retrieve(any(), any(), any()))
                     .thenReturn(new RetrieveService.RetrieveResult(List.of(), "not_enabled", 0f, 0f));
 
             controller.experiment(req);
 
-            verify(retrieveService).retrieve(any(), eq(Retriever.Mode.HYBRID));
+            verify(retrieveService).retrieve(any(), eq(Retriever.Mode.HYBRID), any());
         }
 
         @Test
@@ -82,12 +82,12 @@ class RetrieveExperimentControllerUnitTest {
             com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest req =
                     new com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest(
                             "test query", null, 5, null, null, null, "dense");
-            when(retrieveService.retrieve(any(), any()))
+            when(retrieveService.retrieve(any(), any(), any()))
                     .thenReturn(new RetrieveService.RetrieveResult(List.of(), "not_enabled", 0f, 0f));
 
             controller.experiment(req);
 
-            verify(retrieveService).retrieve(any(), eq(Retriever.Mode.DENSE));
+            verify(retrieveService).retrieve(any(), eq(Retriever.Mode.DENSE), any());
         }
 
         @Test

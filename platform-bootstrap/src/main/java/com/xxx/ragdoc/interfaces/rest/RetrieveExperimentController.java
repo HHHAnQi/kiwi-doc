@@ -79,7 +79,7 @@ public class RetrieveExperimentController {
                         request.source(),
                         request.version(),
                         request.language());
-        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode);
+        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode, request.enhance());
         log.info(
                 "retrieve.experiment_done trace_id={}, mode={}, items={}",
                 org.slf4j.MDC.get(TraceIdFilter.MDC_TRACE_KEY),

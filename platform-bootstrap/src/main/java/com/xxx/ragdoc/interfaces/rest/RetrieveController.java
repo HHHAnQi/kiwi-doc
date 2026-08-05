@@ -70,7 +70,7 @@ public class RetrieveController {
                         request.language());
         // Task 5: per-request mode override (null=全局默认, 兼容老调用方)
         Retriever.Mode mode = parseMode(request.mode());
-        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode);
+        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode, request.enhance());
         log.info(
                 "retrieve.endpoint_done trace_id={}, mode={}, rerank_state={}, items={}",
                 org.slf4j.MDC.get(TraceIdFilter.MDC_TRACE_KEY),

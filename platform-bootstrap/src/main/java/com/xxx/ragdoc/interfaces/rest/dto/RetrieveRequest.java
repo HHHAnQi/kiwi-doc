@@ -44,16 +44,28 @@ public record RetrieveRequest(
         @Schema(description = "限定语言(zh/en), 可选") String language,
         @JsonAlias("retrieveMode")
                 @Schema(description = "Task 5: 检索模式 dense|hybrid, 不传走全局默认; AB 实验必填")
-                String mode) {
+                String mode,
+        @JsonAlias("enhance")
+                @Schema(
+                        description =
+                                "Task 6: 是否启用 query rewrite + expansion; null=走全局 rag.query-enhance.enabled; "
+                                        + "true=强制开启; false=强制关闭")
+                Boolean enhance) {
 
     /** 老调用方兼容构造(无元数据过滤, 无 mode override)。 */
     public RetrieveRequest(String query, Long docId, Integer topK) {
-        this(query, docId, topK, null, null, null, null);
+        this(query, docId, topK, null, null, null, null, null);
     }
 
     /** Task 5: 全 6 字段但不带 mode override, 兼容老 caller。 */
     public RetrieveRequest(String query, Long docId, Integer topK, String source, String version, String language) {
-        this(query, docId, topK, source, version, language, null);
+        this(query, docId, topK, source, version, language, null, null);
+    }
+
+    /** Task 5: 7 字段(含 mode, 不含 enhance), 兼容 AB 实验老调用方。 */
+    public RetrieveRequest(
+            String query, Long docId, Integer topK, String source, String version, String language, String mode) {
+        this(query, docId, topK, source, version, language, mode, null);
     }
 }
 

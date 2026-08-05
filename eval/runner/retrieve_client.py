@@ -22,6 +22,7 @@ def retrieve(
     version: str | None = None,
     language: str | None = None,
     mode: str | None = None,
+    enhance: bool | None = None,
     token: str | "None" = None,
     base_url: str = DEFAULT_URL,
     timeout: float = DEFAULT_TIMEOUT,
@@ -32,6 +33,10 @@ def retrieve(
 
     Task 5: ``mode`` (dense|hybrid) per-request override。None=走服务端全局默认。
     用于 AB 评测: 同一 query 跑两次 mode=dense + mode=hybrid 对比 recall。
+
+    Task 6: ``enhance`` (bool) per-request override for query rewrite + expansion。
+    None=走 rag.query-enhance.enabled 全局默认; True/False 强制开/关。
+    用于 AB 评测: 同一 query 跑 baseline=False + rewrite=True 对比 recall。
     """
     headers = {"Content-Type": "application/json"}
     auth = token or os.getenv("APP_DEV_TOKEN")
@@ -48,6 +53,8 @@ def retrieve(
         body["language"] = language
     if mode:
         body["mode"] = mode  # snake_case 由 Jackson 全局策略匹配 Java mode 字段
+    if enhance is not None:
+        body["enhance"] = enhance
     r = requests.post(base_url, headers=headers, json=body, timeout=timeout)
     r.raise_for_status()
     return r.json()

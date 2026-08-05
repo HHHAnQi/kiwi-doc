@@ -66,7 +66,9 @@ class PermissionControlTest {
         DocumentRepository dr = mock(DocumentRepository.class);
         when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
         return new RetrieveService(emb, vs, cr, rr, rp, noopMetrics(), dr, resolver,
-                q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
+                q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()),
+                new com.xxx.ragdoc.application.chat.QueryEnhanceProperties() // 默认 disabled
+        );
     }
 
     private static MetricsPort noopMetrics() {

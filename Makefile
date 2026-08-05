@@ -5,7 +5,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose --env-file .env -f deploy/docker-compose.yml
 GRADLE := ./gradlew
 
-.PHONY: help env up down ps logs app test test-integration clean lint run db-migrate init-milvus eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline badcase-run badcase-regress badcase-classify badcase-test eval-ab-retrieval
+.PHONY: help env up down ps logs app test test-integration clean lint run db-migrate init-milvus eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline badcase-run badcase-regress badcase-classify badcase-test eval-ab-retrieval eval-ab-rewrite
 
 help: ## 显示所有命令
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -89,7 +89,7 @@ eval-set-baseline: ## 把本次 RAGAS 结果存为 baseline(手工批准后用)
 	@if [ ! -d .venv ]; then echo "⚠ 先跑 make eval-setup"; exit 1; fi
 	@. .venv/bin/activate && python3 eval/ragas_pipeline.py --set-baseline
 
-.PHONY: eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline eval-ab-retrieval
+.PHONY: eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline eval-ab-retrieval eval-ab-rewrite
 
 # ─── Task 5 / V11 Hybrid Retrieval AB 评测 ─────────────────────
 eval-ab-retrieval: ## dense vs hybrid 检索 AB 评测, 输出 eval/dense_vs_hybrid_report.json
@@ -99,6 +99,16 @@ eval-ab-retrieval: ## dense vs hybrid 检索 AB 评测, 输出 eval/dense_vs_hyb
 	@. .venv/bin/activate && python3 eval/runner/ab_dense_vs_hybrid.py \
 		--dataset eval/datasets/retrieval_eval.jsonl \
 		--k 5 --output eval/dense_vs_hybrid_report.json
+
+# ─── Task 6 / V12 Query Enhancement AB 评测 ───────────────────
+eval-ab-rewrite: ## baseline(original) vs rewrite(enhanced) query AB 评测
+	@if [ ! -d .venv ]; then echo "⚠ 先跑 make eval-setup"; exit 1; fi
+	@if ! curl -sf $(RETRIEVE_URL) >/dev/null 2>&1; then \
+		echo "⚠ backend 未启动或不通: RETRIEVE_URL=$(RETRIEVE_URL), 先 make run"; exit 1; fi
+	@echo "前置: RAG_QUERY_ENHANCE_ENABLED=true + fallback LLM route 可达 (否则 rewrite 路径会 fallback 到 baseline)"
+	@. .venv/bin/activate && python3 eval/runner/ab_query_rewrite.py \
+		--dataset eval/datasets/retrieval_eval.jsonl \
+		--k 5 --output eval/query_rewrite_report.json
 
 # ─── Badcase Management (BADCASE-001) ──────────────────────────
 # 评测 venv 优先 eval/.venv (新框架), 回退 .venv (老 eval-setup)

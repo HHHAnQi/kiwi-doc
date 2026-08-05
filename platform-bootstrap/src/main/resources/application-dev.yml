@@ -76,6 +76,16 @@ rag:
     rrf:
       k: ${RAG_RETRIEVE_RRF_K:60}
 
+  # ─── Task 6 / V12 Query Enhancement ─────────────────────────────
+  # 单轮 query rewrite + expansion。默认 false (任务要求 enable_query_rewrite=false);
+  # 启用要求: rag.llm.routes 里至少有 fallback route (走便宜 LLM, DeepSeek-V3 等)。
+  # AB 实验: /api/v1/retrieve?enhance=true 强制覆盖
+  query-enhance:
+    enabled: ${RAG_QUERY_ENHANCE_ENABLED:false}
+    mode: ${RAG_QUERY_ENHANCE_MODE:rewrite}     # rewrite | expansion | both
+    max-expansion-queries: ${RAG_QUERY_ENHANCE_MAX_EXPANSIONS:3}
+    timeout-ms: ${RAG_QUERY_ENHANCE_TIMEOUT_MS:5000}
+
   # ─── Task 4 / V10 Document Lifecycle State Machine ────────────
   # reconcile job: 每日扫 MySQL doc.status vs Milvus 向量, 自动修复两类不一致
   #   1) INDEXED 但 Milvus count=0 → trigger 重处理
