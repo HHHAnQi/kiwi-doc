@@ -170,6 +170,13 @@ public class ChatService {
         startTraceMeta.put("query", cmd.query());
         startTraceMeta.put("conv_enabled", isMultiTurnEnabled());
         startTraceMeta.put("conversation_id", conversationId == null ? "(none)" : conversationId);
+        // Task 9 / V15 trace enrichment: user_id (从 V9 AuthContext 拿, 让 Langfuse UI 按 user 关联)
+        startTraceMeta.put(
+                "user_id",
+                com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId());
+        // Task 9: prompt_version + model_version 提前占位 (LLM observation 再覆盖实际值)
+        startTraceMeta.put("prompt_version", resolvePromptVersion());
+        startTraceMeta.put("model_version", chatClient.currentModel());
         if (isMultiTurnEnabled()
                 && conversationProperties != null
                 && conversationId != null
@@ -178,8 +185,9 @@ public class ChatService {
             // 这里只先放 default, ctx 实际 load 后再补 trace 的 enrichment 留 V2 (防复杂度爆炸)
             startTraceMeta.put("compress_threshold", conversationProperties.getCompressThreshold());
         }
-        String lfTrace =
-                traceObserver.startTrace(traceId.value(), null, startTraceMeta);
+        String lfTrace = traceObserver.startTrace(traceId.value(),
+                com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId(),
+                startTraceMeta);
 
         // 1. 限定 doc_id 时校验存在 + READY(4xx 客户端错误走异常)
         if (cmd.docId() != null) {
@@ -267,22 +275,35 @@ public class ChatService {
                             : cmd.withQuery(finalRetrieveQuery);
             RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(retrieveCmd);
             long retrieveMs = System.currentTimeMillis() - t0;
+            // Task 9 / V15 trace enrichment: 把 retrieved_chunks (id+score) + retrieval_score + rerank
+            // _score 全塞进 metadata, 让一次 badcase 在 Langfuse UI 里点链看完整召回细节。
+            java.util.Map<String, Object> retrieveMeta = new java.util.HashMap<>();
+            retrieveMeta.put("rerank_state", retrieve.rerankState());
+            retrieveMeta.put("top1_retrieval_score", retrieve.top1HybridScore());
+            retrieveMeta.put("top1_rerank_score", retrieve.top1RerankScore());
+            // 把每条 chunk {chunk_id, doc_id, score} 列表化 (snippet 截到 60 字防 trace bloat)
+            java.util.List<java.util.Map<String, Object>> chunkMeta = new java.util.ArrayList<>();
+            for (RetrieveService.Citation c : retrieve.items()) {
+                java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
+                m.put("chunk_id", c.chunkId());
+                m.put("doc_id", c.docId());
+                m.put("score", c.score());
+                m.put(
+                        "snippet",
+                        c.snippet() == null
+                                ? ""
+                                : c.snippet().substring(0, Math.min(60, c.snippet().length())));
+                chunkMeta.add(m);
+            }
+            retrieveMeta.put("retrieved_chunks", chunkMeta);
             traceObserver.observe(
                     lfTrace,
                     TraceObserver.ObservationType.RETRIEVE,
                     "retrieve",
                     cmd.query(),
-                    Map.of(
-                            "hits",
-                            retrieve.items().size(),
-                            "rerank_state",
-                            retrieve.rerankState(),
-                            "top1_hybrid_score",
-                            retrieve.top1HybridScore(),
-                            "top1_rerank_score",
-                            retrieve.top1RerankScore()),
+                    Map.of("hits", retrieve.items().size()),
                     retrieveMs,
-                    null);
+                    retrieveMeta);
 
             if (retrieve.items().isEmpty()) {
                 // 3a. NO_RECALL
@@ -356,29 +377,47 @@ public class ChatService {
                             llmMs,
                             null);
                     hint = StateHint.LLM_DEGRADED;
-                    answer = chatMessages.getLlmDegradedMessage() + traceId.value();
-                    // 注意: LLM 降级时 citations 仍返回, 用户可看检索到的片段
-                    traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
-                    return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
+                     answer = chatMessages.getLlmDegradedMessage() + traceId.value();
+                     // 注意: LLM 降级时 citations 仍返回, 用户可看检索到的片段
+                     traceObserver.endTrace(
+                             lfTrace,
+                             java.util.Map.of(
+                                     "state_hint", hint.name(),
+                                     "chat_latency_ms", System.currentTimeMillis() - t0Chat));
+                     return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat);
                 }
                 long llmMs = System.currentTimeMillis() - t1;
                 // Phase 3 / P3-5: 在 llmMs 拿到后立即取 usage (chat() 返回到下一次同步调用之间是窗口)。
                 // 仅 OpenAiCompatibleLlmClient 实现; 老 DashScope / NoOp 实现返 empty, 完全后向兼容。
-                chatClient.lastUsage()
-                        .ifPresent(
-                                u -> {
-                                    metrics.recordTokens(
-                                            u.promptTokens(),
-                                            u.completionTokens(),
-                                            "llm-primary",
-                                            chatClient.currentModel());
-                                    log.debug(
-                                            "chat.token_usage trace_id={}, prompt={}, completion={}, total={}",
-                                            traceId.value(),
-                                            u.promptTokens(),
-                                            u.completionTokens(),
-                                            u.totalTokens());
-                                });
+                // Task 9 / V15: usage 同时也写入 LLM observation metadata, 让 Langfuse UI 在 badcase
+                // 调试时直接看到 prompt/completion/total token。
+                java.util.Optional<ChatClient.TokenUsage> usageOpt = chatClient.lastUsage();
+                usageOpt.ifPresent(
+                        u -> {
+                            metrics.recordTokens(
+                                    u.promptTokens(),
+                                    u.completionTokens(),
+                                    "llm-primary",
+                                    chatClient.currentModel());
+                            log.debug(
+                                    "chat.token_usage trace_id={}, prompt={}, completion={}, total={}",
+                                    traceId.value(),
+                                    u.promptTokens(),
+                                    u.completionTokens(),
+                                    u.totalTokens());
+                        });
+                java.util.Map<String, Object> llmObsMeta = new java.util.HashMap<>();
+                llmObsMeta.put("prompt_version", resolvePromptVersion());
+                llmObsMeta.put("model_version", chatClient.currentModel());
+                llmObsMeta.put("latency_ms", llmMs);
+                usageOpt.ifPresent(
+                        u -> {
+                            java.util.Map<String, Object> tk = new java.util.LinkedHashMap<>();
+                            tk.put("prompt", u.promptTokens());
+                            tk.put("completion", u.completionTokens());
+                            tk.put("total", u.totalTokens());
+                            llmObsMeta.put("token_usage", tk);
+                        });
                 traceObserver.observe(
                         lfTrace,
                         TraceObserver.ObservationType.LLM,
@@ -386,7 +425,7 @@ public class ChatService {
                         cmd.query(),
                         Map.of("answer_len", llmAnswer == null ? 0 : llmAnswer.length()),
                         llmMs,
-                        null);
+                        llmObsMeta);
                 if (llmAnswer == null || llmAnswer.isBlank() || isLlmRefusal(llmAnswer)) {
                     // LLM_DEGRADED 3 类触发:
                     //   1. llmAnswer null/blank (LLM 直返空)
@@ -485,7 +524,11 @@ public class ChatService {
             }
         }
 
-        traceObserver.endTrace(lfTrace, Map.of("state_hint", hint.name()));
+        traceObserver.endTrace(
+                lfTrace,
+                java.util.Map.of(
+                        "state_hint", hint.name(),
+                        "chat_latency_ms", System.currentTimeMillis() - t0Chat));
         return finishAndRecord(cmd, traceId, hint, answer, citations, t0Chat, verification);
     }
 
@@ -540,8 +583,12 @@ public class ChatService {
         if (documentRepository.countByStatus(DocumentStatus.INDEXED) == 0) {
             traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                     "decision.empty_kb", null, null, 0, null);
-            traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.EMPTY_KB.name()));
-            metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
+             traceObserver.endTrace(
+                     lfTrace,
+                     Map.of(
+                             "state_hint", StateHint.EMPTY_KB.name(),
+                             "chat_latency_ms", System.currentTimeMillis() - sseChatT0));
+             metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.EMPTY_KB.name()));
         }
@@ -563,7 +610,11 @@ public class ChatService {
             // NO_RECALL 同步降级
             traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                     "decision.no_recall", null, null, sseRetrieveMs, null);
-            traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.NO_RECALL.name()));
+            traceObserver.endTrace(
+                    lfTrace,
+                    Map.of(
+                            "state_hint", StateHint.NO_RECALL.name(),
+                            "chat_latency_ms", System.currentTimeMillis() - sseChatT0));
             metrics.recordChatTotal(System.currentTimeMillis() - sseChatT0, "skipped");
             return reactor.core.publisher.Flux.just(
                     new ChatStreamEvent.DoneEvent(traceId.value(), StateHint.NO_RECALL.name()));
@@ -670,7 +721,11 @@ public class ChatService {
                             } catch (Throwable ignore) {
                                 finalHint = StateHint.LLM_DEGRADED;
                             }
-                            traceObserver.endTrace(lfTrace, Map.of("state_hint", finalHint.name()));
+                            traceObserver.endTrace(
+                                    lfTrace,
+                                    Map.of(
+                                            "state_hint", finalHint.name(),
+                                            "chat_latency_ms", System.currentTimeMillis() - sseChatT0));
                             // Phase 3.A: SSE chat_total_latency。stream_done=ok / onErrorResume=degraded 已 set;
                             // 上游 cancel / acc 空 兜底 degraded。outcome null 时按 finalHint 派生。
                             String outcome = sseOutcome.get();
@@ -853,6 +908,24 @@ public class ChatService {
                             c.llmContext(), c.sectionPath(), s);
                 })
                 .toList();
+    }
+
+    // ─── Task 9 / V15 Langfuse trace enrichment helpers ──────────────
+
+    /**
+     * 解析当前生效的 prompt 模板版本字符串, 给 Langfuse observation 标记。
+     *
+     * <p>规则: V2 > relaxed > baseline; 与 {@code OpenAiCompatibleLlmClient.buildSystemPrompt}
+     * (line 269-271 of LlmClient) 同源语义。
+     */
+    private String resolvePromptVersion() {
+        if (chatMessages != null && chatMessages.isPromptV2()) {
+            return chatMessages.isPromptV2Citation() ? "v2-cite" : "v2-plain";
+        }
+        if (chatMessages != null && chatMessages.isPromptRelaxRefusal()) {
+            return "relaxed";
+        }
+        return "baseline";
     }
 
     private static boolean isLlmRefusal(String answer) {
