@@ -5,7 +5,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose --env-file .env -f deploy/docker-compose.yml
 GRADLE := ./gradlew
 
-.PHONY: help env up down ps logs app test test-integration clean lint run db-migrate init-milvus eval-setup eval-gen eval-run eval-all
+.PHONY: help env up down ps logs app test test-integration clean lint run db-migrate init-milvus eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline badcase-run badcase-regress badcase-classify badcase-test
 
 help: ## 显示所有命令
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -90,3 +90,25 @@ eval-set-baseline: ## 把本次 RAGAS 结果存为 baseline(手工批准后用)
 	@. .venv/bin/activate && python3 eval/ragas_pipeline.py --set-baseline
 
 .PHONY: eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline
+
+# ─── Badcase Management (BADCASE-001) ──────────────────────────
+# 评测 venv 优先 eval/.venv (新框架), 回退 .venv (老 eval-setup)
+VENV_BADCASE := $(shell [ -d eval/.venv ] && echo "eval/.venv" || ([ -d .venv ] && echo ".venv" || echo ""))
+
+badcase-classify: ## 仅做分类 + 格式 smoke, 不调线上 (backend 可不起)
+	@if [ -z "$(VENV_BADCASE)" ]; then echo "⚠ 先 python3 -m venv eval/.venv && eval/.venv/bin/pip install requests pytest"; exit 1; fi
+	@$(VENV_BADCASE)/bin/python badcase/regression/runner.py --skip-remote
+
+badcase-run: ## 跑一次回归 (调真实 /chat + /retrieve), 生成 badcase/badcase_report.json
+	@if [ -z "$(VENV_BADCASE)" ]; then echo "⚠ 先 python3 -m venv eval/.venv && eval/.venv/bin/pip install requests pytest"; exit 1; fi
+	@$(VENV_BADCASE)/bin/python badcase/regression/runner.py
+
+badcase-regress: ## CI 模式: 同 badcase-run, 任一 regression → 非 0 退出
+	@if [ -z "$(VENV_BADCASE)" ]; then echo "⚠ 先 python3 -m venv eval/.venv && eval/.venv/bin/pip install requests pytest"; exit 1; fi
+	@$(VENV_BADCASE)/bin/python badcase/regression/runner.py --ci
+
+badcase-test: ## 跑 badcase 模块的纯函数单测 (不依赖网络/容器)
+	@if [ -z "$(VENV_BADCASE)" ]; then echo "⚠ 先 python3 -m venv eval/.venv && eval/.venv/bin/pip install pytest"; exit 1; fi
+	@$(VENV_BADCASE)/bin/python -m pytest eval/tests/badcase/ -q
+
+.PHONY: badcase-classify badcase-run badcase-regress badcase-test
