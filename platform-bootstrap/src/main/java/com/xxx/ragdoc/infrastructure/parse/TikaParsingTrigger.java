@@ -7,11 +7,13 @@ import com.xxx.ragdoc.application.document.chunking.ChunkingProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
+import com.xxx.ragdoc.application.document.port.DocumentStatePort;
 import com.xxx.ragdoc.application.document.port.FileStorage;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
 import com.xxx.ragdoc.domain.document.Document;
+import com.xxx.ragdoc.domain.document.DocumentStatus;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -37,7 +39,7 @@ import org.springframework.stereotype.Component;
  *   <li>{@link EmbeddingClient#embedBatch} 批量生成 dense+sparse 向量
  *   <li>{@link ChunkRepository#saveAll} 落库(含清旧, 幂等)
  *   <li>{@link VectorStore#upsertChunks} 写 Milvus
- *   <li>doc.markReady(chunks) 状态机迁移到 READY
+ *   <li>doc.markChunked(savedChunks); doc.markEmbedding(); doc.markIndexing(); doc.markIndexed(); { tmp = doc.markReady(chunks) 状态机迁移到 READY
  * </ol>
  *
  * <p>异常处理: 任一步失败 → markFailed 并落库; 传播异常给上游 DocumentUploadService 决策(是否回滚/重试)。 资源安全(Scanner/流)不在此管:
@@ -62,6 +64,12 @@ public class TikaParsingTrigger implements ParsingTrigger {
     private final ChunkRepository chunkRepository;
     private final VectorStore vectorStore;
     private final ChunkingProperties chunkingProps;
+    /**
+     * Task 4 / V10: 中间态推进端口 (CHUNKED / EMBEDDING / INDEXING / INDEXED)。
+     * 让 reconcile job 能识别 in-flight 阶段并扫卡死。可选注入 — 缺省 (测试) 时仅推进内存聚合根,
+     * 不持久化中间态, 但终端 markIndexed 仍由外层 trigger + documentRepository.save 兜底。
+     */
+    private final DocumentStatePort statePort;
 
     /** Tika 是线程安全(内部 facade 单例), 复用即可。 */
     private final Tika tika = new Tika();
@@ -111,9 +119,11 @@ public class TikaParsingTrigger implements ParsingTrigger {
                 savedChunks = parseFlat(doc, documentId, fullText);
             }
 
-            // 9. 状态机迁移: PARSING → READY
-            doc.markReady(savedChunks);
-            documentRepository.save(doc);
+            // 9. 状态机迁移终端: PARSING → ... → INDEXED
+            //    中间态 (CHUNKED/EMBEDDING/INDEXING) 已由 parseFlat/parseParentChild 内部
+            //    通过 DocumentStatePort 推进 — 仅最后一步 markIndexed 在此持久化。
+            doc.markIndexed();
+            statePort.markIndexed(documentId);
             log.info(
                     "parse.done doc_id={}, status={}, chunks={}, mode={}",
                     documentId,
@@ -172,6 +182,15 @@ public class TikaParsingTrigger implements ParsingTrigger {
                             sha256Hex(text),
                             sectioned.get(i).sectionPath()));
         }
+        // Task 4: 顺序 — CHUNKED 在切片完成时; EMBEDDING 在调 embedding 前;
+        //          INDEXING 在 upsert 前; INDEXED 在外层 trigger 完成。
+        // flat 路径: chunks 已构造 (in-memory), 先 mark CHUNKED
+        doc.markChunked(chunks);
+        statePort.markChunked(documentId, chunks);
+
+        // EMBEDDING: 调 embedding API 前再迁
+        doc.markEmbedding();
+        statePort.markEmbedding(documentId);
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
         if (embeddings.size() != chunks.size()) {
             throw new IllegalStateException("embed 数量与 chunks 不一致");
@@ -186,6 +205,9 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         doc.docType(),
                         ChunkType.TEXT.name(),
                         doc.tenantId());
+        // INDEXING: Milvus upsert 前再迁
+        doc.markIndexing();
+        statePort.markIndexing(documentId);
         vectorStore.upsertChunks(documentId, savedChunks, embeddings, md);
         return savedChunks;
     }
@@ -247,6 +269,10 @@ public class TikaParsingTrigger implements ParsingTrigger {
         }
         // 同文档重新解析时先清旧(parents+children): deleteByDocumentId 通过 saveAll 内部完成
         java.util.List<Chunk> savedParents = chunkRepository.saveAll(documentId, parentChunks);
+        // Task 4: PARSING → CHUNKED (parents 落库; children 后续 append, 状态机这里就推进,
+        // 真实 chunks 列表给 reconcile 看 no-op 即可, markChunked 主要为状态机推进)
+        doc.markChunked(savedParents);
+        statePort.markChunked(documentId, savedParents);
         java.util.Map<String, Long> parentTextToRealId = new java.util.HashMap<>();
         for (Chunk sp : savedParents) {
             parentTextToRealId.put(sp.content(), sp.id());
@@ -274,6 +300,9 @@ public class TikaParsingTrigger implements ParsingTrigger {
         }
 
         // 步骤 C: embed 只 children
+        // Task 4: CHUNKED → EMBEDDING
+        doc.markEmbedding();
+        statePort.markEmbedding(documentId);
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(childTexts);
         if (embeddings.size() != childChunks.size()) {
             throw new IllegalStateException("embed 数量与 child chunks 不一致");
@@ -293,6 +322,9 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         doc.docType(),
                         ChunkType.CHILD.name(),
                         doc.tenantId());
+        // Task 4: EMBEDDING → INDEXING
+        doc.markIndexing();
+        statePort.markIndexing(documentId);
         vectorStore.upsertChunks(documentId, savedChildren, embeddings, md);
         log.info(
                 "parse.parent_child_indexed doc_id={}, parents={}, children_in_milvus={}",

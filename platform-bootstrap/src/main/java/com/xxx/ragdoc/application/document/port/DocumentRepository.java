@@ -77,4 +77,23 @@ public interface DocumentRepository {
      * @param limit 单次拉取上限 (sweeper 自管速率, 防止单批过大)
      */
     java.util.List<Document> findDocsPendingMilvusDelete(int limit);
+
+    /**
+     * Task 4: 拿所有 INDEXED 且未软删的文档 (用于 reconcile 查 Milvus 向量是否丢失)。
+     *
+     * <p>reconcile job 用: foreach 调 {@code vectorStore.countByDocumentId(docId)} == 0 →
+     * trigger 重处理。
+     *
+     * @param limit 单次拉取上限
+     */
+    java.util.List<Document> findIndexed(int limit);
+
+    /**
+     * Task 4: 拉卡在 in-flight 中间态 (PARSING/CHUNKED/EMBEDDING/INDEXING) 且
+     * lastStateChangeAt 超过阈值的文档 — 由 reconcile 标记 FAILED + 触发重处理。
+     *
+     * @param thresholdMinutes 阈值分钟数; 此前没动的 in-flight 文档视为卡死
+     * @param limit 单次拉取上限
+     */
+    java.util.List<Document> findStuckInPipeline(int thresholdMinutes, int limit);
 }

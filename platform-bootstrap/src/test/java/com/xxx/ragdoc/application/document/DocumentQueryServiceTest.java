@@ -36,7 +36,7 @@ class DocumentQueryServiceTest {
                 new com.xxx.ragdoc.application.document.query.DocumentSummary(
                         1L,
                         "sentinel.pdf",
-                        DocumentStatus.READY,
+                        DocumentStatus.INDEXED,
                         100L,
                         5,
                         null,
@@ -49,12 +49,12 @@ class DocumentQueryServiceTest {
                         false); // pendingMilvusDelete (P3-2)
         Page<com.xxx.ragdoc.application.document.query.DocumentSummary> stub =
                 new PageImpl<>(List.of(sample));
-        when(documentRepository.list(eq(DocumentStatus.READY), eq("sentinel"), any()))
+        when(documentRepository.list(eq(DocumentStatus.INDEXED), eq("sentinel"), any()))
                 .thenReturn(stub);
 
         // when
         Page<com.xxx.ragdoc.application.document.query.DocumentSummary> result =
-                queryService.list(DocumentStatus.READY, "sentinel", PageRequest.of(0, 10));
+                queryService.list(DocumentStatus.INDEXED, "sentinel", PageRequest.of(0, 10));
 
         // then
         assertThat(result.getTotalElements()).isEqualTo(1);
@@ -68,7 +68,7 @@ class DocumentQueryServiceTest {
                         1L,
                         "f.pdf",
                         "application/pdf",
-                        DocumentStatus.READY,
+                        DocumentStatus.INDEXED,
                         100,
                         5,
                         0,
@@ -86,7 +86,7 @@ class DocumentQueryServiceTest {
         DocumentDetail result = queryService.getDetail(1L);
 
         assertThat(result.docId()).isEqualTo(1L);
-        assertThat(result.status()).isEqualTo(DocumentStatus.READY);
+        assertThat(result.status()).isEqualTo(DocumentStatus.INDEXED);
     }
 
     @Test

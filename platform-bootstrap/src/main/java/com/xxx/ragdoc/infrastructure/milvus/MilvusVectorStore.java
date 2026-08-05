@@ -142,6 +142,40 @@ public class MilvusVectorStore implements VectorStore {
                                         .build()));
     }
 
+    /**
+     * Task 4: 用 Milvus query (标量过滤) count 指定 doc 的向量数。
+     *
+     * <p>Milvus SDK 2.5 没 count API, 用 {@code query(topK=1, filter=document_id==X)} 取回结果总数近似判定。
+     * 失败 / 熔断时返 -1 让 reconcile 跳过此 doc (避免误重建)。
+     */
+    @Override
+    public int countByDocumentId(Long documentId) {
+        try {
+            var resp =
+                    circuitBreaker.executeSupplier(
+                            () ->
+                                    milvusClientV2.query(
+                                            io.milvus.v2.service.vector.request.QueryReq.builder()
+                                                    .collectionName(props.getCollection())
+                                                    .filter("document_id == " + documentId)
+                                                    .outputFields(
+                                                            java.util.List.of(
+                                                                    MilvusCollectionInitializer
+                                                                            .FIELD_CHUNK_ID))
+                                                    .limit(1)
+                                                    .build()));
+            long n = resp.getQueryResults().size();
+            // limit=1 时返回 1 行 = "至少有向量"; 0 = 完全没向量
+            return n > 0 ? 1 : 0;
+        } catch (Exception e) {
+            log.warn(
+                    "milvus.count_by_doc_failed doc_id={}, error={} (reconcile skip)",
+                    documentId,
+                    e.getMessage());
+            return -1;
+        }
+    }
+
     @Override
     public List<ScoredChunk> search(
             EmbeddingResult queryEmbedding,

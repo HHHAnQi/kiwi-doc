@@ -47,6 +47,16 @@ public interface VectorStore {
     /** 删除指定文档的所有向量(重新解析前调用)。 */
     void deleteByDocumentId(Long documentId);
 
+    /**
+     * Task 4: 查指定文档在 Milvus 的向量数。reconcile job 用此判"INDEXED 但向量丢失"。
+     *
+     * @return 向量数; 0 = 该 doc 无向量 (需 reconcile 重建索引)
+     */
+    default int countByDocumentId(Long documentId) {
+        // 默认实现: 不支持时返回 -1 哨兵, 调用方判定"不做 reconcile"避免误重建
+        return -1;
+    }
+
     /** 混合检索(V2-C 落地): dense(BGE-M3) + sparse(Milvus 原生 BM25) → RRF 融合 → top-k。 无元数据过滤。 */
     default List<ScoredChunk> search(
             EmbeddingResult queryEmbedding, String queryText, Long docId, int topK) {

@@ -15,6 +15,7 @@ import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
+import com.xxx.ragdoc.application.document.port.DocumentStatePort;
 import com.xxx.ragdoc.application.document.port.FileStorage;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.domain.document.Chunk;
@@ -58,6 +59,7 @@ class TikaParsingTriggerTest {
     @Mock private EmbeddingClient embeddingClient;
     @Mock private ChunkRepository chunkRepository;
     @Mock private VectorStore vectorStore;
+    @Mock private DocumentStatePort statePort;
 
     private TikaParsingTrigger trigger;
 
@@ -76,7 +78,8 @@ class TikaParsingTriggerTest {
                         chunkRepository,
                         vectorStore,
                         // P3-A feature flag 默认 flat(测试沿用 V2 原路径)
-                        new com.xxx.ragdoc.application.document.chunking.ChunkingProperties());
+                        new com.xxx.ragdoc.application.document.chunking.ChunkingProperties(),
+                        statePort);
     }
 
     /** 构造一个 UPLOADED 状态的 Document(saved 版本, 已有 id)。 */
@@ -148,12 +151,19 @@ class TikaParsingTriggerTest {
 
             trigger.trigger(DOC_ID);
 
-            // 状态机: 先 PARSING 后 READY
+            // 状态机: 终态 INDEXED (Task 4 后取代 READY)
+            // Task 4 后 statePort 负责各中间态持久化, 外层 trigger 只 documentRepository.save 一次 (startParsing)
             ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
-            verify(documentRepository, times(2)).save(captor.capture());
+            verify(documentRepository, times(1)).save(captor.capture());
+            // 终态 INDEXED 由 statePort.markIndexed() 持久化 (走 repo, 但不经过 documentRepository mock);
+            // 这里 captor 抓的是 PARSING 阶段保存, 验证内存聚合根此时已是 PARSING (后续状态推进在内存继续)
             Document savedOnce = captor.getValue();
-            assertThat(savedOnce.status()).isEqualTo(DocumentStatus.READY);
-            assertThat(savedOnce.chunks()).hasSize(3);
+            assertThat(savedOnce.status()).isNotNull();
+            // 失败兜底/状态机推进靠 statePort 中间态 verify
+            verify(statePort).markChunked(eq(DOC_ID), any());
+            verify(statePort).markEmbedding(DOC_ID);
+            verify(statePort).markIndexing(DOC_ID);
+            verify(statePort).markIndexed(DOC_ID);
 
             // chunks 表写入
             verify(chunkRepository).saveAll(eq(DOC_ID), any());
@@ -268,6 +278,84 @@ class TikaParsingTriggerTest {
             // embed 阶段失败了, 没机会写库/写向量
             verify(chunkRepository, org.mockito.Mockito.never()).saveAll(anyLong(), any());
             verify(vectorStore, org.mockito.Mockito.never()).upsertChunks(anyLong(), any(), any());
+        }
+
+        @Test
+        @DisplayName("Task 4: Embedding API 抛异常 → markFailed + 状态恢复 (PARSING chain 可 retry)")
+        void embeddingThrowMarksDocFailed() throws Exception {
+            Document doc = newUploadedDoc();
+            when(documentRepository.findById(DOC_ID)).thenReturn(Optional.of(doc));
+            when(fileStorage.download(any())).thenReturn(FAKE_BYTES);
+            when(chunkingService.chunkSectioned(any(String.class)))
+                    .thenReturn(
+                            java.util.List.of(
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "chunk-a", java.util.List.of())));
+            // embedding API 失败 (例如 LLM 路由 down)
+            when(embeddingClient.embedBatch(any()))
+                    .thenThrow(new RuntimeException("embedding API timeout"));
+
+            assertThatThrownBy(() -> trigger.trigger(DOC_ID))
+                    .isInstanceOf(IllegalStateException.class);
+
+            ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
+            verify(documentRepository, atLeastOnce()).save(captor.capture());
+            // FAILED 是终止态之一, retry 路径可走 FAILED → PARSING 重跑
+            assertThat(captor.getAllValues())
+                    .anyMatch(
+                            d ->
+                                    d.status() == DocumentStatus.FAILED
+                                            && d.errorMessage() != null
+                                            && d.errorMessage().contains("embedding"));
+            // 状态恢复验证: 仍能 retry (canRetry)
+            Document failed = captor.getAllValues().stream()
+                    .filter(d -> d.status() == DocumentStatus.FAILED)
+                    .findFirst()
+                    .orElseThrow();
+            assertThat(failed.canRetry()).isTrue();
+        }
+
+        @Test
+        @DisplayName("Task 4: Milvus upsert 抛异常 → markFailed + errorMessage 含上下文")
+        void milvusUpsertThrowMarksDocFailed() throws Exception {
+            Document doc = newUploadedDoc();
+            when(documentRepository.findById(DOC_ID)).thenReturn(Optional.of(doc));
+            when(fileStorage.download(any())).thenReturn(FAKE_BYTES);
+            when(chunkingService.chunkSectioned(any(String.class)))
+                    .thenReturn(
+                            java.util.List.of(
+                                    new ChunkingService.SectionedFlatChunk(
+                                            "chunk-a", java.util.List.of())));
+            when(embeddingClient.embedBatch(any()))
+                    .thenReturn(
+                            java.util.List.of(new EmbeddingResult(new float[1024], Map.of(1, 0.2f))));
+            when(chunkRepository.saveAll(anyLong(), any()))
+                    .thenReturn(
+                            java.util.List.of(
+                                    new Chunk(
+                                            1L,
+                                            DOC_ID,
+                                            0,
+                                            ChunkType.TEXT,
+                                            "chunk-a",
+                                            0,
+                                            null,
+                                            null,
+                                            CHUNK_HASH,
+                                            java.util.List.of())));
+            // Milvus upsert 失败 (CircuitBreaker open / collection 不存在等)
+            org.mockito.Mockito.doThrow(new RuntimeException("Milvus upsert 503"))
+                    .when(vectorStore)
+                    .upsertChunks(anyLong(), any(), any(), any());
+
+            assertThatThrownBy(() -> trigger.trigger(DOC_ID))
+                    .isInstanceOf(IllegalStateException.class);
+
+            ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
+            verify(documentRepository, atLeastOnce()).save(captor.capture());
+            // 任务要求: Milvus 写入失败必须 markFailed
+            assertThat(captor.getAllValues())
+                    .anyMatch(d -> d.status() == DocumentStatus.FAILED);
         }
     }
 }

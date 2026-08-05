@@ -38,6 +38,10 @@ public final class DocumentMapper {
         if (Boolean.TRUE.equals(e.getPendingMilvusDelete())) {
             d.markPendingMilvusDelete();
         }
+        // Task 4: lastStateChangeAt 反序列化 (状态时间戳, amend-domain 不重新打戳)
+        if (e.getLastStateChangeAt() != null) {
+            d.amendLastStateChangeAt(e.getLastStateChangeAt());
+        }
         return d;
     }
 
@@ -53,6 +57,10 @@ public final class DocumentMapper {
         existing.setIsDefault(d.isDefault()); // Phase 3 / P3-1
         existing.setPendingMilvusDelete(d.pendingMilvusDelete()); // Phase 3 / P3-2
         existing.setUpdatedAt(Instant.now());
+        // Task 4: 持久化聚合根最新 lastStateChangeAt (status 变更时刷新过)
+        if (d.lastStateChangeAt() != null) {
+            existing.setLastStateChangeAt(d.lastStateChangeAt());
+        }
         return existing;
     }
 
@@ -74,6 +82,9 @@ public final class DocumentMapper {
         e.setDocType(d.docType());
         e.setIsDefault(d.isDefault()); // Phase 3 / P3-1
         e.setPendingMilvusDelete(d.pendingMilvusDelete()); // Phase 3 / P3-2
+        if (d.lastStateChangeAt() != null) {
+            e.setLastStateChangeAt(d.lastStateChangeAt());
+        }
         return e;
     }
 }

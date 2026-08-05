@@ -90,7 +90,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("应返回 state_hint=EMPTY_KB + 友好文案 + 空 citations")
         void shouldReturnEmptyKb() {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(0L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(0L);
 
             ChatResult r = chatService.chat(new ChatCommand("hello", null, 5), TID);
 
@@ -102,7 +102,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("必须落 chat_traces 记录(state_hint=EMPTY_KB)")
         void shouldWriteChatTrace() {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(0L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(0L);
 
             chatService.chat(new ChatCommand("hello", null, 5), TID);
 
@@ -122,7 +122,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("应返回 state_hint=NO_RECALL")
         void shouldReturnNoRecall() throws Exception {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(3L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(3L);
             when(retrieveService.retrieve(any()))
                     .thenReturn(RetrieveService.RetrieveResult.empty());
 
@@ -144,7 +144,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("应返回 state_hint=OK + LLM 答案 + citations")
         void shouldReturnOkWithAnswerAndCitations() throws Exception {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(1L);
             // 召回 2 条 chunk
             when(retrieveService.retrieve(any()))
                     .thenReturn(
@@ -187,7 +187,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("应返回 state_hint=LLM_DEGRADED + trace_id 兜底 + citations 仍返回")
         void shouldDegradeWhenLlmThrows() throws Exception {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(1L);
             when(retrieveService.retrieve(any()))
                     .thenReturn(
                             new RetrieveService.RetrieveResult(
@@ -290,7 +290,7 @@ class ChatServiceTest {
     @Test
     @DisplayName("响应含 trace_id(供前端反馈关联)")
     void responseShouldCarryTraceId() {
-        when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(0L);
+        when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(0L);
 
         ChatResult r = chatService.chat(new ChatCommand("hello", null, 5), TID);
 
@@ -318,7 +318,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("有 ctx 启用时应调 queryContextualizer + 用 rewritten query 喂 retrieve")
         void chatWithCtx_shouldCallRewriterAndRetrieveWithRewrittenQuery() throws Exception {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(1L);
             // 1. store 返回 ctx with 1 turn
             ConversationContext ctx =
                     ConversationContext.empty(CONV_ID)
@@ -368,7 +368,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("LLM_DEGRADED 时不应写回 history (防污染硬 gate G3)")
         void llmDegraded_shouldNotSaveHistory() throws Exception {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(1L);
             ConversationContext ctx =
                     ConversationContext.empty(CONV_ID)
                             .appendTurn(
@@ -404,7 +404,7 @@ class ChatServiceTest {
         @Test
         @DisplayName("conversationId 为 null → 完全走 stateless 老路径, store/rewriter 都不调")
         void conversationIdNull_shouldStayStateless() throws Exception {
-            when(documentRepository.countByStatus(DocumentStatus.READY)).thenReturn(1L);
+            when(documentRepository.countByStatus(DocumentStatus.INDEXED)).thenReturn(1L);
             when(retrieveService.retrieve(any()))
                     .thenReturn(
                             new RetrieveService.RetrieveResult(

@@ -117,7 +117,7 @@ class DocumentTest {
                             "application/pdf",
                             100L,
                             "default",
-                            DocumentStatus.READY,
+                            DocumentStatus.INDEXED,
                             0,
                             null,
                             SAMPLE_CHUNKS,
@@ -145,13 +145,26 @@ class DocumentTest {
         }
 
         @Test
-        @DisplayName("PARSING → READY: 必须带 chunks")
-        void parsingToReadyRequiresChunks() {
+        @DisplayName("PARSING → CHUNKED: 必须带 chunks")
+        void parsingToChunkedRequiresChunks() {
             Document d = parsedDoc();
-            assertThatThrownBy(() -> d.markReady(List.of()))
+            assertThatThrownBy(() -> d.markChunked(List.of()))
                     .isInstanceOf(IllegalStateException.class);
-            d.markReady(SAMPLE_CHUNKS);
-            assertThat(d.status()).isEqualTo(DocumentStatus.READY);
+            d.markChunked(SAMPLE_CHUNKS);
+            assertThat(d.status()).isEqualTo(DocumentStatus.CHUNKED);
+        }
+
+        @Test
+        @DisplayName("CHUNKED → EMBEDDING → INDEXING → INDEXED: 完整链路推进")
+        void chunkedThroughToIndexed() {
+            Document d = parsedDoc();
+            d.markChunked(SAMPLE_CHUNKS);
+            d.markEmbedding();
+            assertThat(d.status()).isEqualTo(DocumentStatus.EMBEDDING);
+            d.markIndexing();
+            assertThat(d.status()).isEqualTo(DocumentStatus.INDEXING);
+            d.markIndexed();
+            assertThat(d.status()).isEqualTo(DocumentStatus.INDEXED);
         }
 
         @Test
@@ -165,18 +178,33 @@ class DocumentTest {
         }
 
         @Test
-        @DisplayName("UPLOADED → READY 非法")
-        void uploadedDirectlyToReadyIsIllegal() {
+        @DisplayName("CHUNKED / EMBEDDING / INDEXING 任一可 → FAILED")
+        void anyMidStateCanFail() {
+            Document chunked = parsedDoc();
+            chunked.markChunked(SAMPLE_CHUNKS);
+            chunked.markFailed("embed 失败");
+            assertThat(chunked.status()).isEqualTo(DocumentStatus.FAILED);
+
+            Document embedding = parsedDoc();
+            embedding.markChunked(SAMPLE_CHUNKS);
+            embedding.markEmbedding();
+            embedding.markFailed("milvus 失败");
+            assertThat(embedding.status()).isEqualTo(DocumentStatus.FAILED);
+        }
+
+        @Test
+        @DisplayName("UPLOADED → CHUNKED 非法 (必须先 PARSING)")
+        void uploadedDirectlyToChunkedIsIllegal() {
             Document d = newDoc();
-            assertThatThrownBy(() -> d.markReady(SAMPLE_CHUNKS))
+            assertThatThrownBy(() -> d.markChunked(SAMPLE_CHUNKS))
                     .isInstanceOf(IllegalStateException.class);
         }
 
         @Test
-        @DisplayName("READY 不允许直接 markReady 再次")
-        void readyToReadyIllegal() {
-            Document d = readyDoc();
-            assertThatThrownBy(() -> d.markReady(SAMPLE_CHUNKS))
+        @DisplayName("INDEXED 不允许直接 markChunked 再次")
+        void indexedReChunkIllegal() {
+            Document d = indexedDoc();
+            assertThatThrownBy(() -> d.markChunked(SAMPLE_CHUNKS))
                     .isInstanceOf(IllegalStateException.class);
         }
     }
@@ -185,7 +213,7 @@ class DocumentTest {
     @DisplayName("重试 retry()")
     class Retry {
         @Test
-        @DisplayName("FAILED 状态允许重试一次")
+        @DisplayName("FAILED 状态允许重试")
         void retryOnceFromFailed() {
             Document d = failedDoc();
             d.retry();
@@ -195,18 +223,19 @@ class DocumentTest {
         }
 
         @Test
-        @DisplayName("READY 不允许重试")
-        void retryOnReadyFails() {
-            Document d = readyDoc();
-            assertThatThrownBy(d::retry).isInstanceOf(IllegalStateException.class);
+        @DisplayName("UPLOADED/PARSING 不允许重试")
+        void retryOnMidStateFails() {
+            assertThatThrownBy(() -> parsedDoc().retry()).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> newDoc().retry()).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
-        @DisplayName("canRetry() 的语义")
+        @DisplayName("canRetry() 的语义 (FAILED/INDEXED 且 retryCount < 3)")
         void canRetrySemantics() {
             assertThat(newDoc().canRetry()).isFalse();
             assertThat(failedDoc().canRetry()).isTrue();
             assertThat(parsedDoc().canRetry()).isFalse();
+            assertThat(indexedDoc().canRetry()).isTrue();
         }
     }
 
@@ -214,24 +243,27 @@ class DocumentTest {
     @DisplayName("软删除")
     class SoftDelete {
         @Test
-        @DisplayName("READY 可软删")
-        void readyCanDelete() {
-            Document d = readyDoc();
+        @DisplayName("INDEXED 可软删")
+        void indexedCanDelete() {
+            Document d = indexedDoc();
             d.softDelete();
             assertThat(d.isDeleted()).isTrue();
         }
 
         @Test
-        @DisplayName("PARSING 中不可删")
-        void parsingCannotDelete() {
-            Document d = parsedDoc();
-            assertThatThrownBy(d::softDelete).isInstanceOf(IllegalStateException.class);
+        @DisplayName("PARSING / 中间态不可删")
+        void inFlightCannotDelete() {
+            assertThatThrownBy(() -> parsedDoc().softDelete())
+                    .isInstanceOf(IllegalStateException.class);
+            Document chunked = parsedDoc();
+            chunked.markChunked(SAMPLE_CHUNKS);
+            assertThatThrownBy(chunked::softDelete).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
         @DisplayName("已删除的 Document 不能再变更")
         void deletedCannotMutate() {
-            Document d = readyDoc();
+            Document d = indexedDoc();
             d.softDelete();
             assertThatThrownBy(d::retry).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(d::startParsing).isInstanceOf(IllegalStateException.class);
@@ -282,9 +314,12 @@ class DocumentTest {
         return d;
     }
 
-    private static Document readyDoc() {
+    private static Document indexedDoc() {
         Document d = parsedDoc();
-        d.markReady(SAMPLE_CHUNKS);
+        d.markChunked(SAMPLE_CHUNKS);
+        d.markEmbedding();
+        d.markIndexing();
+        d.markIndexed();
         return d;
     }
 

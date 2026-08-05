@@ -138,7 +138,7 @@ public class JpaDocumentRepository implements DocumentRepository {
         // 避免跨版本混查。约定: 同 source + READY + !deleted 最多 1 条 is_default=true.
         return jpa
                 .findFirstBySourceAndStatusAndIsDefaultTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
-                        source, DocumentStatus.READY.name())
+                        source, DocumentStatus.INDEXED.name())
                 .map(DocumentMapper::toDomain);
     }
 
@@ -155,6 +155,28 @@ public class JpaDocumentRepository implements DocumentRepository {
         // P3-2: sweeper 用; 按 id asc 防同一文档跨周期被反复排在后面饿死。
         return jpa.findByPendingMilvusDeleteTrueOrderByIdAsc(
                         org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(DocumentMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public java.util.List<Document> findIndexed(int limit) {
+        // Task 4: reconcile 查向量丢失用; INDEXED 是检索终态, 每条都该有向量在 Milvus
+        return jpa.findByStatusAndDeletedAtIsNullOrderByLastStateChangeAtAsc(
+                        DocumentStatus.INDEXED.name(),
+                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(DocumentMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public java.util.List<Document> findStuckInPipeline(int thresholdMinutes, int limit) {
+        // Task 4: reconcile 扫卡死; 阈值分钟 → 截止时刻
+        java.time.Instant threshold = java.time.Instant.now().minus(thresholdMinutes, java.time.temporal.ChronoUnit.MINUTES);
+        return jpa.findStuckInPipeline(
+                        threshold, org.springframework.data.domain.PageRequest.of(0, limit))
                 .stream()
                 .map(DocumentMapper::toDomain)
                 .toList();

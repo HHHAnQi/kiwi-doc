@@ -85,4 +85,27 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
                     + "WHERE d.deletedAt IS NULL "
                     + "AND d.visibility = 'PUBLIC'")
     java.util.List<Long> findPublicDocIds();
+
+    /**
+     * Task 4: 拿 INDEXED 且未软删的文档 (reconcile 查 Milvus 向量丢失用)。
+     *
+     * <p>按 lastStateChangeAt 升序, 优先查老文档 (老数据更可能因历史事故丢向量)。
+     */
+    java.util.List<DocumentEntity> findByStatusAndDeletedAtIsNullOrderByLastStateChangeAtAsc(
+            String status, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Task 4: 查 in-flight 中间态且 last_state_change_at 早于阈值的文档 (reconcile 扫卡死)。
+     *
+     * <p>阈值由调用方算好 (now - thresholdMinutes) 传入; 命中状态枚举严格写死防 SQL 注入 (枚举字符串)。
+     */
+    @Query(
+            "SELECT d FROM DocumentEntity d "
+                    + "WHERE d.deletedAt IS NULL "
+                    + "AND d.status IN ('PARSING','CHUNKED','EMBEDDING','INDEXING') "
+                    + "AND d.lastStateChangeAt < :threshold "
+                    + "ORDER BY d.lastStateChangeAt ASC")
+    java.util.List<DocumentEntity> findStuckInPipeline(
+            @Param("threshold") java.time.Instant threshold,
+            org.springframework.data.domain.Pageable pageable);
 }

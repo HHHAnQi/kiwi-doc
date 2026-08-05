@@ -164,7 +164,7 @@ public class DocumentManageService {
      */
     public void setDefault(Long id) {
         Document doc = loadOrThrow(id);
-        if (doc.status() != com.xxx.ragdoc.domain.document.DocumentStatus.READY) {
+        if (doc.status() != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED) {
             throw new DomainException(
                     ErrorCode.DOC_NOT_FAILED, "仅 READY 文档可设默认, 当前状态=" + doc.status());
         }

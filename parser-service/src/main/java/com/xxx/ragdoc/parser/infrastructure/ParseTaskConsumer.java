@@ -96,7 +96,7 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
         // step 7-11: 实际解析
         try {
             // step 7a (PM-V3-B 演练暴露的真 bug 修复): doc 状态机要先迁移 UPLOADED→PARSING,
-            // 否则 step 12a 的 doc.markReady 会抛 "UPLOADED → READY 不被允许",
+            // 否则 step 12a 的 doc.markIndexed 会因状态不连续而抛, 由 consumer 推进完整链路,
             // 导致 doc 卡 UPLOADED, 前端 readyCount 永远算不到这条 doc。
             // (sync 路径 TikaParsingTrigger.trigger 在 try 入口就 startParsing, async 路径之前漏了)
             Document docForState = documentRepository.findById(leased.documentId())
@@ -107,7 +107,12 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
 
             List<com.xxx.ragdoc.domain.document.Chunk> savedChunks = worker.execute(leased);
             int chunksWritten = savedChunks.size();
-            // step 12a: success — 走状态机 PARSED + markReady document
+            // step 12a: success — Task 4 状态机推进到 INDEXED
+            //   异步路径里 worker.execute 内部不做中间态持久化 (跨模块添加 statePort 成本高),
+            //   末尾由 consumer 一次性推进 CHUNKED → EMBEDDING → INDEXING → INDEXED。
+            //   reconcile job 仍能正确识别 (startParsing 后到此处之间任一异常仍 markFailed)。
+            //   中间态不在 MySQL 落地不影响正确性, 仅影响 reconcile 判"卡在哪步"的精度 — 可接受
+            //   (异步路径里卡死由 ParseTask 状态机的 VisibilityTimeoutScheduler 兜底, 不靠 doc.status)。
             ParseTask parsed = parseTaskService.markParsed(withChunks(leased, chunksWritten));
             try {
                 Document doc =
@@ -117,7 +122,10 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
                                         () ->
                                                 new IllegalStateException(
                                                         "Document 不存在: " + leased.documentId()));
-                doc.markReady(savedChunks);
+                doc.markChunked(savedChunks);
+                doc.markEmbedding();
+                doc.markIndexing();
+                doc.markIndexed();
                 documentRepository.save(doc);
                 log.info(
                         "parse_task.done task_id={}, doc_id={}, status={}, chunks={}",
@@ -126,10 +134,10 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
                         parsed.status(),
                         chunksWritten);
             } catch (Exception e) {
-                // parse_tasks 已 PARSED; doc.markReady 异常不致命(下次 chat 仍可读到 chunks),
+                // parse_tasks 已 PARSED; doc.markIndexed 异常不致命(下次 chat 仍可读到 chunks),
                 // 仅 log warn 不抛, 不让 broker 重投避免重复跑同 task.
                 log.warn(
-                        "parse_task.doc_markReady_failed task_id={}, err={}",
+                        "parse_task.doc_markIndexed_failed task_id={}, err={}",
                         leased.id(),
                         e.getMessage());
             }

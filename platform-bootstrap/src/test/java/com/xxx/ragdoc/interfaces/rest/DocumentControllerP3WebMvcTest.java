@@ -91,7 +91,7 @@ class DocumentControllerP3WebMvcTest {
                             1L,
                             "nacos.pdf",
                             "application/pdf",
-                            DocumentStatus.READY,
+                            DocumentStatus.INDEXED,
                             100,
                             5,
                             0,

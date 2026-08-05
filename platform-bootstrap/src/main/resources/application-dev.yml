@@ -70,6 +70,16 @@ rag:
   retrieve:
     mode: ${RAG_RETRIEVE_MODE:dense}
 
+  # ─── Task 4 / V10 Document Lifecycle State Machine ────────────
+  # reconcile job: 每日扫 MySQL doc.status vs Milvus 向量, 自动修复两类不一致
+  #   1) INDEXED 但 Milvus count=0 → trigger 重处理
+  #   2) 卡 in-flight (PARSING/CHUNKED/EMBEDDING/INDEXING) 超阈值 → markFailed + retry
+  # 注: stuck-threshold-minutes 默认 30; 过短会误杀正常解析长文档(大 PDF embed 几分钟)
+  reconcile:
+    cron: ${RAG_RECONCILE_CRON:0 0 3 * * *}
+    stuck-threshold-minutes: ${RAG_RECONCILE_STUCK_THRESHOLD_MIN:30}
+    batch-size: ${RAG_RECONCILE_BATCH_SIZE:50}
+
   # ─── Phase 1.B LLM Gateway (2026-08-03) ────────────────────────
   # 多 route + 自动 fallback + CircuitBreaker。
   # 不配 routes 时 LlmRouter 自兜底用 LlmProperties (llm.* 配置) 构造 primary, 无 fallback —

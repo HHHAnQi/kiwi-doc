@@ -176,7 +176,7 @@ public class ChatService {
                                             new NotFoundException(
                                                     ErrorCode.DOC_NOT_FOUND,
                                                     "文档不存在: " + cmd.docId()));
-            if (doc.status() != DocumentStatus.READY) {
+            if (doc.status() != DocumentStatus.INDEXED) {
                 throw new DomainException(
                         ErrorCode.DOC_NOT_READY,
                         "文档 " + cmd.docId() + " 状态=" + doc.status() + ", 暂不能问答");
@@ -231,7 +231,7 @@ public class ChatService {
         final String finalRetrieveQuery = retrieveQuery;
 
         // 2. 决策 EMPTY_KB (无 READY 文档直接兜底, 不进 LLM 不召回不 rewrite — 防浪费)
-        if (documentRepository.countByStatus(DocumentStatus.READY) == 0) {
+        if (documentRepository.countByStatus(DocumentStatus.INDEXED) == 0) {
             hint = StateHint.EMPTY_KB;
             answer = chatMessages.getEmptyKbMessage();
             traceObserver.observe(
@@ -482,7 +482,7 @@ public class ChatService {
                                             new NotFoundException(
                                                     ErrorCode.DOC_NOT_FOUND,
                                                     "文档不存在: " + cmd.docId()));
-            if (doc.status() != DocumentStatus.READY) {
+            if (doc.status() != DocumentStatus.INDEXED) {
                 throw new DomainException(
                         ErrorCode.DOC_NOT_READY,
                         "文档 " + cmd.docId() + " 状态=" + doc.status() + ", 暂不能问答");
@@ -496,7 +496,7 @@ public class ChatService {
                 traceObserver.startTrace(traceId.value(), null, Map.of("query", cmd.query(), "path", "sse"));
 
         // 2. EMPTY_KB 同步降级: Flux.just(DoneEvent state=EMPTY_KB)
-        if (documentRepository.countByStatus(DocumentStatus.READY) == 0) {
+        if (documentRepository.countByStatus(DocumentStatus.INDEXED) == 0) {
             traceObserver.observe(lfTrace, TraceObserver.ObservationType.DECISION,
                     "decision.empty_kb", null, null, 0, null);
             traceObserver.endTrace(lfTrace, Map.of("state_hint", StateHint.EMPTY_KB.name()));

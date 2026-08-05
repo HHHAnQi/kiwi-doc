@@ -82,6 +82,13 @@ public class DocumentEntity {
     @Column(name = "owner_id", length = 64)
     private String ownerId;
 
+    /**
+     * Task 4 / V10: 状态机最后变更时间。reconcile job 扫「in-flight 超时」(PARSING/CHUNKED/EMBEDDING/INDEXING) 用。
+     * 每次状态机变更由 application 层 (DocumentMapper.toEntity) 同步刷新。
+     */
+    @Column(name = "last_state_change_at", nullable = false)
+    private java.time.Instant lastStateChangeAt = java.time.Instant.now();
+
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount = 0;
 
@@ -217,6 +224,15 @@ public class DocumentEntity {
 
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
+    }
+
+    /** Task 4: 状态机最后变更时间。 */
+    public java.time.Instant getLastStateChangeAt() {
+        return lastStateChangeAt;
+    }
+
+    public void setLastStateChangeAt(java.time.Instant lastStateChangeAt) {
+        this.lastStateChangeAt = lastStateChangeAt;
     }
 
     public Integer getRetryCount() {

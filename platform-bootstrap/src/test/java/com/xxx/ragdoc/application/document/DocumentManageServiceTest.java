@@ -293,9 +293,10 @@ class DocumentManageServiceTest {
         }
 
         @Test
-        @DisplayName("retry_count=1 后再 retry → 409 联系管理员")
+        @DisplayName("Task 4: retry_count=3 (V10 上限) 后再 retry → 409 联系管理员")
         void retryExhausted() {
-            Document doc = failedDocWithRetry(1L, 1);
+            // V10 把重试上限从 V1 的 1 放宽到 3 — 已重试 3 次失败, 不再自动重试
+            Document doc = failedDocWithRetry(1L, 3);
             when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
 
             assertThatThrownBy(() -> manageService.retry(1L))
@@ -308,7 +309,7 @@ class DocumentManageServiceTest {
 
     private static Document readyDoc(Long id) {
         Document d = parsedDoc(id);
-        d.markReady(
+        d.markChunked(
                 List.of(
                         new com.xxx.ragdoc.domain.document.Chunk(
                                 1L,
@@ -321,6 +322,9 @@ class DocumentManageServiceTest {
                                 null,
                                 "h",
                                 java.util.List.of())));
+        d.markEmbedding();
+        d.markIndexing();
+        d.markIndexed();
         return d;
     }
 

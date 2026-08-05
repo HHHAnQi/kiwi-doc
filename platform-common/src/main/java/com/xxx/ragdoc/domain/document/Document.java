@@ -2,6 +2,7 @@ package com.xxx.ragdoc.domain.document;
 
 import com.xxx.ragdoc.domain.shared.ContentHash;
 import com.xxx.ragdoc.domain.shared.DocumentId;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +62,15 @@ public class Document {
      * <p>不变量: 新建 doc 永远 pending=false; reactivate 时 clear (避免历史脏标记触发 sweeper 误删)。
      */
     private boolean pendingMilvusDelete;
+
+    /**
+     * Task 4: 状态机最后变更时间。reconcile job 扫「in-flight 超时」用: status IN
+     * (PARSING/CHUNKED/EMBEDDING/INDEXING) AND lastStateChangeAt < now - 30min 即视为卡死。
+     */
+    private Instant lastStateChangeAt;
+
+    /** Task 4: 自动/手动重试上限 (原 V1 为 1, V10 放宽到 3)。 */
+    private static final int MAX_RETRY = 3;
 
     // ============================================================
     // 工厂方法
@@ -216,6 +226,7 @@ public class Document {
         this.errorMessage = errorMessage;
         this.chunks = Objects.requireNonNull(chunks);
         this.deleted = deleted;
+        this.lastStateChangeAt = Instant.now();
     }
 
     private static String safe(String s) {
@@ -240,28 +251,71 @@ public class Document {
      *
      * <p>幂等表层: 如果已 PARSING, 直接 no-op 返回(RocketMQ redelivery / parser restart 续点会再调一次,
      * 不应抛 IllegalState)。READY/FAILED/UPLOADED 之外的非法迁移仍走 transitionTo 抛。
+     *
+     * <p>Task 4: 同样幂等适用于 CHUNKED/EMBEDDING/INDEXING (parse 队列重投, 已在管道中, 不重复迁移)。
      */
     public void startParsing() {
         ensureNotDeleted();
-        if (this.status == DocumentStatus.PARSING) {
-            // MQ redelivery / 重启续点: doc 已在解析, 不重复迁移
+        if (this.status == DocumentStatus.PARSING
+                || this.status == DocumentStatus.CHUNKED
+                || this.status == DocumentStatus.EMBEDDING
+                || this.status == DocumentStatus.INDEXING) {
+            // MQ redelivery / 重启续点: doc 已在管道中, 不重复迁移
             return;
         }
         this.status = status.transitionTo(DocumentStatus.PARSING);
+        touchStateChange();
     }
 
-    /** 解析成功。要求 chunks 非空(否则"标记成功却无内容"违反不变量)。 */
-    public void markReady(List<Chunk> parsedChunks) {
+    /**
+     * Task 4: 切片完成, 持久化 chunks 并迁到 CHUNKED。
+     *
+     * <p>替代旧 {@code markReady(List<Chunk>)} — 索引生命周期里"切片完成"只是中间态, 不再是终态。
+     *
+     * @throws IllegalStateException 若 chunks 空 (违反不变量)
+     */
+    public void markChunked(List<Chunk> parsedChunks) {
         ensureNotDeleted();
         if (parsedChunks == null || parsedChunks.isEmpty()) {
-            throw new IllegalStateException("markReady 必须 chunks 非空");
+            throw new IllegalStateException("markChunked 必须 chunks 非空");
         }
-        this.status = status.transitionTo(DocumentStatus.READY);
+        this.status = status.transitionTo(DocumentStatus.CHUNKED);
         this.chunks = new ArrayList<>(parsedChunks);
         this.errorMessage = null;
+        touchStateChange();
     }
 
-    /** 解析失败。强制附加 errorMessage。 */
+    /**
+     * Task 4: 进入 embedding 阶段 (调 embedding API 前)。
+     *
+     * <p>无业务数据变更, 仅状态机推进 — 让 reconcile job 能识别"卡在 embedding"。
+     */
+    public void markEmbedding() {
+        ensureNotDeleted();
+        this.status = status.transitionTo(DocumentStatus.EMBEDDING);
+        touchStateChange();
+    }
+
+    /** Task 4: 进入 indexing 阶段 (Milvus upsert 前)。 */
+    public void markIndexing() {
+        ensureNotDeleted();
+        this.status = status.transitionTo(DocumentStatus.INDEXING);
+        touchStateChange();
+    }
+
+    /**
+     * Task 4: 索引完成, 终态。
+     *
+     * <p>替代旧 {@code markReady} — 此状态后才允许检索。
+     */
+    public void markIndexed() {
+        ensureNotDeleted();
+        this.status = status.transitionTo(DocumentStatus.INDEXED);
+        this.errorMessage = null;
+        touchStateChange();
+    }
+
+    /** 解析失败。强制附加 errorMessage。Task 4: 任一中间态 (PARSING/CHUNKED/EMBEDDING/INDEXING) 均可失败。 */
     public void markFailed(String errorMessage) {
         ensureNotDeleted();
         if (errorMessage == null || errorMessage.isBlank()) {
@@ -269,26 +323,35 @@ public class Document {
         }
         this.status = status.transitionTo(DocumentStatus.FAILED);
         this.errorMessage = errorMessage;
+        touchStateChange();
     }
 
-    /** 重试(V1 仅允许 FAILED 且 retry_count=0 时触发一次)。 */
+    /**
+     * 重试。Task 4: 上限放宽到 3 次 (原 V1 仅 1 次, 实际生产 Milvus/embedding 偶发抖动需多次重试)。
+     *
+     * <p>FAILED/INDEXED → PARSING, retryCount++, errorMessage 清空。调 parsingTrigger 重跑整条管道。
+     */
     public void retry() {
         ensureNotDeleted();
-        if (status != DocumentStatus.FAILED) {
-            throw new IllegalStateException("仅 FAILED 文档可重试");
+        if (status != DocumentStatus.FAILED && status != DocumentStatus.INDEXED) {
+            throw new IllegalStateException("仅 FAILED / INDEXED 可触发 retry, 当前=" + status);
         }
-        if (retryCount >= 1) {
-            throw new IllegalStateException("V1 仅允许重试一次, 当前 retryCount=" + retryCount);
+        if (retryCount >= MAX_RETRY) {
+            throw new IllegalStateException("V10 重试上限 " + MAX_RETRY + " 次, 当前 retryCount=" + retryCount);
         }
         this.status = status.transitionTo(DocumentStatus.PARSING);
         this.retryCount = retryCount + 1;
         this.errorMessage = null;
+        touchStateChange();
     }
 
-    /** 软删。仅 READY/FAILED 可删;PARSING 中不可删。 */
+    /** 软删。仅 INDEXED/FAILED 可删; 任一 in-flight 状态 (PARSING/CHUNKED/EMBEDDING/INDEXING) 不可删。 */
     public void softDelete() {
-        if (this.status == DocumentStatus.PARSING) {
-            throw new IllegalStateException("PARSING 中不可删除");
+        if (this.status == DocumentStatus.PARSING
+                || this.status == DocumentStatus.CHUNKED
+                || this.status == DocumentStatus.EMBEDDING
+                || this.status == DocumentStatus.INDEXING) {
+            throw new IllegalStateException("in-flight 状态不可删除, 当前=" + status);
         }
         this.deleted = true;
     }
@@ -299,6 +362,9 @@ public class Document {
      * <p>用于"同 hash 软删 doc 被重新上传"场景: 应用层选择复活老聚合根(保留原 doc_id)而不是 插新 doc, 这样 (a) 不撞
      * documents.uk_content_hash 唯一约束, (b) chunks/Milvus 可走重切路径。 调用方须保证 chunks 已清(reactivate 不负责清旧
      * chunks, 状态机只关心自身)。
+     *
+     * <p>Task 4: reactivate 是业务复活特权路径, 直接 set status=UPLOADED 不走 {@link #transitionTo}
+     * (因为 INDEXED/FAILED → UPLOADED 不在常规状态机规则里, 但业务上复活必须能从这里启动)。
      */
     public void reactivate() {
         if (!this.deleted) {
@@ -311,6 +377,7 @@ public class Document {
         // P3-2: 复活时清除 pending Milvus delete 标记。
         // 否则 sweeper 可能在 doc 已复活且 upsert 新向量后误删它们 (race)。
         this.pendingMilvusDelete = false;
+        touchStateChange();
     }
 
     /** 持久化后回填主键。 */
@@ -404,7 +471,30 @@ public class Document {
     }
 
     public boolean canRetry() {
-        return status == DocumentStatus.FAILED && retryCount < 1;
+        return (status == DocumentStatus.FAILED || status == DocumentStatus.INDEXED) && retryCount < MAX_RETRY;
+    }
+
+    /** Task 4: 状态机最后变更时间, reconcile 扫卡死用。 */
+    public Instant lastStateChangeAt() {
+        return lastStateChangeAt;
+    }
+
+    /** Task 4: 内部 hook — 每次状态变更刷新时间戳。 */
+    private void touchStateChange() {
+        this.lastStateChangeAt = Instant.now();
+    }
+
+    /**
+     * Task 4: 持久化恢复时反序列化时间戳, 不重新打戳。
+     *
+     * <p>仅供 {@code DocumentMapper.toDomain} 调用 — 让从 DB 取回的 doc 保留真实时间戳 (reconcile
+     * 扫卡死的判定基准)。一旦任何一个 {@code mark*} 方法被调用, 后续打戳会由 {@link #touchStateChange}
+     * 覆盖。本方法是 package-private 是为减少误用面。
+     */
+    public void amendLastStateChangeAt(Instant ts) {
+        if (ts != null) {
+            this.lastStateChangeAt = ts;
+        }
     }
 
     /** Phase 3 / P3-1: 是否为同 source 的默认版本。 */
