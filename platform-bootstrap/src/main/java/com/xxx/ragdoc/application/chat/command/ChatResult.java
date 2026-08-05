@@ -1,5 +1,6 @@
 package com.xxx.ragdoc.application.chat.command;
 
+import com.xxx.ragdoc.application.chat.verification.VerificationResult;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import java.util.List;
@@ -10,7 +11,13 @@ import java.util.List;
  * <p>所有调用(成功/降级)都用此结果表达, 避免走异常路径造成 200 body schema 二义性。
  */
 public record ChatResult(
-        String answer, List<Citation> citations, StateHint stateHint, TraceId traceId) {
+        String answer,
+        List<Citation> citations,
+        StateHint stateHint,
+        TraceId traceId,
+        /** Task 7: 引用核验结果, null=未启用 verifier (默认 disabled)。前端/评测 可读 outcome + min_score。 */
+        VerificationResult verification) {
+
     /**
      * Citation 元素(简化版, 与 api-contracts.md §D1 对齐)。 V1 chat 永远 citations=空, 因不调召回。
      *
@@ -19,6 +26,8 @@ public record ChatResult(
      *
      * <p>{@code sectionPath}(Q3-B): 该 citation 所属 chunk 的 markdown heading 路径栈, 给前端/用户做章节级溯源; 空
      * list = 无 heading 上下文。
+     *
+     * <p>{@code verifyScore} (Task 7): 该 citation 的 NLI 支持分数 [0,1], null=未做核验。
      */
     public record Citation(
             Long chunkId,
@@ -26,9 +35,29 @@ public record ChatResult(
             int page,
             String snippet,
             String llmContext,
-            List<String> sectionPath) {}
+            List<String> sectionPath,
+            Double verifyScore) {
 
+        /** 老 6 字段构造器兼容 (verifyScore=null)。 */
+        public Citation(
+                Long chunkId,
+                Long docId,
+                int page,
+                String snippet,
+                String llmContext,
+                List<String> sectionPath) {
+            this(chunkId, docId, page, snippet, llmContext, sectionPath, null);
+        }
+    }
+
+    /** Task 7 前 4 字段兼容构造 (verification=null)。 */
+    public static ChatResult of(String answer, List<Citation> citations, StateHint hint, TraceId traceId) {
+        return new ChatResult(answer, citations, hint, traceId, null);
+    }
+
+    /** V1 短命令: 空 citations + 无 verification。 */
     public static ChatResult of(StateHint hint, String answer, TraceId traceId) {
-        return new ChatResult(answer, List.of(), hint, traceId);
+        return new ChatResult(answer, List.of(), hint, traceId, null);
     }
 }
+

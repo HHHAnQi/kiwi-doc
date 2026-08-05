@@ -25,6 +25,19 @@ public class ChatMessages {
     /** V2+ 生效: LLM 调用失败时的兜底文案前缀 */
     private String llmDegradedMessage = "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: ";
 
+    /**
+     * Task 7: Citation Verification FAIL (REFUSE 模式) 时的拒答文案。
+     *
+     * <p>参数化: 阈值通过 {@code String.format} 注入 (%.2f)。
+     */
+    private String verifierRefusalTemplate =
+            "本次答案未通过引用核验 (NLI score < %.2f), 已自动拒答以避免幻觉。请尝试改写问题或提供更多上下文。";
+
+    /** Task 7: 拒答文案构造器。 */
+    public String verifierRefusal(double scoreThreshold) {
+        return String.format(verifierRefusalTemplate, scoreThreshold);
+    }
+
     // ─── Phase 2.A experimental flags (2026-08-03) ─────────────────
     // 默认 OFF, Phase 2.A 实证 "整体不通过判据" 但代码保留, 待将来严谨 A/B 时开。
     // 见 eval/PHASE2A_REPORT.md + eval/EVAL_BASELINE_CERT.md。

@@ -86,6 +86,16 @@ rag:
     max-expansion-queries: ${RAG_QUERY_ENHANCE_MAX_EXPANSIONS:3}
     timeout-ms: ${RAG_QUERY_ENHANCE_TIMEOUT_MS:5000}
 
+  # ─── Task 7 / V13 Citation Verification ──────────────────────
+  # 生成 answer 后, NLI 判定 answer 是否被 citations 支持。默认 false;
+  # 启用要求: rag.llm.routes 里至少有 fallback route 做 NLI judge。
+  citation-verifier:
+    enabled: ${RAG_CITATION_VERIFIER_ENABLED:false}
+    score-threshold: ${RAG_CITATION_VERIFIER_THRESHOLD:0.5}
+    on-fail: ${RAG_CITATION_VERIFIER_ON_FAIL:REFUSE}    # REFUSE | REGENERATE | WARN_ONLY
+    max-regenerate-attempts: ${RAG_CITATION_VERIFIER_MAX_REGEN:1}
+    timeout-ms: ${RAG_CITATION_VERIFIER_TIMEOUT_MS:8000}
+
   # ─── Task 4 / V10 Document Lifecycle State Machine ────────────
   # reconcile job: 每日扫 MySQL doc.status vs Milvus 向量, 自动修复两类不一致
   #   1) INDEXED 但 Milvus count=0 → trigger 重处理

@@ -13,6 +13,7 @@ package com.xxx.ragdoc.domain.shared;
  *   &gt; DOC_NOT_READY (409,走异常路径, 非 state_hint)
  *   &gt; NO_RECALL     (召回为空或全低于阈值)
  *   &gt; LLM_DEGRADED  (已召回但 LLM 失败)
+ *   &gt; VERIFY_FAILED (Task 7: 已生成但未通过 citation 核验)
  *   &gt; OK
  * </pre>
  *
@@ -22,7 +23,13 @@ public enum StateHint {
     OK("正常问答"),
     EMPTY_KB("知识库为空"),
     NO_RECALL("召回为空或全低于阈值"),
-    LLM_DEGRADED("LLM 调用失败,降级返回");
+    LLM_DEGRADED("LLM 调用失败,降级返回"),
+    /**
+     * Task 7: 已生成答案, 但 {@code CitationVerifier} NLI 核验 FAIL (answer 未被 evidence 支持)。
+     *
+     * <p>表征: 已有召回 + LLM 出答案 + verifier 拒答。区别于 {@link #LLM_DEGRADED} (LLM 调用本身失败)。
+     */
+    VERIFY_FAILED("引用核验未通过,拒答");
 
     private final String description;
 
