@@ -33,4 +33,17 @@ public interface DocumentAclJpaRepository extends JpaRepository<DocumentAclEntit
             @Param("principalType") String principalType,
             @Param("principalId") String principalId,
             @Param("permsIn") List<String> permsIn);
+
+    /**
+     * Task 11 P0: 严格按 (documentId, principalType, principalId, perm) 四元组判定 ACL 是否存在。
+     *
+     * <p>替代旧 {@link JpaAclWriter} 用 {@code findReadableDocIds(USER, owner, OWNER).isEmpty()}
+     * 误判 — 那个查询无 documentId 维度, owner 在任意 doc 上有 OWNER 即返 true,
+     * 导致第二份文档跳过 ACL 写入 (问题 4 根因)。
+     */
+    boolean existsByDocumentIdAndPrincipalTypeAndPrincipalIdAndPerm(
+            Long documentId,
+            String principalType,
+            String principalId,
+            String perm);
 }

@@ -61,6 +61,23 @@ embedding:
 # dense(默认): 单路 BGE-M3 dense ANN, 生产基线
 # hybrid: dense + BM25 RRF, 设计文档既定, 但需大数据规模+清洗配合
 rag:
+  # ─── Task 11 / P0 认证 Deny-by-Default ──────────────────────
+  # dev profile 下允许 fallback DEFAULT_PRINCIPAL (仅 magic dev-default-token 触发);
+  # prod profile 启动时若显式 set true → fail-fast (AuthProperties.verifyProfileGate)
+  auth:
+    dev-default-principal-enabled: ${RAG_AUTH_DEV_DEFAULT_PRINCIPAL_ENABLED:false}
+    dev-default-token: ${RAG_AUTH_DEV_DEFAULT_TOKEN:dev-default-token}
+    # 兼容 FeedbackController 老 dev/admin token 路径
+    dev-token: ${APP_DEV_TOKEN:dev-token-change-me}
+    admin-token: ${APP_ADMIN_TOKEN:admin-token-change-me}
+    allowlist-paths:
+      - /actuator/health
+      - /actuator/readiness
+      - /actuator/liveness
+      - /actuator/info
+      - /swagger-ui
+      - /v3/api-docs
+
   # V3-W1 parser-service 拆分(ADR-0005/0010 + docs/v3/parser-service-spec.md §2.3):
   #   sync (默认, 调试/降级): DocumentUploadService 同步调 TikaParsingTrigger(老路径)
   #   async (生产): DocumentUploadService 写 parse_tasks PENDING + 发 RocketMQ, 由 parser-service 消费

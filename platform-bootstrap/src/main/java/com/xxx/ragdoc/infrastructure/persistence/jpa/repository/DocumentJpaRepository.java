@@ -42,6 +42,44 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
             @Param("status") String status, @Param("keyword") String keyword, Pageable pageable);
 
     /**
+     * Task 11 / P0: tenant + 可选 status/keyword 过滤的 admin 路径 (本 tenant 全可见, 不加 allowedDocIds)。
+     */
+    @org.springframework.data.jpa.repository.Query(
+            """
+            SELECT d FROM DocumentEntity d
+            WHERE d.deletedAt IS NULL
+              AND d.tenantId = :tenantId
+              AND (:status IS NULL OR d.status = :status)
+              AND (:keyword IS NULL OR LOWER(d.originalFilename) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY d.createdAt DESC
+            """)
+    Page<DocumentEntity> listAccessibleAdmin(
+            @Param("tenantId") String tenantId,
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+    /**
+     * Task 11 / P0: tenant + allowedDocumentIds 双过滤的普通用户路径。
+     */
+    @org.springframework.data.jpa.repository.Query(
+            """
+            SELECT d FROM DocumentEntity d
+            WHERE d.deletedAt IS NULL
+              AND d.tenantId = :tenantId
+              AND d.id IN :allowedDocumentIds
+              AND (:status IS NULL OR d.status = :status)
+              AND (:keyword IS NULL OR LOWER(d.originalFilename) LIKE LOWER(CONCAT('%', :keyword, '%')))
+            ORDER BY d.createdAt DESC
+            """)
+    Page<DocumentEntity> listAccessibleExplicit(
+            @Param("tenantId") String tenantId,
+            @Param("allowedDocumentIds") java.util.Set<Long> allowedDocumentIds,
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            Pageable pageable);
+
+    /**
      * Phase 3 / P3-1: 按 source 找 is_default=true 且 READY 未软删的最新一条。
      *
      * <p>理论返回 0 或 1 条 (同 source 至多 1 个 default, DocumentUploadService + set-default 保证);

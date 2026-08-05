@@ -24,6 +24,18 @@ import org.junit.jupiter.api.Test;
 @DisplayName("RetrieveService - 第③段 reranker 集成")
 class RetrieveServiceTest {
 
+    @org.junit.jupiter.api.BeforeEach
+    void setDefaultPrincipal() {
+        // Task 11 P0: AuthContext.currentPrincipal() 不再 fallback null, 测试必须显式 set
+        com.xxx.ragdoc.application.auth.AuthContext.set(
+                com.xxx.ragdoc.application.auth.AuthContext.DEFAULT_PRINCIPAL);
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void clearPrincipal() {
+        com.xxx.ragdoc.application.auth.AuthContext.clear();
+    }
+
     /**
      * Phase 3.A: 给 RetrieveService 注入一个 noop MetricsPort。RetrieveService 调 metrics.record* 是
      * 观察路径, 测试不断言 metric 值, 用 noop 实现可避免 test code 触及 infrastructure.RagdocMetrics 类型,
@@ -98,7 +110,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -145,7 +157,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             // hybrid 召回 3 条(模拟), 顺序是 0.9 > 0.7 > 0.5
@@ -192,7 +204,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -224,7 +236,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -278,7 +290,7 @@ class RetrieveServiceTest {
             Document defaultDoc = mockDocWithVersion("3.x");
             when(dr.findDefaultReadyBySource("dubbo")).thenReturn(Optional.of(defaultDoc));
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -310,7 +322,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty()); // 无 default
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -336,7 +348,7 @@ class RetrieveServiceTest {
             RerankProperties rp = new RerankProperties();
             DocumentRepository dr = mock(DocumentRepository.class);
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -363,7 +375,7 @@ class RetrieveServiceTest {
             RerankProperties rp = new RerankProperties();
             DocumentRepository dr = mock(DocumentRepository.class);
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> com.xxx.ragdoc.application.auth.AccessScope.tenantAdmin(p.tenantId()), q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()), new com.xxx.ragdoc.application.chat.QueryEnhanceProperties());
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))

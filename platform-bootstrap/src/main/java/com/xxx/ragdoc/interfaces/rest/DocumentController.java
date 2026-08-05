@@ -62,7 +62,8 @@ public class DocumentController {
                         file.getContentType(),
                         file.getSize(),
                         file.getBytes(),
-                        "default",
+                        // Task 11 / P0: tenantId 从 AuthContext 拿, 不再硬编码 (问题 2 根因)
+                        com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().tenantId(),
                         source,
                         version,
                         language,

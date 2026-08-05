@@ -131,13 +131,15 @@ public class RetrieveService {
         boolean rerankEnabled = rerankProps.isEnabled();
         int fetchK = rerankEnabled ? Math.max(userTopK, rerankProps.getCandidatePool()) : userTopK;
 
-        // V9 RAG-Perm-001: 从 ThreadLocal 拿 principal → 解析可读 docId 白名单
-        //   - admin / 默认主体 → docIds=null (不限制, 仍受 tenant 过滤)
-        //   - 普通用户 → docIds=可读白名单
-        //   - docIds 非空且空集 → 立即 NO_RECALL 短路, 不再落 Milvus
+        // Task 11 / P0: 用 AccessScope 严格区分 admin (本 tenant 全可见) vs 普通用户 (显式白名单)
+        //   - admin (allowedDocumentIds=null)    → 不加 docId 子句, 只 filter tenant_id
+        //   - 普通用户 (非空集)                  → filter tenant_id and document_id in [allowed]
+        //   - 普通用户 (空集)                    → 立即 NO_RECALL 短路, 不再调 Milvus
         Principal principal = AuthContext.currentPrincipal();
-        Set<Long> allowedDocIds = permissionResolver.resolveReadableDocIds(principal);
-        if (allowedDocIds != null && allowedDocIds.isEmpty()) {
+        com.xxx.ragdoc.application.auth.AccessScope scope =
+                permissionResolver.resolveAccessScope(principal);
+        Set<Long> allowedDocIds = scope.allowedDocumentIds();
+        if (!scope.isUnrestrictedWithinTenant() && allowedDocIds != null && allowedDocIds.isEmpty()) {
             log.info(
                     "retrieve.blocked_no_readable_doc user={}, tenant={}",
                     principal.userId(),

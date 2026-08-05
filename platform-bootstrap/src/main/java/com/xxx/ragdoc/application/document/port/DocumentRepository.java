@@ -6,6 +6,7 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.ContentHash;
 import java.util.Optional;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -40,6 +41,21 @@ public interface DocumentRepository {
      * @param keyword null/空 = 不模糊搜索
      */
     Page<DocumentSummary> list(DocumentStatus status, String keyword, Pageable pageable);
+
+    /**
+     * Task 11 / P0: 租户 + allowedDocumentIds 同时过滤的分页查询 — DB 层完成, 防内存过滤越权。
+     *
+     * @param tenantId 当前调用方 tenantId (必填)
+     * @param allowedDocumentIds null = 本 tenant 全可见 (admin 哨兵); 非空 = 显式白名单
+     * @param status null = 不限状态
+     * @param keyword null/空 = 不模糊搜索
+     */
+    Page<DocumentSummary> listAccessible(
+            String tenantId,
+            Set<Long> allowedDocumentIds,
+            DocumentStatus status,
+            String keyword,
+            Pageable pageable);
 
     /** 按 id 加载详情(含 chunk_count 关联统计, 不含 chunk 内容)。 */
     Optional<DocumentDetail> findDetailById(Long id);

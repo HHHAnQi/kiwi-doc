@@ -103,6 +103,41 @@ public class JpaDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public Page<DocumentSummary> listAccessible(
+            String tenantId,
+            java.util.Set<Long> allowedDocumentIds,
+            DocumentStatus status,
+            String keyword,
+            Pageable pageable) {
+        String statusStr = status == null ? null : status.name();
+        String kw = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+        Page<DocumentEntity> page;
+        if (allowedDocumentIds == null) {
+            // 本 tenant admin 路径: 本 tenant 全 doc 可见 (但不跨 tenant)
+            page = jpa.listAccessibleAdmin(tenantId, statusStr, kw, pageable);
+        } else if (allowedDocumentIds.isEmpty()) {
+            // 无任何可访问 doc → 返空页
+            return Page.empty(pageable);
+        } else {
+            page = jpa.listAccessibleExplicit(tenantId, allowedDocumentIds, statusStr, kw, pageable);
+        }
+        return page.map(e -> new DocumentSummary(
+                e.getId(),
+                e.getOriginalFilename(),
+                DocumentStatus.valueOf(e.getStatus()),
+                e.getSizeBytes(),
+                chunkRepository.countByDocumentId(e.getId()),
+                e.getCreatedAt(),
+                e.getUpdatedAt(),
+                e.getSource(),
+                e.getVersion(),
+                e.getLanguage(),
+                e.getDocType(),
+                Boolean.TRUE.equals(e.getIsDefault()),
+                Boolean.TRUE.equals(e.getPendingMilvusDelete())));
+    }
+
+    @Override
     public Optional<DocumentDetail> findDetailById(Long id) {
         // DEV-V3-C: 与 listForSummary 一致地过滤 deletedAt IS NOT NULL,
         // 否则软删后 GET /documents/{id} 仍返回 200, 与列表"无声消失"链路不一致。

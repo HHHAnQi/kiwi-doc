@@ -57,13 +57,20 @@ class DocumentManageServiceTest {
         parsingTrigger = mock(ParsingTrigger.class);
         chunkRepository = mock(ChunkRepository.class);
         vectorStore = mock(VectorStore.class);
+        // Task 11 P0: DocumentManageService 现依赖 DocumentAccessGuard;
+        // 旧测试需通过 — 让 guard mock 总是 require 通过: 调 require 方法时 mock 返 doc
+        // (单个测试方法通过 when(documentRepository.findById).thenReturn 控 doc; 但 guard 自身加载 doc
+        // 已经做过 — 让 guard 仅 no-op 通过即可, 测试里的 mock doc 已 set)
+        com.xxx.ragdoc.application.document.DocumentAccessGuard accessGuard =
+                mock(com.xxx.ragdoc.application.document.DocumentAccessGuard.class);
         manageService =
                 new DocumentManageService(
                         documentRepository,
                         parsingTrigger,
                         chunkRepository,
                         vectorStore,
-                        SYNC_SHORT_TX);
+                        SYNC_SHORT_TX,
+                        accessGuard);
     }
 
     @Nested

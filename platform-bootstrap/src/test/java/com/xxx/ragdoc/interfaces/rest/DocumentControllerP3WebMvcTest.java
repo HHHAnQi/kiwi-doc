@@ -28,11 +28,12 @@ import org.springframework.test.web.servlet.ResultActions;
  * <p>切片: @WebMvcTest 仅起 Spring MVC 切片 (mock 掉 application service), 不需要 MySQL /
  * Milvus / Redis / Docker — 故本章可独立跑通, 不在 IT 失败队列里。
  */
-@WebMvcTest(controllers = DocumentController.class)
+@WebMvcTest(controllers = DocumentController.class, properties = "rag.auth.filter-enabled=false")
 @Import(com.xxx.ragdoc.interfaces.rest.error.GlobalExceptionHandler.class)
 class DocumentControllerP3WebMvcTest {
 
     @Autowired private MockMvc mockMvc;
+    @MockBean private com.xxx.ragdoc.application.auth.AuthProperties authProperties;
     @MockBean private DocumentUploadService uploadService;
     @MockBean private DocumentQueryService queryService;
     @MockBean private DocumentManageService manageService;

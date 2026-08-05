@@ -39,12 +39,19 @@ public class DocumentManageService {
      */
     private final TransactionTemplate shortTx;
 
+    /**
+     * Task 11 / P0: 文档访问权限守卫。 retry/setDefault/unarchive/softDelete 全部前置校验:
+     * WRITE 等级以上 (retry/setDefault/unarchive) 或 OWNER (delete)。
+     */
+    private final DocumentAccessGuard accessGuard;
+
     public DocumentManageService(
             DocumentRepository documentRepository,
             ParsingTrigger parsingTrigger,
             ChunkRepository chunkRepository,
             VectorStore vectorStore,
-            TransactionTemplate shortTx) {
+            TransactionTemplate shortTx,
+            DocumentAccessGuard accessGuard) {
         this.documentRepository = documentRepository;
         this.parsingTrigger = parsingTrigger;
         this.chunkRepository = chunkRepository;
@@ -52,6 +59,7 @@ public class DocumentManageService {
         // 调用方(配置层)负责创建 TransactionTemplate 并设 propagation = REQUIRES_NEW,
         // 让 Milvus 异步重试路径不污染外层 tx (即使有外层 @Transactional 的 retry() 路径)。可单测直接传入。
         this.shortTx = shortTx;
+        this.accessGuard = accessGuard;
     }
 
     /**
@@ -69,6 +77,8 @@ public class DocumentManageService {
      * <p>因此本方法无 @Transactional 注解, 改用 shortTx 编程式边界。
      */
     public void softDelete(Long id) {
+        // Task 11 / P0: 删除要求 OWNER (不可委托)
+        accessGuard.requireOwner(id);
         Document doc = loadOrThrow(id);
         try {
             doc.softDelete();
@@ -135,6 +145,8 @@ public class DocumentManageService {
      */
     @Transactional
     public void retry(Long id) {
+        // Task 11 / P0: 权限校验 — retry 属 WRITE 等级
+        accessGuard.requireWrite(id);
         Document doc = loadOrThrow(id);
         if (!doc.status().equals(com.xxx.ragdoc.domain.document.DocumentStatus.FAILED)) {
             throw new DomainException(
@@ -163,6 +175,8 @@ public class DocumentManageService {
      * </ol>
      */
     public void setDefault(Long id) {
+        // Task 11 / P0: 设默认版本要求 WRITE
+        accessGuard.requireWrite(id);
         Document doc = loadOrThrow(id);
         if (doc.status() != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED) {
             throw new DomainException(
@@ -203,6 +217,8 @@ public class DocumentManageService {
      * <p>校验: 仅 deleted=true 的文档可 unarchive; 未删的 → 409。
      */
     public void unarchive(Long id) {
+        // Task 11 / P0: 反归档要求 WRITE
+        accessGuard.requireWrite(id);
         Document doc = loadOrThrow(id);
         if (!doc.deleted()) {
             throw new DomainException(ErrorCode.DOC_NOT_FAILED, "文档未删除, 无需 unarchive");

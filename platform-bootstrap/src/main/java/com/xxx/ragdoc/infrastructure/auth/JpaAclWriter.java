@@ -59,21 +59,33 @@ public class JpaAclWriter implements AclWriterPort {
                     vis);
             return;
         }
+        // Task 11 P0 修复 (问题 4):
+        //   旧代码 aclRepository.findReadableDocIds(USER, ownerId, [OWNER]).isEmpty() 无 documentId
+        //   维度, owner 在任意 doc 上有 OWNER 即返 true → 第二份文档跳过 ACL 写入。
+        //   新代码严格按 (documentId, USER, ownerId, OWNER) 判定, 真实反映"当前 doc 是否已有此 ACL"。
         boolean alreadyGranted =
-                !aclRepository
-                        .findReadableDocIds(PRINCIPAL_USER, ownerId, java.util.List.of(PERM_OWNER))
-                        .isEmpty();
+                aclRepository.existsByDocumentIdAndPrincipalTypeAndPrincipalIdAndPerm(
+                        documentId, PRINCIPAL_USER, ownerId, PERM_OWNER);
         if (alreadyGranted) {
             log.debug("acl.owner_already_granted doc_id={}, owner={}", documentId, ownerId);
             return;
         }
-        DocumentAclEntity acl = new DocumentAclEntity();
-        acl.setDocumentId(documentId);
-        acl.setPrincipalType(PRINCIPAL_USER);
-        acl.setPrincipalId(ownerId);
-        acl.setPerm(PERM_OWNER);
-        acl.setGrantedBy(ownerId);
-        aclRepository.save(acl);
-        log.info("acl.owner_granted doc_id={}, owner={}, visibility={}", documentId, ownerId, vis);
+        try {
+            DocumentAclEntity acl = new DocumentAclEntity();
+            acl.setDocumentId(documentId);
+            acl.setPrincipalType(PRINCIPAL_USER);
+            acl.setPrincipalId(ownerId);
+            acl.setPerm(PERM_OWNER);
+            acl.setGrantedBy(ownerId);
+            aclRepository.save(acl);
+            log.info("acl.owner_granted doc_id={}, owner={}, visibility={}", documentId, ownerId, vis);
+        } catch (org.springframework.dao.DataIntegrityViolationException ukEx) {
+            // V9 唯一键 (document_id, principal_type, principal_id, perm) 冲突 = 并发已写
+            // → 视为已存在, 不挂主流程 (Task 11 问题 4 的并发幂等)
+            log.info(
+                    "acl.owner_granted_concurrent doc_id={}, owner={} (UK conflict → idempotent)",
+                    documentId,
+                    ownerId);
+        }
     }
 }

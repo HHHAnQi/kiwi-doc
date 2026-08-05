@@ -35,7 +35,7 @@ import org.springframework.test.web.servlet.ResultActions;
  *   <li>query 必填校验生效 (400)
  * </ul>
  */
-@WebMvcTest(controllers = RetrieveController.class)
+@WebMvcTest(controllers = RetrieveController.class, properties = "rag.auth.filter-enabled=false")
 @Import(com.xxx.ragdoc.interfaces.rest.error.GlobalExceptionHandler.class)
 @TestPropertySource(
         properties = {
@@ -46,6 +46,7 @@ class RetrieveControllerWebMvcTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    @MockBean private com.xxx.ragdoc.application.auth.AuthProperties authProperties;
     @MockBean private RetrieveService retrieveService;
     @MockBean private RerankProperties rerankProperties;
 

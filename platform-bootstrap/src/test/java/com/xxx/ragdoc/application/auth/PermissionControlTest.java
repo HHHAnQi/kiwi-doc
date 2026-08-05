@@ -21,6 +21,7 @@ import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
 import java.util.List;
 import java.util.Optional;
+import com.xxx.ragdoc.application.auth.AccessScope;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -101,7 +102,7 @@ class PermissionControlTest {
 
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
-            PermissionResolverPort resolver = p -> Set.of(10L); // A 只能读 doc 10
+            PermissionResolverPort resolver = p -> AccessScope.of(p.tenantId(), Set.of(10L)); // A 只能读 doc 10
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
@@ -134,7 +135,7 @@ class PermissionControlTest {
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
                     .thenReturn(List.of(new ScoredChunk(101L, 0.9f))); // chunk 101 属 doc 10
             when(cr.findByIdIn(anyList())).thenReturn(List.of(chunk(101L, 10L)));
-            PermissionResolverPort resolver = p -> Set.of(10L); // 仅 doc 10 白名单
+            PermissionResolverPort resolver = p -> AccessScope.of(p.tenantId(), Set.of(10L)); // 仅 doc 10 白名单
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
@@ -169,7 +170,7 @@ class PermissionControlTest {
 
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
-            PermissionResolverPort resolver = p -> null; // admin 哨兵
+            PermissionResolverPort resolver = p -> AccessScope.tenantAdmin(p.tenantId()); // admin 哨兵
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
@@ -193,10 +194,11 @@ class PermissionControlTest {
         @Test
         @DisplayName("AuthContext 默认主体 → resolver 返 null (与 admin 同哨兵路径)")
         void defaultPrincipalUnrestrictedByAcl() {
-            // 不调用 AuthContext.set, 直接 currentPrincipal() 返回 DEFAULT_PRINCIPAL
+            // Task 11 修正: AuthContext.currentPrincipal 不再 fallback; 必须显式 set DEFAULT_PRINCIPAL
+            AuthContext.set(AuthContext.DEFAULT_PRINCIPAL);
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
-            PermissionResolverPort resolver = p -> null;
+            PermissionResolverPort resolver = p -> AccessScope.tenantAdmin(p.tenantId());
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
@@ -230,7 +232,7 @@ class PermissionControlTest {
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
             // C 没有任何可读文档 (ACL 没授权 + 无 PUBLIC + 无 TENANT 可见)
-            PermissionResolverPort resolver = p -> Set.of();
+            PermissionResolverPort resolver = p -> AccessScope.of(p.tenantId(), Set.of());
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 

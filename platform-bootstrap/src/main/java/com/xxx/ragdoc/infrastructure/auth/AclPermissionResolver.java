@@ -1,5 +1,6 @@
 package com.xxx.ragdoc.infrastructure.auth;
 
+import com.xxx.ragdoc.application.auth.AccessScope;
 import com.xxx.ragdoc.application.auth.PermissionResolverPort;
 import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.DocumentAclJpaRepository;
@@ -12,28 +13,35 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * V9 RAG-Perm-001: 基于 documents + document_acl 表的 {@link PermissionResolverPort} 实现。
+ * V9 RAG-Perm-001 / Task 11 P0: 基于 documents + document_acl 的 {@link PermissionResolverPort} 实现。
  *
- * <p>放在 infrastructure 包是合规的(infra 层可引用 JPA Repository), 让 application 层 RetrieveService
- * 只看 {@code PermissionResolverPort} 接口, 维持 ArchUnit "application 不依赖 infrastructure" 纪律。
+ * <p>放 infrastructure 层 (合法引用 JPA Repository); application 层 RetrieveService 只看 port
+ * 接口, 维持 ArchUnit 纪律。
  *
- * <p>规则 (短路 + 求并集):
+ * <h2>Task 11 修正 (问题 1+5 根因)</h2>
+ *
+ * <ul>
+ *   <li>不再返 Set&lt;Long&gt; + null 哨兵 (null 同时表 admin / 默认主体 / anonymous)
+ *   <li>不再把 anonymous 当 admin 放行 — anonymous 应返空集 NO_RECALL
+ *   <li>不再调用 {@code findPublicDocIds()} 跨租户放行 (PUBLIC 仅本 tenant 内公开)
+ *   <li>返 {@link AccessScope} 明确 tenantAdmin 与 allowedDocumentIds 含义
+ * </ul>
+ *
+ * <p>规则:
  *
  * <ol>
- *   <li>{@code role:admin} → 返回 null (哨兵: RetrieveService 据此不加 docId 子句, 仅受 tenant 过滤)
- *   <li>默认 principal (tenant=default, rawToken 空): 返 null 让单租户兼容路径走 tenant_id=default,
- *       不强制走 ACL 准入 — 这是 Task 3 要求的"保持单租户兼容"直接体现。
- *   <li>其它 principal:
+ *   <li>role:admin → {@link AccessScope#tenantAdmin(String)} (本 tenant 全可见, 跨 tenant 仍拒)
+ *   <li>普通用户 → 显式集合并集:
  *       <ul>
- *         <li>同租户非 PRIVATE (TENANT + PUBLIC) → 并入
- *         <li>跨租户 PUBLIC → 并入
- *         <li>ACL 显式授予: USER / 每条 ROLE / TENANT 三档各查询取并集
+ *         <li>本租户 visibility ∈ {TENANT, PUBLIC} 文档 (findNonPrivateDocIdsByTenant)
+ *         <li>USER 档 ACL
+ *         <li>每 role 的 ROLE 档 ACL
+ *         <li>tenant_id 档 ACL (整租户授权)
  *       </ul>
  * </ol>
  *
- * <p>关于"owner 可读 PRIVATE 文档": 上传时 UploadService 会写一条
- * {@code principal_type=USER, principal_id=owner, perm=OWNER} 的 ACL, OWNER 档属 {@link #READ_PERMS},
- * 自然并入; 这里无需特殊处理。
+ * <p>owner 可读 PRIVATE doc: JpaAclWriter 在上传时为 ownerId 写 USER+OWNER ACL,
+ * OWNER 档属 {@link #READ_PERMS}, 自然并入显式集; resolver 无需特殊处理。
  */
 @Slf4j
 @Component
@@ -46,37 +54,33 @@ public class AclPermissionResolver implements PermissionResolverPort {
     private final DocumentJpaRepository documentJpaRepository;
 
     @Override
-    public Set<Long> resolveReadableDocIds(Principal p) {
+    public AccessScope resolveAccessScope(Principal p) {
         if (p == null) {
-            return null;
-        }
-        // 单租户兼容: 默认主体 (匿名/无 token) 直接放行 — 只让 RetrieveService 加 tenant_id=default
-        if (isDefaultPrincipal(p)) {
-            return null;
+            // 不应该发生 — AuthFilter fail-closed 后无 principal 即不进 controller
+            // 防御性返空集 NO_RECALL, 不返 admin 哨兵
+            return AccessScope.of("unknown", Set.of());
         }
         if (p.isAdmin()) {
-            return null; // admin 短路
+            // 本租户 admin: 本 tenant 全可见 (跨 tenant 仍由 RetrieveService tenant filter 拦截)
+            return AccessScope.tenantAdmin(p.tenantId());
         }
 
         Set<Long> readable = new HashSet<>();
 
-        // 1) 同租户非 PRIVATE (TENANT + PUBLIC)
+        // 1) 本租户 visibility ∈ {TENANT, PUBLIC} (Task 11: PUBLIC 仅本 tenant 内; 不跨租户)
         readable.addAll(documentJpaRepository.findNonPrivateDocIdsByTenant(p.tenantId()));
 
-        // 2) 跨租户 PUBLIC
-        readable.addAll(documentJpaRepository.findPublicDocIds());
-
-        // 3) ACL 显式授予: USER 档 = user_id
+        // 2) USER 档 ACL 显式授予
         readable.addAll(aclRepository.findReadableDocIds("USER", p.userId(), READ_PERMS));
 
-        // 4) ACL 显式授予: ROLE 档 = 每个 role
+        // 3) ROLE 档 ACL (每 role 一查)
         if (p.roles() != null) {
             for (String role : p.roles()) {
                 readable.addAll(aclRepository.findReadableDocIds("ROLE", role, READ_PERMS));
             }
         }
 
-        // 5) ACL 显式授予: TENANT 档 = tenant_id (整租户授权)
+        // 4) TENANT 档 ACL (整租户授权给所有用户)
         readable.addAll(aclRepository.findReadableDocIds("TENANT", p.tenantId(), READ_PERMS));
 
         log.debug(
@@ -84,13 +88,25 @@ public class AclPermissionResolver implements PermissionResolverPort {
                 p.userId(),
                 p.tenantId(),
                 readable.size());
-        return readable;
+        return AccessScope.of(p.tenantId(), readable);
     }
 
-    /** 单租户兼容判定: 默认主体 (AuthContext.DEFAULT_PRINCIPAL)。 */
-    private static boolean isDefaultPrincipal(Principal p) {
-        return p.rawToken() != null && p.rawToken().isEmpty()
-                && "default".equals(p.tenantId())
-                && "dev".equals(p.userId());
+    @Override
+    public boolean hasExplicitAcl(Long documentId, Principal p, String perm) {
+        if (documentId == null || p == null || perm == null) return false;
+        if (aclRepository.existsByDocumentIdAndPrincipalTypeAndPrincipalIdAndPerm(
+                documentId, "USER", p.userId(), perm)) {
+            return true;
+        }
+        if (p.roles() != null) {
+            for (String role : p.roles()) {
+                if (aclRepository.existsByDocumentIdAndPrincipalTypeAndPrincipalIdAndPerm(
+                        documentId, "ROLE", role, perm)) {
+                    return true;
+                }
+            }
+        }
+        return aclRepository.existsByDocumentIdAndPrincipalTypeAndPrincipalIdAndPerm(
+                documentId, "TENANT", p.tenantId(), perm);
     }
 }
