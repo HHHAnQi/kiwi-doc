@@ -98,7 +98,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -145,7 +145,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             // hybrid 召回 3 条(模拟), 顺序是 0.9 > 0.7 > 0.5
@@ -192,7 +192,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -224,7 +224,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -278,7 +278,7 @@ class RetrieveServiceTest {
             Document defaultDoc = mockDocWithVersion("3.x");
             when(dr.findDefaultReadyBySource("dubbo")).thenReturn(Optional.of(defaultDoc));
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -310,7 +310,7 @@ class RetrieveServiceTest {
             DocumentRepository dr = mock(DocumentRepository.class);
             when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty()); // 无 default
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -336,7 +336,7 @@ class RetrieveServiceTest {
             RerankProperties rp = new RerankProperties();
             DocumentRepository dr = mock(DocumentRepository.class);
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
@@ -363,7 +363,7 @@ class RetrieveServiceTest {
             RerankProperties rp = new RerankProperties();
             DocumentRepository dr = mock(DocumentRepository.class);
             RetrieveService svc =
-                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null);
+                    new RetrieveService(emb, vs, cr, rr, rp, newRagdocMetrics(), dr, p -> null, q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
 
             when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
             when(vs.search(any(), anyString(), any(), anyInt(), any()))

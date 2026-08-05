@@ -3,6 +3,7 @@ package com.xxx.ragdoc.interfaces.rest;
 import com.xxx.ragdoc.application.chat.RerankProperties;
 import com.xxx.ragdoc.application.chat.RetrieveService;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
+import com.xxx.ragdoc.application.document.port.Retriever;
 import com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest;
 import com.xxx.ragdoc.interfaces.rest.dto.RetrieveResponse;
 import com.xxx.ragdoc.interfaces.rest.filter.TraceIdFilter;
@@ -67,10 +68,13 @@ public class RetrieveController {
                         request.source(),
                         request.version(),
                         request.language());
-        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd);
+        // Task 5: per-request mode override (null=全局默认, 兼容老调用方)
+        Retriever.Mode mode = parseMode(request.mode());
+        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode);
         log.info(
-                "retrieve.endpoint_done trace_id={}, rerank_state={}, items={}",
+                "retrieve.endpoint_done trace_id={}, mode={}, rerank_state={}, items={}",
                 org.slf4j.MDC.get(TraceIdFilter.MDC_TRACE_KEY),
+                mode,
                 result.rerankState(),
                 result.items().size());
         return RetrieveResponse.from(
@@ -78,5 +82,15 @@ public class RetrieveController {
                 llmModel == null ? "" : llmModel,
                 embeddingModel == null ? "" : embeddingModel,
                 rerankProperties);
+    }
+
+    /** Task 5: 字符串 mode → Retriever.Mode; 非法值返 null 走全局默认而非报错 (老路径容忍)。 */
+    static Retriever.Mode parseMode(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return Retriever.Mode.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

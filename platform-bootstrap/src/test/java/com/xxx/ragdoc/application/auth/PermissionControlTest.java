@@ -65,7 +65,8 @@ class PermissionControlTest {
         RerankProperties rp = new RerankProperties(); // enabled=false
         DocumentRepository dr = mock(DocumentRepository.class);
         when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
-        return new RetrieveService(emb, vs, cr, rr, rp, noopMetrics(), dr, resolver);
+        return new RetrieveService(emb, vs, cr, rr, rp, noopMetrics(), dr, resolver,
+                q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()));
     }
 
     private static MetricsPort noopMetrics() {

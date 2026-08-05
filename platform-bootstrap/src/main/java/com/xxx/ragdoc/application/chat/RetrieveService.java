@@ -8,6 +8,7 @@ import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
+import com.xxx.ragdoc.application.document.port.Retriever;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import com.xxx.ragdoc.domain.auth.Principal;
@@ -57,6 +58,9 @@ public class RetrieveService {
     private final DocumentRepository documentRepository;
     // V9 RAG-Perm-001: 把 Principal 解析为可读 docId 白名单。null=admin/默认主体(不限制); 集合=显式白名单。
     private final PermissionResolverPort permissionResolver;
+    // Task 5 / V11 Hybrid Retrieval: 检索端口(DENSE/HYBRID 路由 + RRF 融合)。
+    // 替代直接 vectorStore.search — 让 AB 实验能 per-request override mode。
+    private final Retriever retriever;
 
     /**
      * V3-W3 加固: 启动期自检 + 打日志明示 reranker 实际配置。防止 .env / dev.yml / 环境变量多重覆盖 静默让 reranker base_url 错配,
@@ -84,6 +88,16 @@ public class RetrieveService {
      * @return 召回结果(可能为空 items, 但召回操作本身成功)
      */
     public RetrieveResult retrieve(ChatCommand cmd) {
+        return retrieve(cmd, null);
+    }
+
+    /**
+     * Task 5 / V11: 重载支持 per-request mode override (AB 实验用)。
+     *
+     * @param cmd 用户问题 + 元数据过滤
+     * @param mode 检索模式 null=走全局 {@code rag.retrieve.mode}; 否则强制 dense/hybrid
+     */
+    public RetrieveResult retrieve(ChatCommand cmd, Retriever.Mode mode) {
         long retrieveT0 = System.currentTimeMillis(); // Phase 3.A: retrieve_total_latency
         // 用户 topK 是"最终想要几条"; 启用 reranker 时底层扩大到 candidatePool 条
         int userTopK = (cmd.topK() == null) ? 5 : cmd.topK();
@@ -140,13 +154,17 @@ public class RetrieveService {
                         cmd.language(),
                         principal.tenantId(),
                         allowedDocIds);
-        List<ScoredChunk> hits =
-                vectorStore.search(
+        // Task 5 起走 Retriever 接口 (DENSE/HYBRID 路由 + RRF 融合), 替代直接 vectorStore.search。
+        // mode=null 让 Retriever 走全局 RetrieveProperties 默认 (老行为不变, 兼容向后)。
+        Retriever.Query rq =
+                new Retriever.Query(
                         queryEmbedding,
                         cmd.query(),
                         cmd.docId(),
                         fetchK,
-                        filter.isEmpty() ? null : filter);
+                        filter.isEmpty() ? null : filter,
+                        mode);
+        List<ScoredChunk> hits = retriever.search(rq);
         if (hits.isEmpty()) {
             log.info("retrieve.empty query_len={}, fetchK={}", cmd.query().length(), fetchK);
             metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);

@@ -69,6 +69,12 @@ rag:
     mode: ${RAG_PARSER_MODE:sync}
   retrieve:
     mode: ${RAG_RETRIEVE_MODE:dense}
+    # Task 5 / V11 Hybrid Retrieval ablation 参数
+    #   candidate-pool: 单路 fetchN=topK*pool 给 RRF 留排序空间 (默认 4, 与既有 hybrid 等价)
+    #   rrf.k: RRF 平滑常数 (默认 60, 与 chat/spec.md 公式一致; ablation 可改 30/100 灵敏度对比)
+    candidate-pool: ${RAG_RETRIEVE_CANDIDATE_POOL:4}
+    rrf:
+      k: ${RAG_RETRIEVE_RRF_K:60}
 
   # ─── Task 4 / V10 Document Lifecycle State Machine ────────────
   # reconcile job: 每日扫 MySQL doc.status vs Milvus 向量, 自动修复两类不一致

@@ -21,6 +21,7 @@ def retrieve(
     source: str | None = None,
     version: str | None = None,
     language: str | None = None,
+    mode: str | None = None,
     token: str | "None" = None,
     base_url: str = DEFAULT_URL,
     timeout: float = DEFAULT_TIMEOUT,
@@ -28,6 +29,9 @@ def retrieve(
     """同步调 /api/v1/retrieve, 返回原始 dict (含 items / score / rerank_state / *_version)。
 
     token 默认读 APP_DEV_TOKEN; admin-only 接口才需 APP_ADMIN_TOKEN (retrieve 不需要)。
+
+    Task 5: ``mode`` (dense|hybrid) per-request override。None=走服务端全局默认。
+    用于 AB 评测: 同一 query 跑两次 mode=dense + mode=hybrid 对比 recall。
     """
     headers = {"Content-Type": "application/json"}
     auth = token or os.getenv("APP_DEV_TOKEN")
@@ -42,6 +46,8 @@ def retrieve(
         body["version"] = version
     if language:
         body["language"] = language
+    if mode:
+        body["mode"] = mode  # snake_case 由 Jackson 全局策略匹配 Java mode 字段
     r = requests.post(base_url, headers=headers, json=body, timeout=timeout)
     r.raise_for_status()
     return r.json()

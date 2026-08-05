@@ -14,6 +14,17 @@ import jakarta.validation.constraints.Size;
  * Framework 调用 — 让离线评测直接拿到 RetrieveService 原始 {@code score} 算 MRR/NDCG, 而无需付费/等待
  * LLM, 也避免 {@code ChatResult.Citation} 把 score 丢弃后只能用 rank 近似。
  *
+ * <p>Task 5 (V11 Hybrid Retrieval): 增加 {@code mode} 字段做 per-request override。
+ *
+ * <ul>
+ *   <li>{@code /api/v1/retrieve} 路径: mode 可选
+ *       <ul>
+ *         <li>不传 / null → 走全局 {@code rag.retrieve.mode} 默认 (生产路径)
+ *         <li>传 {@code dense|hybrid} → per-request override (评测用)
+ *       </ul>
+ *   <li>{@code /api/v1/retrieve/experiment}: mode 必填 (强制显式, 防 AB 实验 null) — 校验在 controller
+ * </ul>
+ *
  * <p>字段兼容: 项目全局 Jackson SNAKE_CASE, snake_case 键为主, {@code @JsonAlias} 接受 camelCase 别名。
  */
 @Schema(name = "RetrieveRequest")
@@ -30,10 +41,19 @@ public record RetrieveRequest(
                 Integer topK,
         @Schema(description = "限定来源组件(dubbo/nacos/seata/rocketmq/sentinel), 可选") String source,
         @Schema(description = "限定版本, 可选") String version,
-        @Schema(description = "限定语言(zh/en), 可选") String language) {
+        @Schema(description = "限定语言(zh/en), 可选") String language,
+        @JsonAlias("retrieveMode")
+                @Schema(description = "Task 5: 检索模式 dense|hybrid, 不传走全局默认; AB 实验必填")
+                String mode) {
 
-    /** 老调用方兼容构造(无元数据过滤)。 */
+    /** 老调用方兼容构造(无元数据过滤, 无 mode override)。 */
     public RetrieveRequest(String query, Long docId, Integer topK) {
-        this(query, docId, topK, null, null, null);
+        this(query, docId, topK, null, null, null, null);
+    }
+
+    /** Task 5: 全 6 字段但不带 mode override, 兼容老 caller。 */
+    public RetrieveRequest(String query, Long docId, Integer topK, String source, String version, String language) {
+        this(query, docId, topK, source, version, language, null);
     }
 }
+

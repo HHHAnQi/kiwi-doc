@@ -192,8 +192,8 @@ public class MilvusVectorStore implements VectorStore {
         return searchHybrid(queryEmbedding, queryText, expr, topK);
     }
 
-    /** 单路 dense 检索(当前生产基线)。 */
-    private List<ScoredChunk> searchDense(EmbeddingResult queryEmbedding, String expr, int topK) {
+    /** 单路 dense 检索(当前生产基线)。Task 5 起改为 package-private 供 {@code DenseRetriever} 复用。 */
+    List<ScoredChunk> searchDense(EmbeddingResult queryEmbedding, String expr, int topK) {
         var reqBuilder =
                 io.milvus.v2.service.vector.request.SearchReq.builder()
                         .collectionName(props.getCollection())
@@ -281,6 +281,49 @@ public class MilvusVectorStore implements VectorStore {
         }
         log.info("milvus.hybrid_search topK={}, expr={}, hits={}", topK, expr, scored.size());
         return scored;
+    }
+
+    /**
+     * Task 5: 单路 BM25 sparse 检索, 供 {@code SparseRetriever} 复用。
+     *
+     * <p>独立于 hybridSearch: hybridSearch 把 dense+sparse 一起送 SDK RRF, 这条只跑 sparse —
+     * 让 Task 5 的 HybridRetriever 可以手工融合两路 rank (RRF)。
+     */
+    List<ScoredChunk> searchSparseBM25(String queryText, String expr, int topK) {
+        var reqBuilder =
+                io.milvus.v2.service.vector.request.SearchReq.builder()
+                        .collectionName(props.getCollection())
+                        .data(java.util.List.of(new EmbeddedText(queryText)))
+                        .annsField(MilvusCollectionInitializer.FIELD_SPARSE_BM25)
+                        .topK(topK)
+                        .metricType(IndexParam.MetricType.BM25)
+                        .outputFields(
+                                java.util.List.of(MilvusCollectionInitializer.FIELD_CHUNK_ID));
+        if (expr != null) {
+            reqBuilder.filter(expr);
+        }
+        try {
+            SearchResp resp =
+                    circuitBreaker.executeSupplier(() -> milvusClientV2.search(reqBuilder.build()));
+            List<List<SearchResp.SearchResult>> results = resp.getSearchResults();
+            if (results.isEmpty()) return List.of();
+            List<ScoredChunk> scored = new ArrayList<>();
+            for (SearchResp.SearchResult hit : results.get(0)) {
+                Object cidRaw = hit.getEntity().get(MilvusCollectionInitializer.FIELD_CHUNK_ID);
+                if (cidRaw instanceof Number n) {
+                    scored.add(new ScoredChunk(n.longValue(), hit.getScore().floatValue()));
+                }
+            }
+            log.info("milvus.sparse_bm25_search topK={}, expr={}, hits={}", topK, expr, scored.size());
+            return scored;
+        } catch (Exception e) {
+            // BM25 sparse 在某些 Milvus 版本上需独立索引; 不可用时返空让上层降级到 dense-only
+            log.warn(
+                    "milvus.sparse_bm25_failed query_len={}, error={} (fallback to dense-only)",
+                    queryText.length(),
+                    e.getMessage());
+            return List.of();
+        }
     }
 
     private static JsonArray toJsonArray(float[] arr) {

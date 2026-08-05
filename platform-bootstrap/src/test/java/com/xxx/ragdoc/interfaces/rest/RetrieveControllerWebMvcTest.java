@@ -61,7 +61,8 @@ class RetrieveControllerWebMvcTest {
                             1330L, 55L, 2, "snippet…", "llm context full", 0.87f, List.of("dubbo"));
             RetrieveService.RetrieveResult result =
                     new RetrieveService.RetrieveResult(List.of(cit), "applied", 0.91f, 0.87f);
-            when(retrieveService.retrieve(any(ChatCommand.class))).thenReturn(result);
+            // Task 5: RetrieveController 改走 retrieve(cmd, mode) 双参; mock 双参让默认 mode=null 也命中
+            when(retrieveService.retrieve(any(ChatCommand.class), any())).thenReturn(result);
             when(rerankProperties.getModel()).thenReturn("BAAI/bge-reranker-v2-m3");
             when(rerankProperties.isEnabled()).thenReturn(true);
 
@@ -98,7 +99,8 @@ class RetrieveControllerWebMvcTest {
                                     c ->
                                             c.query().equals("dubbo 延迟连接")
                                                     && c.topK() == 5
-                                                    && c.docId() == null));
+                                                    && c.docId() == null),
+                            any() /* Task 5: mode override (default/null) */);
         }
     }
 
