@@ -3,6 +3,7 @@ package com.xxx.ragdoc.infrastructure.parse;
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.document.ParsingTrigger;
+import com.xxx.ragdoc.application.document.SecurityScannerProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
@@ -10,6 +11,8 @@ import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.DocumentStatePort;
 import com.xxx.ragdoc.application.document.port.FileStorage;
 import com.xxx.ragdoc.application.document.port.VectorStore;
+import com.xxx.ragdoc.application.document.security.ScanResult;
+import com.xxx.ragdoc.application.document.security.port.SecurityScannerPort;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
 import com.xxx.ragdoc.domain.document.Document;
@@ -70,6 +73,14 @@ public class TikaParsingTrigger implements ParsingTrigger {
      * 不持久化中间态, 但终端 markIndexed 仍由外层 trigger + documentRepository.save 兜底。
      */
     private final DocumentStatePort statePort;
+    /**
+     * Task 8 / V14 RAG Security: 文档级 prompt-injection scanner。
+     * 可选注入 — bean 默认 always-on (无 ConditionalOnProperty), 内部 properties.isEnabled() 决定真扫;
+     * 测试可传 null 走老路径兼容。
+     */
+    private final SecurityScannerPort securityScanner;
+    /** Task 8: scanner 配置 (always injected, 默认 disabled)。 */
+    private final SecurityScannerProperties securityScannerProperties;
 
     /** Tika 是线程安全(内部 facade 单例), 复用即可。 */
     private final Tika tika = new Tika();
@@ -105,6 +116,41 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         documentId,
                         fullText.length());
                 fullText = fullText.substring(0, MAX_TEXT_LENGTH);
+            }
+
+            // ============ Task 8 / V14 Security Scan (防 prompt injection) ============
+            // 在 chunk 前单次 document-level scan, MALICIOUS 时 markFailed + 抛, 不进 chunk;
+            // SUSPICIOUS 仅 TAG 不阻 (灰度观察); CLEAN 自然通过。
+            // 详见 docs 里的 defense-in-depth: scanner 是第一道, citation-verifier (Task 7) 二道。
+            if (securityScanner != null && securityScannerProperties != null) {
+                try {
+                    ScanResult scan = securityScanner.scan(fullText, documentId);
+                    if (securityScannerProperties.shouldBlock(scan)) {
+                        String reason = "security_blocked: " + scan.summary();
+                        log.warn(
+                                "parse.security_blocked doc_id={}, outcome={}, threats={}",
+                                documentId,
+                                scan.outcome(),
+                                scan.threats().size());
+                        throw new IllegalStateException(reason);
+                    }
+                    if (scan.outcome() != ScanResult.Outcome.CLEAN) {
+                        log.info(
+                                "parse.security_tagged doc_id={}, outcome={}, summary={}",
+                                documentId,
+                                scan.outcome(),
+                                scan.summary());
+                    }
+                } catch (IllegalStateException blockEx) {
+                    // BLOCK 模式: 重抛让外层 catch 走 markFailed
+                    throw blockEx;
+                } catch (Exception scanEx) {
+                    // scanner 自身异常不挂主流程 (e.g. 正则 stack overflow), 仅 log; 续 chunk
+                    log.warn(
+                            "parse.security_scan_failed doc_id={}, error={} (continue chunk)",
+                            documentId,
+                            scanEx.getMessage());
+                }
             }
 
             // 4. 切片(P3-A: feature flag flat|parent_child, 默认 flat 兼容老路径)

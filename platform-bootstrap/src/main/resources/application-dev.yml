@@ -96,6 +96,14 @@ rag:
     max-regenerate-attempts: ${RAG_CITATION_VERIFIER_MAX_REGEN:1}
     timeout-ms: ${RAG_CITATION_VERIFIER_TIMEOUT_MS:8000}
 
+  # ─── Task 8 / V14 RAG Security (prompt-injection scanner) ───
+  # 解析管道 chunk 前做文档级 regex scan, MALICIOUS 时阻断 markFailed;
+  # 与 citation-verifier 形成 defense-in-depth: ingress scanner + egress verifier
+  security-scanner:
+    enabled: ${RAG_SECURITY_SCANNER_ENABLED:false}
+    block-on-malicious: ${RAG_SECURITY_SCANNER_BLOCK_ON_MALICIOUS:true}  # false=仅 TAG 灰度模式
+    malicious-threshold: ${RAG_SECURITY_SCANNER_THRESHOLD:3}             # ≥N 命中判 MALICIOUS
+
   # ─── Task 4 / V10 Document Lifecycle State Machine ────────────
   # reconcile job: 每日扫 MySQL doc.status vs Milvus 向量, 自动修复两类不一致
   #   1) INDEXED 但 Milvus count=0 → trigger 重处理
