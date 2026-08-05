@@ -5,7 +5,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose --env-file .env -f deploy/docker-compose.yml
 GRADLE := ./gradlew
 
-.PHONY: help env up down ps logs app test test-integration clean lint run db-migrate init-milvus eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline badcase-run badcase-regress badcase-classify badcase-test eval-ab-retrieval eval-ab-rewrite
+.PHONY: help env up down ps logs app test test-integration clean lint run db-migrate init-milvus eval-setup eval-gen eval-run eval-all eval-real-gen eval-ragas eval-gate eval-set-baseline badcase-run badcase-regress badcase-classify badcase-test eval-ab-retrieval eval-ab-rewrite perf-setup perf-run
 
 help: ## 显示所有命令
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -131,3 +131,15 @@ badcase-test: ## 跑 badcase 模块的纯函数单测 (不依赖网络/容器)
 	@$(VENV_BADCASE)/bin/python -m pytest eval/tests/badcase/ -q
 
 .PHONY: badcase-classify badcase-run badcase-regress badcase-test
+
+# ─── Task 10 Performance Test (Locust) ─────────────────────
+perf-setup: ## 安装 Locust: pip install -r perf/requirements.txt
+	pip install -r perf/requirements.txt
+
+perf-run: ## 跑性能测试 100/500 并发, 渲染 perf/performance_report.md
+	@if ! curl -sf --max-time 3 $(PERF_HOST) >/dev/null 2>&1; then \
+		echo "⚠ backend 未启动: PERF_HOST=$(PERF_HOST), 先 make run"; exit 1; fi
+	@bash perf/run_perf.sh
+	@echo "✓ 渲染完成: perf/performance_report.md (locust 原始 CSV 在 perf/out/)"
+
+.PHONY: perf-setup perf-run
