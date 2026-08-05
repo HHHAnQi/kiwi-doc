@@ -66,6 +66,22 @@ public class DocumentEntity {
     @Column(name = "tenant_id", nullable = false, length = 32)
     private String tenantId = "default";
 
+    /**
+     * V9 RAG-Perm-001: 文档可见性。
+     *
+     * <ul>
+     *   <li>PRIVATE: 仅 owner + role:admin 可读 (ACL 也可显式授权)
+     *   <li>TENANT: 同租户所有用户可读 (兼容现有单租户行为)
+     *   <li>PUBLIC: 所有租户可读
+     * </ul>
+     */
+    @Column(name = "visibility", nullable = false, length = 16)
+    private String visibility = "TENANT";
+
+    /** V9 RAG-Perm-001: 上传者 user_id; null = 系统/历史遗留 (作 TENANT 可见处理)。 */
+    @Column(name = "owner_id", length = 64)
+    private String ownerId;
+
     @Column(name = "retry_count", nullable = false)
     private Integer retryCount = 0;
 
@@ -185,6 +201,22 @@ public class DocumentEntity {
 
     public void setTenantId(String tenantId) {
         this.tenantId = tenantId;
+    }
+
+    public String getVisibility() {
+        return visibility;
+    }
+
+    public void setVisibility(String visibility) {
+        this.visibility = visibility;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 
     public Integer getRetryCount() {

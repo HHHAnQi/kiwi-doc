@@ -1,5 +1,7 @@
 package com.xxx.ragdoc.application.chat;
 
+import com.xxx.ragdoc.application.auth.AuthContext;
+import com.xxx.ragdoc.application.auth.PermissionResolverPort;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient;
@@ -8,6 +10,7 @@ import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
+import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.Document;
 import jakarta.annotation.PostConstruct;
@@ -16,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,6 +55,8 @@ public class RetrieveService {
     private final com.xxx.ragdoc.application.metrics.MetricsPort metrics;
     // P3-1: 查 default version 用于 fallback
     private final DocumentRepository documentRepository;
+    // V9 RAG-Perm-001: 把 Principal 解析为可读 docId 白名单。null=admin/默认主体(不限制); 集合=显式白名单。
+    private final PermissionResolverPort permissionResolver;
 
     /**
      * V3-W3 加固: 启动期自检 + 打日志明示 reranker 实际配置。防止 .env / dev.yml / 环境变量多重覆盖 静默让 reranker base_url 错配,
@@ -84,6 +90,22 @@ public class RetrieveService {
         boolean rerankEnabled = rerankProps.isEnabled();
         int fetchK = rerankEnabled ? Math.max(userTopK, rerankProps.getCandidatePool()) : userTopK;
 
+        // V9 RAG-Perm-001: 从 ThreadLocal 拿 principal → 解析可读 docId 白名单
+        //   - admin / 默认主体 → docIds=null (不限制, 仍受 tenant 过滤)
+        //   - 普通用户 → docIds=可读白名单
+        //   - docIds 非空且空集 → 立即 NO_RECALL 短路, 不再落 Milvus
+        Principal principal = AuthContext.currentPrincipal();
+        Set<Long> allowedDocIds = permissionResolver.resolveReadableDocIds(principal);
+        if (allowedDocIds != null && allowedDocIds.isEmpty()) {
+            log.info(
+                    "retrieve.blocked_no_readable_doc user={}, tenant={}",
+                    principal.userId(),
+                    principal.tenantId());
+            metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+            metrics.recordRetrieveRecall(0);
+            return RetrieveResult.empty();
+        }
+
         // 1. query → embed(单条)
         EmbeddingResult queryEmbedding = embeddingClient.embed(cmd.query());
 
@@ -112,7 +134,12 @@ public class RetrieveService {
             }
         }
         VectorStore.MetadataFilter filter =
-                new VectorStore.MetadataFilter(cmd.source(), effectiveVersion, cmd.language());
+                new VectorStore.MetadataFilter(
+                        cmd.source(),
+                        effectiveVersion,
+                        cmd.language(),
+                        principal.tenantId(),
+                        allowedDocIds);
         List<ScoredChunk> hits =
                 vectorStore.search(
                         queryEmbedding,

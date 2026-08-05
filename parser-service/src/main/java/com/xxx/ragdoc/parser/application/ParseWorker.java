@@ -159,7 +159,8 @@ public class ParseWorker {
                         doc.version(),
                         doc.language(),
                         doc.docType(),
-                        ChunkType.TEXT.name());
+                        ChunkType.TEXT.name(),
+                        doc.tenantId());
         vectorStore.upsertChunks(doc.id().value(), savedChunks, embeddings, md);
 
         checkpointProgress(task, savedChunks.size(), savedChunks.size());
@@ -292,7 +293,8 @@ public class ParseWorker {
                         doc.version(),
                         doc.language(),
                         doc.docType(),
-                        ChunkType.CHILD.name());
+                        ChunkType.CHILD.name(),
+                        doc.tenantId());
         vectorStore.upsertChunks(doc.id().value(), savedChildren, embeddings, md);
 
         // G. checkpoint 全完成

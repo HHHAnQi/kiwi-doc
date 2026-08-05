@@ -184,7 +184,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         doc.version(),
                         doc.language(),
                         doc.docType(),
-                        ChunkType.TEXT.name());
+                        ChunkType.TEXT.name(),
+                        doc.tenantId());
         vectorStore.upsertChunks(documentId, savedChunks, embeddings, md);
         return savedChunks;
     }
@@ -290,7 +291,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         doc.version(),
                         doc.language(),
                         doc.docType(),
-                        ChunkType.CHILD.name());
+                        ChunkType.CHILD.name(),
+                        doc.tenantId());
         vectorStore.upsertChunks(documentId, savedChildren, embeddings, md);
         log.info(
                 "parse.parent_child_indexed doc_id={}, parents={}, children_in_milvus={}",

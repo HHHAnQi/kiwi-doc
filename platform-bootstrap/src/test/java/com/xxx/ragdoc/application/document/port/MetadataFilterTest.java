@@ -14,42 +14,59 @@ import org.junit.jupiter.api.Test;
 class MetadataFilterTest {
 
     @Test
-    @DisplayName("empty() 工厂方法: 三者皆 null, isEmpty=true")
+    @DisplayName("empty() 工厂方法: 全部 null, isEmpty=true")
     void emptyShouldBeEmpty() {
         VectorStore.MetadataFilter f = VectorStore.MetadataFilter.empty();
         assertThat(f.isEmpty()).isTrue();
         assertThat(f.source()).isNull();
         assertThat(f.version()).isNull();
         assertThat(f.language()).isNull();
+        assertThat(f.tenantId()).isNull();
+        assertThat(f.allowedDocIds()).isNull();
     }
 
     @Test
-    @DisplayName("三者全 blank: isEmpty=true (防 Milvus 加空串 expr 导致语法错)")
+    @DisplayName("全部字段 blank/null: isEmpty=true (防 Milvus 加空串 expr 导致语法错)")
     void allBlankShouldBeEmpty() {
-        assertThat(new VectorStore.MetadataFilter("  ", null, "\t").isEmpty()).isTrue();
+        assertThat(new VectorStore.MetadataFilter("  ", null, "\t", "  ", null).isEmpty()).isTrue();
     }
 
     @Test
     @DisplayName("任意单个非空(source): isEmpty=false")
     void onlySourceNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter("nacos", null, null).isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter("nacos", null, null, null, null).isEmpty()).isFalse();
     }
 
     @Test
     @DisplayName("任意单个非空(version): isEmpty=false")
     void onlyVersionNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter(null, "2.4", null).isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter(null, "2.4", null, null, null).isEmpty()).isFalse();
     }
 
     @Test
     @DisplayName("任意单个非空(language): isEmpty=false")
     void onlyLanguageNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter(null, null, "zh").isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter(null, null, "zh", null, null).isEmpty()).isFalse();
+    }
+
+    @Test
+    @DisplayName("任意单个非空(tenantId): isEmpty=false")
+    void onlyTenantNonEmpty() {
+        assertThat(new VectorStore.MetadataFilter(null, null, null, "default", null).isEmpty())
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("任意单个非空(allowedDocIds 集合): isEmpty=false")
+    void onlyAllowedDocIdsNonEmpty() {
+        assertThat(new VectorStore.MetadataFilter(null, null, null, null, java.util.Set.of(1L, 2L)).isEmpty())
+                .isFalse();
     }
 
     @Test
     @DisplayName("三者全有值: isEmpty=false")
     void allPresent() {
-        assertThat(new VectorStore.MetadataFilter("dubbo", "3.0", "zh").isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter("dubbo", "3.0", "zh", null, null).isEmpty())
+                .isFalse();
     }
 }

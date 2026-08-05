@@ -3,6 +3,7 @@ package com.xxx.ragdoc.infrastructure.milvus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.xxx.ragdoc.application.document.port.VectorStore;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,11 +11,17 @@ import org.junit.jupiter.api.Test;
 /**
  * F-SMOKE-3: {@link MilvusFilterExprBuilder} 全路径单测。
  *
- * <p>这个工具拼的 expr 直接喂给 Milvus search.search, 任何拼接错(null 漏判 / 转义漏 / 多余空格)都会导致检索语法错或语义错。 全路径覆盖防 K1 同类
- * bug 复活。
+ * <p>这个工具拼的 expr 直接喂给 Milvus search.search, 任何拼接错(null 漏判 / 转义漏 / 多余空格)都会导致检索语法错或语义错。 全路径覆盖防
+ * K1 同类 bug 复活。V9 RAG-Perm-001 起追加 tenant_id 与 allowedDocIds (权限白名单) 路径。
  */
 @DisplayName("MilvusFilterExprBuilder")
 class MilvusFilterExprBuilderTest {
+
+    /** 5 参数 MetadataFilter 构造帮助: 前 3 业务字段 + 2 权限字段。 */
+    private static VectorStore.MetadataFilter mf(
+            String source, String version, String language) {
+        return new VectorStore.MetadataFilter(source, version, language, null, null);
+    }
 
     @Nested
     @DisplayName("空 / null 路径")
@@ -36,10 +43,7 @@ class MilvusFilterExprBuilderTest {
         @Test
         @DisplayName("docId=null + filter 全 blank 字段 → 返回 null")
         void blankFieldsReturnNull() {
-            assertThat(
-                            MilvusFilterExprBuilder.build(
-                                    null, new VectorStore.MetadataFilter("  ", "  ", "  ")))
-                    .isNull();
+            assertThat(MilvusFilterExprBuilder.build(null, mf("  ", "  ", "  "))).isNull();
         }
     }
 
@@ -56,28 +60,22 @@ class MilvusFilterExprBuilderTest {
         @Test
         @DisplayName("仅 source: \"source == 'nacos'\"")
         void sourceOnly() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter("nacos", null, null));
-            assertThat(expr).isEqualTo("source == 'nacos'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf("nacos", null, null)))
+                    .isEqualTo("source == 'nacos'");
         }
 
         @Test
         @DisplayName("仅 version: \"version == '2.4'\"")
         void versionOnly() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter(null, "2.4", null));
-            assertThat(expr).isEqualTo("version == '2.4'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf(null, "2.4", null)))
+                    .isEqualTo("version == '2.4'");
         }
 
         @Test
         @DisplayName("仅 language: \"language == 'zh'\"")
         void languageOnly() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter(null, null, "zh"));
-            assertThat(expr).isEqualTo("language == 'zh'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf(null, null, "zh")))
+                    .isEqualTo("language == 'zh'");
         }
     }
 
@@ -88,29 +86,22 @@ class MilvusFilterExprBuilderTest {
         @Test
         @DisplayName("source + version: 用 ' and ' 连接, 无多余空格")
         void sourceAndVersion() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter("dubbo", "3.0", null));
-            assertThat(expr).isEqualTo("source == 'dubbo' and version == '3.0'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf("dubbo", "3.0", null)))
+                    .isEqualTo("source == 'dubbo' and version == '3.0'");
         }
 
         @Test
         @DisplayName("source + version + language: 三条件")
         void threeClauses() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter("dubbo", "3.0", "zh"));
-            assertThat(expr)
+            assertThat(MilvusFilterExprBuilder.build(null, mf("dubbo", "3.0", "zh")))
                     .isEqualTo("source == 'dubbo' and version == '3.0' and language == 'zh'");
         }
 
         @Test
         @DisplayName("docId 在前 + 元数据: document_id 始终第一")
         void docIdFirst() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            500L, new VectorStore.MetadataFilter("sentinel", null, null));
-            assertThat(expr).isEqualTo("document_id == 500 and source == 'sentinel'");
+            assertThat(MilvusFilterExprBuilder.build(500L, mf("sentinel", null, null)))
+                    .isEqualTo("document_id == 500 and source == 'sentinel'");
         }
     }
 
@@ -121,10 +112,8 @@ class MilvusFilterExprBuilderTest {
         @Test
         @DisplayName("source='  ' 应被跳过, 只拼 version")
         void blankSourceSkipped() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter("  ", "1.8", null));
-            assertThat(expr).isEqualTo("version == '1.8'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf("  ", "1.8", null)))
+                    .isEqualTo("version == '1.8'");
         }
     }
 
@@ -135,29 +124,66 @@ class MilvusFilterExprBuilderTest {
         @Test
         @DisplayName("source 含单引号: 转义为 \\' 防 expr 注入")
         void sourceWithQuote() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter("a'b", null, null));
-            // 转义后: source == 'a\'b', 而不是: source == 'a'b' (语法错/注入)
-            assertThat(expr).isEqualTo("source == 'a\\'b'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf("a'b", null, null)))
+                    .isEqualTo("source == 'a\\'b'");
         }
 
         @Test
         @DisplayName("version 含双引号: 不转义(Milvus 用单引号界定), 原样保留")
         void versionWithDoubleQuote() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter(null, "1.8\"x", null));
-            assertThat(expr).isEqualTo("version == '1.8\"x'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf(null, "1.8\"x", null)))
+                    .isEqualTo("version == '1.8\"x'");
         }
 
         @Test
         @DisplayName("复合攻击 source=a'b + version=1'2 两处都转义")
         void multiFieldEscape() {
-            String expr =
-                    MilvusFilterExprBuilder.build(
-                            null, new VectorStore.MetadataFilter("a'b", "1'2", null));
-            assertThat(expr).isEqualTo("source == 'a\\'b' and version == '1\\'2'");
+            assertThat(MilvusFilterExprBuilder.build(null, mf("a'b", "1'2", null)))
+                    .isEqualTo("source == 'a\\'b' and version == '1\\'2'");
+        }
+    }
+
+    @Nested
+    @DisplayName("V9 RAG-Perm-001: tenant_id + 权限白名单")
+    class V9Permission {
+
+        @Test
+        @DisplayName("tenant_id: \"tenant_id == 'default'\"")
+        void tenantIdOnly() {
+            VectorStore.MetadataFilter f =
+                    new VectorStore.MetadataFilter(null, null, null, "default", null);
+            assertThat(MilvusFilterExprBuilder.build(null, f))
+                    .isEqualTo("tenant_id == 'default'");
+        }
+
+        @Test
+        @DisplayName("allowedDocIds=null (admin 哨兵): 不加 docId 子句")
+        void allowedDocIdsNullSkipped() {
+            VectorStore.MetadataFilter f =
+                    new VectorStore.MetadataFilter(null, null, null, "default", null);
+            // 仅 tenant 子句, 不出现 document_id in
+            assertThat(MilvusFilterExprBuilder.build(null, f))
+                    .doesNotContain("document_id in");
+        }
+
+        @Test
+        @DisplayName("allowedDocIds 非空集合: document_id in [..]")
+        void allowedDocIdsWhitelist() {
+            VectorStore.MetadataFilter f =
+                    new VectorStore.MetadataFilter(null, null, null, "default", Set.of(10L, 20L, 30L));
+            String expr = MilvusFilterExprBuilder.build(null, f);
+            assertThat(expr).contains("tenant_id == 'default'");
+            assertThat(expr).contains("document_id in [");
+            assertThat(expr).contains("10").contains("20").contains("30");
+        }
+
+        @Test
+        @DisplayName("allowedDocIds 空集合 (无可读文档): 永假表达式 (1 == 0)")
+        void allowedDocIdsEmptyYieldsFalse() {
+            VectorStore.MetadataFilter f =
+                    new VectorStore.MetadataFilter(null, null, null, "default", java.util.Collections.emptySet());
+            assertThat(MilvusFilterExprBuilder.build(null, f))
+                    .contains(MilvusFilterExprBuilder.ALWAYS_FALSE);
         }
     }
 }

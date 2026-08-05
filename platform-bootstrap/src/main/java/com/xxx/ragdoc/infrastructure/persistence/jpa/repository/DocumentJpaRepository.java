@@ -65,4 +65,24 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
      */
     java.util.List<DocumentEntity> findByPendingMilvusDeleteTrueOrderByIdAsc(
             org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * V9 RAG-Perm-001: 拿某 tenant 下所有 "非 PRIVATE" (TENANT/PUBLIC) 文档 id, 用于 PermissionResolver
+     * 同租户可见集合的兜底。PRIVATE 文档必须通过 ACL/owner 显式授权, 不在此集合。
+     */
+    @Query(
+            "SELECT d.id FROM DocumentEntity d "
+                    + "WHERE d.tenantId = :tenantId "
+                    + "AND d.deletedAt IS NULL "
+                    + "AND d.visibility <> 'PRIVATE'")
+    java.util.List<Long> findNonPrivateDocIdsByTenant(@Param("tenantId") String tenantId);
+
+    /**
+     * V9 RAG-Perm-001: 拿所有 PUBLIC 文档 id (跨租户公开), 用于 PermissionResolver 同租户并集的扩展集。
+     */
+    @Query(
+            "SELECT d.id FROM DocumentEntity d "
+                    + "WHERE d.deletedAt IS NULL "
+                    + "AND d.visibility = 'PUBLIC'")
+    java.util.List<Long> findPublicDocIds();
 }

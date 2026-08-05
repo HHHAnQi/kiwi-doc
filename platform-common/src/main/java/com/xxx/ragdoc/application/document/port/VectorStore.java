@@ -2,6 +2,7 @@ package com.xxx.ragdoc.application.document.port;
 
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.domain.document.Chunk;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -76,21 +77,40 @@ public interface VectorStore {
     /**
      * 业务元数据标量过滤条件, 各字段均可空(逻辑 AND): 实现侧负责转 Milvus expr 或同等机制。
      *
+     * <p>V9 RAG-Perm-001 起增加 {@link #tenantId} 与 {@link #allowedDocIds} 两个权限相关字段:
+     *
+     * <ul>
+     *   <li>{@code tenantId} 走标量等值过滤, 保证跨租户文档不被 ANN 召回。
+     *   <li>{@code allowedDocIds} 是 PermissionResolver 解析出的"可读文档 id 白名单", 实现侧负责注入
+     *       <code>document_id in [...]</code> 表达式; 集合为 <b>null</b> 表示哨兵 = admin, 不加 docId
+     *       子句(仍然受 tenantId 约束); 集合为 <b>非空</b> 必须严格加载白名单; 集合为 <b>emptySet</b>
+     *       表示"无可读文档", 实现侧应短路返回空结果(由 RetrieveService 提前拦截, 不再落到 Milvus)。
+     * </ul>
+     *
      * @param source 限定来源组件(dubbo/nacos/seata/rocketmq/sentinel); null/blank = 不限
      * @param version 限定版本; null/blank = 不限
      * @param language 限定语言; null/blank = 不限
+     * @param tenantId 限定租户; null/blank = 不限(默认主体走的 default 由调用方塞入)
+     * @param allowedDocIds 文档白名单: null = 不限制(admin), 集合 = 仅这些 docId 可被召回
      */
-    record MetadataFilter(String source, String version, String language) {
+    record MetadataFilter(
+            String source,
+            String version,
+            String language,
+            String tenantId,
+            Collection<Long> allowedDocIds) {
 
         /** 是否一个条件都没设(实现侧可据此跳过 expr 拼接)。 */
         public boolean isEmpty() {
             return (source == null || source.isBlank())
                     && (version == null || version.isBlank())
-                    && (language == null || language.isBlank());
+                    && (language == null || language.isBlank())
+                    && (tenantId == null || tenantId.isBlank())
+                    && allowedDocIds == null;
         }
 
         public static MetadataFilter empty() {
-            return new MetadataFilter(null, null, null);
+            return new MetadataFilter(null, null, null, null, null);
         }
     }
 
@@ -102,13 +122,19 @@ public interface VectorStore {
      * @param language 语言(zh/en)
      * @param docType 文档类型(doc/blog/spec/...)
      * @param chunkType chunk 类型(TEXT/CODE/TABLE/FIGURE/TITLE), P3 Parent-Child 时标 child/parent
+     * @param tenantId 文档所属租户 (V9 RAG-Perm-001); null/blank 退化为 "default" 兼容老调用方
      */
     record ChunkMetadata(
-            String source, String version, String language, String docType, String chunkType) {
+            String source,
+            String version,
+            String language,
+            String docType,
+            String chunkType,
+            String tenantId) {
 
         /** 老路径元数据缺省值, 保证未注入元数据时向量库可写。 */
         public static ChunkMetadata unknown() {
-            return new ChunkMetadata("unknown", null, "zh", "doc", "TEXT");
+            return new ChunkMetadata("unknown", null, "zh", "doc", "TEXT", "default");
         }
     }
 }

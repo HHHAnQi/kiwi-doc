@@ -94,7 +94,8 @@ public class MilvusVectorStore implements VectorStore {
             row.addProperty(MilvusCollectionInitializer.FIELD_DOC_ID, documentId);
             row.addProperty(MilvusCollectionInitializer.FIELD_CHUNK_ID, c.id());
             row.addProperty(MilvusCollectionInitializer.FIELD_PAGE, c.page());
-            row.addProperty(MilvusCollectionInitializer.FIELD_TENANT, "default");
+            row.addProperty(MilvusCollectionInitializer.FIELD_TENANT,
+                    (md.tenantId() == null || md.tenantId().isBlank()) ? "default" : md.tenantId());
             // V3 业务元数据标量: 支持 Milvus expr 过滤检索(如 source=='nacos' && version=='2.4')
             row.addProperty(MilvusCollectionInitializer.FIELD_SOURCE, md.source());
             // version 字段 Milvus SDK 2.5 不支持 nullable, null 时存空串占位。

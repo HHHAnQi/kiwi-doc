@@ -1,5 +1,7 @@
 package com.xxx.ragdoc.application.document;
 
+import com.xxx.ragdoc.application.auth.AclWriterPort;
+import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.document.command.UploadCommand;
 import com.xxx.ragdoc.application.document.command.UploadResult;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
@@ -49,6 +51,11 @@ public class DocumentUploadService {
     private final MetadataExtractor metadataExtractor;
 
     /**
+     * V9 RAG-Perm-001: 把 owner ACL + visibility 落库。 注入 port 而非 infra Repository — 维持 DDD 分层。
+     */
+    private final AclWriterPort aclWriter;
+
+    /**
      * 编程式短事务: 只持有写 doc 行的部分(MS 级), 不包 MinIO/parse/embed。
      *
      * <p>P3-A 全量重灌首批 187/200 fail 根因: {@code @Transactional} 类级标注让整个 upload() 含
@@ -62,11 +69,13 @@ public class DocumentUploadService {
             FileStorage fileStorage,
             ParsingTrigger parsingTrigger,
             MetadataExtractor metadataExtractor,
+            AclWriterPort aclWriter,
             PlatformTransactionManager txManager) {
         this.documentRepository = documentRepository;
         this.fileStorage = fileStorage;
         this.parsingTrigger = parsingTrigger;
         this.metadataExtractor = metadataExtractor;
+        this.aclWriter = aclWriter;
         this.shortTxWrite = new TransactionTemplate(txManager);
         // 短事务: 仅包 doc 写, 不传播外层(虽然 upload() 本身不带 @Transactional, 防御未来变更)
         this.shortTxWrite.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -164,6 +173,22 @@ public class DocumentUploadService {
                     draft.source());
         }
         Document document = shortTxWrite.execute(status -> documentRepository.save(draft));
+
+        // V9 RAG-Perm-001: 新建文档落 owner ACL + visibility
+        //   - 默认主体 (无 token / dev) → owner=dev, visibility=TENANT (单租户兼容: 同租户可见)
+        //   - 用户带 token 登录 → owner=该 userId, visibility=TENANT (后续可由 admin 改 PRIVATE/PUBLIC)
+        //   - 失败不阻断上传主流程 (ACL 完整性 < 上传可用性), 仅 log warn 给 ops 监控
+        try {
+            aclWriter.grantOwnerAcl(
+                    document.id().value(),
+                    AuthContext.currentPrincipal().userId(),
+                    "TENANT");
+        } catch (Exception e) {
+            log.warn(
+                    "upload.acl_grant_failed doc_id={}, error={} (上传主流程不阻断)",
+                    document.id().value(),
+                    e.getMessage());
+        }
 
         // ============ 落 MinIO(无锁) ============
         try {
