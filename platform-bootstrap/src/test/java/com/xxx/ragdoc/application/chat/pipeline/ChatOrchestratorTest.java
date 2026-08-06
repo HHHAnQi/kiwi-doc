@@ -300,6 +300,23 @@ class ChatOrchestratorTest {
         }
 
         @Test
+        @DisplayName("Router enabled + AUTO: 版本查询路由到 TARGETED_RAG")
+        void routerEnabledRoutesTargeted() {
+            routerProperties.setEnabled(true);
+            ChatPipeline targetedPipeline = mock(ChatPipeline.class);
+            when(targetedPipeline.type()).thenReturn(PipelineType.TARGETED_RAG);
+            when(targetedPipeline.execute(any(), any()))
+                    .thenReturn(ChatResult.of(StateHint.OK, "x", TID));
+            when(registry.get(PipelineType.TARGETED_RAG)).thenReturn(targetedPipeline);
+
+            orchestrator.execute(new ChatCommand("v2.3.0 新增接口", null, 5), TID, ChatMode.AUTO);
+
+            verify(registry, times(1)).get(PipelineType.TARGETED_RAG);
+            verify(targetedPipeline, times(1)).execute(any(), any());
+            verify(classicPipeline, never()).execute(any(), any());
+        }
+
+        @Test
         @DisplayName("Router enabled + TARGETED_RAG 未注册 → fail-closed 500")
         void routerDispatchToUnregisteredPipeline() {
             routerProperties.setEnabled(true);

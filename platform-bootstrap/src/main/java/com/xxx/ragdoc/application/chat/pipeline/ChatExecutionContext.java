@@ -1,9 +1,14 @@
 package com.xxx.ragdoc.application.chat.pipeline;
 
+import com.xxx.ragdoc.application.auth.AuthContext;
+import com.xxx.ragdoc.application.chat.router.ExecutionStrategy;
+import com.xxx.ragdoc.application.chat.router.RouterDecision;
+import com.xxx.ragdoc.application.chat.router.TaskIntent;
 import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.shared.ChatMode;
 import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import java.util.Map;
 
 /**
  * PR-2 / EMS-PR2: 单次 chat 请求的不可变执行上下文 (同步与 SSE 共享)。
@@ -20,6 +25,12 @@ import com.xxx.ragdoc.domain.shared.TraceId;
  *
  * <p>{@link #executionPolicy()} 在 PR-2 只承载现有 timeout / 流式开关 / cancel signal 等,
  * 不引入任何 Agent Budget 字段 (留给后续 PR)。
+ *
+ * <p>PR-3: {@link #routerDecision()} 携带 Router 的完整决策 (intent/strategy/entities/filters/confidence/
+ * reasonCode)。Pipeline 通过它读 Router 抽取的版本/产品/错误码/时间 等 entities 与 filters (例如
+ * {@code TargetedRagPipeline} 把 versions[0] 映射到 ChatCommand.version())。当 mode=RAG / Router disabled
+ * 时, routerDecision 可以是占位 (intent=FACT/strategy=CLASSIC_RAG/reasonCode=ROUTER_DISABLED),
+ * Pipeline 不应该命中此字段做差异化处理。
  */
 public record ChatExecutionContext(
         String requestId,
@@ -27,7 +38,19 @@ public record ChatExecutionContext(
         ChatMode requestedMode,
         PipelineType effectivePipeline,
         TraceId traceId,
-        ExecutionPolicy executionPolicy) {
+        ExecutionPolicy executionPolicy,
+        RouterDecision routerDecision) {
+
+    /** PR-2 六字段兼容构造 (routerDecision=null 占位)。 */
+    public ChatExecutionContext(
+            String requestId,
+            Principal principal,
+            ChatMode requestedMode,
+            PipelineType effectivePipeline,
+            TraceId traceId,
+            ExecutionPolicy executionPolicy) {
+        this(requestId, principal, requestedMode, effectivePipeline, traceId, executionPolicy, null);
+    }
 
     public ChatExecutionContext {
         if (principal == null) {
@@ -47,5 +70,22 @@ public record ChatExecutionContext(
             throw new IllegalArgumentException("ChatExecutionContext.effectivePipeline 必填");
         }
         executionPolicy = executionPolicy != null ? executionPolicy : ExecutionPolicy.defaults();
+        if (routerDecision == null) {
+            // PR-3: 占位决策, 让 Pipeline 不需要 null check; 占位明确标识 ROUTER_DISABLED 以便追踪
+            routerDecision =
+                    new RouterDecision(
+                            TaskIntent.FACT,
+                            ExecutionStrategy.CLASSIC_RAG,
+                            java.util.List.of(),
+                            Map.of(),
+                            1.0,
+                            "ROUTER_DISABLED");
+        }
+    }
+
+    /** 测试 / 路由无关场景: 显式构造 RouterDecision 已存在时使用。 */
+    public ChatExecutionContext withRouterDecision(RouterDecision decision) {
+        return new ChatExecutionContext(
+                requestId, principal, requestedMode, effectivePipeline, traceId, executionPolicy, decision);
     }
 }

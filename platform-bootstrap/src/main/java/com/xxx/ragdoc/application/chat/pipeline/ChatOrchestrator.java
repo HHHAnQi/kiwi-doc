@@ -236,7 +236,13 @@ public class ChatOrchestrator {
         String requestId = generateRequestId(traceId);
         ChatExecutionContext ctx =
                 new ChatExecutionContext(
-                        requestId, principal, safeMode, effective, traceId, ExecutionPolicy.defaults());
+                        requestId,
+                        principal,
+                        safeMode,
+                        effective,
+                        traceId,
+                        ExecutionPolicy.defaults(),
+                        decision);
         // PR-3: 把 router_decision/intent/entities/confidence/reasonCode 进 MDC + Trace,
         // 让一次请求可在 Langfuse / 日志中按 reasonCode / intent 过滤 (不影响业务路径)。
         try {
