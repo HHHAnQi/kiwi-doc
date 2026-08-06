@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Planner Benchmark Case (v1)",
+  "description": "PR-7d 版本化 Planner/Multi-hop Benchmark 单条 case schema; 金标必须人工 review.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "caseId",
+    "question",
+    "intent",
+    "requirements",
+    "answerable",
+    "replanExpected",
+    "expectedFinalStatus",
+    "maxSteps",
+    "maxToolCalls",
+    "reviewStatus",
+    "reviewer",
+    "reviewedAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "enum": ["v1"]
+    },
+    "caseId": {
+      "type": "string",
+      "pattern": "^mh-[0-9]{3,}$",
+      "description": "稳定 caseId, 例 mh-001"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 4
+    },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "MULTI_HOP",
+        "FACT",
+        "ENTITY_LOOKUP",
+        "COMPARISON",
+        "SUMMARY",
+        "NUMERIC_OR_VERSION",
+        "UNANSWERABLE"
+      ]
+    },
+    "entities": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "filters": {
+      "type": "object",
+      "description": "RouterDecision.filters (versions / products / source 等)"
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["requirementId", "type", "required", "description"],
+        "properties": {
+          "requirementId": {"type": "string", "pattern": "^(REQ-|R)[0-9]+$"},
+          "type": {
+            "type": "string",
+            "enum": [
+              "FACT",
+              "ENTITY_ATTRIBUTE",
+              "RELATION",
+              "TEMPORAL",
+              "COMPARISON_SIDE",
+              "FOLLOW_UP_ENTITY"
+            ]
+          },
+          "required": {"type": "boolean"},
+          "description": {"type": "string", "minLength": 1},
+          "targetEntities": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "expectedFilters": {"type": "object"}
+        }
+      }
+    },
+    "acceptableInitialPlans": {
+      "type": "array",
+      "description": "可接受初始 Plan Tool 序列 (按字符串列表). 评测器把 Planner 输出归一化后比对;",
+      "items": {
+        "type": "object",
+        "properties": {
+          "toolSequence": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "requirementIdsCovered": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "acceptableReplanPlans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "toolSequence": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "requirementIdsCovered": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "forbiddenToolSignatures": {
+      "type": "array",
+      "description": "禁止使用的 Tool signature (PID-like 检测 forbidden 签名); loop detection 用",
+      "items": {"type": "string"}
+    },
+    "goldDocumentIds": {
+      "type": "array",
+      "items": {"type": "integer"}
+    },
+    "goldEvidenceIds": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "稳定 sha256 期望命中 (评测预处理对照); 真实 evidenceId 受 tenant+chunk+contentHash 影响, 这里记 unsafe-prefix (前 12 char) 即可"
+    },
+    "answerable": {"type": "boolean"},
+    "replanExpected": {"type": "boolean"},
+    "expectedFinalStatus": {
+      "type": "string",
+      "enum": [
+        "ANSWERED",
+        "REFUSED_NO_EVIDENCE",
+        "REFUSED_CONFLICT",
+        "REFUSED_PERMISSION",
+        "TOOL_FAILED",
+        "BUDGET_EXCEEDED",
+        "TIMED_OUT",
+        "CANCELLED",
+        "SYSTEM_FAILED"
+      ]
+    },
+    "maxSteps": {"type": "integer", "minimum": 1, "maximum": 5},
+    "maxToolCalls": {"type": "integer", "minimum": 1, "maximum": 10},
+    "slice": {
+      "type": "string",
+      "enum": [
+        "initial_sufficient",
+        "document_fetch_needed",
+        "semantic_metadata_combo",
+        "replan_success",
+        "replan_still_insufficient",
+        "no_answer_refuse",
+        "permission_denied",
+        "evidence_conflict",
+        "budget_timeout_edge"
+      ]
+    },
+    "reviewStatus": {
+      "type": "string",
+      "enum": ["candidate", "reviewed", "rejected"]
+    },
+    "reviewer": {"type": "string", "minLength": 1},
+    "reviewedAt": {"type": "string", "description": "ISO-8601 UTC"},
+    "notes": {"type": "string"}
+  },
+  "additionalProperties": false
+}
