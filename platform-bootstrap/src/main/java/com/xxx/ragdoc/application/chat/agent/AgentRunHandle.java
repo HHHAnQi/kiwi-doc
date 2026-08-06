@@ -37,7 +37,7 @@ public record AgentRunHandle(
         clock = clock == null ? Clock.systemUTC() : clock;
     }
 
-    static AgentRunHandle from(InitializedRun init,
+    public static AgentRunHandle from(InitializedRun init,
                                 DeterministicExecutionPlan plan,
                                 AgentExecutionPolicy policy,
                                 CancellationTokenSource.CancellationToken cancellation,

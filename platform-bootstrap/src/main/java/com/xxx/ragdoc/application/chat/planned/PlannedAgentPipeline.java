@@ -1,0 +1,150 @@
+package com.xxx.ragdoc.application.chat.planned;
+
+import com.xxx.ragdoc.application.chat.agent.AgentRunStatus;
+import com.xxx.ragdoc.application.chat.agent.CancellationTokenSource;
+import com.xxx.ragdoc.application.chat.command.ChatCommand;
+import com.xxx.ragdoc.application.chat.command.ChatResult;
+import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.pipeline.ChatExecutionContext;
+import com.xxx.ragdoc.application.chat.pipeline.ChatPipeline;
+import com.xxx.ragdoc.application.chat.router.RouterDecision;
+import com.xxx.ragdoc.application.chat.tool.ToolRegistry;
+import com.xxx.ragdoc.domain.shared.PipelineType;
+import com.xxx.ragdoc.domain.shared.StateHint;
+import com.xxx.ragdoc.domain.shared.TraceId;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+
+/**
+ * PR-7c.3c / EMS-PR7 §8 + §9: 薄适配层 — 调 {@link PlannedAgentExecutionCoordinator#prepare}
+ * 取得 PreparedGroundedAnswer → 单次 GroundedAnswerComposer → ChatResult (同步);
+ * SSE 留 PR-7c.3c-2。
+ *
+ * <p>Run 终态由 {@link PlannedAgentExecutionCoordinator} 通过 Finalizer 写到 READY_TO_ANSWER
+ * (成功时) 或对应失败终态; 本 Pipeline 在 Answer Composer 成功后再 Finalize 写 ANSWERED,
+ * Answer 失败按对应终态 (TIMED_OUT / SYSTEM_FAILED)。
+ *
+ * <p>ChatOrchestrator 已经按 ExecutionStrategyResolver 路由策略为 PLANNED_AGENT 时获取本 Bean。
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class PlannedAgentPipeline implements ChatPipeline {
+
+    private final PlannedAgentExecutionCoordinator coordinator;
+    private final DefaultEvidenceGroundedAnswerComposer answerComposer;
+    private final PlannedAgentRunFinalizer runFinalizer;
+    private final com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProperties;
+
+    @Override
+    public PipelineType type() {
+        return PipelineType.PLANNED_AGENT;
+    }
+
+    @Override
+    public ChatResult execute(ChatCommand command, ChatExecutionContext context) {
+        if (!plannerProperties.isEnabled()) {
+            // 直接走 classic 兜底 (Orchestrator 路由本不应到达; 但防双重保险)
+            return ChatResult.of(StateHint.NO_RECALL,
+                    "PLANNED_AGENT pipeline disabled", context.traceId());
+        }
+        RouterDecision decision = context.routerDecision();
+        var prepared = coordinator.prepare(
+                command.query(), decision,
+                context.requestId(), context.principal(),
+                CancellationTokenSource.CancellationToken.never(),
+                allowedToolDescriptors(),
+                com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy.pr6Default());
+        if (!prepared.ok()) {
+            return ChatResult.of(StateHint.NO_RECALL,
+                    humanizeFailure(prepared), context.traceId());
+        }
+        PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
+        // 单次 Answer generation
+        EvidenceGroundedAnswerComposer.GroundedAnswer answer;
+        try {
+            answer = answerComposer.compose(new EvidenceGroundedAnswerComposer.GroundedAnswerRequest(
+                    command.query(),
+                    p.requirements(),
+                    p.coverage(),
+                    p.evidence(),
+                    context.principal().tenantId(),
+                    p.runId()));
+        } catch (Exception ex) {
+            log.warn("planned.answer_composer_failed run={} err={}", p.runId(), ex.toString());
+            runFinalizer.finalize(p.runId(), p.readyRunVersion(),
+                    java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
+                    AgentRunStatus.SYSTEM_FAILED, "ANSWER_COMPOSER_FAILED",
+                    p.usage(), p.reservation());
+            return ChatResult.of(StateHint.NO_RECALL, "答案生成失败", context.traceId());
+        }
+        // Final Answer Cas ANSWERED
+        runFinalizer.finalize(p.runId(), p.readyRunVersion(),
+                java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
+                AgentRunStatus.ANSWERED, "PLANNED_ANSWER_READY",
+                p.usage(), p.reservation());
+        // Citation (PR-7c.3c 简化: 用 evidenceIds 直接转 Citation, disabled verifier 走安全 skip)
+        var citations = buildCitations(p);
+        return new ChatResult(answer.text(), citations, StateHint.OK, context.traceId(),
+                null, null);
+    }
+
+    @Override
+    public Flux<ChatStreamEvent> stream(ChatCommand command, ChatExecutionContext context) {
+        // PR-7c.3c-2 接入; 当前用同步 fallback 委托 ChatService.chatStream 由 ChatOrchestrator 决策
+        // 本 Pipeline 默认 emit 错误单终态 (PR-0 不破坏):
+        return Flux.error(new IllegalStateException(
+                "PLANNED_AGENT SSE 路径在 PR-7c.3c-2 实现"));
+    }
+
+    private java.util.List<com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor> allowedToolDescriptors() {
+        return java.util.List.of(
+                new com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor(
+                        "semantic_search", "v1", "semantic search", java.util.Map.of()),
+                new com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor(
+                        "metadata_search", "v1", "metadata search", java.util.Map.of()),
+                new com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor(
+                        "keyword_search", "v1", "keyword search", java.util.Map.of()),
+                new com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor(
+                        "document_fetch", "v1", "document fetch", java.util.Map.of()));
+    }
+
+    private static java.util.List<ChatResult.Citation> buildCitations(
+            PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p) {
+        java.util.List<ChatResult.Citation> out = new java.util.ArrayList<>();
+        for (var e : p.evidence()) {
+            out.add(new ChatResult.Citation(
+                    e.chunkId(), e.documentId(), 0,
+                    safeSnippet(e.content()), e.content(), java.util.List.of(), null));
+        }
+        return out;
+    }
+
+    private static String safeSnippet(String content) {
+        if (content == null) return "";
+        return content.length() <= 120 ? content : content.substring(0, 120) + "...";
+    }
+
+    private static String humanizeFailure(PlannedAgentExecutionCoordinator.PrepareResult r) {
+        if (r.failureTerminal() != null) {
+            return switch (r.failureTerminal()) {
+                case REFUSED_NO_EVIDENCE -> "证据不足, 无法回答 (" + safe(r.failureReason()) + ")";
+                case REFUSED_CONFLICT -> "证据冲突, 无法回答";
+                case REFUSED_PERMISSION -> "权限不足";
+                case TOOL_FAILED -> "工具调用失败";
+                case BUDGET_EXCEEDED -> "处理预算超限";
+                case TIMED_OUT -> "处理超时";
+                case CANCELLED -> "已取消";
+                case SYSTEM_FAILED -> "内部错误";
+                default -> "处理失败";
+            };
+        }
+        return "无法处理: " + safe(r.failureReason());
+    }
+
+    private static String safe(String s) {
+        return s == null ? "" : s;
+    }
+}

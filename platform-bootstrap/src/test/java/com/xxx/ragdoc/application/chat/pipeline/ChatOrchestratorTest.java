@@ -60,7 +60,13 @@ class ChatOrchestratorTest {
         when(registry.get(PipelineType.CLASSIC_RAG)).thenReturn(classicPipeline);
         traceObserver = mock(TraceObserver.class);
         routerProperties = new RouterProperties();
-        orchestrator = new ChatOrchestrator(registry, traceObserver, routerProperties, new RuleBasedTaskRouter());
+        // PR-7c.3c: 默认 flags=false, StrategyResolver 不修改路由 — 零回归
+        com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProps =
+                new com.xxx.ragdoc.application.chat.planner.PlannerProperties();
+        com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver strategyResolver =
+                new com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver(plannerProps, false);
+        orchestrator = new ChatOrchestrator(registry, traceObserver, routerProperties,
+                new RuleBasedTaskRouter(), strategyResolver);
     }
 
     @AfterEach

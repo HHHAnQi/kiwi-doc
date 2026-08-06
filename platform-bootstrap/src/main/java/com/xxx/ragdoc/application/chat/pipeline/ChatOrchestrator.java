@@ -70,17 +70,21 @@ public class ChatOrchestrator {
     /** 可选: RouterProperties + RuleBasedTaskRouter bean (PR-3.2 引入); 关闭时 AUTO 仍回 Classic。 */
     private final RouterProperties routerProperties;
     private final TaskRouter taskRouter;
+    /** PR-7c.3c: 能力解析器 — MULTI_HOP + flags + confidence → PLANNED_AGENT; 默认全 false 保持零回归。 */
+    private final com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver strategyResolver;
 
     @Autowired
     public ChatOrchestrator(
             ChatPipelineRegistry registry,
             TraceObserver traceObserver,
             RouterProperties routerProperties,
-            TaskRouter taskRouter) {
+            TaskRouter taskRouter,
+            com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver strategyResolver) {
         this.registry = registry;
         this.traceObserver = traceObserver;
         this.routerProperties = routerProperties;
         this.taskRouter = taskRouter;
+        this.strategyResolver = strategyResolver;
     }
 
     /**
@@ -178,7 +182,10 @@ public class ChatOrchestrator {
                                     "ROUTER_DISABLED"));
                 }
                 RouterDecision d = routeWithFallback(command);
-                return new Routed(toPipelineType(d.strategy()), d);
+                // PR-7c.3c: 能力门禁 (Planner Flag + confidence + MULTI_HOP → PLANNED_AGENT); 默认全 false 时 zero-diff
+                ExecutionStrategy resolved = strategyResolver.resolve(d, d.strategy());
+                RouterDecision resolvedD = withStrategy(d, resolved);
+                return new Routed(toPipelineType(resolved), resolvedD);
             }
         }
         throw new IllegalStateException("unreachable");
@@ -213,6 +220,14 @@ public class ChatOrchestrator {
             case PLANNED_AGENT -> PipelineType.PLANNED_AGENT;
             case REFUSE -> PipelineType.CLASSIC_RAG; // PR-3.4 前由 Classic 检索兜底(NO_RECALL)
         };
+    }
+
+    /** PR-7c.3c: RouterDecision 不可变 record; 用同样字段重建带新 strategy 的副本。 */
+    private static RouterDecision withStrategy(RouterDecision d, ExecutionStrategy newStrategy) {
+        if (d == null || newStrategy == d.strategy()) return d;
+        return new RouterDecision(
+                d.intent(), newStrategy, d.entities(), d.filters(),
+                d.confidence(), d.reasonCode());
     }
 
     /** 解析 pipeline + 二次校验 effectivePipeline 与 chat mode 一致性。 */
