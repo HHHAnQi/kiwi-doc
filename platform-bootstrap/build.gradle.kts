@@ -85,3 +85,47 @@ tasks.withType<BootJar> {
         isEnabled = true
     }
 }
+
+// ═══════════════════════════════════════════════════════════
+// PR-7e.1: Integration Test SourceSet 分离
+//
+// 1. src/test/java 中 *IT.java 不再在 `test` task 中运行
+// 2. 新 SourceSet `integrationTest` + Gradle `integrationTest` task
+// 3. CI 执行: test (unit) + integrationTest (Docker required)
+// 4. 本机无 Docker: test 全绿, integrationTest 报 NOT_EXECUTED
+//
+// 所有 Testcontainers IT 类从 test exclude; 放入 integrationTest sourceSet
+// ═══════════════════════════════════════════════════════════
+
+val integrationTestSourceSet = sourceSets.create("integrationTest") {
+    compileClasspath += sourceSets["main"].output + sourceSets["test"].output
+    runtimeClasspath += sourceSets["main"].output + sourceSets["test"].output
+}
+
+configurations {
+    "integrationTestImplementation" { extendsFrom(configurations["testImplementation"]) }
+    "integrationTestRuntimeOnly" { extendsFrom(configurations["testRuntimeOnly"]) }
+    "integrationTestCompileOnly" { extendsFrom(configurations["testCompileOnly"]) }
+}
+
+// Unit test 不运行 *IT (Testcontainers / Docker 依赖)
+tasks.named<Test>("test") {
+    exclude("**/*IT.class")
+}
+
+val integrationTest = tasks.register<Test>("integrationTest") {
+    description = "Runs integration tests (requires Docker/Testcontainers)."
+    group = "verification"
+    testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+    classpath = sourceSets["integrationTest"].runtimeClasspath
+    shouldRunAfter("test")
+    useJUnitPlatform()
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
+// check 依赖 integrationTest (CI: check 会跑全部)
+tasks.named("check") {
+    dependsOn(integrationTest)
+}
