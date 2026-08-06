@@ -50,7 +50,13 @@ class ComparisonWorkflowPipelineTest {
     void setup() {
         AuthContext.set(PRINCIPAL);
         chatService = mock(ChatService.class);
-        pipeline = new ComparisonWorkflowPipeline(chatService);
+        // PR-6c: PR-3 旧路径测试 — Flag=false, agentExecutor=mock
+        com.xxx.ragdoc.application.chat.comparison.ComparisonAgentExecutor agentExecutor =
+                mock(com.xxx.ragdoc.application.chat.comparison.ComparisonAgentExecutor.class);
+        com.xxx.ragdoc.application.chat.comparison.ComparisonExecutorProperties props =
+                new com.xxx.ragdoc.application.chat.comparison.ComparisonExecutorProperties();
+        props.setComparisonExecutorEnabled(false);
+        pipeline = new ComparisonWorkflowPipeline(chatService, agentExecutor, props);
     }
 
     @AfterEach

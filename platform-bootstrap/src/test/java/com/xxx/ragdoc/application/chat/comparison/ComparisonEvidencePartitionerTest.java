@@ -44,6 +44,7 @@ class ComparisonEvidencePartitionerTest {
         return new AgentRunResult("r1", "req-1", AgentRunStatus.READY_TO_ANSWER,
                 evs, AgentUsage.zero(), AgentBudgetReservation.zero(),
                 evs.size(), 0, 0, 0, "EVIDENCE_READY",
+                3L,
                 Instant.now(), Instant.now());
     }
 

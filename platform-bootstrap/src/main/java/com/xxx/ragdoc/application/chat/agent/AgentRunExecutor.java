@@ -374,7 +374,7 @@ public class AgentRunExecutor {
                 accumulator.snapshot(),
                 runtimeUsage, runtimeReservation,
                 completedSteps, realToolCalls, replayedCalls, dedupHits,
-                finalReasonCode, startedAt, Instant.now(clock));
+                finalReasonCode, handle.run().version(), startedAt, Instant.now(clock));
     }
 
     // ─── 内部 ────────────────────────────────────────────

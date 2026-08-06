@@ -4,6 +4,8 @@ import com.xxx.ragdoc.application.chat.ChatService;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.comparison.ComparisonAgentExecutor;
+import com.xxx.ragdoc.application.chat.comparison.ComparisonExecutorProperties;
 import com.xxx.ragdoc.application.chat.router.RouterDecision;
 import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.StateHint;
@@ -17,47 +19,29 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 /**
- * PR-3.4 / EMS-PR3: 比较固定工作流 + (轻量)证据补全工作流。
+ * PR-3.4 + PR-6c: 比较固定工作流。
  *
- * <p><b>比较流程 (任务文档 §3.4)</b>:
- *
- * <pre>
- *   RouterDecision.entities → A, B
- *       ↓
- *   cmdA = cmd.withQuery(constructSubQuery(origQuery, A))   ; cmdB 同理
- *       ↓
- *   resultA = chatService.chat(cmdA, traceId, conv)         ; resultB 同理
- *       ↓
- *   检查 双方 Evidence:citations 非空 → 否则 REFUSE_NO_EVIDENCE 短路(单终态, 不调下游)
- *       ↓
- *   合并 answer: "A 面:\n{aAnswer}\n\nB 面:\n{bAnswer}"(PR-3.4 第一版, 不引入新 LLM 综合调用)
- *   合并 citations: aCitations + bCitations (去重 by chunkId)
- * </pre>
- *
- * <p>第一版<b>不做</b>: 让 LLM 显式生成结构化 "X 比 Y 更好, 因为 ..." 对比结论。理由:
- *
- * <ol>
- *   <li>避免引入非项目既有 prompt 模板(项目 prompt 演进由 ChatMessages 管)。
- *   <li>"两次副作用 retrieve + 一次直白拼接" 对 retrieval 评测(每方 Recall@K / 引用 Faithfulness)和 citation
- *       都能落地测评, 已比 Classic 多走一步。
- *   <li>PR-8 LLM-based Claim-Citation 时再加综合 prompt。
- * </ol>
- *
- * <p><b>降级/守门</b>(单终态契约):
+ * <p>Feature Flag {@code rag.agent.fixed-workflow.comparison-executor-enabled}:
  *
  * <ul>
- *   <li>A 或 B 任一为非-OK(EMPTY_KB/NO_RECALL/LLM_DEGRADED 等)且 citations 空 →
- *       return {@link ChatResult#of} stateHint=NO_RECALL + 友好提示 "至少一方缺乏证据,无法比较"
- *   <li>两方都成功且有 citations → 合并答案 + 合并 citations, stateHint=OK
- *   <li>Sub-query 抛异常 → 上抛 (GlobalExceptionHandler 接管 500), 不假装成功
+ *   <li>false (默认): 走 PR-3 旧逻辑 (两次 ChatService.chat + 拼接 — single-pass)
+ *   <li>true: 走 {@link ComparisonAgentExecutor} — ComparisonPlanFactory + AgentRunFactory +
+ *       AgentRunExecutor + ComparisonEvidencePartitioner + ComparisonAnswerComposer +
+ *       ComparisonRunFinalizer (单次 LLM 答案生成 + 服务端固定预算 + 两侧 evidence 分组)
  * </ul>
  *
- * <p><b>SSE 策略 (PR-3.4 第一版, 不破坏单终态)</b>: SSE 在 PR-3.4 仍走 Classic 流式委托
- * (FixedWorkflow 用同步路径连查两次 retrieve + LLM 已经带来 2x 成本, 用流式还需 buffer token, 留 PR-4)。
- * SSE 输出由 Classic 链路产, 单终态契约(PR-0)保持不变。
+ * <p>硬不变量 (PR-6c §3):
  *
- * <p><b>ACL</b>: A、B 两次 {@link ChatService#chat} 都经过 RetrieveService → AccessScope sentinel, 无权文档
- * 不会进任一方的 citations, 自然不进合并结果。
+ * <ul>
+ *   <li>Flag=false → 100% PR-3 行为, 无回归
+ *   <li>Flag=true 新路径业务终态失败 (TOOL_FAILED/REFUSED_PERMISSION/BUDGET_EXCEEDED/TIMED_OUT/
+ *       CANCELLED/REFUSED_NO_EVIDENCE) <b>不</b>静默回退旧路径
+ *   <li>仅在 {@code compatibility-fallback-enabled=true} 且配置/初始化异常时才回退, 必须记录 Trace
+ *   <li>新路径权限拒绝 / 预算超限 / 无证据 / 超时 / 取消 <b>永不回退</b>
+ *   <li>SSE 单终态契约 (PR-0) 在两条路径下都保持
+ * </ul>
+ *
+ * <p>本 Pipeline <b>不</b>注入 ChatOrchestrator; Orchestrator 仍把 FIXED_WORKFLOW 路由到这里。
  */
 @Slf4j
 @Component
@@ -68,10 +52,18 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
     public static final int MIN_CITATIONS_PER_SIDE = 1;
 
     private final ChatService chatService;
+    /** PR-6c: 可选注入 — Flag=false 时为 null (或可用, 但不调用)。 */
+    private final ComparisonAgentExecutor agentExecutor;
+    private final ComparisonExecutorProperties properties;
 
     @Autowired
-    public ComparisonWorkflowPipeline(ChatService chatService) {
+    public ComparisonWorkflowPipeline(
+            ChatService chatService,
+            ComparisonAgentExecutor agentExecutor,
+            ComparisonExecutorProperties properties) {
         this.chatService = chatService;
+        this.agentExecutor = agentExecutor;
+        this.properties = properties;
     }
 
     @Override
@@ -81,9 +73,56 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
 
     @Override
     public ChatResult execute(ChatCommand command, ChatExecutionContext context) {
+        if (properties.isComparisonExecutorEnabled() && agentExecutor != null) {
+            ChatResult agentResult = runAgentPath(command, context);
+            // 业务终态失败不回退 (Revision §3); 仅 init failure / 配置缺失才考虑兼容回退
+            if (agentResult != null) {
+                return agentResult;
+            }
+            // agentResult == null: 仅 init/配置层面无法进入 executor, 此时按 properties 决定是否 fallback
+            if (!properties.isCompatibilityFallbackEnabled()) {
+                log.warn("comparison.executor.skipped_fallback_disabled request_id={}",
+                        context.requestId());
+                return ChatResult.of(StateHint.EMPTY_KB,
+                        "Comparison Agent Executor 初始化失败, 兼容回退已禁用",
+                        context.traceId());
+            }
+            log.warn("comparison.executor.falling_back_to_legacy request_id={}",
+                    context.requestId());
+        }
+        return runLegacyPath(command, context);
+    }
+
+    /** PR-6c §11.2: Flag 开启走 AgentRunExecutor 路径, RTL→Composer→Finalize。 */
+    private ChatResult runAgentPath(ChatCommand command, ChatExecutionContext context) {
+        try {
+            RouterDecision decision = context.routerDecision();
+            Map<String, Object> filters = decision != null ? decision.filters() : Map.of();
+            return agentExecutor.execute(
+                    command, filters, decision,
+                    context.requestId(), context.principal(), context.traceId());
+        } catch (com.xxx.ragdoc.application.chat.agent.AgentRunInitializationException
+                | com.xxx.ragdoc.application.chat.agent.PlanValidationResult.InvalidAgentPlanException
+                | IllegalStateException ex) {
+            // 配置 / 初始化层面异常 — 返回 null 触发上层 fallback 决策 (§3 compatibility-only)
+            log.warn("comparison.agent_path_init_failed request_id={} reason={}",
+                    context.requestId(), ex.toString());
+            return null;
+        } catch (Exception ex) {
+            // Composer / AgentRun Executor 抛业务异常 → 不回退 (§3), 返回结构化 NO_RECALL
+            log.warn("comparison.agent_path_business_error request_id={} reason={}",
+                    context.requestId(), ex.toString());
+            // 避免权限/预算/超时等业务异常被 silently fallback
+            properties.setComparisonExecutorEnabled(properties.isComparisonExecutorEnabled()); // no-op, 保留
+            return ChatResult.of(StateHint.NO_RECALL,
+                    "Comparison 执行失败: " + ex.getMessage(),
+                    context.traceId());
+        }
+    }
+
+    private ChatResult runLegacyPath(ChatCommand command, ChatExecutionContext context) {
         Pair ab = extractComparisonPair(command, context);
         if (ab == null) {
-            // Router 误派发 (entities 不足) → 回退 Classic 不假装 workflow 成功
             log.info(
                     "pipeline.workflow.fallback_no_ab request_id={}, trace_id={}, entities={}",
                     context.requestId(),
@@ -99,10 +138,6 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
                 ab.a,
                 ab.b);
 
-        // 构造 A、B 子 query: 原始 question 作为 global context, 显式追加 subject。例
-        //   orig="比较 v1.0 与 v2.0 权限差异", A="v1.0", B="v2.0"
-        //   → subQueryA = "关于比较 v1.0 与 v2.0 权限差异: 查找与 v1.0 相关的内容"
-        //   (用通用模板, 不引入仓库外事实)
         String subQueryA = "关于「" + command.query() + "」, 请聚焦与「" + ab.a + "」直接相关的事实";
         String subQueryB = "关于「" + command.query() + "」, 请聚焦与「" + ab.b + "」直接相关的事实";
 
@@ -117,33 +152,18 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
         return mergeAndAssemble(resultA, resultB, command, context, ab);
     }
 
-    /**
-     * PR-3.4: SSE 第一版走 Classic 流式 compose。完整 Evidence→Answer 流式合并留后续。
-     *
-     * <p>不破坏单终态(PR-0): 用 ClassicRagPipeline 的 stream 即可保证 DoneEvent 唯一。
-     */
     @Override
     public Flux<ChatStreamEvent> stream(ChatCommand command, ChatExecutionContext context) {
-        log.info(
-                "pipeline.workflow.stream_fallback_to_classic request_id={}, trace_id={}",
-                context.requestId(),
-                context.traceId().value());
+        // PR-6c: SSE 在 Agent 路径下仍走 Legacy 经典 stream (chat_flow = chatService.chatStream),
+        // 单终态契约由 ChatService 内 concatWith + onErrorResume 保证 (PR-0 不变量)。
+        // 完整 Agent-driven streaming 留 PR-8。
         return chatService.chatStream(command, context.traceId());
     }
 
     // ─── 内部 ────────────────────────────────────────────────
 
-    /**
-     * 比较对象 A/B 配对 (公开让测试与未来 trace 可读)。null 表示无 A/B (回退 Classic)。
-     *
-     * @param a 第一个比较对象
-     * @param b 第二个比较对象
-     */
     public record Pair(String a, String b) {}
 
-    /**
-     * 测试/trace 友好: 公开的 Pair 抽取方法。返回 null 表示无 A/B 可比较 → 调用方回退 Classic。
-     */
     public static Pair extractComparisonPair(ChatCommand cmd, ChatExecutionContext ctx) {
         RouterDecision d = ctx.routerDecision();
         List<String> ents = d != null ? d.entities() : List.of();
@@ -175,16 +195,13 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
     }
 
     /**
-     * 合并 A/B 两次结果, 不引入新 LLM 综合调用。
-     *
-     * <p>注意: 单终态契约 (SSE 不在此路径) + 不写 success trace (那是 ChatService 自己已写过 A/B 两次)。
+     * 合并 A/B 两次结果, 不引入新 LLM 综合调用。 (PR-3.4 旧路径; PR-6c Flag=true 时不走到此方法)
      */
     static ChatResult mergeAndAssemble(
             ChatResult a, ChatResult b, ChatCommand orig, ChatExecutionContext ctx, Pair ab) {
         List<ChatResult.Citation> aCits = nonNull(a.citations());
         List<ChatResult.Citation> bCits = nonNull(b.citations());
 
-        // 任一方 Evidence 不足 → 单终态 NO_RECALL, 拒绝拼凑
         if (aCits.isEmpty() || bCits.isEmpty()) {
             log.info(
                     "pipeline.workflow.no_evidence aCits={}, bCits={}, state_a={}, state_b={}",
@@ -195,7 +212,6 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
                     ctx.traceId());
         }
 
-        // 合并 (默认双方都有 A-vs-B 的实际内容)
         List<ChatResult.Citation> merged = mergeCitations(aCits, bCits);
         String mergedAnswer =
                 "关于「"
@@ -216,12 +232,10 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
                 merged,
                 StateHint.OK,
                 ctx.traceId(),
-                null, // verification 留空; Citation Verifier 默认 disabled
-                null // PR-1 evidenceSnapshot 由 ChatService 内部产, workflow 不重组该字段
-                );
+                null,
+                null);
     }
 
-    /** 简单 dedup by chunkId; 同 chunkId 在双方都出现时只取 A。 */
     static List<ChatResult.Citation> mergeCitations(
             List<ChatResult.Citation> aCits, List<ChatResult.Citation> bCits) {
         List<ChatResult.Citation> out = new ArrayList<>(aCits);
@@ -230,7 +244,6 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
             if (c.chunkId() != null) seenChunkIds.add(c.chunkId());
         }
         for (ChatResult.Citation c : bCits) {
-            // chunkId 为 null 时不参与 dedup 但照常放入(避免吞证据)
             if (c.chunkId() == null || seenChunkIds.add(c.chunkId())) out.add(c);
         }
         return out;
@@ -240,3 +253,4 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
         return list == null ? List.of() : list;
     }
 }
+

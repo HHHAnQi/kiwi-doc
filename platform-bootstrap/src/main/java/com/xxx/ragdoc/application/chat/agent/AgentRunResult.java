@@ -29,6 +29,7 @@ public record AgentRunResult(
         int replayedCalls,
         int dedupHits,
         String terminalReasonCode,
+        long finalRunVersion,
         Instant startedAt,
         Instant completedAt) {
 
