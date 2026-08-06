@@ -28,6 +28,13 @@ public enum ErrorCode {
     AGENTIC_MODE_UNAVAILABLE(422, "AGENTIC_MODE_UNAVAILABLE", "Agent 模式暂未启用"),
     // PR-2: Orchestrator 找不到对应 pipeline type 的 bean → 失败关闭 (HTTP 500)
     PIPELINE_NOT_FOUND(500, "PIPELINE_NOT_FOUND", "请求的 pipeline 未注册"),
+    // PR-4: Tool Registry / 执行相关
+    TOOL_NOT_FOUND(404, "TOOL_NOT_FOUND", "请求的 tool 未注册"),
+    TOOL_INVALID_ARGUMENT(400, "TOOL_INVALID_ARGUMENT", "Tool 输入非法"),
+    TOOL_PERMISSION_DENIED(403, "TOOL_PERMISSION_DENIED", "Tool 调用权限不足"),
+    TOOL_EXECUTION_FAILED(500, "TOOL_EXECUTION_FAILED", "Tool 执行失败"),
+    TOOL_TIMEOUT(504, "TOOL_TIMEOUT", "Tool 调用超时"),
+    TOOL_DEPENDENCY_UNAVAILABLE(503, "TOOL_DEPENDENCY_UNAVAILABLE", "Tool 依赖暂不可用"),
 
     // 反馈域 ====================================================================
     TRACE_NOT_FOUND(404, "TRACE_NOT_FOUND", "trace_id 不存在"),

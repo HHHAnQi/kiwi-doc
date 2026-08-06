@@ -40,4 +40,25 @@ public interface MetricsPort {
     void incrementHistoryForceTruncate();
 
     void recordTokens(int promptTokens, int completionTokens, String route, String model);
+
+    /**
+     * PR-4 / EMS-PR4: Tool 调用计数 + 状态 + 延迟。一次 Tool 执行记一笔 (含 dedup_hit 也记一笔)。
+     *
+     * @param toolName Tool 名 (semantic_search / document_fetch / ...)
+     * @param status ToolStatus 枚举名 (SUCCESS / EMPTY_RESULT / TIMEOUT / PERMISSION_DENIED ...)
+     * @param latencyMs 调用耗时; dedup_hit 时携带原 result 的 latency
+     */
+    default void recordToolCall(String toolName, String status, long latencyMs) {
+        // default no-op, 让 RagdocMetrics impl override 即可接入 Micrometer
+    }
+
+    /** PR-4: Tool 产出的 Evidence 数量, 用于 evidence_yield by tool_name 监控。 */
+    default void recordToolEvidenceYield(String toolName, int count) {
+        // default no-op
+    }
+
+    /** PR-4: 命中调用去重 cache 计数; 用于 dedup 有效性监控。 */
+    default void incrementToolDedupHit(String toolName) {
+        // default no-op
+    }
 }
