@@ -1,11 +1,11 @@
 package com.xxx.ragdoc.interfaces.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xxx.ragdoc.application.chat.ChatService;
 import com.xxx.ragdoc.application.chat.EvidenceDebugProperties;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.pipeline.ChatOrchestrator;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import com.xxx.ragdoc.interfaces.rest.dto.ChatRequest;
 import com.xxx.ragdoc.interfaces.rest.dto.ChatResponse;
@@ -44,7 +44,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Tag(name = "Chat", description = "基于知识库的问答")
 public class ChatController {
 
-    private final ChatService chatService;
+    // PR-2 / EMS-PR2: Controller 不再直依赖 ChatService; 统一走 ChatOrchestrator
+    // (同步与 SSE 均经过 Orchestrator → Registry → ClassicRagPipeline → ChatService)
+    private final ChatOrchestrator chatOrchestrator;
     private final EvidenceDebugProperties evidenceDebugProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -70,10 +72,10 @@ public class ChatController {
                         request.topK(),
                         request.source(),
                         request.version(),
-                        request.language());
-        // Phase 1 / C7: request.conversationId 转发到 ChatService 多轮路径
-        // (老调用方不传 conversationId 时为 null → stateless 老路径 = baseline 行为)
-        ChatResult result = chatService.chat(cmd, tid, request.conversationId());
+                        request.language(),
+                        request.conversationId());
+        // PR-2: 经 Orchestrator 路由; mode=null → AUTO(默认); AGENTIC 在 Orchestrator 内抛 422
+        ChatResult result = chatOrchestrator.execute(cmd, tid, request.mode());
 
         // PR-1 / EMS-PR1: 仅当服务端 rag.evidence.debug-enabled=true 且请求显式带
         // X-Debug-Evidence: true 时, 响应才包含真实 Evidence 快照。其它一律走安全 Citation 路径。
@@ -127,10 +129,13 @@ public class ChatController {
                         request.topK(),
                         request.source(),
                         request.version(),
-                        request.language());
+                        request.language(),
+                        request.conversationId());
 
-        chatService
-                .chatStream(cmd, tid)
+        // PR-2: SSE 经 Orchestrator 路由; AGENTIC 在订阅前抛 → GlobalExceptionHandler 转 422,
+        // 不进入 SSE 单终态契约 (避免在没有流出的情况下产生额外终态事件)。
+        chatOrchestrator
+                .stream(cmd, tid, request.mode())
                 .subscribe(
                         event -> {
                             try {

@@ -24,6 +24,10 @@ public enum ErrorCode {
     // 详见 docs/architecture/error-model.md §业务降级协议 + domain/shared/StateHint.java
     RAG_LLM_TIMEOUT(504, "RAG_LLM_TIMEOUT", "LLM 推理超时"),
     RAG_EMBEDDING_FAILED(500, "RAG_EMBEDDING_FAILED", "向量化失败"),
+    // PR-2: 客户端显式选择 AGENTIC 模式, 但 Agentic Pipeline 未实现 → 不静默回退 Classic
+    AGENTIC_MODE_UNAVAILABLE(422, "AGENTIC_MODE_UNAVAILABLE", "Agent 模式暂未启用"),
+    // PR-2: Orchestrator 找不到对应 pipeline type 的 bean → 失败关闭 (HTTP 500)
+    PIPELINE_NOT_FOUND(500, "PIPELINE_NOT_FOUND", "请求的 pipeline 未注册"),
 
     // 反馈域 ====================================================================
     TRACE_NOT_FOUND(404, "TRACE_NOT_FOUND", "trace_id 不存在"),
