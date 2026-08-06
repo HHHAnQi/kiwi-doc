@@ -34,6 +34,15 @@ public interface AgentStepRepository {
             AgentStepStatus targetStatus,
             AgentStepUpdate update);
 
+    /**
+     * PR-7c.3c-2: 在同一 Run 内追加 Replan Steps (批量原子)。
+     *
+     * <p>每个 Step 的 status 必须 PENDING + version=0; step_sequence 必须在 Run 内全局唯一 (UNIQUE约束)。
+     *
+     * <p>实现应在同一短事务中完成全部 INSERT; 任一 UNIQUE 冲突或 FK 不存在 → 整体回滚 + 抛异常。
+     */
+    void appendAll(String runId, List<AgentStepRecord> steps);
+
     /** PR-6a.2: Step CAS UPDATE 时携带的可选字段更新。 */
     record AgentStepUpdate(
             String callId,

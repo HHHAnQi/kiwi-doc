@@ -47,6 +47,37 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
     }
 
     @Override
+    public void appendAll(String runId, List<AgentStepRecord> steps) {
+        if (steps == null || steps.isEmpty()) return;
+        for (AgentStepRecord step : steps) {
+            if (step.status() != AgentStepStatus.PENDING) {
+                throw new IllegalArgumentException(
+                        "appendAll 只接受 PENDING, stepId=" + step.stepId() + " status=" + step.status());
+            }
+            if (!step.runId().equals(runId)) {
+                throw new IllegalArgumentException(
+                        "appendAll runId 不匹配, step=" + step.stepId());
+            }
+            AgentStepEntity e = new AgentStepEntity();
+            e.setRunId(step.runId());
+            e.setStepId(step.stepId());
+            e.setStepSequence(step.stepSequence());
+            e.setToolName(step.toolName());
+            e.setToolVersion(step.toolVersion());
+            e.setCallId(step.callId());
+            e.setInputHash(step.inputHash());
+            e.setStatus(step.status().name());
+            e.setResultCount(step.resultCount());
+            e.setEvidenceIdsJson(
+                    step.evidenceIds().isEmpty() ? null : toJson(step.evidenceIds(), "evidenceIds"));
+            e.setVersion(0L);
+            jpa.save(e);
+        }
+        // Hibernate dirty flushing 会在 transaction commit 时统一 flush; UNIQUE 约束在 flush 时抛
+        // DataIntegrityViolationException 让外层 @Transactional REQUIRES_NEW 自动回滚整个 appendAll
+    }
+
+    @Override
     public Optional<AgentStepRecord> findByRunIdAndStepId(String runId, String stepId) {
         return jpa.findByRunIdAndStepId(runId, stepId).map(this::toRecord);
     }

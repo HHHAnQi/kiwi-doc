@@ -115,6 +115,17 @@ public class AgentPersistenceCoordinator {
         return runRepository.findByRunId(runId);
     }
 
+    /** PR-7c.3c-2: 在同一 Run 内追加 Replan Steps (单一短事务原子; 兼 UNIQUE 冲突回滚)。 */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void appendReplanSteps(String runId, List<AgentStepRecord> steps) {
+        try {
+            stepRepository.appendAll(runId, steps);
+        } catch (RuntimeException ex) {
+            throw new AgentRunInitializationException(
+                    runId, "appendReplanSteps 失败: " + ex.getMessage(), ex);
+        }
+    }
+
     /** Executor 在 step 主循环reload最新 step 状态 (无写)。 */
     public AgentStepRecord reloadStep(String runId, String stepId) {
         return stepRepository.findByRunIdAndStepId(runId, stepId)

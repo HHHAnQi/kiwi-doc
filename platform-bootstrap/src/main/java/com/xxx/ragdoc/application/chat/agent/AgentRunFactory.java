@@ -124,7 +124,7 @@ public class AgentRunFactory {
         return input == null ? "" : input.normalizedForDedup();
     }
 
-    static String sha256(String s) {
+    public static String sha256(String s) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(md.digest(s.getBytes(StandardCharsets.UTF_8)));

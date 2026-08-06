@@ -79,6 +79,7 @@ public class PlannedAgentExecutionCoordinator {
     private final ReplanDecisionCoordinator replanDecisionCoordinator;
     private final PlannedAgentRunFinalizer runFinalizer;
     private final SufficiencyDecisionGuard sufficiencyGuard;
+    private final com.xxx.ragdoc.application.chat.agent.AgentPersistenceCoordinator persistenceCoordinator;
     private final Clock clock = Clock.systemUTC();
 
     public PrepareResult prepare(
@@ -253,11 +254,36 @@ public class PlannedAgentExecutionCoordinator {
         }
         DeterministicExecutionPlan replanPlan = asm.plan();
 
-        // Pseudo-persist: PR-7c.3c 第一版, 真实 appendSteps 需要扩展 Coordinator;
-        // 这里把 plan steps 看作已在 Run 内 (PlannerPlanAssembler 已通过 allowlist + dedup signature 校验).
-        // 简化: 通过 AgentRunPhaseExecutor 的 reloadStep 路径假设 step 已存在; 实际生产应当:
-        //   coordinator.appendSteps(runId, expectedRunVersion, replanSteps)
-        // 配套迁移或字段在 PR-7c 后续小 PR 中补; PR-7c.3c 范围限于主闭环契约, 暂用 PlannerPlanAssembler 当 gate
+        // PR-7c.3c-2: 在同一 Run 内原子追加 Replan Steps (单事务)
+        int nextSeq = phase0.completedSteps().size(); // 续 max sequence + 1
+        java.util.List<com.xxx.ragdoc.application.chat.agent.AgentStepRecord> replanSteps =
+                new java.util.ArrayList<>();
+        int seqCursor = nextSeq;
+        for (AgentToolStep s : replanPlan.steps()) {
+            replanSteps.add(new com.xxx.ragdoc.application.chat.agent.AgentStepRecord(
+                    phase0.runId(), s.stepId(), seqCursor,
+                    s.toolName(), s.toolVersion(), null,
+                    com.xxx.ragdoc.application.chat.agent.AgentRunFactory.sha256(
+                            s.input() == null ? "" : s.input().normalizedForDedup()),
+                    com.xxx.ragdoc.application.chat.agent.AgentStepStatus.PENDING,
+                    0, java.util.List.of(),
+                    null, null, false, false, false,
+                    null, null, java.time.Instant.now(clock), java.time.Instant.now(clock), 0));
+            seqCursor++;
+        }
+        try {
+            persistenceCoordinatorAppend(phase0.runId(), replanSteps);
+        } catch (RuntimeException ex) {
+            log.warn("planned.replan_append_failed run={} err={}", phase0.runId(), ex.toString());
+            runFinalizer.finalize(phase0.runId(), phase0.latestRunVersion(),
+                    java.util.Set.of(com.xxx.ragdoc.application.chat.agent.AgentRunStatus.EXECUTING),
+                    com.xxx.ragdoc.application.chat.agent.AgentRunStatus.SYSTEM_FAILED,
+                    "REPLAN_APPEND_FAILED",
+                    phase0.usage(), phase0.reservation());
+            return PrepareResult.prematureFailure(phase0.runId(),
+                    com.xxx.ragdoc.application.chat.agent.AgentRunStatus.SYSTEM_FAILED,
+                    "REPLAN_APPEND_FAILED");
+        }
 
         Map<String, String> replanReqMap = mapReqIdToStepId(asm, replanPlan);
         PhaseExecutionContext phase1Ctx = new PhaseExecutionContext(
@@ -358,6 +384,11 @@ public class PlannedAgentExecutionCoordinator {
         runFinalizer.finalize(runId, runVersion,
                 Set.of(AgentRunStatus.EXECUTING),
                 target, reasonCode, usage, reservation);
+    }
+
+    private void persistenceCoordinatorAppend(String runId,
+                                              java.util.List<com.xxx.ragdoc.application.chat.agent.AgentStepRecord> steps) {
+        persistenceCoordinator.appendReplanSteps(runId, steps);
     }
 
     private static Set<String> priorIds(List<Evidence> evs) {
