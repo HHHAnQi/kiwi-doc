@@ -63,4 +63,22 @@ public interface AgentRunRepository {
             Set<AgentRunStatus> expectedStatuses,
             List<String> evidenceIds,
             int evidenceCount);
+
+    /**
+     * PR-6b.1: 结算合并 CAS — 一次 CAS 同时推进 usage + reservation + evidenceIds + count。
+     *
+     * <p>Revision §4 要求: settleStep 内 Run CAS 不得用 updateBudgetState + updateEvidenceSummary 两次串行,
+     * 因为第二次 CAS 必须用第一次成功后的新版本, 易写错且产生版本双推进。这里以<b>一次</b> CAS 同时改四组字段,
+     * version+1。
+     *
+     * @return true=成功 / false=version冲突 / status不匹配 / run不存在
+     */
+    boolean settleRunStep(
+            String runId,
+            long expectedVersion,
+            Set<AgentRunStatus> expectedStatuses,
+            AgentUsage usage,
+            AgentBudgetReservation reservation,
+            List<String> evidenceIds,
+            int evidenceCount);
 }

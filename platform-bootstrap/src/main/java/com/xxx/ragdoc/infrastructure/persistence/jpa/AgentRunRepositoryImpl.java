@@ -139,6 +139,29 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
         return affected == 1;
     }
 
+    @Override
+    public boolean settleRunStep(
+            String runId,
+            long expectedVersion,
+            Set<AgentRunStatus> expectedStatuses,
+            AgentUsage usage,
+            AgentBudgetReservation reservation,
+            List<String> evidenceIds,
+            int evidenceCount) {
+        int affected =
+                jpa.settleRunStep(
+                        runId,
+                        expectedVersion,
+                        statusNames(expectedStatuses),
+                        toJson(usage, "usage"),
+                        toJson(reservation, "reservation"),
+                        evidenceIds == null || evidenceIds.isEmpty()
+                                ? null
+                                : toJson(evidenceIds, "evidenceIds"),
+                        evidenceCount);
+        return affected == 1;
+    }
+
     // ─── mapping ────────────────────────────────────────────
 
     AgentRunRecord toRecord(AgentRunEntity e) {

@@ -74,4 +74,30 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("expectedStatuses") Collection<String> expectedStatuses,
             @Param("evidenceIdsJson") String evidenceIdsJson,
             @Param("evidenceCount") int evidenceCount);
+
+    /**
+     * PR-6b.1: 结算合并 CAS — 一次 UPDATE 同时改 usage/reservation/evidenceIds/evidenceCount + version+1。
+     *
+     * <p>避免 settleStep 内两次串行 CAS 出现版本错位 (Revision §4)。
+     */
+    @Modifying
+    @Query(
+            "UPDATE AgentRunEntity e SET "
+                    + "e.usageJson = :usageJson, "
+                    + "e.reservationJson = :reservationJson, "
+                    + "e.evidenceIdsJson = :evidenceIdsJson, "
+                    + "e.evidenceCount = :evidenceCount, "
+                    + "e.updatedAt = CURRENT_TIMESTAMP, "
+                    + "e.version = e.version + 1 "
+                    + "WHERE e.runId = :runId "
+                    + "AND e.version = :expectedVersion "
+                    + "AND e.status IN :expectedStatuses")
+    int settleRunStep(
+            @Param("runId") String runId,
+            @Param("expectedVersion") long expectedVersion,
+            @Param("expectedStatuses") Collection<String> expectedStatuses,
+            @Param("usageJson") String usageJson,
+            @Param("reservationJson") String reservationJson,
+            @Param("evidenceIdsJson") String evidenceIdsJson,
+            @Param("evidenceCount") int evidenceCount);
 }
