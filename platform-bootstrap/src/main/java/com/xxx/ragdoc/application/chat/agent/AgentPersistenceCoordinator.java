@@ -110,6 +110,13 @@ public class AgentPersistenceCoordinator {
                         runId, "刚创建 / CAS 的 run 立刻不可读"));
     }
 
+    /** Executor 在 step 主循环reload最新 step 状态 (无写)。 */
+    public AgentStepRecord reloadStep(String runId, String stepId) {
+        return stepRepository.findByRunIdAndStepId(runId, stepId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "agent_step 不可读 run=" + runId + " step=" + stepId));
+    }
+
     // ─── 2. 预留 ────────────────────────────────────────────────
 
     /**

@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
  *
  * <p>不修改计划; 一次返回所有错误 (调用方决策)。非法时不返回部分拓扑序。
  */
+@org.springframework.stereotype.Component
 public class PlanValidator {
 
     /** stepId 安全字符: 仅 [a-zA-Z0-9_-] 长度 ≤ 64, 首字母字母。 */
