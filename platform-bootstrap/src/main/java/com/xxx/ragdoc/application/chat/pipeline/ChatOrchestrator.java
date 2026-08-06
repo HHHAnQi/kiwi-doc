@@ -4,14 +4,22 @@ import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.port.TraceObserver;
+import com.xxx.ragdoc.application.chat.router.ExecutionStrategy;
+import com.xxx.ragdoc.application.chat.router.RouterDecision;
+import com.xxx.ragdoc.application.chat.router.RouterProperties;
+import com.xxx.ragdoc.application.chat.router.TaskRouter;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.common.exception.ErrorCode;
 import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.shared.ChatMode;
 import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -55,10 +63,25 @@ import reactor.core.publisher.Flux;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ChatOrchestrator {
 
     private final ChatPipelineRegistry registry;
+    private final TraceObserver traceObserver;
+    /** 可选: RouterProperties + RuleBasedTaskRouter bean (PR-3.2 引入); 关闭时 AUTO 仍回 Classic。 */
+    private final RouterProperties routerProperties;
+    private final TaskRouter taskRouter;
+
+    @Autowired
+    public ChatOrchestrator(
+            ChatPipelineRegistry registry,
+            TraceObserver traceObserver,
+            RouterProperties routerProperties,
+            TaskRouter taskRouter) {
+        this.registry = registry;
+        this.traceObserver = traceObserver;
+        this.routerProperties = routerProperties;
+        this.taskRouter = taskRouter;
+    }
 
     /**
      * 同步入口。
@@ -98,14 +121,96 @@ public class ChatOrchestrator {
 
     // ─── 内部 ────────────────────────────────────────────────
 
-    /** 把 ChatMode 映射到 PipelineType; AGENTIC → 抛 DomainException 直接拒绝。 */
-    private PipelineType route(ChatMode mode) {
-        ChatMode effective = mode == null ? ChatMode.AUTO : mode;
-        return switch (effective) {
-            case RAG, AUTO -> PipelineType.CLASSIC_RAG;
+    /**
+     * 决策结果: 除最终 {@link PipelineType}, 还带上 {@link RouterDecision} 用于 Trace / 日志。
+     *
+     * <p>当 {@code rag.router.enabled=false} 或 mode=RAG 时, RouterDecision 用占位 (intent=FACT,
+     * strategy=CLASSIC_RAG, reasonCode=ROUTER_DISABLED), 仅用于统一 Trace 字段。
+     */
+    private record Routed(PipelineType pipelineType, RouterDecision decision) {}
+
+    /**
+     * PR-3 路由 (Agentic 仍按 PR-2 阻塞):
+     *
+     * <ul>
+     *   <li>AGENTIC → 抛 {@link ErrorCode#AGENTIC_MODE_UNAVAILABLE}
+     *   <li>RAG → 直接 CLASSIC_RAG (硬保留, 不经 Router)
+     *   <li>AUTO + rag.router.enabled=false → CLASSIC_RAG (PR-2 行为)
+     *   <li>AUTO + rag.router.enabled=true → TaskRouter.route(), strategy→PipelineType
+     * </ul>
+     *
+     * <p>PR-3.3/3.4 之前, Router 可能输出 {@link ExecutionStrategy#TARGETED_RAG} /
+     * {@link ExecutionStrategy#FIXED_WORKFLOW}, 但对应的 Pipeline 未注册 → Registry 抛
+     * {@link ErrorCode#PIPELINE_NOT_FOUND} (HTTP 500, fail-closed) — 这就是需 {@code rag.router.enabled}
+     * 默认 false 的原因: 在 PR-3.4 完成前避免 AUTO 真切到那些未实现的 strategy。
+     *
+     * <p>REFUSE strategy 当前不直接走 pipeline; 由 ClassicRagPipeline 既有 EMPTY_KB/NO_RECALL 路径
+     * 兜底(Classic 检索会自然返回 NO_RECALL),保持单一终态契约不动。PR-3.4 后再单独有 RefusalPipeline。
+     */
+    private Routed route(ChatCommand command, ChatMode mode) {
+        ChatMode safeMode = mode == null ? ChatMode.AUTO : mode;
+        switch (safeMode) {
             case AGENTIC -> throw new DomainException(
                     ErrorCode.AGENTIC_MODE_UNAVAILABLE,
                     "Agent 模式在当前环境未启用 (PR-2 仅实现 Classic RAG); 请使用 RAG 或 AUTO 模式。");
+            case RAG -> {
+                // RAG 模式硬保留 Classic, 不经过 Router (EMSPR3 强约束: RAG 必须 Classic RAG)
+                return new Routed(
+                        PipelineType.CLASSIC_RAG,
+                        new RouterDecision(
+                                com.xxx.ragdoc.application.chat.router.TaskIntent.FACT,
+                                ExecutionStrategy.CLASSIC_RAG,
+                                java.util.List.of(),
+                                java.util.Map.of(),
+                                1.0,
+                                "RAG_MODE_FORCED"));
+            }
+            case AUTO -> {
+                if (!routerProperties.isEnabled()) {
+                    return new Routed(
+                            PipelineType.CLASSIC_RAG,
+                            new RouterDecision(
+                                    com.xxx.ragdoc.application.chat.router.TaskIntent.FACT,
+                                    ExecutionStrategy.CLASSIC_RAG,
+                                    java.util.List.of(),
+                                    java.util.Map.of(),
+                                    1.0,
+                                    "ROUTER_DISABLED"));
+                }
+                RouterDecision d = routeWithFallback(command);
+                return new Routed(toPipelineType(d.strategy()), d);
+            }
+        }
+        throw new IllegalStateException("unreachable");
+    }
+
+    /** Router 失败时 fail-closed 到 CLASSIC_RAG (与 Router 内部低置信回退语义一致),不丢请求。 */
+    private RouterDecision routeWithFallback(ChatCommand command) {
+        try {
+            RouterDecision d = taskRouter.route(command.query());
+            return d;
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "orchestrator.router_failed query='{}', fallback_to_classic err={}",
+                    command.query(),
+                    ex.getMessage());
+            return new RouterDecision(
+                    com.xxx.ragdoc.application.chat.router.TaskIntent.FACT,
+                    ExecutionStrategy.CLASSIC_RAG,
+                    java.util.List.of(),
+                    java.util.Map.of(),
+                    0.0,
+                    "ROUTER_EXCEPTION_FALLBACK");
+        }
+    }
+
+    /** ExecutionStrategy → PipelineType: CLASSIC_RAG/TARGETED_RAG/FIXED_WORKFLOW 直接映射; REFUSE→CLASSIC+Classic 兜底。 */
+    private static PipelineType toPipelineType(ExecutionStrategy strategy) {
+        return switch (strategy) {
+            case CLASSIC_RAG -> PipelineType.CLASSIC_RAG;
+            case TARGETED_RAG -> PipelineType.TARGETED_RAG;
+            case FIXED_WORKFLOW -> PipelineType.FIXED_WORKFLOW;
+            case REFUSE -> PipelineType.CLASSIC_RAG; // PR-3.4 前由 Classic 检索兜底(NO_RECALL)
         };
     }
 
@@ -125,21 +230,25 @@ public class ChatOrchestrator {
     private ChatExecutionContext newContext(ChatCommand command, TraceId traceId, ChatMode mode) {
         Principal principal = AuthContext.currentPrincipal();
         ChatMode safeMode = mode == null ? ChatMode.AUTO : mode;
-        PipelineType effective = route(safeMode);
+        Routed routed = route(command, safeMode);
+        PipelineType effective = routed.pipelineType();
+        RouterDecision decision = routed.decision();
         String requestId = generateRequestId(traceId);
         ChatExecutionContext ctx =
                 new ChatExecutionContext(
                         requestId, principal, safeMode, effective, traceId, ExecutionPolicy.defaults());
-        // PR-2: requested mode / effective pipeline / request_id 进 MDC,
-        // 让日志与下游 ChatService.startTrace 的 metadata 在需要时能读到一致字段,
-        // 而不与 Langfuse 的 lfTrace channel 冲突(避免双 trace_id)。
+        // PR-3: 把 router_decision/intent/entities/confidence/reasonCode 进 MDC + Trace,
+        // 让一次请求可在 Langfuse / 日志中按 reasonCode / intent 过滤 (不影响业务路径)。
         try {
             org.slf4j.MDC.put(ORCH_MDC_REQUESTED_MODE, ctx.requestedMode().name());
             org.slf4j.MDC.put(ORCH_MDC_EFFECTIVE_PIPELINE, ctx.effectivePipeline().name());
             org.slf4j.MDC.put(ORCH_MDC_REQUEST_ID, ctx.requestId());
+            org.slf4j.MDC.put(ORCH_MDC_ROUTER_INTENT, decision.intent().name());
+            org.slf4j.MDC.put(ORCH_MDC_ROUTER_REASON, decision.reasonCode());
         } catch (Exception ignore) {
             // MDC 不可用时降级, 不阻塞业务
         }
+        recordRouterDecision(ctx.traceId().value(), decision);
         return ctx;
     }
 
@@ -147,6 +256,9 @@ public class ChatOrchestrator {
     public static final String ORCH_MDC_REQUESTED_MODE = "orch.requested_mode";
     public static final String ORCH_MDC_EFFECTIVE_PIPELINE = "orch.effective_pipeline";
     public static final String ORCH_MDC_REQUEST_ID = "orch.request_id";
+    /** PR-3: Router 字段也入 MDC, 便于日志按 intent / reasonCode 过滤。 */
+    public static final String ORCH_MDC_ROUTER_INTENT = "orch.router_intent";
+    public static final String ORCH_MDC_ROUTER_REASON = "orch.router_reason";
 
     private static String generateRequestId(TraceId traceId) {
         // 用 trace_id 短前缀 + 时间戳作为 requestId; 便于日志关联又不与 trace_id 完全重复。
@@ -155,8 +267,30 @@ public class ChatOrchestrator {
         return prefix + "-" + Long.toString(System.currentTimeMillis(), 36);
     }
 
-    private void logOrchestratorStart(ChatExecutionContext ctx) {
-        log.info(
+    /** PR-3: 把 RouterDecision 入 Trace observation metadata (Langfuse/NoOp 兼容, 失败不阻塞)。 */
+    private void recordRouterDecision(String traceId, RouterDecision decision) {
+        try {
+            Map<String, Object> meta = new LinkedHashMap<>();
+            meta.put("router_intent", decision.intent().name());
+            meta.put("router_strategy", decision.strategy().name());
+            meta.put("router_confidence", decision.confidence());
+            meta.put("router_reason_code", decision.reasonCode());
+            meta.put("router_entities", decision.entities());
+            meta.put("router_filters_keys", decision.filters().keySet());
+            traceObserver.observe(
+                    traceId,
+                    TraceObserver.ObservationType.DECISION,
+                    "router.decision",
+                    null,
+                    null,
+                    0,
+                    meta);
+        } catch (Exception ignore) {
+            // trace 路径失败不阻塞业务;observe 接口契约保证 NoOp 路径不出异常
+        }
+    }
+
+    private void logOrchestratorStart(ChatExecutionContext ctx) {        log.info(
                 "orchestrator.start request_id={}, trace_id={}, requested_mode={}, effective_pipeline={}, tenant={}, user={}",
                 ctx.requestId(),
                 ctx.traceId().value(),

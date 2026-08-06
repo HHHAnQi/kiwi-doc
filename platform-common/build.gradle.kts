@@ -18,6 +18,8 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot:3.3.2")
     compileOnly("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     compileOnly("com.fasterxml.jackson.core:jackson-annotations:2.17.2")
+    // PR-3.2: Router 评测测试需要 jackson 解析 router_cases.jsonl (仅测试 classpath)
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
 
     testImplementation(platform("org.junit:junit-bom:5.10.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

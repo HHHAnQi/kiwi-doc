@@ -14,6 +14,9 @@ import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
+import com.xxx.ragdoc.application.chat.port.TraceObserver;
+import com.xxx.ragdoc.application.chat.router.RuleBasedTaskRouter;
+import com.xxx.ragdoc.application.chat.router.RouterProperties;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.shared.ChatMode;
@@ -44,6 +47,8 @@ class ChatOrchestratorTest {
 
     private ChatPipelineRegistry registry;
     private ChatPipeline classicPipeline;
+    private TraceObserver traceObserver;
+    private RouterProperties routerProperties;
     private ChatOrchestrator orchestrator;
 
     @BeforeEach
@@ -53,7 +58,9 @@ class ChatOrchestratorTest {
         classicPipeline = mock(ChatPipeline.class);
         when(classicPipeline.type()).thenReturn(PipelineType.CLASSIC_RAG);
         when(registry.get(PipelineType.CLASSIC_RAG)).thenReturn(classicPipeline);
-        orchestrator = new ChatOrchestrator(registry);
+        traceObserver = mock(TraceObserver.class);
+        routerProperties = new RouterProperties();
+        orchestrator = new ChatOrchestrator(registry, traceObserver, routerProperties, new RuleBasedTaskRouter());
     }
 
     @AfterEach
@@ -238,6 +245,81 @@ class ChatOrchestratorTest {
 
             assertThat(events).hasSize(1);
             verify(classicPipeline, times(1)).stream(any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("PR-3: Router 接入")
+    class RouterIntegration {
+
+        @Test
+        @DisplayName("Router disabled (默认): AUTO 仍 CLASSIC_RAG")
+        void routerDisabled() {
+            when(classicPipeline.execute(any(), any()))
+                    .thenReturn(ChatResult.of(StateHint.OK, "x", TID));
+
+            orchestrator.execute(new ChatCommand("v2.3 新增接口", null, 5), TID, ChatMode.AUTO);
+
+            verify(classicPipeline, times(1)).execute(any(), any());
+            // registry 只被 CLASSIC_RAG 查一次
+            verify(registry, times(1)).get(PipelineType.CLASSIC_RAG);
+            verify(registry, never()).get(PipelineType.TARGETED_RAG);
+        }
+
+        @Test
+        @DisplayName("Router enabled + AUTO: 比较问题路由到 FIXED_WORKFLOW")
+        void routerEnabledRoutesComparison() {
+            routerProperties.setEnabled(true);
+            ChatPipeline workflowPipeline = mock(ChatPipeline.class);
+            when(workflowPipeline.type()).thenReturn(PipelineType.FIXED_WORKFLOW);
+            when(workflowPipeline.execute(any(), any()))
+                    .thenReturn(ChatResult.of(StateHint.OK, "x", TID));
+            when(registry.get(PipelineType.FIXED_WORKFLOW)).thenReturn(workflowPipeline);
+
+            orchestrator.execute(
+                    new ChatCommand("比较 Sentinel 和 Hystrix 熔断", null, 5), TID, ChatMode.AUTO);
+
+            verify(registry, times(1)).get(PipelineType.FIXED_WORKFLOW);
+            verify(workflowPipeline, times(1)).execute(any(), any());
+            // CLASSIC 没被路由到这一请求
+            verify(classicPipeline, never()).execute(any(), any());
+        }
+
+        @Test
+        @DisplayName("Router enabled + RAG mode: 仍强制 CLASSIC, 不经 Router")
+        void ragBypassesRouter() {
+            routerProperties.setEnabled(true);
+            when(classicPipeline.execute(any(), any()))
+                    .thenReturn(ChatResult.of(StateHint.OK, "x", TID));
+
+            orchestrator.execute(
+                    new ChatCommand("比较 Sentinel 和 Hystrix 熔断", null, 5), TID, ChatMode.RAG);
+
+            verify(classicPipeline, times(1)).execute(any(), any());
+            verify(registry, never()).get(PipelineType.FIXED_WORKFLOW);
+        }
+
+        @Test
+        @DisplayName("Router enabled + TARGETED_RAG 未注册 → fail-closed 500")
+        void routerDispatchToUnregisteredPipeline() {
+            routerProperties.setEnabled(true);
+            when(registry.get(PipelineType.TARGETED_RAG))
+                    .thenThrow(
+                            new DomainException(
+                                    com.xxx.ragdoc.common.exception.ErrorCode.PIPELINE_NOT_FOUND,
+                                    "PR-3.3 unrealized"));
+
+            // 问题 "v2.3 新增接口" Router 会输出 TARGETED_RAG → 应抛 PIPELINE_NOT_FOUND (fail-closed)
+            assertThatThrownBy(
+                            () ->
+                                    orchestrator.execute(
+                                            new ChatCommand("v2.3 新增接口", null, 5), TID, ChatMode.AUTO))
+                    .isInstanceOf(DomainException.class)
+                    .satisfies(
+                            ex ->
+                                    assertThat(((DomainException) ex).errorCode().name())
+                                            .isEqualTo("PIPELINE_NOT_FOUND"));
+            verify(classicPipeline, never()).execute(any(), any());
         }
     }
 }
