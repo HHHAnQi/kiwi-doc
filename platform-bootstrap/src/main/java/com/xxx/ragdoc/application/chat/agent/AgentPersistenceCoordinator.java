@@ -110,6 +110,11 @@ public class AgentPersistenceCoordinator {
                         runId, "刚创建 / CAS 的 run 立刻不可读"));
     }
 
+    /** PR-7c.3: Finalizer / Pipeline 在 CAS 失败后重读当前 Run 状态 (Optional.empty 表示 run 不可读)。 */
+    public java.util.Optional<AgentRunRecord> reloadRun(String runId) {
+        return runRepository.findByRunId(runId);
+    }
+
     /** Executor 在 step 主循环reload最新 step 状态 (无写)。 */
     public AgentStepRecord reloadStep(String runId, String stepId) {
         return stepRepository.findByRunIdAndStepId(runId, stepId)
