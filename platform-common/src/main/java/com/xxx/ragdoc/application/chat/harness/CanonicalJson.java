@@ -77,12 +77,32 @@ public final class CanonicalJson {
     }
 
     /**
-     * PR-5 EMS §7 ReplayKey = sha256-canonical(
-     *   caseId, componentType, componentName, componentVersion, callIndex,
-     *   normalizedRequest, permissionScopeVersion, indexVersion
+     * PR-5.1 / EMS-PR6 §2.2: tenantScopeFingerprint = SHA-256(normalizedTenantId + ":" +
+     * permissionScopeVersion)。让 Fixture Key 间接绑定租户范围，但不暴露明文 tenantId。
+     *
+     * 不同 tenant 即使 permissionScopeVersion 相同（两条 DB 不同的 admin/user），也产出不同 fingerprint，
+     * 杜绝跨租户 Fixture 误命中。
+     */
+    public static String tenantScopeFingerprint(String tenantId, String permissionScopeVersion) {
+        String normalizedTenant = tenantId == null ? "" : tenantId.trim().toLowerCase();
+        String scope = permissionScopeVersion == null ? "" : permissionScopeVersion;
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of()
+                    .formatHex(
+                            md.digest((normalizedTenant + ":" + scope).getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
+    }
+
+    /**
+     * PR-5/PR-5.1: ReplayKey = SHA-256 canonical(
+     *   caseId | componentType | componentName | componentVersion | callIndex
+     *   | normalizedRequest | tenantScopeFingerprint(tenantId, permissionScopeVersion) | indexVersion
      * )
      *
-     * <p>不在 key 中包含 tenantId 原值 (用 permissionScopeVersion 间接区分租户, 防 leak)。
+     * <p>tenantId 不直接进 Hash；用 {@link #tenantScopeFingerprint} 绑定租户范围。
      */
     public String replayKeyFor(
             String caseId,
@@ -91,6 +111,7 @@ public final class CanonicalJson {
             String componentVersion,
             int callIndex,
             Object request,
+            String tenantId,
             String permissionScopeVersion,
             String indexVersion) {
         ObjectNode root = JsonNodeFactory.instance.objectNode();
@@ -100,7 +121,7 @@ public final class CanonicalJson {
         root.put("componentVersion", nullSafe(componentVersion));
         root.put("callIndex", callIndex);
         root.set("normalizedRequest", canonicalize(toJsonNode(request)));
-        root.put("permissionScopeVersion", nullSafe(permissionScopeVersion));
+        root.put("tenantScopeFingerprint", tenantScopeFingerprint(tenantId, permissionScopeVersion));
         root.put("indexVersion", nullSafe(indexVersion));
         return sha256(canonicalize(root));
     }

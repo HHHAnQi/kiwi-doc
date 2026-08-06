@@ -4,6 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.auth.PermissionResolverPort;
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
+import com.xxx.ragdoc.application.chat.harness.ComponentInvocation;
+import com.xxx.ragdoc.application.chat.harness.HarnessMode;
+import com.xxx.ragdoc.application.chat.harness.HarnessProperties;
+import com.xxx.ragdoc.application.chat.harness.HarnessProvider;
+import com.xxx.ragdoc.application.chat.harness.InvocationContext;
+import com.xxx.ragdoc.application.chat.harness.ToolHarnessAdapter;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
 import com.xxx.ragdoc.application.metrics.MetricsPort;
 import com.xxx.ragdoc.common.exception.DomainException;
@@ -22,9 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;import org.springframework.stereotype.Service;
 
 /**
  * PR-4 / EMS-PR4: Tool 执行的统一包装层。围绕每个 {@link AgentTool#execute} 做以下横切:
@@ -47,7 +51,6 @@ import org.springframework.stereotype.Service;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ToolExecutor {
 
     private final ToolRegistry registry;
@@ -55,9 +58,39 @@ public class ToolExecutor {
     private final MetricsPort metrics;
     private final TraceObserver traceObserver;
     private final ObjectMapper objectMapper;
+    /** PR-5.1: 让 ToolExecutor 可以把 AgentTool.execute 包装到 HarnessProvider 下。 */
+    private final HarnessProvider harnessProvider;
+    private final HarnessProperties harnessProperties;
+    /** PR-5.1: 每 Tool 的 ObjectResultMapper; 当前固定 ToolHarnessAdapter (typed bridge)。 */
+    private final ToolHarnessAdapter toolHarnessAdapter;
+
+    public ToolExecutor(
+            ToolRegistry registry,
+            PermissionResolverPort permissionResolver,
+            MetricsPort metrics,
+            TraceObserver traceObserver,
+            ObjectMapper objectMapper,
+            HarnessProvider harnessProvider,
+            HarnessProperties harnessProperties) {
+        this.registry = registry;
+        this.permissionResolver = permissionResolver;
+        this.metrics = metrics;
+        this.traceObserver = traceObserver;
+        this.objectMapper = objectMapper;
+        this.harnessProvider = harnessProvider;
+        this.harnessProperties = harnessProperties;
+        this.toolHarnessAdapter = new ToolHarnessAdapter(objectMapper);
+    }
 
     /** 单 runId 的 dedup 缓存; PR-4 不做分布式 cache, 进程内 + run 结束自然 GC。 */
     private final Map<String, ToolResult<? extends ToolOutput>> dedupCache = new ConcurrentHashMap<>();
+
+    /**
+     * PR-5.1: Tool callIndex counter, (runId, toolName) → Atomic。让单 Run 内同 Tool 多次调用稳定排序，
+     * 让 Harness record/replay callIndex 在多调用时不撞键。
+     */
+    private final Map<String, java.util.concurrent.atomic.AtomicInteger> callIndexByRun =
+            new ConcurrentHashMap<>();
 
     /**
      * 执行入口。调用方提供 input + 工具名 / 版本 + runId / requestId / deadline; Executor 自己解析 Principal/ACL。
@@ -120,17 +153,44 @@ public class ToolExecutor {
                     "已达 deadline, 未执行 tool", "", t0, ctx, dedupKey, false);
         }
 
-        // 5. 实际调用 Tool
+        // 5. 实际调用 Tool — 经 HarnessProvider 包装 (PR-5.1)
+        //    LIVE  → 直接 supplier, 等价 PR-4 行为
+        //    RECORD → 调 supplier + 写 Fixture (tenantScopeFingerprint 已并入 ReplayKey)
+        //    REPLAY → 不调 supplier; 从 Fixture 读; 缺失/不匹配/损坏 → FixtureUnavailableException 失败关闭
         ToolResult<O> result;
         try {
-            result = tool.execute(input, ctx);
+            result = invokeViaHarness(tool, input, ctx, req.runId());
+        } catch (com.xxx.ragdoc.application.chat.harness.FixtureStore
+                .FixtureUnavailableException fue) {
+            // REPLAY 严格失败 → 转 TERMINAL_ERROR, 不回退 LIVE
+            log.warn(
+                    "tool.replay_failed name={} call_id={} reason={} msg={}",
+                    toolName, callId, fue.reason, fue.getMessage());
+            return ToolResult.failure(
+                    callId,
+                    toolName,
+                    toolVersion,
+                    ToolStatus.TERMINAL_ERROR,
+                    ToolError.of(fue.reason.name(), "tool replay fixture 不可用: " + fue.getMessage()),
+                    System.currentTimeMillis() - t0,
+                    baseMeta(ctx, false));
+        } catch (com.xxx.ragdoc.application.chat.harness.FixtureStore
+                .FixtureConflictException fce) {
+            // RECORD 同 key 不同内容 (代码改动后旧 fixture 不一致) → 失败关闭
+            log.warn("tool.record_conflict name={} call_id={} msg={}", toolName, callId, fce.getMessage());
+            return ToolResult.failure(
+                    callId,
+                    toolName,
+                    toolVersion,
+                    ToolStatus.TERMINAL_ERROR,
+                    ToolError.of("FIXTURE_CONFLICT", "record 与既有 fixture 冲突"),
+                    System.currentTimeMillis() - t0,
+                    baseMeta(ctx, false));
         } catch (DomainException de) {
-            // Tool 主动抛 DomainException 表示业务级失败 — 转 structured result
             result = ToolResult.failure(callId, toolName, toolVersion, ToolStatus.TERMINAL_ERROR,
                     ToolError.of(de.errorCode().code(), safeMsg(de.getMessage())),
                     System.currentTimeMillis() - t0, baseMeta(ctx, false));
         } catch (RuntimeException ex) {
-            // 兜底: Tool 没接住的 bug → terminal, 不重试
             log.warn("tool.uncaught_exception name={} call_id={} err={}", toolName, callId, ex.toString());
             result = ToolResult.failure(callId, toolName, toolVersion, ToolStatus.TERMINAL_ERROR,
                     ToolError.dependencyError(ErrorCode.TOOL_EXECUTION_FAILED.code(),
@@ -149,6 +209,72 @@ public class ToolExecutor {
             dedupCache.put(dedupKey, result);
         }
         return result;
+    }
+
+    /**
+     * PR-5.1: 包装 AgentTool.execute 到 Harness 下。
+     *
+     * <p>当 {@code rag.agent.harness.enabled=false} 或 mode=LIVE 时, 直接调真实 Tool (零开销)。
+     * RECORD / REPLAY 时通过 {@link HarnessProvider#invoke} 走 canonical/recording/replay 边界;
+     * 但 REPLAY 仍受 ToolExecutor 的 {@link #filterUnauthorizedEvidence} 终检保护 (双层 ACL)。
+     *
+     * <p>每个 (runId, toolName) 维护独立 callIndex counter, 让 record/replay 在多调用下不撞键。
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private <I extends ToolInput, O extends ToolOutput> ToolResult<O> invokeViaHarness(
+            AgentTool<I, O> tool, I input, ToolExecutionContext ctx, String runId) {
+        ToolDescriptor d = tool.descriptor();
+        // 第 8 阶段: Harness 默认关闭时直接 fallback 真实 Tool; 跳过 Provider 数据构造
+        if (!harnessProperties.isEnabled() || harnessProperties.getMode() == HarnessMode.LIVE) {
+            return tool.execute(input, ctx);
+        }
+
+        String callIdxKey = runId + "|" + d.name();
+        int callIndex =
+                callIndexByRun
+                        .computeIfAbsent(callIdxKey, k -> new java.util.concurrent.atomic.AtomicInteger(0))
+                        .getAndIncrement();
+        ComponentInvocation invocation =
+                new ComponentInvocation(
+                        /* caseId */ runId, // 单 run 等同 caseId (PR-6 引入 Agent run 时区分)
+                        runId,
+                        com.xxx.ragdoc.application.chat.harness.HarnessComponentType.TOOL,
+                        d.name(),
+                        d.version(),
+                        callIndex,
+                        new InvocationContext(
+                                ctx.requestId(),
+                                ctx.tenantId(),
+                                ctx.permissionScope().permissionScopeVersion(),
+                                ctx.indexVersion(),
+                                ctx.requestId() /* traceId 第二版可加, Tool 第一版用 requestId */,
+                                ""));
+        HarnessProvider provider = harnessProvider;
+        java.util.function.Supplier<ToolResult<O>> live =
+                () -> tool.execute(input, ctx);
+        Class<ToolResult<O>> resultClass =
+                (Class<ToolResult<O>>) (Class<?>) tool.outputType();
+        // 注: ToolHarnessAdapter 在 fromFixtureResponse 返回的是 responseNode 不是 ToolResult;
+        // 因此 REPLAY 路径下 caller 拿到的 result 可能是 JsonNode (除非 Adapter 重写支持 typed ToolResult).
+        // PR-5.1 v1: 不强求 REPLAY 返回 typed ToolResult; Executor 检测 JsonNode 时转 empty SUCCESS stub.
+        com.xxx.ragdoc.application.chat.harness.InvocationResult result =
+                provider.invoke(invocation, input, live, resultClass, toolHarnessAdapter);
+        Object outcome = result.result();
+        if (outcome instanceof ToolResult tr) {
+            return (ToolResult<O>) tr;
+        }
+        // outcome 为 JsonNode (REPLAY 通过 ToolHarnessAdapter.fromFixtureResponse 返回原始 Node)
+        // 转 ToolResult.SUCCESS stub 让上层 usage 走完整路径
+        com.fasterxml.jackson.databind.JsonNode node =
+                (com.fasterxml.jackson.databind.JsonNode) outcome;
+        O typed = objectMapper.convertValue(node, tool.outputType());
+        return ToolResult.success(
+                ctx.requestId() + "-harness",
+                d.name(),
+                d.version(),
+                typed,
+                0L,
+                java.util.Map.of("harness_mode", harnessProperties.getMode().name()));
     }
 
     /**

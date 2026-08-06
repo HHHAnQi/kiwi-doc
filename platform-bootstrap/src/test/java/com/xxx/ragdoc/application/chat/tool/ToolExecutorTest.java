@@ -71,7 +71,14 @@ class ToolExecutorTest {
         when(stubTool.inputType()).thenReturn(StubIn.class);
         when(stubTool.outputType()).thenReturn(SearchOutput.class);
         registry = new ToolRegistry(java.util.List.of(stubTool));
-        executor = new ToolExecutor(registry, permissionResolver, metrics, traceObserver, new ObjectMapper());
+        // PR-5.1: ToolExecutor 现需 HarnessProvider + HarnessProperties (默认 LIVE → 与 PR-4 行为等价)
+        com.xxx.ragdoc.application.chat.harness.HarnessProperties hp =
+                new com.xxx.ragdoc.application.chat.harness.HarnessProperties();
+        executor = new ToolExecutor(
+                registry, permissionResolver, metrics, traceObserver,
+                new ObjectMapper(),
+                new com.xxx.ragdoc.application.chat.harness.LiveHarnessProvider(),
+                hp);
     }
 
     @AfterEach
@@ -250,7 +257,9 @@ class ToolExecutorTest {
                             permissionResolver,
                             metrics,
                             traceObserver,
-                            new ObjectMapper());
+                            new ObjectMapper(),
+                            new com.xxx.ragdoc.application.chat.harness.LiveHarnessProvider(),
+                            new com.xxx.ragdoc.application.chat.harness.HarnessProperties());
 
             ToolResult<?> r =
                     ex.execute("banned_test", "v1", new BannedIn("q", "tenant-A"), req(Duration.ofSeconds(5)));

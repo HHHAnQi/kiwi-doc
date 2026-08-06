@@ -54,6 +54,7 @@ public class ReplayHarnessProvider implements HarnessProvider {
                         invocation.componentVersion(),
                         invocation.callIndex(),
                         request,
+                        invocation.context().tenantId(),
                         invocation.context().permissionScopeVersion(),
                         invocation.context().indexVersion());
 
