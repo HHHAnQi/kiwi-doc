@@ -13,6 +13,8 @@ public enum PipelineType {
     TARGETED_RAG,
     /** 固定确定性工作流 (比较 / 证据补全); 计划 PR-3 实现。 */
     FIXED_WORKFLOW,
+    /** PR-7c 受控 Planner Agent RAG (MULTI_HOP 单次 Plan + 最多一次 Replan)。 */
+    PLANNED_AGENT,
     /** 受控 Planner Agent RAG; 计划 PR-6/PR-7 实现, 仅供参考。 */
     AGENTIC_RAG
 }

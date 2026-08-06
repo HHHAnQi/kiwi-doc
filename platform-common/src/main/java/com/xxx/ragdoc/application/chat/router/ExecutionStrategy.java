@@ -8,6 +8,7 @@ package com.xxx.ragdoc.application.chat.router;
  *   <li>{@link #CLASSIC_RAG} — 走既有 Classic RAG (Dense 或 Hybrid 由 retrieve mode 决定)
  *   <li>{@link #TARGETED_RAG} — keyword + metadata + version filter 精确召回 (PR-3.3 接入)
  *   <li>{@link #FIXED_WORKFLOW} — 比较工作流 / 证据补全工作流 (PR-3.4 接入)
+ *   <li>{@link #PLANNED_AGENT} (PR-7c) — MULTI_HOP Planner Pipeline; 需 Feature Flag 全部开启
  *   <li>{@link #REFUSE} — 拒绝回答 (UNANSWERABLE 路径, Orchestrator 直接产拒答 ChatResult)
  * </ul>
  *
@@ -18,5 +19,6 @@ public enum ExecutionStrategy {
     CLASSIC_RAG,
     TARGETED_RAG,
     FIXED_WORKFLOW,
+    PLANNED_AGENT,
     REFUSE
 }

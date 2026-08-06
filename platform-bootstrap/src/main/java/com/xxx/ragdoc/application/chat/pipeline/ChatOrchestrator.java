@@ -204,12 +204,13 @@ public class ChatOrchestrator {
         }
     }
 
-    /** ExecutionStrategy → PipelineType: CLASSIC_RAG/TARGETED_RAG/FIXED_WORKFLOW 直接映射; REFUSE→CLASSIC+Classic 兜底。 */
+    /** ExecutionStrategy → PipelineType: CLASSIC_RAG/TARGETED_RAG/FIXED_WORKFLOW/PLANNED_AGENT 直接映射; REFUSE→CLASSIC+Classic 兜底。 */
     private static PipelineType toPipelineType(ExecutionStrategy strategy) {
         return switch (strategy) {
             case CLASSIC_RAG -> PipelineType.CLASSIC_RAG;
             case TARGETED_RAG -> PipelineType.TARGETED_RAG;
             case FIXED_WORKFLOW -> PipelineType.FIXED_WORKFLOW;
+            case PLANNED_AGENT -> PipelineType.PLANNED_AGENT;
             case REFUSE -> PipelineType.CLASSIC_RAG; // PR-3.4 前由 Classic 检索兜底(NO_RECALL)
         };
     }
