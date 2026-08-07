@@ -382,12 +382,12 @@ def test_agentic_runner_imports():
 def test_agentic_runner_record_is_not_executed():
     import agentic_runner
     case = {"caseId": "x", "requirements": [{"requirementId": "REQ-1", "required": True}]}
-    rec = agentic_runner.build_not_executed_record(case)
+    rec = agentic_runner.build_not_executed_record(case, "stub mode (offline)")
     assert rec["executed"] is False
     assert rec["pipeline"] == "AGENTIC_FULL"
     assert rec["evidenceIds"] == []
     assert rec["toolCalls"] == 0
-    assert rec["errorMessage"].startswith("NOT_EXECUTED")
+    assert rec["errorMessage"].startswith("NOT_EXECUTED: stub mode")
     assert rec["requirementCoverage"] == [
         {"requirementId": "REQ-1", "status": "NOT_COVERED", "evidenceIds": []}
     ]
@@ -396,7 +396,7 @@ def test_agentic_runner_record_is_not_executed():
 def test_hybrid_runner_record_is_not_executed():
     import hybrid_runner
     case = {"caseId": "x", "requirements": [{"requirementId": "REQ-1", "required": True}]}
-    rec = hybrid_runner.build_not_executed_record(case)
+    rec = hybrid_runner.build_not_executed_record(case, "stub mode (offline)")
     assert rec["executed"] is False
     assert rec["pipeline"] == "HYBRID_RAG"
     assert rec["replanCount"] == 0  # hybrid never replans

@@ -154,13 +154,47 @@ def test_reviewed_without_reviewedAt_fails(tmp_path):
     assert any("reviewedAt" in e for e in errs)
 
 
-def test_placeholder_evidence_fails(tmp_path):
+def test_candidate_placeholder_evidence_ok(tmp_path):
+    """Candidate (template) cases MAY carry placeholder values like 'TODO':
+    the template is intentionally unfilled and reviewers will fill it later.
+    The validator must NOT reject placeholders on candidate cases.
+    """
+    case = _valid_base()  # review.reviewStatus == "candidate"
+    case["gold"]["goldEvidence"][0]["evidenceId"] = "TODO"
+    p = _write_jsonl(tmp_path, [case])
+    rc, errs = validate_dataset.validate_dataset(p, print_summary=False)
+    assert rc == 0
+    assert not any("placeholder" in e for e in errs)
+
+
+def test_candidate_fill_marker_still_rejected(tmp_path):
+    """Candidate cases are allowed generic placeholders ('TODO', '', 'TBD') but
+    FILL_* markers are an explicit 'must fill before review' flag and MUST be
+    rejected even on candidate cases, so reviewers cannot forget them.
+    """
     case = _valid_base()
+    case["gold"]["goldEvidence"][0]["evidenceId"] = "FILL_FROM_SHA256"
+    p = _write_jsonl(tmp_path, [case])
+    rc, errs = validate_dataset.validate_dataset(p, print_summary=False)
+    assert rc == 1
+    assert any("must be filled" in e for e in errs)
+
+
+def test_reviewed_placeholder_evidence_fails(tmp_path):
+    """Reviewed cases have completed human sign-off: placeholder values must
+    be rejected to prevent shipping unaudited gold evidence.
+    """
+    case = _valid_base()
+    case["review"] = {
+        "reviewStatus": "reviewed",
+        "annotator": "alice", "reviewer": "bob",
+        "reviewedAt": "2026-08-05T00:00:00Z",
+    }
     case["gold"]["goldEvidence"][0]["evidenceId"] = "TODO"
     p = _write_jsonl(tmp_path, [case])
     rc, errs = validate_dataset.validate_dataset(p, print_summary=False)
     assert rc == 1
-    assert any("placeholder" in e for e in errs)
+    assert any("is placeholder" in e for e in errs)
 
 
 def test_require_reviewed_mode_rejects_candidate(tmp_path):
