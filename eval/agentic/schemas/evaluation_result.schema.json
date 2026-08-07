@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "evaluation_result.schema.json",
+  "title": "Agentic RAG Evaluation Result",
+  "description": "PR-7f.2b.2: Unified result schema for both Agentic and Hybrid runners.",
+  "type": "object",
+  "required": [
+    "caseId", "pipeline", "finalStatus", "evidenceIds",
+    "requirementCoverage", "toolCalls", "llmCalls",
+    "latencyMs", "tokenUsage"
+  ],
+  "properties": {
+    "caseId": {
+      "type": "string",
+      "description": "Matches dataset caseId"
+    },
+    "pipeline": {
+      "type": "string",
+      "enum": ["AGENTIC_FULL", "AGENTIC_PLANNER_ONLY", "AGENTIC_NO_SUFFICIENCY",
+               "HYBRID_RAG", "HYBRID_RAG_TOPK10", "CLASSIC_RAG", "ORACLE_PLAN"],
+      "description": "Which ablation config produced this result"
+    },
+    "finalStatus": {
+      "type": "string",
+      "enum": ["ANSWERED", "REFUSED_NO_EVIDENCE", "REFUSED_CONFLICT",
+               "REFUSED_PERMISSION", "TOOL_FAILED", "BUDGET_EXCEEDED",
+               "TIMED_OUT", "CANCELLED", "SYSTEM_FAILED"]
+    },
+    "evidenceIds": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Final accumulated evidence IDs (sha256 prefix)"
+    },
+    "requirementCoverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["requirementId", "status", "evidenceIds"],
+        "properties": {
+          "requirementId": {"type": "string"},
+          "status": {"type": "string", "enum": ["COVERED", "NOT_COVERED", "CONFLICTED", "PARTIALLY_COVERED"]},
+          "evidenceIds": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "toolCalls": {"type": "integer", "minimum": 0},
+    "realToolCalls": {"type": "integer", "minimum": 0},
+    "llmCalls": {"type": "integer", "minimum": 0},
+    "replanCount": {"type": "integer", "minimum": 0, "default": 0},
+    "latencyMs": {"type": "integer", "minimum": 0},
+    "tokenUsage": {
+      "type": "object",
+      "properties": {
+        "inputTokens": {"type": "integer", "minimum": 0},
+        "outputTokens": {"type": "integer", "minimum": 0}
+      },
+      "default": {"inputTokens": 0, "outputTokens": 0}
+    },
+    "answerText": {"type": "string", "default": ""},
+    "citedEvidenceIds": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "guardRejections": {"type": "integer", "minimum": 0, "default": 0},
+    "falseSufficientLeak": {"type": "boolean", "default": false},
+    "sufficiencyStatus": {
+      "type": "string",
+      "enum": ["SUFFICIENT", "INSUFFICIENT", "CONFLICTED", "UNDETERMINED", "NOT_RUN"],
+      "default": "NOT_RUN"
+    },
+    "sseTerminalEvents": {"type": "integer", "minimum": 0, "default": 0},
+    "nonTerminalStepResidue": {"type": "integer", "minimum": 0, "default": 0},
+    "crossTenantEvidenceLeak": {"type": "integer", "minimum": 0, "default": 0},
+    "executedToolSignatures": {
+      "type": "array",
+      "items": {"type": "string"},
+      "default": []
+    },
+    "errorMessage": {"type": "string", "default": ""},
+    "executed": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if actual pipeline ran; false = NOT_EXECUTED (stub/placeholder)"
+    }
+  },
+  "additionalProperties": true
+}
