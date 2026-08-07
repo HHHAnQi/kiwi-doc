@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "agentic_case_v2.schema.json",
+  "title": "Agentic RAG Benchmark Case v2",
+  "description": "PR-7f.2a: Multi-hop Planner / Sufficiency / Replan benchmark; gold must be dual-reviewed.",
+  "type": "object",
+  "required": [
+    "schemaVersion", "caseId", "question", "questionType", "intent",
+    "requirements", "gold", "expected", "slice", "review"
+  ],
+  "properties": {
+    "schemaVersion": { "type": "string", "enum": ["v2"] },
+    "caseId": {
+      "type": "string",
+      "pattern": "^amh-[0-9]{3,}$",
+      "description": "Agentic multi-hop case id, e.g. amh-001"
+    },
+    "question": { "type": "string", "minLength": 5 },
+    "questionType": {
+      "type": "string",
+      "enum": ["MULTI_HOP", "FACT", "COMPARISON", "ENTITY_LOOKUP", "NUMERIC_OR_VERSION", "SUMMARY", "UNANSWERABLE"]
+    },
+    "intent": { "$ref": "#/definitions/intent" },
+    "entities": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "filters": { "type": "object", "default": {} },
+
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/requirement" }
+    },
+
+    "gold": {
+      "type": "object",
+      "required": ["goldAnswer", "goldEvidence", "answerable"],
+      "properties": {
+        "goldAnswer": { "type": "string", "minLength": 1 },
+        "goldEvidence": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/goldEvidence" },
+          "description": "Each gold evidence record binds to ≥1 requirement."
+        },
+        "goldDocumentIds": { "type": "array", "items": { "type": "integer" } },
+        "goldCoverageByRequirement": {
+          "type": "object",
+          "description": "reqId → list of goldEvidenceIds covering it",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        },
+        "answerable": { "type": "boolean" }
+      }
+    },
+
+    "planConstraints": {
+      "type": "object",
+      "properties": {
+        "acceptableInitialPlans": { "type": "array", "items": { "$ref": "#/definitions/acceptablePlan" } },
+        "acceptableReplanPlans": { "type": "array", "items": { "$ref": "#/definitions/acceptablePlan" } },
+        "forbiddenToolSignatures": { "type": "array", "items": { "type": "string" } }
+      },
+      "default": {}
+    },
+
+    "expected": {
+      "type": "object",
+      "required": ["expectedFinalStatus"],
+      "properties": {
+        "expectedFinalStatus": {
+          "type": "string",
+          "enum": [
+            "ANSWERED", "REFUSED_NO_EVIDENCE", "REFUSED_CONFLICT",
+            "REFUSED_PERMISSION", "TOOL_FAILED", "BUDGET_EXCEEDED",
+            "TIMED_OUT", "CANCELLED", "SYSTEM_FAILED"
+          ]
+        },
+        "replanExpected": { "type": "boolean", "default": false },
+        "maxSteps": { "type": "integer", "minimum": 1, "maximum": 5, "default": 3 },
+        "maxToolCalls": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3 }
+      }
+    },
+
+    "slice": {
+      "type": "string",
+      "enum": [
+        "initial_sufficient", "document_fetch_needed", "semantic_metadata_combo",
+        "replan_success", "replan_still_insufficient", "no_answer_refuse",
+        "permission_denied", "evidence_conflict", "budget_timeout_edge"
+      ]
+    },
+
+    "review": { "$ref": "#/definitions/review" },
+    "notes": { "type": "string", "default": "" }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+    "intent": {
+      "type": "string",
+      "enum": [
+        "MULTI_HOP", "FACT", "ENTITY_LOOKUP", "COMPARISON",
+        "SUMMARY", "NUMERIC_OR_VERSION", "UNANSWERABLE"
+      ]
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["requirementId", "type", "required", "description"],
+      "properties": {
+        "requirementId": { "type": "string", "pattern": "^REQ-[0-9]+$" },
+        "type": {
+          "type": "string",
+          "enum": ["FACT", "ENTITY_ATTRIBUTE", "RELATION", "TEMPORAL", "COMPARISON_SIDE", "FOLLOW_UP_ENTITY"]
+        },
+        "required": { "type": "boolean" },
+        "description": { "type": "string", "minLength": 1 },
+        "targetEntities": { "type": "array", "items": { "type": "string" }, "default": [] },
+        "expectedFilters": { "type": "object", "default": {} }
+      }
+    },
+    "goldEvidence": {
+      "type": "object",
+      "required": ["evidenceId", "documentId", "chunkId", "documentVersion", "contentHash", "bindsToRequirementIds", "reviewer", "reviewedAt"],
+      "properties": {
+        "evidenceId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12,64}$",
+          "description": "sha256(tenantId|docId|chunkId|contentHash) prefix ≥12 hex chars"
+        },
+        "tenantId": { "type": "string", "default": "" },
+        "documentId": { "type": "integer", "minimum": 1 },
+        "chunkId": { "type": "integer", "minimum": 0 },
+        "documentVersion": { "type": "string", "default": "" },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12,64}$",
+          "description": "sha256 hex of the chunk content"
+        },
+        "contentSnippet": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "First ≤300 chars (truncated, redacted)"
+        },
+        "bindsToRequirementIds": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^REQ-[0-9]+$" }
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Why this evidence satisfies the listed requirements"
+        },
+        "reviewer": { "type": "string", "minLength": 1 },
+        "reviewedAt": { "type": "string", "description": "ISO-8601 UTC" }
+      }
+    },
+    "acceptablePlan": {
+      "type": "object",
+      "required": ["toolSequence"],
+      "properties": {
+        "toolSequence": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+        "coveredReqIds": { "type": "array", "items": { "type": "string", "pattern": "^REQ-[0-9]+$" }, "default": [] }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["reviewStatus", "annotator", "reviewer", "reviewedAt"],
+      "properties": {
+        "reviewStatus": { "type": "string", "enum": ["candidate", "reviewed", "rejected"] },
+        "annotator": { "type": "string", "minLength": 1, "description": "Person who created the gold" },
+        "reviewer": { "type": "string", "minLength": 1, "description": "Different person who verified" },
+        "reviewedAt": { "type": "string", "description": "ISO-8601 UTC; empty string if not yet reviewed" }
+      }
+    }
+  }
+}
