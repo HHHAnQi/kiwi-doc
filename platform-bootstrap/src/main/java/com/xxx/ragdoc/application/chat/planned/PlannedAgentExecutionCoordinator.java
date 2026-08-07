@@ -182,10 +182,13 @@ public class PlannedAgentExecutionCoordinator {
         }
 
         // 7. Replan decision
+        // Phase 0 的 "prior accumulated" 在 Phase 开始前是空 — progress 判定需要
+        // phase0.newEvidence 来证明 Phase 0 有效产生新证据; 不能把 phase0 自己的 accumulated
+        // 当 prior, 否则永远 NO_PROGRESS.
         ReplanDecisionCoordinator.ReplanDecision rd = replanDecisionCoordinator.decide(
                 phase0, suff0,
-                new HashSet<>(priorIds(phase0.accumulatedEvidence())),
-                com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary.empty() /* prior */,
+                new HashSet<>() /* empty prior accumulated — Phase 0 前无证据 */,
+                com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary.empty() /* prior uncovered */,
                 0 /* replanCount */, 1 /* maxReplans */,
                 cancellation.isCancelled(),
                 policy.budget());
