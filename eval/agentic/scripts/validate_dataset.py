@@ -94,12 +94,26 @@ def validate_case(case: dict[str, Any], case_no: int) -> list[str]:
             if rid not in req_id_set:
                 errors.append(f"{ev_label}: bindsTo unknown requirementId '{rid}'")
         # reviewer/annotator must NOT be placeholder (only check fields actually present)
-        for field in ("evidenceId", "contentHash", "rationale", "reviewer"):
-            if field not in ev:
-                continue
-            val = ev.get(field, "")
-            if isinstance(val, str) and val.strip().lower() in PLACEHOLDER_VALUES:
-                errors.append(f"{ev_label}: {field} is placeholder ('{val}')")
+        # Skip placeholder check for candidate cases — templates are intentionally empty
+        # When reviewStatus=reviewed (set at gold case level), all placeholders must be filled
+        case_review_status = case.get("review", {}).get("reviewStatus", "candidate")
+        if case_review_status == "reviewed":
+            for field in ("evidenceId", "contentHash", "rationale", "reviewer"):
+                if field not in ev:
+                    continue
+                val = ev.get(field, "")
+                if isinstance(val, str) and val.strip().lower() in PLACEHOLDER_VALUES:
+                    errors.append(f"{ev_label}: {field} is placeholder ('{val}')")
+        else:
+            # For candidate: only flag clearly impossible values (not empty TODO which is intentional)
+            # Check for FILL_* markers that indicate "must fill before review"
+            for field in ("evidenceId", "contentHash"):
+                val = ev.get(field, "")
+                if isinstance(val, str) and val.startswith("FILL_"):
+                    errors.append(
+                        f"{ev_label}: {field} = '{val}' — must be filled from real chunk "
+                        f"before review (see reviewer workflow)"
+                    )
 
     # goldCoverageByRequirement keys ⊆ requirements
     coverage = gold.get("goldCoverageByRequirement", {})
