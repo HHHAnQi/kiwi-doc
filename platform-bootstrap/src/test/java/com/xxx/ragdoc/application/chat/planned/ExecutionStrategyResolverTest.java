@@ -93,4 +93,45 @@ class ExecutionStrategyResolverTest {
                 ExecutionStrategy.TARGETED_RAG);
         assertThat(s).isEqualTo(ExecutionStrategy.TARGETED_RAG);
     }
+
+    // ─── PR-7f.2c-pre: 配置注入路径 (@ConfigurationProperties 字段) ───
+
+    @Test
+    @DisplayName("PR-7f.2c-pre: 单参 ctor 读 PlannerProperties.isPlannedPipelineEnabled (true) → 升级")
+    void singleArgCtorReadsPlannerPropertiesFlagWhenTrue() {
+        PlannerProperties p = new PlannerProperties();
+        p.setEnabled(true);
+        p.setMinRouterConfidence(0.80);
+        p.setPlannedPipelineEnabled(true);
+        ExecutionStrategyResolver r = new ExecutionStrategyResolver(p); // 生产构造器
+        assertThat(r.isPlannedPipelineEnabled()).isTrue();
+        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
+                ExecutionStrategy.FIXED_WORKFLOW))
+                .isEqualTo(ExecutionStrategy.PLANNED_AGENT);
+    }
+
+    @Test
+    @DisplayName("PR-7f.2c-pre: 单参 ctor PlannerProperties.plannedPipelineEnabled=false (默认) → 不升级")
+    void singleArgCtorReadsPlannerPropertiesFlagDefaultFalse() {
+        PlannerProperties p = new PlannerProperties(); // 默认 false
+        p.setEnabled(true);
+        ExecutionStrategyResolver r = new ExecutionStrategyResolver(p);
+        assertThat(r.isPlannedPipelineEnabled()).isFalse();
+        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
+                ExecutionStrategy.CLASSIC_RAG))
+                .isEqualTo(ExecutionStrategy.CLASSIC_RAG); // 原策略不变 — zero-diff
+    }
+
+    @Test
+    @DisplayName("PR-7f.2c-pre: 双参 ctor override 优先于 PlannerProperties 字段 (测试 API 不破坏)")
+    void twoArgCtorOverridesPropertyField() {
+        PlannerProperties p = new PlannerProperties();
+        p.setEnabled(true);
+        p.setPlannedPipelineEnabled(false); // 字段关
+        ExecutionStrategyResolver r = new ExecutionStrategyResolver(p, true); // override 开
+        assertThat(r.isPlannedPipelineEnabled()).isTrue(); // override 胜出
+        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
+                ExecutionStrategy.FIXED_WORKFLOW))
+                .isEqualTo(ExecutionStrategy.PLANNED_AGENT);
+    }
 }

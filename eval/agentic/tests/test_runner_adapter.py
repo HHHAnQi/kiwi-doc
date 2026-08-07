@@ -81,13 +81,31 @@ def test_agentic_map_non_200_blocks():
 
 
 def test_agentic_extract_strategy_finds_nested():
-    # nested under "data"
-    nested = {"data": {"pipelineType": "PLANNED_AGENT"}, "answer": "x"}
+    # nested under "data" — snake_case (PR-7f.2c-pre 实际 Jackson 输出)
+    nested = {"data": {"pipeline_type": "PLANNED_AGENT"}, "answer": "x"}
     assert AR._extract_strategy(nested) == "PLANNED_AGENT"
-    # flat
+    # nested — legacy camelCase form 兼容
+    nested_camel = {"data": {"pipelineType": "PLANNED_AGENT"}}
+    assert AR._extract_strategy(nested_camel) == "PLANNED_AGENT"
+    # flat snake_case / camelCase
+    assert AR._extract_strategy({"execution_strategy": "CLASSIC_RAG"}) == "CLASSIC_RAG"
     assert AR._extract_strategy({"executionStrategy": "CLASSIC_RAG"}) == "CLASSIC_RAG"
     # missing
     assert AR._extract_strategy({"answer": "x"}) is None
+
+
+def test_agentic_map_highlights_strategy_trace_now_visible():
+    """PR-7f.2c-pre 修复 runtime gate 后, ChatResponse 自带 pipeline_type —
+    Runner live mode 不再因 RUNTIME_NO_STRATEGY_TRACE 默认告NOT_EXECUTED。
+    PLANNED_AGENT → executed=True; CLASSIC_RAG → RUNTIME_NOT_PLANNED_AGENT
+    (区别于运行时根本没暴露策略的旧行为)。
+    """
+    resp = {"answer": "A", "pipeline_type": "PLANNED_AGENT",
+            "citations": [{"evidenceId": "ev1"}]}
+    rec = AR._map_chat_response_to_result(
+        CASE, resp, strategy="PLANNED_AGENT", latency_ms=120, http_status=200)
+    assert rec["executed"] is True
+    assert rec["strategyTrace"] == "PLANNED_AGENT"
 
 
 # ───────────── hybrid response mapping ─────────────

@@ -2,6 +2,7 @@ package com.xxx.ragdoc.application.chat.command;
 
 import com.xxx.ragdoc.application.chat.evidence.EvidenceSnapshot;
 import com.xxx.ragdoc.application.chat.verification.VerificationResult;
+import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import java.util.List;
@@ -23,7 +24,13 @@ public record ChatResult(
          * 暴露与否由 {@link com.xxx.ragdoc.interfaces.rest.dto.ChatResponse} + {@code
          * EvidenceDebugProperties} 在 Controller 出口处统一把关, 普通 200 响应不会序列化此字段。
          */
-        EvidenceSnapshot evidenceSnapshot) {
+        EvidenceSnapshot evidenceSnapshot,
+        /**
+         * PR-7f.2c-pre: 本次 chat 实际命中的 PipelineType (由 Orchestrator 在出参处附加)。
+         * null = 未填充 (兼容旧 pipeline 直接 new ChatResult 的路径)。
+         * 评测 Runner Adapter 据此判断 PLANNED_AGENT 是否真实生效。
+         */
+        PipelineType pipelineType) {
 
     /**
      * Citation 元素(简化版, 与 api-contracts.md §D1 对齐)。 V1 chat 永远 citations=空, 因不调召回。
@@ -60,12 +67,12 @@ public record ChatResult(
     /** Task 7 前 4 字段兼容构造 (verification=null)。 */
     public static ChatResult of(
             String answer, List<Citation> citations, StateHint hint, TraceId traceId) {
-        return new ChatResult(answer, citations, hint, traceId, null, null);
+        return new ChatResult(answer, citations, hint, traceId, null, null, null);
     }
 
     /** V1 短命令: 空 citations + 无 verification。 */
     public static ChatResult of(StateHint hint, String answer, TraceId traceId) {
-        return new ChatResult(answer, List.of(), hint, traceId, null, null);
+        return new ChatResult(answer, List.of(), hint, traceId, null, null, null);
     }
 
     /** PR-1: Task7 前 5 字段兼容 (evidenceSnapshot=null, 不破坏既有 callers)。 */
@@ -75,6 +82,29 @@ public record ChatResult(
             StateHint stateHint,
             TraceId traceId,
             VerificationResult verification) {
-        this(answer, citations, stateHint, traceId, verification, null);
+        this(answer, citations, stateHint, traceId, verification, null, null);
+    }
+
+    /** PR-1: EvidenceSnapshot 接线后 6 字段兼容 (pipelineType=null)。 */
+    public ChatResult(
+            String answer,
+            List<Citation> citations,
+            StateHint stateHint,
+            TraceId traceId,
+            VerificationResult verification,
+            EvidenceSnapshot evidenceSnapshot) {
+        this(answer, citations, stateHint, traceId, verification, evidenceSnapshot, null);
+    }
+
+    /**
+     * PR-7f.2c-pre: 在不重写其它字段的前提下, 给一份已有 ChatResult 附加 pipelineType。
+     * Orchestrator 在 pipeline.execute(...) 之后调用此方法, 把 ctx.effectivePipeline() 透传给
+     * Controller / 评测 Runner Adapter。Pipeline 内部构造的 ChatResult 不必感知此字段。
+     */
+    public ChatResult withPipelineType(PipelineType pipelineType) {
+        if (pipelineType == null) return this;
+        return new ChatResult(
+                this.answer, this.citations, this.stateHint, this.traceId,
+                this.verification, this.evidenceSnapshot, pipelineType);
     }
 }

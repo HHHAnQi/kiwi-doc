@@ -69,11 +69,12 @@ SSE_ENDPOINT = "/api/v1/chat/sse"
 DEFAULT_TIMEOUT = 120  # seconds per case
 DEFAULT_BASE_URL = "http://localhost:8080"
 
-# Trace field names the controller *might* emit. Real controller doesn't expose
-# them today — absence is treated as "NOT_PLANNED_AGENT" (the safe BLOCKER).
+# Trace field names the controller emits (PR-7f.2c-pre exposes pipeline_type
+# via Jackson SNAKE_CASE; legacy/alt keys kept for forward-compat).
 STRATEGY_TRACE_KEYS = (
-    "pipelineType", "executionStrategy", "pipeline",
-    "strategy", "chatPipelineType",
+    "pipeline_type", "pipelineType",
+    "execution_strategy", "executionStrategy",
+    "pipeline", "strategy", "chat_pipeline_type",
 )
 
 

@@ -100,7 +100,10 @@ public class ChatOrchestrator {
         logOrchestratorStart(ctx);
         ChatPipeline pipeline = resolveAndVerifyPipeline(ctx);
         try {
-            return pipeline.execute(command, ctx);
+            ChatResult result = pipeline.execute(command, ctx);
+            // PR-7f.2c-pre: 在出口处附加 pipelineType, 评测 Runner Adapter 据此判定 PLANNED_AGENT 是否生效。
+            // withPipelineType 在 pipelineType=null 时不会重新构造对象, 避免无谓分配。
+            return result.withPipelineType(ctx.effectivePipeline());
         } catch (DomainException de) {
             logOrchestratorFailure(ctx, de.errorCode().code(), de.getMessage());
             throw de;

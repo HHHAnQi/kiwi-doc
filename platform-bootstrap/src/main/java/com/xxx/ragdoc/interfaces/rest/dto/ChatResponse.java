@@ -21,7 +21,10 @@ public record ChatResponse(
                 String stateHint,
         @Schema(description = "用于 feedback 反馈关联") String traceId,
         @Schema(description = "PR-1: 真实 Evidence 三段快照(仅调试开启时存在; 普通响应不会出现此字段)")
-                EvidenceSnapshot evidence) {
+                EvidenceSnapshot evidence,
+        @Schema(description = "PR-7f.2c-pre: 本次命中的 PipelineType (CLASSIC_RAG/TARGETED_RAG/..."
+                + "/PLANNED_AGENT); null=未填充, Jackson NON_NULL 下不序列化")
+                String pipelineType) {
     /** 默认转换: 不带 evidence, 与历史客户端 4 字段响应兼容。 */
     public static ChatResponse from(ChatResult r) {
         return from(r, false);
@@ -45,8 +48,10 @@ public record ChatResponse(
                                                 c.sectionPath()))
                         .toList();
         EvidenceSnapshot evidenceToExpose = includeEvidence ? r.evidenceSnapshot() : null;
+        String pipelineType = r.pipelineType() == null ? null : r.pipelineType().name();
         return new ChatResponse(
-                r.answer(), citations, r.stateHint().name(), r.traceId().value(), evidenceToExpose);
+                r.answer(), citations, r.stateHint().name(), r.traceId().value(),
+                evidenceToExpose, pipelineType);
     }
 
     /**

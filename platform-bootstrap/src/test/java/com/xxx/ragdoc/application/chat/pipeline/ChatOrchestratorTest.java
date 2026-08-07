@@ -85,14 +85,19 @@ class ChatOrchestratorTest {
     class RagAutoRoute {
 
         @Test
-        @DisplayName("RAG 模式执行 Classic pipeline")
+        @DisplayName("RAG 模式执行 Classic pipeline; PR-7f.2c-pre 出口附加 pipelineType=CLASSIC_RAG")
         void ragRoutesToClassic() {
             ChatResult stub = ChatResult.of(StateHint.OK, "答案", TID);
             when(classicPipeline.execute(any(), any())).thenReturn(stub);
 
             ChatResult r = orchestrator.execute(cmd(), TID, ChatMode.RAG);
 
-            assertThat(r).isSameAs(stub);
+            // PR-7f.2c-pre: orchestrator 装饰 pipelineType, 故不再 isSameAs(stub);
+            // 改为内容相等 (除 pipelineType 外) + pipelineType=CLASSIC_RAG 的契约校验。
+            assertThat(r.answer()).isEqualTo(stub.answer());
+            assertThat(r.stateHint()).isEqualTo(stub.stateHint());
+            assertThat(r.traceId()).isEqualTo(stub.traceId());
+            assertThat(r.pipelineType()).isEqualTo(PipelineType.CLASSIC_RAG);
             verify(classicPipeline, times(1)).execute(any(), any());
             verify(registry, times(1)).get(PipelineType.CLASSIC_RAG);
         }
@@ -105,7 +110,7 @@ class ChatOrchestratorTest {
 
             ChatResult r = orchestrator.execute(cmd(), TID, ChatMode.AUTO);
 
-            assertThat(r).isSameAs(stub);
+            assertThat(r.pipelineType()).isEqualTo(PipelineType.CLASSIC_RAG);
             verify(classicPipeline, times(1)).execute(any(), any());
             // 校验 effective pipeline = CLASSIC_RAG
             org.mockito.ArgumentCaptor<ChatExecutionContext> captor =
