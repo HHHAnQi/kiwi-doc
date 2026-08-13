@@ -13,7 +13,7 @@ import java.time.Instant;
  * @param version V3 业务元数据: 版本号, 可空
  * @param language V3 业务元数据: 语言(zh/en), 缺省 'zh'
  * @param docType V3 业务元数据: 文档类型(doc/blog/release-notes/spec/demo), 缺省 'doc'
- * @param isDefault P3-1: 是否为同 source 的默认版本; RetrieveService 在用户没传 version 时按此过滤
+ * @param isDefault 是否为同一逻辑文档的当前版本（旧字段名兼容）
  * @param pendingMilvusDelete P3-2: 软删后 Milvus 向量是否待清理; sweeper 周期收敛
  */
 public record DocumentSummary(
@@ -26,7 +26,39 @@ public record DocumentSummary(
         Instant updatedAt,
         String source,
         String version,
+        String logicalDocumentKey,
         String language,
         String docType,
         boolean isDefault,
-        boolean pendingMilvusDelete) {}
+        boolean pendingMilvusDelete) {
+    public DocumentSummary(
+            Long docId,
+            String originalFilename,
+            DocumentStatus status,
+            long sizeBytes,
+            long chunkCount,
+            Instant createdAt,
+            Instant updatedAt,
+            String source,
+            String version,
+            String language,
+            String docType,
+            boolean isDefault,
+            boolean pendingMilvusDelete) {
+        this(
+                docId,
+                originalFilename,
+                status,
+                sizeBytes,
+                chunkCount,
+                createdAt,
+                updatedAt,
+                source,
+                version,
+                originalFilename,
+                language,
+                docType,
+                isDefault,
+                pendingMilvusDelete);
+    }
+}

@@ -25,6 +25,15 @@ public class ParseTaskEntity {
     @Column(name = "document_id", nullable = false)
     private Long documentId;
 
+    @Column(name = "generation", nullable = false)
+    private Integer generation = 1;
+
+    @Column(name = "trigger_type", nullable = false, length = 16)
+    private String triggerType = "UPLOAD";
+
+    @Column(name = "supersedes_task_id")
+    private Long supersedesTaskId;
+
     @Column(name = "content_hash", nullable = false, length = 64)
     private String contentHash;
 
@@ -65,6 +74,27 @@ public class ParseTaskEntity {
     @Column(name = "leased_by", length = 50)
     private String leasedBy;
 
+    @Column(name = "delivery_status", nullable = false, length = 16, insertable = false, updatable = false)
+    private String deliveryStatus = "PENDING";
+
+    @Column(name = "delivery_attempts", nullable = false, insertable = false, updatable = false)
+    private Integer deliveryAttempts = 0;
+
+    @Column(name = "next_delivery_at", nullable = false, insertable = false, updatable = false)
+    private Instant nextDeliveryAt = Instant.now();
+
+    @Column(name = "last_delivered_at", insertable = false, updatable = false)
+    private Instant lastDeliveredAt;
+
+    @Column(name = "delivery_error", length = 512, insertable = false, updatable = false)
+    private String deliveryError;
+
+    @Column(name = "delivery_leased_by", length = 64, insertable = false, updatable = false)
+    private String deliveryLeasedBy;
+
+    @Column(name = "delivery_lease_until", insertable = false, updatable = false)
+    private Instant deliveryLeaseUntil;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -86,6 +116,13 @@ public class ParseTaskEntity {
     public void setDocumentId(Long documentId) {
         this.documentId = documentId;
     }
+
+    public Integer getGeneration() { return generation; }
+    public void setGeneration(Integer generation) { this.generation = generation; }
+    public String getTriggerType() { return triggerType; }
+    public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
+    public Long getSupersedesTaskId() { return supersedesTaskId; }
+    public void setSupersedesTaskId(Long supersedesTaskId) { this.supersedesTaskId = supersedesTaskId; }
 
     public String getContentHash() {
         return contentHash;
@@ -174,6 +211,21 @@ public class ParseTaskEntity {
     public void setLeasedBy(String leasedBy) {
         this.leasedBy = leasedBy;
     }
+
+    public String getDeliveryStatus() { return deliveryStatus; }
+    public void setDeliveryStatus(String value) { this.deliveryStatus = value; }
+    public Integer getDeliveryAttempts() { return deliveryAttempts; }
+    public void setDeliveryAttempts(Integer value) { this.deliveryAttempts = value; }
+    public Instant getNextDeliveryAt() { return nextDeliveryAt; }
+    public void setNextDeliveryAt(Instant value) { this.nextDeliveryAt = value; }
+    public Instant getLastDeliveredAt() { return lastDeliveredAt; }
+    public void setLastDeliveredAt(Instant value) { this.lastDeliveredAt = value; }
+    public String getDeliveryError() { return deliveryError; }
+    public void setDeliveryError(String value) { this.deliveryError = value; }
+    public String getDeliveryLeasedBy() { return deliveryLeasedBy; }
+    public void setDeliveryLeasedBy(String value) { this.deliveryLeasedBy = value; }
+    public Instant getDeliveryLeaseUntil() { return deliveryLeaseUntil; }
+    public void setDeliveryLeaseUntil(Instant value) { this.deliveryLeaseUntil = value; }
 
     public Instant getCreatedAt() {
         return createdAt;

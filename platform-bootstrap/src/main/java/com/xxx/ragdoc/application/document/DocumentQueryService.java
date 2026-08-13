@@ -39,8 +39,8 @@ public class DocumentQueryService {
     /**
      * 分页查询 (可选 status + 关键字)。
      *
-     * <p>Task 11: 强制按当前 principal.tenantId + 显式 allowedDocumentIds 过滤; admin = 本 tenant 全 doc,
-     * 普通用户 = allowedDocumentIds 白名单。DB 层 SQL 完成, 防内存过滤越权。
+     * <p>Task 11: 强制按当前 principal.tenantId + 显式 allowedDocumentIds 过滤; admin = 本 tenant 全 doc, 普通用户
+     * = allowedDocumentIds 白名单。DB 层 SQL 完成, 防内存过滤越权。
      */
     @Transactional(readOnly = true)
     public Page<DocumentSummary> list(DocumentStatus status, String keyword, Pageable pageable) {

@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 /**
  * P2-1 默认 impl: rule-based 元数据抽取, 仅从文件名识别 source/version/docType/language。
  *
- * <p>设计动机: 真实 SCA 语料调砒 (见 docs/adr/roadmap-agentic-rag-evolution.md P2-1) —
- * 用户上传时常常不显式标 metadata, 导致 source 全落 'unknown', RetrieveService MetadataFilter
- * 失效, P3-1 default fallback 失效。规则补全 → 减少手动成本 + 让元数据过滤链路真正可用。
+ * <p>设计动机: 真实 SCA 语料调砒 (见 docs/adr/roadmap-agentic-rag-evolution.md P2-1) — 用户上传时常常不显式标 metadata,
+ * 导致 source 全落 'unknown', RetrieveService MetadataFilter 失效, P3-1 default fallback 失效。规则补全 → 减少手动成本
+ * + 让元数据过滤链路真正可用。
  *
  * <p>原则:
  *
@@ -72,7 +72,10 @@ public class RegexMetadataExtractor implements MetadataExtractor {
             String guessed = matchFirst(SOURCE_PATTERN, filename);
             if (guessed != null) {
                 // spring-cloud-alibaba 简化为 sca; 否则保持 canonical lower-case
-                effectiveSource = "spring-cloud-alibaba".equalsIgnoreCase(guessed) ? "sca" : guessed.toLowerCase();
+                effectiveSource =
+                        "spring-cloud-alibaba".equalsIgnoreCase(guessed)
+                                ? "sca"
+                                : guessed.toLowerCase();
                 log.info(
                         "metadata.extract_source filename='{}', source='{}'",
                         safeFilename(filename),
@@ -108,12 +111,15 @@ public class RegexMetadataExtractor implements MetadataExtractor {
             if (matchFirst(LANG_EN_PATTERN, filename) != null
                     && matchFirst(LANG_ZH_PATTERN, filename) == null) {
                 effectiveLanguage = "en";
-                log.info("metadata.extract_language filename='{}', language='en'", safeFilename(filename));
+                log.info(
+                        "metadata.extract_language filename='{}', language='en'",
+                        safeFilename(filename));
             }
         }
 
         // 优化: 如果全部未变, 直接返原 cmd (避免构造新对象)
-        if (sameAsInput(cmd, effectiveSource, effectiveVersion, effectiveDocType, effectiveLanguage)) {
+        if (sameAsInput(
+                cmd, effectiveSource, effectiveVersion, effectiveDocType, effectiveLanguage)) {
             return cmd;
         }
 
@@ -126,7 +132,8 @@ public class RegexMetadataExtractor implements MetadataExtractor {
                 effectiveSource,
                 effectiveVersion,
                 effectiveLanguage,
-                effectiveDocType);
+                effectiveDocType,
+                cmd.logicalDocumentKey());
     }
 
     /** 找到首个匹配 (lower-cased 不带分隔), 找不到返 null。 */
@@ -138,7 +145,9 @@ public class RegexMetadataExtractor implements MetadataExtractor {
         return null;
     }
 
-    /** 把命中的关键词 (reference / user-guide / release-notes 规范到 doc/blog/release-notes/spec/demo/faq)。 */
+    /**
+     * 把命中的关键词 (reference / user-guide / release-notes 规范到 doc/blog/release-notes/spec/demo/faq)。
+     */
     private static String normalizeDocType(String raw) {
         String lower = raw.toLowerCase().replace('_', '-');
         return switch (lower) {

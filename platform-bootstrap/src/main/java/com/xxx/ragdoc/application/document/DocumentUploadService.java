@@ -45,14 +45,11 @@ public class DocumentUploadService {
     private final DocumentRepository documentRepository;
     private final FileStorage fileStorage;
     private final ParsingTrigger parsingTrigger;
-    /**
-     * P2-1: 上传元数据 rule-based 抽取 (源组件 / 版本号 / 文档类型 / 语言)。只填空白, 不覆盖用户显式输入。
-     */
+
+    /** P2-1: 上传元数据 rule-based 抽取 (源组件 / 版本号 / 文档类型 / 语言)。只填空白, 不覆盖用户显式输入。 */
     private final MetadataExtractor metadataExtractor;
 
-    /**
-     * V9 RAG-Perm-001: 把 owner ACL + visibility 落库。 注入 port 而非 infra Repository — 维持 DDD 分层。
-     */
+    /** V9 RAG-Perm-001: 把 owner ACL + visibility 落库。 注入 port 而非 infra Repository — 维持 DDD 分层。 */
     private final AclWriterPort aclWriter;
 
     /**
@@ -99,7 +96,7 @@ public class DocumentUploadService {
         // 1. 未删 doc 同 hash → idempotent_hit 直接返回(不重切)
         // 2. 软删 doc 同 hash → reactivate 复活(保留原 doc_id) → 触发重切 chunks → parent-child 重灌路径
         // 3. 全新 hash → 走正常 insert
-        var existed = documentRepository.findByContentHash(hash);
+        var existed = documentRepository.findByContentHash(hash, cmd.tenantId());
         if (existed.isPresent()) {
             Document d = existed.get();
             if (!d.deleted()) {
@@ -114,10 +111,13 @@ public class DocumentUploadService {
             // P3-1: reactivate 后, 若该 doc 之前的 isDefault=true 因为是 same-session reload 仍保留;
             // 但若之前 false 且 source 内其他 default 也被软删/不存在, 需要重新标 default,
             // 否则 RetrieveService 在该 source 找不到 default 走全库混查 (P0 bug 复发)。
-            // existsDefaultBySource 查的是 deletedAt IS NULL 的 default, 此时 reactivate 已 setDeleted=false,
+            // existsDefaultBySource 查的是 deletedAt IS NULL 的 default, 此时 reactivate 已
+            // setDeleted=false,
             // 若本 doc 之前 isDefault=true 它已被计入, 调值=true 不抢;
             // 若本 doc isDefault=false 且无其他 default → 重标它。
-            if (!d.isDefault() && !documentRepository.existsDefaultBySource(d.source())) {
+            if (!d.isDefault()
+                    && !documentRepository.existsCurrentByLogicalKey(
+                            d.tenantId(), d.logicalDocumentKey())) {
                 d.markDefault();
                 log.info(
                         "upload.reactivate_mark_default doc_id={}, source={}, reason=no_existing_default",
@@ -160,34 +160,36 @@ public class DocumentUploadService {
                         cmd.source(),
                         cmd.version(),
                         cmd.language(),
-                        cmd.docType());
-        // P3-1: source 首次上传 / 老 default 全软删 → 自动标新 doc 为 default。
-        // 同 source 已有 default 文档 → 不抢 (维持老 default, 避免并发上传导致多 default 竞态)。
+                        cmd.docType(),
+                        cmd.logicalDocumentKey());
+        // 同一逻辑文档首次上传 / 老 current 全软删 → 自动标新版本为 current。
         // 不限 status (因为新 doc 当前是 UPLOADED, parsingTrigger 还没跑完; READY 二次过滤由
         // RetrieveService.findDefaultReadyBySource 兜底)。
-        boolean shouldMarkDefault = !documentRepository.existsDefaultBySource(draft.source());
+        boolean shouldMarkDefault =
+                !documentRepository.existsCurrentByLogicalKey(
+                        draft.tenantId(), draft.logicalDocumentKey());
         if (shouldMarkDefault) {
             draft.markDefault();
-            log.info(
-                    "upload.mark_default source={}, reason=no_existing_default",
-                    draft.source());
+            log.info("upload.mark_default source={}, reason=no_existing_default", draft.source());
         }
         Document document = shortTxWrite.execute(status -> documentRepository.save(draft));
 
         // V9 RAG-Perm-001: 新建文档落 owner ACL + visibility
         //   - 默认主体 (无 token / dev) → owner=dev, visibility=TENANT (单租户兼容: 同租户可见)
         //   - 用户带 token 登录 → owner=该 userId, visibility=TENANT (后续可由 admin 改 PRIVATE/PUBLIC)
-        //   - 失败不阻断上传主流程 (ACL 完整性 < 上传可用性), 仅 log warn 给 ops 监控
+        //   - ACL 是检索授权的 truthful source；写入失败必须失败关闭，禁止产生无主文档。
         try {
             aclWriter.grantOwnerAcl(
-                    document.id().value(),
-                    AuthContext.currentPrincipal().userId(),
-                    "TENANT");
+                    document.id().value(), AuthContext.currentPrincipal().userId(), "TENANT");
         } catch (Exception e) {
-            log.warn(
-                    "upload.acl_grant_failed doc_id={}, error={} (上传主流程不阻断)",
+            log.error(
+                    "upload.acl_grant_failed doc_id={}, error={} (fail closed)",
                     document.id().value(),
                     e.getMessage());
+            document.markFailed("ACL 初始化失败: " + e.getMessage());
+            final Document failMark = document;
+            shortTxWrite.executeWithoutResult(s -> documentRepository.save(failMark));
+            throw new DomainException(ErrorCode.SYS_INTERNAL, "文档权限初始化失败");
         }
 
         // ============ 落 MinIO(无锁) ============

@@ -2,7 +2,6 @@ package com.xxx.ragdoc.infrastructure.auth;
 
 import com.xxx.ragdoc.application.auth.AclWriterPort;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.DocumentAclEntity;
-import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.DocumentEntity;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.DocumentAclJpaRepository;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.DocumentJpaRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +17,8 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li>{@code visibility} normalize: null/blank → "TENANT" (单租户兼容)
- *   <li>{@code ownerId} null/blank 时不停在此 (跳过 ACL 写入但仍更新 visibility), 防 AuthContext 缺主体时
- *       把整条上传打断 — 单租户兼容优于 ACL 完整性
+ *   <li>{@code ownerId} null/blank 时不停在此 (跳过 ACL 写入但仍更新 visibility), 防 AuthContext 缺主体时 把整条上传打断 —
+ *       单租户兼容优于 ACL 完整性
  *   <li>OWNER ACL 已存在则跳过 (uk_acl_doc_principal_perm 唯一约束保证)
  * </ul>
  */
@@ -37,7 +36,10 @@ public class JpaAclWriter implements AclWriterPort {
 
     @Override
     public void grantOwnerAcl(Long documentId, String ownerId, String visibility) {
-        String vis = (visibility == null || visibility.isBlank()) ? DEFAULT_VISIBILITY : visibility.toUpperCase();
+        String vis =
+                (visibility == null || visibility.isBlank())
+                        ? DEFAULT_VISIBILITY
+                        : visibility.toUpperCase();
 
         // 1) documents.visibility + owner_id 写回
         documentJpaRepository
@@ -78,7 +80,11 @@ public class JpaAclWriter implements AclWriterPort {
             acl.setPerm(PERM_OWNER);
             acl.setGrantedBy(ownerId);
             aclRepository.save(acl);
-            log.info("acl.owner_granted doc_id={}, owner={}, visibility={}", documentId, ownerId, vis);
+            log.info(
+                    "acl.owner_granted doc_id={}, owner={}, visibility={}",
+                    documentId,
+                    ownerId,
+                    vis);
         } catch (org.springframework.dao.DataIntegrityViolationException ukEx) {
             // V9 唯一键 (document_id, principal_type, principal_id, perm) 冲突 = 并发已写
             // → 视为已存在, 不挂主流程 (Task 11 问题 4 的并发幂等)

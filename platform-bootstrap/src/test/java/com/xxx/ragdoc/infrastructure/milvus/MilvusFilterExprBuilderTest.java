@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import java.util.Set;
+import java.util.LinkedHashMap;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -11,15 +12,14 @@ import org.junit.jupiter.api.Test;
 /**
  * F-SMOKE-3: {@link MilvusFilterExprBuilder} 全路径单测。
  *
- * <p>这个工具拼的 expr 直接喂给 Milvus search.search, 任何拼接错(null 漏判 / 转义漏 / 多余空格)都会导致检索语法错或语义错。 全路径覆盖防
- * K1 同类 bug 复活。V9 RAG-Perm-001 起追加 tenant_id 与 allowedDocIds (权限白名单) 路径。
+ * <p>这个工具拼的 expr 直接喂给 Milvus search.search, 任何拼接错(null 漏判 / 转义漏 / 多余空格)都会导致检索语法错或语义错。 全路径覆盖防 K1 同类
+ * bug 复活。V9 RAG-Perm-001 起追加 tenant_id 与 allowedDocIds (权限白名单) 路径。
  */
 @DisplayName("MilvusFilterExprBuilder")
 class MilvusFilterExprBuilderTest {
 
     /** 5 参数 MetadataFilter 构造帮助: 前 3 业务字段 + 2 权限字段。 */
-    private static VectorStore.MetadataFilter mf(
-            String source, String version, String language) {
+    private static VectorStore.MetadataFilter mf(String source, String version, String language) {
         return new VectorStore.MetadataFilter(source, version, language, null, null);
     }
 
@@ -105,6 +105,36 @@ class MilvusFilterExprBuilderTest {
         }
     }
 
+    @Test
+    @DisplayName("logical document key 应经过 metadata 写入而不改变现有过滤契约")
+    void chunkMetadataCarriesLogicalDocumentKey() {
+        VectorStore.ChunkMetadata metadata =
+                new VectorStore.ChunkMetadata(
+                        "nacos", "2.3", "zh", "doc", "TEXT", "tenant-a", "guide");
+        assertThat(metadata.logicalDocumentKey()).isEqualTo("guide");
+    }
+
+    @Test
+    @DisplayName("active generation 按文档精确过滤，避免影子索引进入候选集")
+    void activeGenerationPerDocument() {
+        LinkedHashMap<Long, Integer> generations = new LinkedHashMap<>();
+        generations.put(10L, 2);
+        generations.put(20L, 4);
+        VectorStore.MetadataFilter filter =
+                new VectorStore.MetadataFilter(null, null, null, "tenant-a", Set.of(10L, 20L), generations);
+        assertThat(MilvusFilterExprBuilder.build(null, filter))
+                .contains("((document_id == 10 and ingestion_generation == 2) or "
+                        + "(document_id == 20 and ingestion_generation == 4))");
+    }
+
+    @Test
+    @DisplayName("空 active generation 映射必须 fail closed")
+    void emptyActiveGenerationFailsClosed() {
+        VectorStore.MetadataFilter filter =
+                new VectorStore.MetadataFilter(null, null, null, "tenant-a", null, java.util.Map.of());
+        assertThat(MilvusFilterExprBuilder.build(null, filter)).contains(MilvusFilterExprBuilder.ALWAYS_FALSE);
+    }
+
     @Nested
     @DisplayName("空白字段跳过 (防止拼接出空串子句)")
     class SkipBlank {
@@ -152,8 +182,7 @@ class MilvusFilterExprBuilderTest {
         void tenantIdOnly() {
             VectorStore.MetadataFilter f =
                     new VectorStore.MetadataFilter(null, null, null, "default", null);
-            assertThat(MilvusFilterExprBuilder.build(null, f))
-                    .isEqualTo("tenant_id == 'default'");
+            assertThat(MilvusFilterExprBuilder.build(null, f)).isEqualTo("tenant_id == 'default'");
         }
 
         @Test
@@ -162,15 +191,15 @@ class MilvusFilterExprBuilderTest {
             VectorStore.MetadataFilter f =
                     new VectorStore.MetadataFilter(null, null, null, "default", null);
             // 仅 tenant 子句, 不出现 document_id in
-            assertThat(MilvusFilterExprBuilder.build(null, f))
-                    .doesNotContain("document_id in");
+            assertThat(MilvusFilterExprBuilder.build(null, f)).doesNotContain("document_id in");
         }
 
         @Test
         @DisplayName("allowedDocIds 非空集合: document_id in [..]")
         void allowedDocIdsWhitelist() {
             VectorStore.MetadataFilter f =
-                    new VectorStore.MetadataFilter(null, null, null, "default", Set.of(10L, 20L, 30L));
+                    new VectorStore.MetadataFilter(
+                            null, null, null, "default", Set.of(10L, 20L, 30L));
             String expr = MilvusFilterExprBuilder.build(null, f);
             assertThat(expr).contains("tenant_id == 'default'");
             assertThat(expr).contains("document_id in [");
@@ -181,7 +210,8 @@ class MilvusFilterExprBuilderTest {
         @DisplayName("allowedDocIds 空集合 (无可读文档): 永假表达式 (1 == 0)")
         void allowedDocIdsEmptyYieldsFalse() {
             VectorStore.MetadataFilter f =
-                    new VectorStore.MetadataFilter(null, null, null, "default", java.util.Collections.emptySet());
+                    new VectorStore.MetadataFilter(
+                            null, null, null, "default", java.util.Collections.emptySet());
             assertThat(MilvusFilterExprBuilder.build(null, f))
                     .contains(MilvusFilterExprBuilder.ALWAYS_FALSE);
         }

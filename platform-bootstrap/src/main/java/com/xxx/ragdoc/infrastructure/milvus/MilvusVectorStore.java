@@ -45,7 +45,8 @@ public class MilvusVectorStore implements VectorStore {
     private final MilvusClientV2 milvusClientV2;
     private final MilvusProperties props;
     private final RetrieveProperties retrieveProps;
-    // Phase 3.A: Milvus 调用走 CircuitBreaker(命名 instance "milvus"); 熔断后 InsertService / RetrieveService 抛异常,
+    // Phase 3.A: Milvus 调用走 CircuitBreaker(命名 instance "milvus"); 熔断后 InsertService /
+    // RetrieveService 抛异常,
     // 由各自 flow 处理(retrieve 走 empty; parse queue 重试或 DLQ)。
     private final CircuitBreaker circuitBreaker;
     private final Gson gson = new Gson();
@@ -72,6 +73,29 @@ public class MilvusVectorStore implements VectorStore {
         }
         deleteByDocumentId(documentId);
 
+        insertGeneration(documentId, chunks, embeddings, metadata);
+    }
+
+    @Override
+    public void upsertGeneration(
+            Long documentId,
+            int generation,
+            List<Chunk> chunks,
+            List<EmbeddingResult> embeddings,
+            VectorStore.ChunkMetadata metadata) {
+        deleteByDocumentIdAndGeneration(documentId, generation);
+        insertGeneration(documentId, chunks, embeddings,
+                (metadata == null ? VectorStore.ChunkMetadata.unknown() : metadata)
+                        .withGeneration(generation));
+    }
+
+    private void insertGeneration(
+            Long documentId,
+            List<Chunk> chunks,
+            List<EmbeddingResult> embeddings,
+            VectorStore.ChunkMetadata metadata) {
+        if (chunks.isEmpty() || embeddings.isEmpty()) return;
+
         VectorStore.ChunkMetadata md =
                 metadata == null ? VectorStore.ChunkMetadata.unknown() : metadata;
 
@@ -92,9 +116,11 @@ public class MilvusVectorStore implements VectorStore {
             text = truncateUtf8Bytes(text, MilvusCollectionInitializer.TEXT_MAX_LENGTH);
             row.addProperty(MilvusCollectionInitializer.FIELD_TEXT, text);
             row.addProperty(MilvusCollectionInitializer.FIELD_DOC_ID, documentId);
+            row.addProperty(MilvusCollectionInitializer.FIELD_GENERATION, md.generation());
             row.addProperty(MilvusCollectionInitializer.FIELD_CHUNK_ID, c.id());
             row.addProperty(MilvusCollectionInitializer.FIELD_PAGE, c.page());
-            row.addProperty(MilvusCollectionInitializer.FIELD_TENANT,
+            row.addProperty(
+                    MilvusCollectionInitializer.FIELD_TENANT,
                     (md.tenantId() == null || md.tenantId().isBlank()) ? "default" : md.tenantId());
             // V3 业务元数据标量: 支持 Milvus expr 过滤检索(如 source=='nacos' && version=='2.4')
             row.addProperty(MilvusCollectionInitializer.FIELD_SOURCE, md.source());
@@ -102,6 +128,9 @@ public class MilvusVectorStore implements VectorStore {
             row.addProperty(
                     MilvusCollectionInitializer.FIELD_VERSION,
                     md.version() == null ? "" : md.version());
+            row.addProperty(
+                    MilvusCollectionInitializer.FIELD_LOGICAL_DOCUMENT_KEY,
+                    md.logicalDocumentKey());
             row.addProperty(MilvusCollectionInitializer.FIELD_LANGUAGE, md.language());
             row.addProperty(MilvusCollectionInitializer.FIELD_DOC_TYPE, md.docType());
             // chunkType: chunk 自身的 type 优先于 metadata.chunkType(后者是文档级缺省)
@@ -132,7 +161,8 @@ public class MilvusVectorStore implements VectorStore {
 
     @Override
     public void deleteByDocumentId(Long documentId) {
-        // Phase 3.A: delete 调用走 CB。熔断态抛 CallNotPermittedException 上抛, 让 DeleteService 决策重试 / 标记 pending。
+        // Phase 3.A: delete 调用走 CB。熔断态抛 CallNotPermittedException 上抛, 让 DeleteService 决策重试 / 标记
+        // pending。
         circuitBreaker.executeRunnable(
                 () ->
                         milvusClientV2.delete(
@@ -142,14 +172,25 @@ public class MilvusVectorStore implements VectorStore {
                                         .build()));
     }
 
-    /**
-     * Task 4: 用 Milvus query (标量过滤) count 指定 doc 的向量数。
-     *
-     * <p>Milvus SDK 2.5 没 count API, 用 {@code query(topK=1, filter=document_id==X)} 取回结果总数近似判定。
-     * 失败 / 熔断时返 -1 让 reconcile 跳过此 doc (避免误重建)。
-     */
+    @Override
+    public void deleteByDocumentIdAndGeneration(Long documentId, int generation) {
+        circuitBreaker.executeRunnable(
+                () -> milvusClientV2.delete(
+                        DeleteReq.builder()
+                                .collectionName(props.getCollection())
+                                .filter("document_id == " + documentId
+                                        + " and ingestion_generation == " + generation)
+                                .build()));
+    }
+
+    /** 兼容旧端口：这里只能表达存在性，不能作为精确数量使用。 */
     @Override
     public int countByDocumentId(Long documentId) {
+        return vectorPresence(documentId, 1);
+    }
+
+    @Override
+    public int vectorPresence(Long documentId, int generation) {
         try {
             var resp =
                     circuitBreaker.executeSupplier(
@@ -157,7 +198,9 @@ public class MilvusVectorStore implements VectorStore {
                                     milvusClientV2.query(
                                             io.milvus.v2.service.vector.request.QueryReq.builder()
                                                     .collectionName(props.getCollection())
-                                                    .filter("document_id == " + documentId)
+                                                    .filter("document_id == " + documentId
+                                                            + " and ingestion_generation == "
+                                                            + generation)
                                                     .outputFields(
                                                             java.util.List.of(
                                                                     MilvusCollectionInitializer
@@ -165,12 +208,13 @@ public class MilvusVectorStore implements VectorStore {
                                                     .limit(1)
                                                     .build()));
             long n = resp.getQueryResults().size();
-            // limit=1 时返回 1 行 = "至少有向量"; 0 = 完全没向量
+            // limit=1 明确只做存在性探测，禁止与 MySQL Chunk 总数比较。
             return n > 0 ? 1 : 0;
         } catch (Exception e) {
             log.warn(
-                    "milvus.count_by_doc_failed doc_id={}, error={} (reconcile skip)",
+                    "milvus.vector_presence_failed doc_id={}, generation={}, error={} (reconcile skip)",
                     documentId,
+                    generation,
                     e.getMessage());
             return -1;
         }
@@ -266,7 +310,8 @@ public class MilvusVectorStore implements VectorStore {
                         .build();
 
         // Phase 3.A: hybrid search 调用走 CB
-        SearchResp resp = circuitBreaker.executeSupplier(() -> milvusClientV2.hybridSearch(hybridReq));
+        SearchResp resp =
+                circuitBreaker.executeSupplier(() -> milvusClientV2.hybridSearch(hybridReq));
         List<List<SearchResp.SearchResult>> results = resp.getSearchResults();
         if (results.isEmpty()) {
             return List.of();
@@ -286,8 +331,8 @@ public class MilvusVectorStore implements VectorStore {
     /**
      * Task 5: 单路 BM25 sparse 检索, 供 {@code SparseRetriever} 复用。
      *
-     * <p>独立于 hybridSearch: hybridSearch 把 dense+sparse 一起送 SDK RRF, 这条只跑 sparse —
-     * 让 Task 5 的 HybridRetriever 可以手工融合两路 rank (RRF)。
+     * <p>独立于 hybridSearch: hybridSearch 把 dense+sparse 一起送 SDK RRF, 这条只跑 sparse — 让 Task 5 的
+     * HybridRetriever 可以手工融合两路 rank (RRF)。
      */
     List<ScoredChunk> searchSparseBM25(String queryText, String expr, int topK) {
         var reqBuilder =
@@ -314,7 +359,11 @@ public class MilvusVectorStore implements VectorStore {
                     scored.add(new ScoredChunk(n.longValue(), hit.getScore().floatValue()));
                 }
             }
-            log.info("milvus.sparse_bm25_search topK={}, expr={}, hits={}", topK, expr, scored.size());
+            log.info(
+                    "milvus.sparse_bm25_search topK={}, expr={}, hits={}",
+                    topK,
+                    expr,
+                    scored.size());
             return scored;
         } catch (Exception e) {
             // BM25 sparse 在某些 Milvus 版本上需独立索引; 不可用时返空让上层降级到 dense-only

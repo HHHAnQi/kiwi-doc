@@ -7,9 +7,9 @@ import java.util.List;
 /**
  * Task 5 / V11 Hybrid Retrieval: 检索器端口。
  *
- * <p>与 {@link VectorStore} 的关系: VectorStore 仍保留写入(upsert/delete/count)与 fallback 检索;
- * 本接口抽出"读取 + 融合"语义, 让 RetrieveService 调它而不是直接调 VectorStore,
- * 方便 dense-only / hybrid 路径切换 + RRF 融合层 + 未来扩展(eg. 外部 BM25 引擎)。
+ * <p>与 {@link VectorStore} 的关系: VectorStore 仍保留写入(upsert/delete/count)与 fallback 检索; 本接口抽出"读取 +
+ * 融合"语义, 让 RetrieveService 调它而不是直接调 VectorStore, 方便 dense-only / hybrid 路径切换 + RRF 融合层 + 未来扩展(eg.
+ * 外部 BM25 引擎)。
  *
  * <p>实现:
  *
@@ -21,8 +21,8 @@ import java.util.List;
  *   <li>{@code MilvusRetriever} — 按 {@link Mode} 路由到 dense 或 hybrid 路径 (Spring 主 bean)
  * </ul>
  *
- * <p>语义约定: 实现不持久化任何状态, 纯函数式: 给 query 拿候选。Permission Filter / 文档元数据过滤
- * 全部走 {@link VectorStore.MetadataFilter}, Retriever 透传给底层 Milvus。
+ * <p>语义约定: 实现不持久化任何状态, 纯函数式: 给 query 拿候选。Permission Filter / 文档元数据过滤 全部走 {@link
+ * VectorStore.MetadataFilter}, Retriever 透传给底层 Milvus。
  */
 public interface Retriever {
 
@@ -63,7 +63,7 @@ public interface Retriever {
      * <p>实现必须保证:
      *
      * <ul>
-     *   <li>失败时返 {@code List.of()} 不抛 (检索 fail 不应阻断 chat 主流程; 上游有 fallback)
+     *   <li>真实零命中返回 {@code List.of()}；基础设施失败必须抛出异常，禁止伪装成 NO_RECALL
      *   <li>filter 中的 {@code allowedDocIds} (V9 权限白名单) 严格透传给底层标量过滤
      * </ul>
      */

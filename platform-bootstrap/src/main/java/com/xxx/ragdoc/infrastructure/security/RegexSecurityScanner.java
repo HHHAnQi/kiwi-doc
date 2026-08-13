@@ -2,7 +2,6 @@ package com.xxx.ragdoc.infrastructure.security;
 
 import com.xxx.ragdoc.application.document.SecurityScannerProperties;
 import com.xxx.ragdoc.application.document.security.ScanResult;
-import com.xxx.ragdoc.application.document.security.ScanResult.Outcome;
 import com.xxx.ragdoc.application.document.security.ScanResult.Threat;
 import com.xxx.ragdoc.application.document.security.ScanResult.ThreatType;
 import com.xxx.ragdoc.application.document.security.port.SecurityScannerPort;
@@ -48,8 +47,8 @@ import org.springframework.stereotype.Component;
  *   <li>正则是第一道 (Task 7 citation verifier 二道, defense-in-depth)
  * </ul>
  *
- * <p>Bean 装配: 不用 {@code @ConditionalOnProperty} — 总是装配让 TikaParsingTrigger 构造稳定,
- * 内部 {@code properties.isEnabled()} 决定是否真扫 (false 时直接返 CLEAN)。
+ * <p>Bean 装配: 不用 {@code @ConditionalOnProperty} — 总是装配让 TikaParsingTrigger 构造稳定, 内部 {@code
+ * properties.isEnabled()} 决定是否真扫 (false 时直接返 CLEAN)。
  */
 @Slf4j
 @Component
@@ -64,9 +63,15 @@ public class RegexSecurityScanner implements SecurityScannerPort {
     /** Ignore previous / disregard prior / 忽略上面指令。 */
     private static final List<Pattern> IGNORE_PREVIOUS_PATTERNS =
             List.of(
-                    Pattern.compile("ignore\\s+(the\\s+|all\\s+)?previous\\s+(instructions?|prompt)", FLAGS),
-                    Pattern.compile("disregard\\s+(all\\s+|the\\s+)?(prior|previous)\\s+(instructions?|prompt)?", FLAGS),
-                    Pattern.compile("forget\\s+(all\\s+|your\\s+)?(previous\\s+)?(instructions?|prompt)", FLAGS),
+                    Pattern.compile(
+                            "ignore\\s+(the\\s+|all\\s+)?previous\\s+(instructions?|prompt)",
+                            FLAGS),
+                    Pattern.compile(
+                            "disregard\\s+(all\\s+|the\\s+)?(prior|previous)\\s+(instructions?|prompt)?",
+                            FLAGS),
+                    Pattern.compile(
+                            "forget\\s+(all\\s+|your\\s+)?(previous\\s+)?(instructions?|prompt)",
+                            FLAGS),
                     // 中文: 忽略上面/之前/之前的 + 0~5 字 + 指令/提示/规则
                     Pattern.compile("忽略(上面|之前|前面|此前).{0,5}(指令|提示|规则|prompt)", FLAGS),
                     Pattern.compile("无视(上面|之前|前面|此前).{0,5}(指令|提示|规则)", FLAGS));
@@ -74,7 +79,9 @@ public class RegexSecurityScanner implements SecurityScannerPort {
     /** System prompt / reveal / 你的系统提示。 */
     private static final List<Pattern> SYSTEM_PROMPT_PATTERNS =
             List.of(
-                    Pattern.compile("(reveal|show|print|repeat|leak)\\s+.*(system\\s+)?(prompt|instruction|message)", FLAGS),
+                    Pattern.compile(
+                            "(reveal|show|print|repeat|leak)\\s+.*(system\\s+)?(prompt|instruction|message)",
+                            FLAGS),
                     Pattern.compile("system\\s+prompt", FLAGS),
                     Pattern.compile("你(的)?(系统|原始)?(提示|prompt|指令).{0,10}(是|是什么|是什么?|是什么\\?)", FLAGS),
                     Pattern.compile("(输出|展示|打印)你(的)?(系统|初始|原始)?(提示|prompt)", FLAGS));
@@ -147,7 +154,8 @@ public class RegexSecurityScanner implements SecurityScannerPort {
             if (m.find()) {
                 int start = m.start();
                 int end = Math.min(text.length(), m.end() + 30); // excerpt 截到匹配末 + 30 char
-                String excerpt = text.substring(Math.max(0, start), end).replaceAll("\\s+", " ").trim();
+                String excerpt =
+                        text.substring(Math.max(0, start), end).replaceAll("\\s+", " ").trim();
                 threats.add(new Threat(type, p.pattern(), start, truncate(excerpt, 60)));
             }
         }

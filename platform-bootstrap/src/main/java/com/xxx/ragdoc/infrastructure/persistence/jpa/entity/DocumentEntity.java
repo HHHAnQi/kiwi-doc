@@ -38,6 +38,10 @@ public class DocumentEntity {
     @Column(name = "version", length = 16)
     private String version;
 
+    /** V16: 同一逻辑文件跨版本稳定不变；连接器应优先提供外部稳定 ID。 */
+    @Column(name = "logical_document_key", nullable = false, length = 128)
+    private String logicalDocumentKey;
+
     /** 语言: zh / en, 缺省 zh。 */
     @Column(name = "language", nullable = false, length = 8)
     private String language = "zh";
@@ -51,11 +55,17 @@ public class DocumentEntity {
     private Boolean isDefault = false;
 
     /**
-     * Phase 3 / P3-2: Milvus 向量是否待清理。 softDelete 同步删 chunks (原子),
-     * Milvus 走 circuit breaker 失败时标 true, MilvusDeleteSweeper 重试。
+     * Phase 3 / P3-2: Milvus 向量是否待清理。 softDelete 同步删 chunks (原子), Milvus 走 circuit breaker 失败时标
+     * true, MilvusDeleteSweeper 重试。
      */
     @Column(name = "pending_milvus_delete", nullable = false)
     private Boolean pendingMilvusDelete = false;
+
+    @Column(name = "active_generation", nullable = false)
+    private Integer activeGeneration = 1;
+
+    @Column(name = "pending_generation")
+    private Integer pendingGeneration;
 
     @Column(name = "size_bytes", nullable = false)
     private Long sizeBytes;
@@ -154,6 +164,14 @@ public class DocumentEntity {
         this.version = version;
     }
 
+    public String getLogicalDocumentKey() {
+        return logicalDocumentKey;
+    }
+
+    public void setLogicalDocumentKey(String logicalDocumentKey) {
+        this.logicalDocumentKey = logicalDocumentKey;
+    }
+
     public String getLanguage() {
         return language;
     }
@@ -185,6 +203,11 @@ public class DocumentEntity {
     public void setPendingMilvusDelete(Boolean pendingMilvusDelete) {
         this.pendingMilvusDelete = pendingMilvusDelete;
     }
+
+    public Integer getActiveGeneration() { return activeGeneration; }
+    public void setActiveGeneration(Integer activeGeneration) { this.activeGeneration = activeGeneration; }
+    public Integer getPendingGeneration() { return pendingGeneration; }
+    public void setPendingGeneration(Integer pendingGeneration) { this.pendingGeneration = pendingGeneration; }
 
     public Long getSizeBytes() {
         return sizeBytes;

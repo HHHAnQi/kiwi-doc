@@ -24,6 +24,7 @@ milvus:
   host: ${MILVUS_HOST:localhost}
   port: ${MILVUS_PORT:19530}
   collection: ${MILVUS_COLLECTION:documents_v1}
+  fail-on-schema-mismatch: ${MILVUS_FAIL_ON_SCHEMA_MISMATCH:true}
 
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
@@ -39,6 +40,10 @@ embedding:
 
 # parser-service 心跳 job + 续点配置
 rag:
+  security-scanner:
+    enabled: ${RAG_SECURITY_SCANNER_ENABLED:true}
+    block-on-malicious: ${RAG_SECURITY_BLOCK_MALICIOUS:true}
+    malicious-threshold: ${RAG_SECURITY_MALICIOUS_THRESHOLD:3}
   parser:
     # RUNNING lease 时长; 心跳 job 据此回收. 5 min 覆盖最慢单文档解析.
     lease-duration-minutes: 5

@@ -15,8 +15,8 @@ import org.springframework.stereotype.Component;
 /**
  * V9 RAG-Perm-001 / Task 11 P0: 基于 documents + document_acl 的 {@link PermissionResolverPort} 实现。
  *
- * <p>放 infrastructure 层 (合法引用 JPA Repository); application 层 RetrieveService 只看 port
- * 接口, 维持 ArchUnit 纪律。
+ * <p>放 infrastructure 层 (合法引用 JPA Repository); application 层 RetrieveService 只看 port 接口, 维持
+ * ArchUnit 纪律。
  *
  * <h2>Task 11 修正 (问题 1+5 根因)</h2>
  *
@@ -40,8 +40,8 @@ import org.springframework.stereotype.Component;
  *       </ul>
  * </ol>
  *
- * <p>owner 可读 PRIVATE doc: JpaAclWriter 在上传时为 ownerId 写 USER+OWNER ACL,
- * OWNER 档属 {@link #READ_PERMS}, 自然并入显式集; resolver 无需特殊处理。
+ * <p>owner 可读 PRIVATE doc: JpaAclWriter 在上传时为 ownerId 写 USER+OWNER ACL, OWNER 档属 {@link
+ * #READ_PERMS}, 自然并入显式集; resolver 无需特殊处理。
  */
 @Slf4j
 @Component

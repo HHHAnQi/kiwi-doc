@@ -12,13 +12,12 @@ import org.springframework.stereotype.Component;
  * <p>核心字段:
  *
  * <ul>
- *   <li>{@link #devDefaultPrincipalEnabled} = 是否允许 AuthFilter 在 dev/local profile 下用
- *       {@link AuthContext#DEFAULT_PRINCIPAL} 处理"无 token / dev-default-token"请求
+ *   <li>{@link #devDefaultPrincipalEnabled} = 是否允许 AuthFilter 在 dev/local profile 下用 {@link
+ *       AuthContext#DEFAULT_PRINCIPAL} 处理"无 token / dev-default-token"请求
  *   <li>{@link #devDefaultToken} = 触发 dev-default-principal 的 magic token (默认 "dev-default-token")
  * </ul>
  *
- * <p>生产环境 (profile=prod|test|staging|...) 发现 enabled=true → 启动 fail-fast (见 init),
- * 不允许降级 fallback。
+ * <p>生产环境 (profile=prod|test|staging|...) 发现 enabled=true → 启动 fail-fast (见 init), 不允许降级 fallback。
  */
 @Slf4j
 @Data
@@ -33,8 +32,7 @@ public class AuthProperties {
     private String devDefaultToken = "dev-default-token";
 
     /** 兼容老 FeedbackController 用的 dev token (DEV_TOKEN)。 */
-    private String devToken =
-            System.getenv().getOrDefault("APP_DEV_TOKEN", "dev-token-change-me");
+    private String devToken = System.getenv().getOrDefault("APP_DEV_TOKEN", "dev-token-change-me");
 
     /** 兼容老 FeedbackController 用的 admin token (ADMIN_TOKEN)。 */
     private String adminToken =
@@ -59,8 +57,8 @@ public class AuthProperties {
     /**
      * 启动校验: prod-like profile (非 dev|local|test) 下若 devDefaultPrincipalEnabled=true → 抛异常。
      *
-     * <p>由 ChatApplication 启动后调 (ApplicationReadyEvent), 或 @PostConstruct。本类自身用 @PostConstruct
-     * 让校验在 bean 初始化后立即跑。
+     * <p>由 ChatApplication 启动后调 (ApplicationReadyEvent), 或 @PostConstruct。本类自身用 @PostConstruct 让校验在
+     * bean 初始化后立即跑。
      */
     @jakarta.annotation.PostConstruct
     public void verifyProfileGate() {

@@ -34,19 +34,22 @@ class MetadataFilterTest {
     @Test
     @DisplayName("任意单个非空(source): isEmpty=false")
     void onlySourceNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter("nacos", null, null, null, null).isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter("nacos", null, null, null, null).isEmpty())
+                .isFalse();
     }
 
     @Test
     @DisplayName("任意单个非空(version): isEmpty=false")
     void onlyVersionNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter(null, "2.4", null, null, null).isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter(null, "2.4", null, null, null).isEmpty())
+                .isFalse();
     }
 
     @Test
     @DisplayName("任意单个非空(language): isEmpty=false")
     void onlyLanguageNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter(null, null, "zh", null, null).isEmpty()).isFalse();
+        assertThat(new VectorStore.MetadataFilter(null, null, "zh", null, null).isEmpty())
+                .isFalse();
     }
 
     @Test
@@ -59,7 +62,10 @@ class MetadataFilterTest {
     @Test
     @DisplayName("任意单个非空(allowedDocIds 集合): isEmpty=false")
     void onlyAllowedDocIdsNonEmpty() {
-        assertThat(new VectorStore.MetadataFilter(null, null, null, null, java.util.Set.of(1L, 2L)).isEmpty())
+        assertThat(
+                        new VectorStore.MetadataFilter(
+                                        null, null, null, null, java.util.Set.of(1L, 2L))
+                                .isEmpty())
                 .isFalse();
     }
 

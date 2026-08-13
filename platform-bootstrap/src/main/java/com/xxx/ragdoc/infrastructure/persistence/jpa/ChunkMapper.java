@@ -25,6 +25,7 @@ public final class ChunkMapper {
         return new Chunk(
                 e.getId(),
                 e.getDocumentId(),
+                e.getGeneration(),
                 e.getSeq(),
                 ChunkType.valueOf(e.getChunkType()),
                 e.getContent(),
@@ -39,6 +40,7 @@ public final class ChunkMapper {
     public static ChunkEntity toNewEntity(Chunk c) {
         ChunkEntity e = new ChunkEntity();
         e.setDocumentId(c.documentId());
+        e.setGeneration(c.generation());
         e.setSeq(c.seq());
         e.setChunkType(c.type().name());
         e.setContent(c.content());

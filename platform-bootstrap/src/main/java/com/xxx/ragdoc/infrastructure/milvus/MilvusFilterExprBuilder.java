@@ -4,6 +4,7 @@ import com.xxx.ragdoc.application.document.port.VectorStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 拼 Milvus 标量过滤表达式: document_id + {@link VectorStore.MetadataFilter} + V9 权限白名单 逻辑 AND。
@@ -49,8 +50,39 @@ public final class MilvusFilterExprBuilder {
             appendStringClause(
                     clauses, MilvusCollectionInitializer.FIELD_TENANT, filter.tenantId());
             appendDocIdInClause(clauses, filter.allowedDocIds());
+            appendActiveGenerationClause(clauses, filter.activeGenerations());
         }
         return clauses.isEmpty() ? null : String.join(" and ", clauses);
+    }
+
+    /**
+     * 每个文档可以处于不同 generation，必须在 ANN/BM25 候选生成前过滤，避免影子代际挤占 topK。
+     * null 表示旧适配器尚不支持；空 map 表示当前条件下没有可检索的在线代际。
+     */
+    private static void appendActiveGenerationClause(
+            List<String> clauses, Map<Long, Integer> generations) {
+        if (generations == null) return;
+        if (generations.isEmpty()) {
+            clauses.add(ALWAYS_FALSE);
+            return;
+        }
+        StringBuilder sb = new StringBuilder("(");
+        boolean first = true;
+        for (Map.Entry<Long, Integer> entry : generations.entrySet()) {
+            if (!first) sb.append(" or ");
+            sb.append("(")
+                    .append(MilvusCollectionInitializer.FIELD_DOC_ID)
+                    .append(" == ")
+                    .append(entry.getKey())
+                    .append(" and ")
+                    .append(MilvusCollectionInitializer.FIELD_GENERATION)
+                    .append(" == ")
+                    .append(entry.getValue())
+                    .append(")");
+            first = false;
+        }
+        sb.append(")");
+        clauses.add(sb.toString());
     }
 
     private static void appendStringClause(List<String> clauses, String fieldName, String value) {

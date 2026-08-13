@@ -7,15 +7,44 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * RegexMetadataExtractor 单测: 覆盖 source / version / docType / language 抽取典型样本 + 只填空白策略。
- */
+/** RegexMetadataExtractor 单测: 覆盖 source / version / docType / language 抽取典型样本 + 只填空白策略。 */
 @DisplayName("RegexMetadataExtractor")
 class RegexMetadataExtractorTest {
 
     private final RegexMetadataExtractor extractor = new RegexMetadataExtractor();
 
-    /** 辅助: 构造一个全空白 (让 UploadCommand 落缺省 source=unknown/version=null/docType=doc/language=zh) 的 cmd。 */
+    @Test
+    @DisplayName("不同版本文件名应推导为同一 logicalDocumentKey")
+    void derivesStableLogicalDocumentKeyAcrossVersions() {
+        UploadCommand v1 = cmdWithFilename("nacos-user-guide-1.0.pdf");
+        UploadCommand v2 = cmdWithFilename("nacos-user-guide-2.3.1.pdf");
+
+        assertThat(v1.logicalDocumentKey()).isEqualTo("nacos-user-guide");
+        assertThat(v2.logicalDocumentKey()).isEqualTo(v1.logicalDocumentKey());
+    }
+
+    @Test
+    @DisplayName("显式 logicalDocumentKey 优先于文件名推导")
+    void explicitLogicalDocumentKeyWins() {
+        UploadCommand command =
+                new UploadCommand(
+                        "renamed-2.0.pdf",
+                        "application/pdf",
+                        1,
+                        new byte[] {1},
+                        "default",
+                        "nacos",
+                        "2.0",
+                        "zh",
+                        "doc",
+                        "confluence:page-42");
+
+        assertThat(command.logicalDocumentKey()).isEqualTo("confluence:page-42");
+    }
+
+    /**
+     * 辅助: 构造一个全空白 (让 UploadCommand 落缺省 source=unknown/version=null/docType=doc/language=zh) 的 cmd。
+     */
     private static UploadCommand cmdWithFilename(String filename) {
         return new UploadCommand(
                 filename,

@@ -5,8 +5,8 @@ import java.util.Set;
 /**
  * 请求级 principal — 由 AuthFilter 从 token 解析后写入 AuthContext。
  *
- * <p>领域对象: 不带任何 infra 依赖 (JPA/Spring), 让 application 业务层 (RetrieveService /
- * PermissionResolver) 只看接口不看 Entity。
+ * <p>领域对象: 不带任何 infra 依赖 (JPA/Spring), 让 application 业务层 (RetrieveService / PermissionResolver)
+ * 只看接口不看 Entity。
  *
  * @param tenantId 租户 id (default = 单租户)
  * @param userId 用户 id (dev / admin / 业务 user)

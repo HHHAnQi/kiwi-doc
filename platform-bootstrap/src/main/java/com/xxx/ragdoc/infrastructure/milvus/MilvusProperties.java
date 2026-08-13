@@ -16,4 +16,7 @@ public class MilvusProperties {
 
     /** collection 名, V2 固定 documents_v1。 */
     private String collection;
+
+    /** schema 不匹配时是否阻止启动。生产建议 true；false 只降级告警，绝不自动删除数据。 */
+    private boolean failOnSchemaMismatch = true;
 }

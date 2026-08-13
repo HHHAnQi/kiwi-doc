@@ -9,4 +9,9 @@ public interface ParsingTrigger {
 
     /** 触发指定 Document 的解析。返回不抛即视为已派发。 */
     void trigger(Long documentId);
+
+    /** 创建新的 ingestion generation；与同 generation 内的执行重试严格分离。 */
+    default void rebuild(Long documentId) {
+        throw new UnsupportedOperationException("当前解析模式不支持影子 generation 重建");
+    }
 }

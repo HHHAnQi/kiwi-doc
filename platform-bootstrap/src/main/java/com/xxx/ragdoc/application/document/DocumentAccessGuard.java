@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component;
  * <p>注意: 故意不返 403 防枚举 — 攻击者通过 403 vs 404 区分可推断 documentId 存在性。
  *
  * <p>放 application 层是合规的: 通过 PermissionResolverPort (application) + DocumentAclJpaRepository
- * (本类直接引用 infra repo 仅作 ACL exists 查询;  复用 ArchUnit 例外 — DocumentAccessGuard 是 application
+ * (本类直接引用 infra repo 仅作 ACL exists 查询; 复用 ArchUnit 例外 — DocumentAccessGuard 是 application
  * 层的"权限聚合根", 与 PermissionResolverPort 同设计原则).
  */
 @Slf4j
@@ -72,8 +72,7 @@ public class DocumentAccessGuard {
                         .orElseThrow(
                                 () ->
                                         new NotFoundException(
-                                                ErrorCode.DOC_NOT_FOUND,
-                                                "文档不存在: " + documentId));
+                                                ErrorCode.DOC_NOT_FOUND, "文档不存在: " + documentId));
 
         // 2. tenant 检查 (跨 tenant 一律 404)
         if (!p.tenantId().equals(doc.tenantId())) {

@@ -6,8 +6,6 @@ import com.xxx.ragdoc.application.document.port.ParseTaskRepository;
 import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.ParseTask;
 import com.xxx.ragdoc.domain.document.ParseTaskStatus;
-import com.xxx.ragdoc.domain.shared.TraceId;
-import com.xxx.ragdoc.infrastructure.mq.ParseTaskProducer;
 import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -38,21 +36,51 @@ public class AsyncParsingTrigger implements ParsingTrigger {
 
     private final DocumentRepository documentRepository;
     private final ParseTaskRepository parseTaskRepository;
-    private final ParseTaskProducer producer;
     private final Clock clock;
 
     @Override
     public void trigger(Long documentId) {
+        queue(documentId, false);
+    }
+
+    @Override
+    public void rebuild(Long documentId) {
+        queue(documentId, true);
+    }
+
+    private void queue(Long documentId, boolean rebuild) {
         Document doc =
                 documentRepository
                         .findById(documentId)
                         .orElseThrow(
                                 () -> new IllegalStateException("Document 不存在: " + documentId));
         Instant now = Instant.now(clock);
+        ParseTask existing = parseTaskRepository.findByDocumentId(documentId).orElse(null);
+        if (rebuild
+                && existing != null
+                && existing.triggerType() == ParseTask.TriggerType.REBUILD
+                && !existing.status().isTerminal()) {
+            log.info("async_rebuild.idempotent_inflight doc_id={}, task_id={}, generation={}",
+                    documentId, existing.id(), existing.generation());
+            return;
+        }
+        if (!rebuild && existing != null && !existing.status().isTerminal()) {
+            log.info("async_parse.idempotent_inflight doc_id={}, task_id={}, generation={}",
+                    documentId, existing.id(), existing.generation());
+            return;
+        }
+        int generation = rebuild ? parseTaskRepository.nextGeneration(documentId)
+                : existing == null ? 1 : existing.generation();
+        ParseTask.TriggerType triggerType = rebuild
+                ? ParseTask.TriggerType.REBUILD
+                : existing == null ? ParseTask.TriggerType.UPLOAD : ParseTask.TriggerType.RETRY;
         ParseTask pending =
                 new ParseTask(
                         null,
                         documentId,
+                        generation,
+                        triggerType,
+                        rebuild && existing != null ? existing.id() : null,
                         doc.contentHash().value(),
                         ParseTaskStatus.PENDING,
                         0,
@@ -64,6 +92,10 @@ public class AsyncParsingTrigger implements ParsingTrigger {
                         java.util.List.of(),
                         now,
                         null,
+                        ParseTask.DeliveryStatus.PENDING,
+                        0,
+                        now,
+                        null,
                         now,
                         now);
 
@@ -71,11 +103,10 @@ public class AsyncParsingTrigger implements ParsingTrigger {
         try {
             saved = parseTaskRepository.save(pending);
         } catch (org.springframework.dao.DataIntegrityViolationException dup) {
-            // 同 content_hash 已存在 = 上传幂等命中了同 hash 旧 doc; 走 findByContentHash 回查原 task,
-            // 若是终态重新入队, 否则让原 task 继续跑(不动)。
+            // 同 document+generation 冲突：并发重复请求必须落到同一个任务。
             ParseTask exist =
                     parseTaskRepository
-                            .findByContentHash(doc.contentHash().value())
+                            .findByDocumentIdAndGeneration(documentId, generation)
                             .orElseThrow(() -> dup);
             log.info(
                     "async_parse.idempotent_hit doc_id={}, existing_task_id={}, status={}",
@@ -85,36 +116,23 @@ public class AsyncParsingTrigger implements ParsingTrigger {
             if (exist.status().isTerminal()) {
                 // 复用 ParseTaskService 的重入队逻辑走 parser-service 自己的 ParseTaskService, 这里 chat-app
                 // 本地不持 ParseTaskService bean, 直接 update 一行复用(record 不可变, 用 new 复制)
-                saved =
-                        new ParseTask(
-                                exist.id(),
-                                exist.documentId(),
-                                exist.contentHash(),
-                                ParseTaskStatus.PENDING,
-                                exist.retryCount(),
-                                exist.maxRetries(),
-                                0,
-                                0,
-                                null,
-                                null,
-                                exist.attempts(),
-                                now,
-                                null,
-                                exist.createdAt(),
-                                now);
+                saved = exist.withExecutionState(
+                        ParseTaskStatus.PENDING, exist.retryCount(), 0, 0, null, null,
+                        exist.attempts(), now, null, now);
                 parseTaskRepository.update(saved);
             } else {
                 // 非终态说明另一进程在跑, 重发消息兜底(parser-service 消费时 lease 抢占保证只一份)
                 saved = exist;
             }
         }
-        // spec §4.1 step 4-5: 切到 transient UPLOADED → PARSING 状态机迁移由 parser-service 跑完 markReady
-        // chat-app 在创建 PENDING task 时不动 doc.status(UPLOADED), 等 parser-service 完成后再 markReady
-        producer.send(saved, new TraceId(String.valueOf(documentId)));
+        // 统一由 Relay 先抢 SENDING 租约再发送，避免直接发送与多实例 Relay 并发重复投递。
+        // parse_tasks 已提交即表示可靠接单；Relay 周期默认 30s，可按生产延迟目标调小。
         log.info(
-                "async_parse.queued task_id={}, doc_id={}, status={}",
+                "async_parse.queued task_id={}, doc_id={}, generation={}, trigger={}, status={}",
                 saved.id(),
                 documentId,
+                saved.generation(),
+                saved.triggerType(),
                 saved.status());
     }
 }

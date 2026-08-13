@@ -39,6 +39,11 @@ __pycache__/
 *.egg-info/
 jacoco.exec
 
+# ===== Generated evaluation reports =====
+badcase/*_report.json
+eval/*_report.json
+eval/matrix_smoke_*.jsonl
+
 # ===== Gradle =====
 .gradle/
 # 注意: gradle-wrapper.jar 必须提交, 不能 ignore

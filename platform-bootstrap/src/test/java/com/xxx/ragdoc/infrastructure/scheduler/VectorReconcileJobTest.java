@@ -10,7 +10,6 @@ import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
 import com.xxx.ragdoc.domain.document.Document;
-import com.xxx.ragdoc.domain.document.DocumentStatus;
 import com.xxx.ragdoc.domain.shared.ContentHash;
 import com.xxx.ragdoc.domain.shared.DocumentId;
 import java.lang.reflect.Field;
@@ -46,11 +45,11 @@ class VectorReconcileJobTest {
 
         Document indexed = indexedDoc(101L);
         when(repo.findIndexed(anyInt())).thenReturn(List.of(indexed));
-        when(vs.countByDocumentId(101L)).thenReturn(0); // 0 = Milvus 无向量
+        when(vs.vectorPresence(101L, 1)).thenReturn(0);
 
         newJob(repo, vs, trigger, svc).reconcileMissingVectors();
 
-        verify(trigger).trigger(101L);
+        verify(trigger).rebuild(101L);
     }
 
     @Test
@@ -63,11 +62,29 @@ class VectorReconcileJobTest {
 
         Document indexed = indexedDoc(101L);
         when(repo.findIndexed(anyInt())).thenReturn(List.of(indexed));
-        when(vs.countByDocumentId(101L)).thenReturn(1);
+        when(vs.vectorPresence(101L, 1)).thenReturn(1);
 
         newJob(repo, vs, trigger, svc).reconcileMissingVectors();
 
         verifyNoInteractions(trigger);
+    }
+
+    @Test
+    @DisplayName("高频对账不把存在性结果误当精确数量，存在向量时不反复重建")
+    void presenceProbeDoesNotTriggerFalseRebuild() {
+        DocumentRepository repo = mock(DocumentRepository.class);
+        VectorStore vs = mock(VectorStore.class);
+        ParsingTrigger trigger = mock(ParsingTrigger.class);
+        DocumentManageService svc = mock(DocumentManageService.class);
+        when(repo.findIndexed(anyInt())).thenReturn(List.of(indexedDoc(111L)));
+        when(vs.vectorPresence(111L, 1)).thenReturn(1);
+
+        VectorReconcileJob job = new VectorReconcileJob(repo, vs, trigger, svc);
+        newJobFields(job);
+        job.reconcileMissingVectors();
+
+        verifyNoInteractions(trigger);
+        verify(vs, never()).countByDocumentId(anyLong());
     }
 
     @Test
@@ -126,11 +143,11 @@ class VectorReconcileJobTest {
 
         verifyNoInteractions(trigger);
         verifyNoInteractions(svc);
-        verify(vs, never()).countByDocumentId(anyLong());
+        verify(vs, never()).vectorPresence(anyLong(), anyInt());
     }
 
     @Test
-    @DisplayName("单条 parsingTrigger.trigger 抛异常 → 不阻断其他条目继续 reconcile")
+    @DisplayName("单条 parsingTrigger.rebuild 抛异常 → 不阻断其他条目继续 reconcile")
     void singleFailureDoesNotAbortBatch() throws Exception {
         DocumentRepository repo = mock(DocumentRepository.class);
         VectorStore vs = mock(VectorStore.class);
@@ -139,14 +156,13 @@ class VectorReconcileJobTest {
 
         Document d1 = indexedDoc(401L), d2 = indexedDoc(402L);
         when(repo.findIndexed(anyInt())).thenReturn(List.of(d1, d2));
-        when(vs.countByDocumentId(anyLong())).thenReturn(0);
-        // 第一条 trigger 抛异常
-        doThrow(new RuntimeException("transient")).when(trigger).trigger(401L);
+        when(vs.vectorPresence(anyLong(), anyInt())).thenReturn(0);
+        doThrow(new RuntimeException("transient")).when(trigger).rebuild(401L);
 
         newJob(repo, vs, trigger, svc).reconcileMissingVectors();
 
-        verify(trigger).trigger(401L);
-        verify(trigger).trigger(402L); // 仍被命中
+        verify(trigger).rebuild(401L);
+        verify(trigger).rebuild(402L); // 仍被命中
     }
 
     // ===== 构造辅助 =====
@@ -157,6 +173,11 @@ class VectorReconcileJobTest {
             ParsingTrigger trigger,
             DocumentManageService svc) {
         VectorReconcileJob job = new VectorReconcileJob(repo, vs, trigger, svc);
+        newJobFields(job);
+        return job;
+    }
+
+    private static void newJobFields(VectorReconcileJob job) {
         // @Value 注入的字段在测试里手工塞
         try {
             Field t = VectorReconcileJob.class.getDeclaredField("stuckThresholdMinutes");
@@ -168,7 +189,6 @@ class VectorReconcileJobTest {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new AssertionError("field set failed", e);
         }
-        return job;
     }
 
     /** 构造已 INDEXED doc (装作 reconcile 从 DB 拉出的)。 */
@@ -211,17 +231,6 @@ class VectorReconcileJobTest {
     }
 
     private static List<Chunk> sampleChunks(long docId) {
-        return List.of(
-                new Chunk(
-                        1L,
-                        docId,
-                        0,
-                        ChunkType.TEXT,
-                        "x",
-                        0,
-                        null,
-                        null,
-                        "h",
-                        List.of()));
+        return List.of(new Chunk(1L, docId, 0, ChunkType.TEXT, "x", 0, null, null, "h", List.of()));
     }
 }

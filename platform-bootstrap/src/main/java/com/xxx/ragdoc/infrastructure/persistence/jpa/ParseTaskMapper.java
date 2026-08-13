@@ -32,6 +32,9 @@ public class ParseTaskMapper {
         return new ParseTask(
                 e.getId(),
                 e.getDocumentId(),
+                e.getGeneration(),
+                ParseTask.TriggerType.valueOf(e.getTriggerType()),
+                e.getSupersedesTaskId(),
                 e.getContentHash(),
                 ParseTaskStatus.valueOf(e.getStatus()),
                 e.getRetryCount(),
@@ -43,6 +46,10 @@ public class ParseTaskMapper {
                 decodeAttempts(e.getAttempts()),
                 e.getVisibleAt(),
                 e.getLeasedBy(),
+                ParseTask.DeliveryStatus.valueOf(e.getDeliveryStatus()),
+                e.getDeliveryAttempts(),
+                e.getNextDeliveryAt(),
+                e.getDeliveryError(),
                 e.getCreatedAt(),
                 e.getUpdatedAt());
     }
@@ -51,6 +58,9 @@ public class ParseTaskMapper {
         ParseTaskEntity e = new ParseTaskEntity();
         e.setId(d.id());
         e.setDocumentId(d.documentId());
+        e.setGeneration(d.generation());
+        e.setTriggerType(d.triggerType().name());
+        e.setSupersedesTaskId(d.supersedesTaskId());
         e.setContentHash(d.contentHash());
         e.setStatus(d.status().name());
         e.setRetryCount(d.retryCount());

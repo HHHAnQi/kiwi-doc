@@ -16,9 +16,8 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li>软删文档的 chunks 已在主流程同事务删除 (MySQL, 原子)。
- *   <li>Milvus 走 circuit breaker, 熔断态 / 超时会导致同步删除失败。失败时 documents.pending_milvus_delete=true;
- *       本 sweeper 周期扫描 pending=true 的文档, 通过 {@link DocumentManageService#attemptMilvusDelete}
- *       重试删除向量。
+ *   <li>Milvus 走 circuit breaker, 熔断态 / 超时会导致同步删除失败。失败时 documents.pending_milvus_delete=true; 本
+ *       sweeper 周期扫描 pending=true 的文档, 通过 {@link DocumentManageService#attemptMilvusDelete} 重试删除向量。
  *   <li>Milvus 通常秒级熔断半开恢复, 单批 20 个 60s 周期足够收敛。失败继续保留 pending, 无 backoff 复杂度。
  * </ul>
  *
@@ -36,10 +35,12 @@ public class MilvusDeleteSweeper {
     private final DocumentManageService documentManageService;
 
     /**
-     * fixedDelay=60s: 上次执行结束 60s 后再触发, 避开 Milvus 熔断态期间避免无效打。 initialDelay=30s:
-     * 应用启动后 30s 才开跑, 给 flyway + Spring context 充分 warmup。
+     * fixedDelay=60s: 上次执行结束 60s 后再触发, 避开 Milvus 熔断态期间避免无效打。 initialDelay=30s: 应用启动后 30s 才开跑, 给
+     * flyway + Spring context 充分 warmup。
      */
-    @Scheduled(fixedDelayString = "${rag.milvus-delete.sweep-interval-ms:60000}", initialDelayString = "30000")
+    @Scheduled(
+            fixedDelayString = "${rag.milvus-delete.sweep-interval-ms:60000}",
+            initialDelayString = "30000")
     public void sweepPendingDeletes() {
         List<Document> pending;
         try {

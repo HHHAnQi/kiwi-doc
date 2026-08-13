@@ -98,8 +98,7 @@ class DocumentAccessGuardCrossTenantTest {
         Document doc = makeDoc(100, "tenantA"); // doc 属 tenantA
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
 
-        assertThatThrownBy(() -> guard.requireRead(100L))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> guard.requireRead(100L)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -121,8 +120,7 @@ class DocumentAccessGuardCrossTenantTest {
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
 
-        assertThatThrownBy(() -> guard.requireRead(100L))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> guard.requireRead(100L)).isInstanceOf(NotFoundException.class);
         verify(permissionResolver, never()).hasExplicitAcl(anyLong(), any(), anyString());
     }
 
@@ -133,8 +131,7 @@ class DocumentAccessGuardCrossTenantTest {
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
 
-        assertThatThrownBy(() -> guard.requireRead(100L))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> guard.requireRead(100L)).isInstanceOf(NotFoundException.class);
         // ACL 在 tenant 检查之前不应被查 (本任务设计 — tenant 不符直接 404)
         verify(permissionResolver, never()).hasExplicitAcl(anyLong(), any(), anyString());
     }
@@ -145,8 +142,7 @@ class DocumentAccessGuardCrossTenantTest {
         loginAs("tenantA", "userA2", false);
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
-        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("READ")))
-                .thenReturn(true);
+        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("READ"))).thenReturn(true);
 
         assertThat(guard.requireRead(100L).id().value()).isEqualTo(100L);
     }
@@ -169,14 +165,11 @@ class DocumentAccessGuardCrossTenantTest {
         loginAs("tenantA", "userA2", false);
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
-        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("WRITE")))
-                .thenReturn(false);
-        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("OWNER")))
-                .thenReturn(false);
+        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("WRITE"))).thenReturn(false);
+        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("OWNER"))).thenReturn(false);
 
         // requireWrite 失败 (visibility 默认 TENANT 走 READ 路径, 但 WRITE 路径不走 visibility)
-        assertThatThrownBy(() -> guard.requireWrite(100L))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> guard.requireWrite(100L)).isInstanceOf(NotFoundException.class);
     }
 
     @Test
@@ -185,8 +178,7 @@ class DocumentAccessGuardCrossTenantTest {
         loginAs("tenantA", "userA2", false);
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
-        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("OWNER")))
-                .thenReturn(true);
+        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("OWNER"))).thenReturn(true);
 
         assertThat(guard.requireOwner(100L).id().value()).isEqualTo(100L);
     }
@@ -197,7 +189,6 @@ class DocumentAccessGuardCrossTenantTest {
         loginAs("tenantA", "userA1", false);
         when(documentRepository.findById(999L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> guard.requireRead(999L))
-                .isInstanceOf(NotFoundException.class);
+        assertThatThrownBy(() -> guard.requireRead(999L)).isInstanceOf(NotFoundException.class);
     }
 }

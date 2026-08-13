@@ -4,6 +4,7 @@ import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.domain.document.Chunk;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 向量库写入 / 检索端口。 实现: {@code MilvusVectorStore}(infra 层)。
@@ -44,8 +45,22 @@ public interface VectorStore {
             List<EmbeddingResult> embeddings,
             ChunkMetadata metadata);
 
+    /** 写入影子 generation，不删除当前在线 generation。 */
+    default void upsertGeneration(
+            Long documentId,
+            int generation,
+            List<Chunk> chunks,
+            List<EmbeddingResult> embeddings,
+            ChunkMetadata metadata) {
+        upsertChunks(documentId, chunks, embeddings, metadata.withGeneration(generation));
+    }
+
     /** 删除指定文档的所有向量(重新解析前调用)。 */
     void deleteByDocumentId(Long documentId);
+
+    default void deleteByDocumentIdAndGeneration(Long documentId, int generation) {
+        deleteByDocumentId(documentId);
+    }
 
     /**
      * Task 4: 查指定文档在 Milvus 的向量数。reconcile job 用此判"INDEXED 但向量丢失"。
@@ -55,6 +70,15 @@ public interface VectorStore {
     default int countByDocumentId(Long documentId) {
         // 默认实现: 不支持时返回 -1 哨兵, 调用方判定"不做 reconcile"避免误重建
         return -1;
+    }
+
+    /**
+     * 轻量存在性探测，不冒充精确计数。返回 1=至少存在一条，0=不存在，-1=基础设施不可用。
+     * Reconcile 高频任务只使用该语义，避免用 limit=1 的查询结果与 MySQL Chunk 总数误比较。
+     */
+    default int vectorPresence(Long documentId, int generation) {
+        int legacy = countByDocumentId(documentId);
+        return legacy < 0 ? -1 : (legacy == 0 ? 0 : 1);
     }
 
     /** 混合检索(V2-C 落地): dense(BGE-M3) + sparse(Milvus 原生 BM25) → RRF 融合 → top-k。 无元数据过滤。 */
@@ -91,10 +115,10 @@ public interface VectorStore {
      *
      * <ul>
      *   <li>{@code tenantId} 走标量等值过滤, 保证跨租户文档不被 ANN 召回。
-     *   <li>{@code allowedDocIds} 是 PermissionResolver 解析出的"可读文档 id 白名单", 实现侧负责注入
-     *       <code>document_id in [...]</code> 表达式; 集合为 <b>null</b> 表示哨兵 = admin, 不加 docId
-     *       子句(仍然受 tenantId 约束); 集合为 <b>非空</b> 必须严格加载白名单; 集合为 <b>emptySet</b>
-     *       表示"无可读文档", 实现侧应短路返回空结果(由 RetrieveService 提前拦截, 不再落到 Milvus)。
+     *   <li>{@code allowedDocIds} 是 PermissionResolver 解析出的"可读文档 id 白名单", 实现侧负责注入 <code>
+     *       document_id in [...]</code> 表达式; 集合为 <b>null</b> 表示哨兵 = admin, 不加 docId 子句(仍然受 tenantId
+     *       约束); 集合为 <b>非空</b> 必须严格加载白名单; 集合为 <b>emptySet</b> 表示"无可读文档", 实现侧应短路返回空结果(由
+     *       RetrieveService 提前拦截, 不再落到 Milvus)。
      * </ul>
      *
      * @param source 限定来源组件(dubbo/nacos/seata/rocketmq/sentinel); null/blank = 不限
@@ -108,7 +132,17 @@ public interface VectorStore {
             String version,
             String language,
             String tenantId,
-            Collection<Long> allowedDocIds) {
+            Collection<Long> allowedDocIds,
+            Map<Long, Integer> activeGenerations) {
+
+        public MetadataFilter(
+                String source,
+                String version,
+                String language,
+                String tenantId,
+                Collection<Long> allowedDocIds) {
+            this(source, version, language, tenantId, allowedDocIds, null);
+        }
 
         /** 是否一个条件都没设(实现侧可据此跳过 expr 拼接)。 */
         public boolean isEmpty() {
@@ -116,11 +150,12 @@ public interface VectorStore {
                     && (version == null || version.isBlank())
                     && (language == null || language.isBlank())
                     && (tenantId == null || tenantId.isBlank())
-                    && allowedDocIds == null;
+                    && allowedDocIds == null
+                    && activeGenerations == null;
         }
 
         public static MetadataFilter empty() {
-            return new MetadataFilter(null, null, null, null, null);
+            return new MetadataFilter(null, null, null, null, null, null);
         }
     }
 
@@ -140,11 +175,35 @@ public interface VectorStore {
             String language,
             String docType,
             String chunkType,
-            String tenantId) {
+            String tenantId,
+            String logicalDocumentKey,
+            int generation) {
+
+        public ChunkMetadata(
+                String source,
+                String version,
+                String language,
+                String docType,
+                String chunkType,
+                String tenantId) {
+            this(source, version, language, docType, chunkType, tenantId, "unknown", 1);
+        }
+
+        public ChunkMetadata(
+                String source, String version, String language, String docType, String chunkType,
+                String tenantId, String logicalDocumentKey) {
+            this(source, version, language, docType, chunkType, tenantId, logicalDocumentKey, 1);
+        }
 
         /** 老路径元数据缺省值, 保证未注入元数据时向量库可写。 */
         public static ChunkMetadata unknown() {
-            return new ChunkMetadata("unknown", null, "zh", "doc", "TEXT", "default");
+            return new ChunkMetadata(
+                    "unknown", null, "zh", "doc", "TEXT", "default", "unknown", 1);
+        }
+
+        public ChunkMetadata withGeneration(int value) {
+            return new ChunkMetadata(source, version, language, docType, chunkType, tenantId,
+                    logicalDocumentKey, value);
         }
     }
 }

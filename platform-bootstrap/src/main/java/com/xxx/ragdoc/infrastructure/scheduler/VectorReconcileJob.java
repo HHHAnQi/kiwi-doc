@@ -18,10 +18,10 @@ import org.springframework.stereotype.Component;
  * <p>两类不一致自动修复:
  *
  * <ol>
- *   <li><b>向量丢失</b>: documents.status=INDEXED 但 Milvus 无对应向量 (历史事故 / Milvus 重启丢数据)
- *       → 触发 parsingTrigger 重处理, 让 chunks + Milvus 向量重建
- *   <li><b>状态卡死</b>: 文档卡在 PARSING/CHUNKED/EMBEDDING/INDEXING 中间态超过阈值
- *       (parser 实例崩溃 / 网络 hang 住没抛异常) → markFailed + retry, 让 reconcile 拉起重处理
+ *   <li><b>向量丢失</b>: documents.status=INDEXED 但 Milvus 无对应向量 (历史事故 / Milvus 重启丢数据) → 触发
+ *       parsingTrigger 重处理, 让 chunks + Milvus 向量重建
+ *   <li><b>状态卡死</b>: 文档卡在 PARSING/CHUNKED/EMBEDDING/INDEXING 中间态超过阈值 (parser 实例崩溃 / 网络 hang 住没抛异常)
+ *       → markFailed + retry, 让 reconcile 拉起重处理
  * </ol>
  *
  * <p>安全约束:
@@ -83,7 +83,7 @@ public class VectorReconcileJob {
         log.info("reconcile.done");
     }
 
-    /** INDEXED 但 Milvus count=0 的文档 → trigger 重处理。 */
+    /** INDEXED 但当前 generation 在 Milvus 完全不存在 → rebuild。高频任务只做存在性探测。 */
     void reconcileMissingVectors() {
         List<Document> indexed = documentRepository.findIndexed(batchSize);
         if (indexed.isEmpty()) {
@@ -94,19 +94,20 @@ public class VectorReconcileJob {
         int fixed = 0;
         for (Document d : indexed) {
             try {
-                int n = vectorStore.countByDocumentId(d.id().value());
-                if (n == 0) {
+                int presence =
+                        vectorStore.vectorPresence(d.id().value(), d.activeGeneration());
+                if (presence == 0) {
                     missing++;
                     log.warn(
-                            "reconcile.missing_vector_detected doc_id={}, last_state={}, trigger_reprocess",
+                            "reconcile.vector_generation_missing doc_id={}, generation={}, last_state={}, trigger_rebuild",
                             d.id().value(),
+                            d.activeGeneration(),
                             d.lastStateChangeAt());
-                    parsingTrigger.trigger(d.id().value());
+                    parsingTrigger.rebuild(d.id().value());
                     fixed++;
-                } else if (n < 0) {
-                    // count 接口暂时不可用 (CB 开 / 异常); 跳过此 doc 下轮再看
+                } else if (presence < 0) {
                     log.debug(
-                            "reconcile.count_unavailable doc_id={}, skip (reconcile next round)",
+                            "reconcile.vector_presence_unavailable doc_id={}, skip",
                             d.id().value());
                 }
             } catch (Exception e) {
@@ -116,8 +117,11 @@ public class VectorReconcileJob {
                         e.getMessage());
             }
         }
-        log.info("reconcile.missing_vectors_phase indexed={}, missing={}, triggered={}",
-                indexed.size(), missing, fixed);
+        log.info(
+                "reconcile.missing_vectors_phase indexed={}, missing={}, triggered={}",
+                indexed.size(),
+                missing,
+                fixed);
     }
 
     /** in-flight 中间态超时 → markFailed + retry (不应超过 retry 上限)。 */
@@ -132,7 +136,8 @@ public class VectorReconcileJob {
         int pendingManual = 0;
         for (Document d : stuck) {
             try {
-                String reason = "状态机卡死 in " + d.status() + SEP + "last_change=" + d.lastStateChangeAt();
+                String reason =
+                        "状态机卡死 in " + d.status() + SEP + "last_change=" + d.lastStateChangeAt();
                 // 先尝试 markFailed 把状态推进到 FAILED (in-flight → FAILED 合法); 已 FAILED 时跳过
                 boolean justMarked = false;
                 if (d.status() != DocumentStatus.FAILED) {

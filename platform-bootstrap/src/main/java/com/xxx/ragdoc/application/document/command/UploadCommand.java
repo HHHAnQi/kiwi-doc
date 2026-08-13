@@ -15,7 +15,8 @@ public record UploadCommand(
         String source,
         String version,
         String language,
-        String docType) {
+        String docType,
+        String logicalDocumentKey) {
 
     public UploadCommand {
         if (originalFilename == null || originalFilename.isBlank()) {
@@ -32,6 +33,31 @@ public record UploadCommand(
         // version 允许 null(未识别版本)
         language = (language == null || language.isBlank()) ? "zh" : language.trim();
         docType = (docType == null || docType.isBlank()) ? "doc" : docType.trim();
+        logicalDocumentKey = normalizeLogicalDocumentKey(logicalDocumentKey, originalFilename);
+    }
+
+    /** V16 之前的构造器：未显式提供逻辑文档键时，从文件名稳定推导。 */
+    public UploadCommand(
+            String originalFilename,
+            String mimeType,
+            long sizeBytes,
+            byte[] content,
+            String tenantId,
+            String source,
+            String version,
+            String language,
+            String docType) {
+        this(
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                content,
+                tenantId,
+                source,
+                version,
+                language,
+                docType,
+                null);
     }
 
     /** 老调用方兼容入口: 不带业务元数据, 落库为缺省值。 */
@@ -50,6 +76,31 @@ public record UploadCommand(
                 "unknown",
                 null,
                 "zh",
-                "doc");
+                "doc",
+                null);
+    }
+
+    private static String normalizeLogicalDocumentKey(String explicit, String filename) {
+        if (explicit != null && !explicit.isBlank()) {
+            String normalized = explicit.trim().toLowerCase(java.util.Locale.ROOT);
+            if (normalized.length() > 128) {
+                throw new IllegalArgumentException("logicalDocumentKey 长度不能超过 128");
+            }
+            return normalized;
+        }
+        String base = filename.toLowerCase(java.util.Locale.ROOT);
+        int dot = base.lastIndexOf('.');
+        if (dot > 0) base = base.substring(0, dot);
+        // 只剥离独立的版本段，避免把普通文件名中的数字误当成版本。
+        base = base.replaceAll(
+                        "(?i)(?:^|[-_\\s])v?\\d+\\.\\d+(?:\\.\\d+){0,2}(?:[-_.]?(?:rc|ga|m|alpha|beta)\\d?)?(?=$|[-_\\s])",
+                        "-")
+                .replaceAll("[^a-z0-9\\p{IsHan}._-]+", "-")
+                .replaceAll("[-_]{2,}", "-")
+                .replaceAll("^[-_.]+|[-_.]+$", "");
+        if (base.isBlank()) {
+            throw new IllegalArgumentException("无法从文件名推导 logicalDocumentKey，请显式传入");
+        }
+        return base.length() > 128 ? base.substring(0, 128) : base;
     }
 }

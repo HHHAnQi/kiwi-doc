@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * 心跳回收 job(spec §3.3 + §8 Commit 3).
  *
- * <p>每 30 秒扫一次 parse_tasks 表: 把 status='RUNNING' + visible_at &lt; now 的 task 回滚 PENDING, 清
- * leasedBy, 让别的 worker 重新 lease. 解决 kill -9 / OOM / 进程崩溃留下的 zombie worker(spec §5.1 kill -9 故障路径).
+ * <p>每 30 秒扫一次 parse_tasks 表: 把过期 RUNNING 回滚 PENDING，并原子恢复 Outbox 投递状态，
+ * 让 Relay 必然重新发消息。解决 kill -9 / OOM / 进程崩溃留下的 zombie worker。
  *
  * <p>覆盖 DoD-1: parser 进程死, 重启后该 job 周期性扫, 把 zombie RUNNING 还回 PENDING → 下轮 worker pull 重启继续解析。续点字段
  * chunks_written / chunk_seq_offset 在 worker 重启后从该值继续(spec §3.1).
@@ -44,7 +44,7 @@ public class VisibilityTimeoutScheduler {
             // 默认 line 数稳定后可改回 debug。
             if (affected > 0) {
                 log.info(
-                        "parse_reaper.reaped count={} (zombie RUNNING → PENDING, < {})",
+                        "parse_reaper.reaped count={} (RUNNING → PENDING + delivery reset, < {})",
                         affected,
                         now);
             } else {

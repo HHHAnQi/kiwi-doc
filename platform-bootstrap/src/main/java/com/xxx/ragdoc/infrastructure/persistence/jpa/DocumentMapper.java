@@ -14,22 +14,24 @@ public final class DocumentMapper {
 
     /** 从 Entity 重建聚合根。 */
     public static Document toDomain(DocumentEntity e) {
-        Document d = Document.restore(
-                new DocumentId(e.getId()),
-                new ContentHash(e.getContentHash()),
-                e.getOriginalFilename(),
-                e.getMimeType(),
-                e.getSizeBytes(),
-                e.getTenantId(),
-                DocumentStatus.valueOf(e.getStatus()),
-                e.getRetryCount(),
-                e.getErrorMessage(),
-                null, // chunks 由独立查询组装,V1 简化
-                e.getDeletedAt() != null,
-                e.getSource(),
-                e.getVersion(),
-                e.getLanguage(),
-                e.getDocType());
+        Document d =
+                Document.restore(
+                        new DocumentId(e.getId()),
+                        new ContentHash(e.getContentHash()),
+                        e.getOriginalFilename(),
+                        e.getMimeType(),
+                        e.getSizeBytes(),
+                        e.getTenantId(),
+                        DocumentStatus.valueOf(e.getStatus()),
+                        e.getRetryCount(),
+                        e.getErrorMessage(),
+                        null, // chunks 由独立查询组装,V1 简化
+                        e.getDeletedAt() != null,
+                        e.getSource(),
+                        e.getVersion(),
+                        e.getLanguage(),
+                        e.getDocType(),
+                        e.getLogicalDocumentKey());
         // Phase 3 / P3-1: isDefault 通过业务方法回填 (Document.restore 签名不动, 向后兼容)
         if (Boolean.TRUE.equals(e.getIsDefault())) {
             d.markDefault();
@@ -42,6 +44,9 @@ public final class DocumentMapper {
         if (e.getLastStateChangeAt() != null) {
             d.amendLastStateChangeAt(e.getLastStateChangeAt());
         }
+        d.amendGenerationState(
+                e.getActiveGeneration() == null ? 1 : e.getActiveGeneration(),
+                e.getPendingGeneration());
         return d;
     }
 
@@ -56,6 +61,8 @@ public final class DocumentMapper {
                         : null);
         existing.setIsDefault(d.isDefault()); // Phase 3 / P3-1
         existing.setPendingMilvusDelete(d.pendingMilvusDelete()); // Phase 3 / P3-2
+        existing.setActiveGeneration(d.activeGeneration());
+        existing.setPendingGeneration(d.pendingGeneration());
         existing.setUpdatedAt(Instant.now());
         // Task 4: 持久化聚合根最新 lastStateChangeAt (status 变更时刷新过)
         if (d.lastStateChangeAt() != null) {
@@ -78,10 +85,13 @@ public final class DocumentMapper {
         // 业务元数据(上传时一次定型)
         e.setSource(d.source());
         e.setVersion(d.version());
+        e.setLogicalDocumentKey(d.logicalDocumentKey());
         e.setLanguage(d.language());
         e.setDocType(d.docType());
         e.setIsDefault(d.isDefault()); // Phase 3 / P3-1
         e.setPendingMilvusDelete(d.pendingMilvusDelete()); // Phase 3 / P3-2
+        e.setActiveGeneration(d.activeGeneration());
+        e.setPendingGeneration(d.pendingGeneration());
         if (d.lastStateChangeAt() != null) {
             e.setLastStateChangeAt(d.lastStateChangeAt());
         }

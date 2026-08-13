@@ -4,6 +4,7 @@ import com.xxx.ragdoc.application.chat.EmbeddingResult;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.document.chunking.ChunkingProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
+import com.xxx.ragdoc.application.document.ingestion.IngestionPolicy;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.FileStorage;
@@ -58,6 +59,7 @@ public class ParseWorker {
     private final ChunkingProperties chunkingProps;
     private final ParseTaskService parseTaskService;
     private final ParseTaskRepository parseTaskRepository;
+    private final IngestionPolicy ingestionPolicy;
 
     /** Tika 是线程安全 facade, 全 worker 共享一个实例. */
     private final Tika tika = new Tika();
@@ -111,14 +113,20 @@ public class ParseWorker {
             fullText = fullText.substring(0, MAX_TEXT_LENGTH);
         }
 
+        IngestionPolicy.PreparedText prepared =
+                ingestionPolicy.prepareText(doc.id().value(), fullText);
+        fullText = prepared.text();
+
         boolean useParentChild = chunkingProps.getMode() == ChunkingProperties.Mode.PARENT_CHILD;
         return useParentChild
-                ? parseParentChildWithCheckpoint(task, doc, fullText)
-                : parseFlatWithCheckpoint(task, doc, fullText);
+                ? parseParentChildWithCheckpoint(
+                        task, doc, fullText, prepared.redactionCount())
+                : parseFlatWithCheckpoint(task, doc, fullText, prepared.redactionCount());
     }
 
     /** flat 模式 + checkpoint hook。 */
-    private List<Chunk> parseFlatWithCheckpoint(ParseTask task, Document doc, String fullText) {
+    private List<Chunk> parseFlatWithCheckpoint(
+            ParseTask task, Document doc, String fullText, int redactionCount) {
         List<ChunkingService.SectionedFlatChunk> sectioned =
                 chunkingService.chunkSectioned(fullText);
         if (sectioned.isEmpty()) {
@@ -147,12 +155,14 @@ public class ParseWorker {
                             sha256Hex(text),
                             sectioned.get(i).sectionPath()));
         }
+        chunks = new ArrayList<>(
+                ingestionPolicy.deduplicateChunks(doc.id().value(), chunks, redactionCount));
+        chunkTexts = chunks.stream().map(Chunk::content).toList();
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
-        if (embeddings.size() != chunks.size()) {
-            throw new IllegalStateException("embed 数量与 chunks 不一致");
-        }
-        List<Chunk> savedChunks = chunkRepository.saveAll(doc.id().value(), chunks);
-        vectorStore.deleteByDocumentId(doc.id().value());
+        ingestionPolicy.validateEmbeddings(
+                doc.id().value(), embeddings, chunks.size(), redactionCount);
+        List<Chunk> savedChunks =
+                chunkRepository.saveAll(doc.id().value(), task.generation(), chunks);
         VectorStore.ChunkMetadata md =
                 new VectorStore.ChunkMetadata(
                         doc.source(),
@@ -160,8 +170,10 @@ public class ParseWorker {
                         doc.language(),
                         doc.docType(),
                         ChunkType.TEXT.name(),
-                        doc.tenantId());
-        vectorStore.upsertChunks(doc.id().value(), savedChunks, embeddings, md);
+                        doc.tenantId(),
+                        doc.logicalDocumentKey());
+        vectorStore.upsertGeneration(
+                doc.id().value(), task.generation(), savedChunks, embeddings, md);
 
         checkpointProgress(task, savedChunks.size(), savedChunks.size());
         return savedChunks;
@@ -169,7 +181,7 @@ public class ParseWorker {
 
     /** parent-child 模式 + checkpoint hook。checkpoint 在 children 写完成阶段按批次 flush。 */
     private List<Chunk> parseParentChildWithCheckpoint(
-            ParseTask task, Document doc, String fullText) {
+            ParseTask task, Document doc, String fullText, int redactionCount) {
         List<ChunkingService.SectionedParentChildChunk> pcChunks =
                 chunkingService.chunkParentChildSectioned(fullText);
         if (pcChunks.isEmpty()) {
@@ -185,6 +197,7 @@ public class ParseWorker {
                 uniqueParentTexts.add(pc.parentText());
             }
         }
+
         log.info(
                 "parse_worker.parent_child_chunked doc_id={}, children={}, unique_parents={}",
                 doc.id().value(),
@@ -213,7 +226,7 @@ public class ParseWorker {
                                     .orElse(List.of())));
         }
         java.util.List<Chunk> savedParents =
-                chunkRepository.saveAll(doc.id().value(), parentChunks);
+                chunkRepository.saveAll(doc.id().value(), task.generation(), parentChunks);
         java.util.Map<String, Long> parentTextToRealId = new java.util.HashMap<>();
         for (Chunk sp : savedParents) {
             parentTextToRealId.put(sp.content(), sp.id());
@@ -240,11 +253,15 @@ public class ParseWorker {
             childTexts.add(pc.childText());
         }
 
+        childChunks = new java.util.ArrayList<>(
+                ingestionPolicy.deduplicateChunks(doc.id().value(), childChunks, redactionCount));
+        childTexts = childChunks.stream().map(Chunk::content)
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+
         // D. embed 只 children
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(childTexts);
-        if (embeddings.size() != childChunks.size()) {
-            throw new IllegalStateException("embed 数量与 child chunks 不一致");
-        }
+        ingestionPolicy.validateEmbeddings(
+                doc.id().value(), embeddings, childChunks.size(), redactionCount);
 
         // checkpoint 入口: parents 已写(total = parents 数), children 即将开写
         checkpointProgress(task, savedParents.size(), 0);
@@ -255,7 +272,7 @@ public class ParseWorker {
         // 但原 TikaParsingTrigger 是 parents saveAll → saveAllAppend(children) + deleteByDocumentId
         // before
         // children insert. 这条路径在 parser-service 等价复用: 一次性 delete + 拼接 saveAll 简化事务边界。
-        java.util.List<Chunk> allCombined = new java.util.ArrayList<>(savedParents);
+        java.util.List<Chunk> allCombined = new java.util.ArrayList<>();
         // 已保存 parent 含 id, addChild 时 id 应置 null 让 JPA 自动生成 id(否则 saveAll 会触发 merge 而非
         // persist, 跟原来的 saveAllAppend 行为不一致). 这里实施的等价: 整体 delete + 用原 (无 id) chunks
         // 重新 saveAll, 拿回 parents+children 的真实 id.
@@ -278,15 +295,15 @@ public class ParseWorker {
         allCombined.addAll(recomposedParents);
         allCombined.addAll(childChunks);
 
-        chunkRepository.deleteByDocumentId(doc.id().value());
-        List<Chunk> allSaved = chunkRepository.saveAll(doc.id().value(), allCombined);
+        chunkRepository.deleteByDocumentIdAndGeneration(doc.id().value(), task.generation());
+        List<Chunk> allSaved =
+                chunkRepository.saveAll(doc.id().value(), task.generation(), allCombined);
 
         // F. 拿到 children 集合(id 已分配) → 写 Milvus
         List<Chunk> savedChildren =
                 allSaved.stream().filter(c -> c.type() == ChunkType.CHILD).toList();
         // children 顺序需跟 childTexts 对齐(embeddings 同序), 上面 saveAll 保证按入参顺保留.
         // Milvus upsertChunks 需 chunks / embeddings 同序; savedChildren 已是 children 部分.
-        vectorStore.deleteByDocumentId(doc.id().value());
         VectorStore.ChunkMetadata md =
                 new VectorStore.ChunkMetadata(
                         doc.source(),
@@ -294,8 +311,10 @@ public class ParseWorker {
                         doc.language(),
                         doc.docType(),
                         ChunkType.CHILD.name(),
-                        doc.tenantId());
-        vectorStore.upsertChunks(doc.id().value(), savedChildren, embeddings, md);
+                        doc.tenantId(),
+                        doc.logicalDocumentKey());
+        vectorStore.upsertGeneration(
+                doc.id().value(), task.generation(), savedChildren, embeddings, md);
 
         // G. checkpoint 全完成
         int totalWritten = allSaved.size();

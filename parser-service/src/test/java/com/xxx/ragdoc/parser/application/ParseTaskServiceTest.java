@@ -105,10 +105,10 @@ class ParseTaskServiceTest {
     // ===== markFailed =====
 
     @Test
-    void markFailed_retry_available_then_failed_with_delay() {
+    void markFailed_retry_available_then_pending_with_delay() {
         ParseTask task = running(0, 3, 0);
         ParseTask r = service.markFailed(task, new RuntimeException("boom"));
-        assertThat(r.status()).isEqualTo(ParseTaskStatus.FAILED);
+        assertThat(r.status()).isEqualTo(ParseTaskStatus.PENDING);
         assertThat(r.retryCount()).isEqualTo(1);
         // visibleAt = now + 60s
         assertThat(r.visibleAt()).isEqualTo(Instant.parse("2026-08-02T10:01:00Z"));

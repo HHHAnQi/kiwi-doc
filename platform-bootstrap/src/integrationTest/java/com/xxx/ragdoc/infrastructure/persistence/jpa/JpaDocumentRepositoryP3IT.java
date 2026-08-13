@@ -25,6 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * findDocsPendingMilvusDelete) 的 MySQL 8 实跑验证。
  *
  * <p>价值: 之前 P3-1/P3-2 写完没真实跑过 MySQL, 风险点:
+ *
  * <ul>
  *   <li>V7 window function + UPDATE ... JOIN 写得对不对
  *   <li>JPA derived query method name 拼得对不对 (findFirstBySourceAndStatusAndIsDefaultTrue…)
@@ -217,8 +218,7 @@ class JpaDocumentRepositoryP3IT {
     void mapperRoundTripPopulatesNewFields() {
         Long id = insertDoc("mapper", "nacos", "2.4", "READY", true, true);
 
-        Optional<com.xxx.ragdoc.domain.document.Document> found =
-                documentRepository.findById(id);
+        Optional<com.xxx.ragdoc.domain.document.Document> found = documentRepository.findById(id);
 
         assertThat(found).isPresent();
         com.xxx.ragdoc.domain.document.Document d = found.get();

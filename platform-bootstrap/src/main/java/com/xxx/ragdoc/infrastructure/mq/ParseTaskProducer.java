@@ -41,10 +41,11 @@ public class ParseTaskProducer {
      * @param task 已 INSERT 的 PENDING task(含 id)
      * @param traceId 上游 trace, 透传到 mq header 让 parser-service 日志能串起调用链
      */
-    public void send(ParseTask task, TraceId traceId) {
+    public boolean send(ParseTask task, TraceId traceId) {
         ParseTaskSubmitMessage payload =
                 new ParseTaskSubmitMessage(
-                        task.id(), task.documentId(), task.contentHash(), Instant.now(clock));
+                        task.id(), task.documentId(), task.contentHash(), task.generation(),
+                        Instant.now(clock));
 
         org.springframework.messaging.Message<ParseTaskSubmitMessage> message =
                 MessageBuilder.withPayload(payload).setHeader("traceId", traceId.value()).build();
@@ -57,6 +58,7 @@ public class ParseTaskProducer {
                     task.id(),
                     task.documentId(),
                     traceId.value());
+            return true;
         } catch (Exception ex) {
             // 不抛, 不回滚 parse_tasks 行(已 commit). 心跳 job 后续会用 visible_at ≤ now 兜底重投.
             // TODO V3 Commit 3: 接 RocketMQ producer DLQ / 落 fallback 表
@@ -67,6 +69,7 @@ public class ParseTaskProducer {
                     traceId.value(),
                     ex.getMessage(),
                     ex);
+            return false;
         }
     }
 }

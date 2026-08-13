@@ -82,7 +82,8 @@ class TikaParsingTriggerTest {
                         statePort,
                         // Task 8: scanner 默认 disabled (=null), 老行为兼容
                         null,
-                        new com.xxx.ragdoc.application.document.SecurityScannerProperties());
+                        new com.xxx.ragdoc.application.document.SecurityScannerProperties(),
+                        null);
     }
 
     /** 构造一个 UPLOADED 状态的 Document(saved 版本, 已有 id)。 */
@@ -311,10 +312,11 @@ class TikaParsingTriggerTest {
                                             && d.errorMessage() != null
                                             && d.errorMessage().contains("embedding"));
             // 状态恢复验证: 仍能 retry (canRetry)
-            Document failed = captor.getAllValues().stream()
-                    .filter(d -> d.status() == DocumentStatus.FAILED)
-                    .findFirst()
-                    .orElseThrow();
+            Document failed =
+                    captor.getAllValues().stream()
+                            .filter(d -> d.status() == DocumentStatus.FAILED)
+                            .findFirst()
+                            .orElseThrow();
             assertThat(failed.canRetry()).isTrue();
         }
 
@@ -331,7 +333,8 @@ class TikaParsingTriggerTest {
                                             "chunk-a", java.util.List.of())));
             when(embeddingClient.embedBatch(any()))
                     .thenReturn(
-                            java.util.List.of(new EmbeddingResult(new float[1024], Map.of(1, 0.2f))));
+                            java.util.List.of(
+                                    new EmbeddingResult(new float[1024], Map.of(1, 0.2f))));
             when(chunkRepository.saveAll(anyLong(), any()))
                     .thenReturn(
                             java.util.List.of(
@@ -357,8 +360,7 @@ class TikaParsingTriggerTest {
             ArgumentCaptor<Document> captor = ArgumentCaptor.forClass(Document.class);
             verify(documentRepository, atLeastOnce()).save(captor.capture());
             // 任务要求: Milvus 写入失败必须 markFailed
-            assertThat(captor.getAllValues())
-                    .anyMatch(d -> d.status() == DocumentStatus.FAILED);
+            assertThat(captor.getAllValues()).anyMatch(d -> d.status() == DocumentStatus.FAILED);
         }
     }
 }

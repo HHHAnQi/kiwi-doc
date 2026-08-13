@@ -18,6 +18,11 @@ public interface ChunkRepository {
     /** 按文档 id 统计 chunks 数量(文档详情用)。 */
     long countByDocumentId(Long documentId);
 
+    /** 实际应进入向量索引的 Chunk 数；Parent 只用于回链，不计入。 */
+    default long countIndexableByDocumentId(Long documentId) {
+        return countByDocumentId(documentId);
+    }
+
     /** 单条 chunk(关联校验父 doc 未软删)。 */
     Optional<Chunk> findById(Long chunkId);
 
@@ -34,9 +39,8 @@ public interface ChunkRepository {
     /**
      * 按 docId + seq + chunkType 精确定位相邻 chunk(用于 prev/next 查询)。
      *
-     * <p>V3 parent-child 模式下同 (docId, seq) 可能存在 PARENT 与 CHILD 两条, 必须按 type 消歧;
-     * 不传 type 会触发 NonUniqueResultException → /chunks/{id}/neighbors 500。
-     * 查不到返回 empty。
+     * <p>V3 parent-child 模式下同 (docId, seq) 可能存在 PARENT 与 CHILD 两条, 必须按 type 消歧; 不传 type 会触发
+     * NonUniqueResultException → /chunks/{id}/neighbors 500。 查不到返回 empty。
      */
     Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq, ChunkType chunkType);
 
@@ -55,6 +59,11 @@ public interface ChunkRepository {
      */
     List<Chunk> saveAll(Long documentId, List<Chunk> chunks);
 
+    /** 替换指定影子 generation，不影响 active generation。 */
+    default List<Chunk> saveAll(Long documentId, int generation, List<Chunk> chunks) {
+        return saveAll(documentId, chunks.stream().map(c -> c.withGeneration(generation)).toList());
+    }
+
     /**
      * 追加保存 chunks(不清旧, 不删已有)。 供 Parent-Child 模式多阶段写入: 先 saveAll(parents), 再用拿到的 parent id 构造 child
      * 调本方法。
@@ -62,6 +71,14 @@ public interface ChunkRepository {
      * @return 已保存的 chunks(含生成的 id)
      */
     List<Chunk> saveAllAppend(Long documentId, List<Chunk> chunks);
+
+    default List<Chunk> saveAllAppend(Long documentId, int generation, List<Chunk> chunks) {
+        return saveAllAppend(documentId, chunks.stream().map(c -> c.withGeneration(generation)).toList());
+    }
+
+    default void deleteByDocumentIdAndGeneration(Long documentId, int generation) {
+        deleteByDocumentId(documentId);
+    }
 
     /** 删除指定文档的所有 chunks(重新解析前调用, 含 Milvus 向量清理由 service 协调)。 */
     void deleteByDocumentId(Long documentId);

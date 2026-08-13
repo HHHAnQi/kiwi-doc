@@ -46,14 +46,49 @@ public class JpaParseTaskRepository implements ParseTaskRepository {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ParseTask> findByContentHash(String contentHash) {
-        return jpa.findByContentHash(contentHash).map(mapper::toDomain);
+    public Optional<ParseTask> findByDocumentId(Long documentId) {
+        return jpa.findFirstByDocumentIdOrderByGenerationDesc(documentId).map(mapper::toDomain);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ParseTask> findByDocumentId(Long documentId) {
-        return jpa.findByDocumentId(documentId).map(mapper::toDomain);
+    public Optional<ParseTask> findByDocumentIdAndGeneration(Long documentId, int generation) {
+        return jpa.findByDocumentIdAndGeneration(documentId, generation).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int nextGeneration(Long documentId) {
+        return jpa.maxGeneration(documentId) + 1;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<ParseTask> leaseById(
+            Long taskId, String leasedBy, Instant leaseUntil, Instant now) {
+        int affected = jpa.markRunningById(taskId, leasedBy, leaseUntil, now);
+        if (affected == 0) return Optional.empty();
+        return jpa.findById(taskId).map(mapper::toDomain);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markDeliverySucceeded(Long taskId, Instant now) {
+        jpa.markDeliverySucceeded(taskId, now);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markDeliveryFailed(
+            Long taskId, Instant nextAttemptAt, String error, Instant now, int maxAttempts) {
+        String safeError = error == null ? null : error.substring(0, Math.min(error.length(), 512));
+        jpa.markDeliveryFailed(taskId, nextAttemptAt, safeError, now, maxAttempts);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean replayDeadDelivery(Long taskId, Instant now) {
+        return jpa.replayDeadDelivery(taskId, now) == 1;
     }
 
     /**
@@ -93,12 +128,41 @@ public class JpaParseTaskRepository implements ParseTaskRepository {
         ParseTaskEntity entity = mapper.toEntity(task);
         // update 走 save(merge) —— id 非 null 时 Hibernate 用 SELECT + UPDATE
         jpa.save(entity);
+        // 执行失败进入延迟 PENDING 重试时，必须重新打开消息投递；否则 delivery=SENT 会让 Relay 永久跳过。
+        if (task.status() == ParseTaskStatus.PENDING && task.id() != null) {
+            jpa.resetDeliveryPending(task.id(), task.visibleAt(), task.updatedAt());
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ParseTask> findDueRetry(Instant now, ParseTaskStatus status) {
-        // 当前用例仅 reapExpiredRunning 主路径; V3.5 加 FAILED → PENDING 精细化重试时实现
-        return List.of();
+        return jpa.findDue(now, status.name(), org.springframework.data.domain.PageRequest.of(0, 100))
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ParseTask> findDueForDelivery(Instant now, int limit) {
+        return jpa.findDueDelivery(now,
+                        org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
+                .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public List<ParseTask> claimDueForDelivery(
+            String leasedBy, Instant now, Instant leaseUntil, int limit) {
+        var candidates =
+                jpa.findDeliveryClaimCandidates(
+                        now,
+                        org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)));
+        java.util.List<ParseTask> claimed = new java.util.ArrayList<>(candidates.size());
+        for (var candidate : candidates) {
+            if (jpa.claimDelivery(candidate.getId(), leasedBy, leaseUntil, now) == 1) {
+                jpa.findById(candidate.getId()).map(mapper::toDomain).ifPresent(claimed::add);
+            }
+        }
+        return claimed;
     }
 }

@@ -33,14 +33,15 @@ class DocumentManageServiceTest {
             new ContentHash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
 
     /**
-     * 同步执行的 shortTx: 不真的开 transaction。直接调 callback.doInTransaction(null) 跑 callback。
-     * 重写 execute(...) 而非 executeWithoutResult: 后者是 TransactionOperations 接口的 default method,
-     * 内部委托 execute(...); 重写 execute 就堵住了所有路径。
+     * 同步执行的 shortTx: 不真的开 transaction。直接调 callback.doInTransaction(null) 跑 callback。 重写
+     * execute(...) 而非 executeWithoutResult: 后者是 TransactionOperations 接口的 default method, 内部委托
+     * execute(...); 重写 execute 就堵住了所有路径。
      */
     private static final TransactionTemplate SYNC_SHORT_TX =
             new TransactionTemplate() {
                 @Override
-                public <T> T execute(org.springframework.transaction.support.TransactionCallback<T> action) {
+                public <T> T execute(
+                        org.springframework.transaction.support.TransactionCallback<T> action) {
                     return action.doInTransaction(null);
                 }
             };
@@ -86,7 +87,8 @@ class DocumentManageServiceTest {
 
             assertThat(doc.isDeleted()).isTrue();
             assertThat(doc.pendingMilvusDelete()).isFalse(); // Milvus mock 成功 → 同步清标
-            // save 调用 2 次: 一次短事务内 chunks+文档 提交 (含 pending=true), 一次 attemptMilvusDelete 成功后清 pending。
+            // save 调用 2 次: 一次短事务内 chunks+文档 提交 (含 pending=true), 一次 attemptMilvusDelete 成功后清
+            // pending。
             verify(documentRepository, times(2)).save(doc);
             verify(chunkRepository).deleteByDocumentId(1L);
             verify(vectorStore).deleteByDocumentId(1L);
@@ -178,7 +180,8 @@ class DocumentManageServiceTest {
         void newDefaultWhenNoExisting() {
             Document doc = readyDoc(1L);
             when(documentRepository.findById(1L)).thenReturn(Optional.of(doc));
-            when(documentRepository.findDefaultReadyBySource(doc.source())).thenReturn(Optional.empty());
+            when(documentRepository.findDefaultReadyBySource(doc.source()))
+                    .thenReturn(Optional.empty());
 
             manageService.setDefault(1L);
 

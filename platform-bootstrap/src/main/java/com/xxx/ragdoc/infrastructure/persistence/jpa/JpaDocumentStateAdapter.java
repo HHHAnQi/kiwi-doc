@@ -16,8 +16,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * Task 4 / V10 DocLifecycle: {@link DocumentStatePort} 的 JPA 实现。
  *
- * <p>每个 mark 方法走 {@code PROPAGATION_REQUIRES_NEW} 短事务, 立刻把 status + lastStateChangeAt 写库,
- * 让 reconcile job 能识别 in-flight 阶段; 失败 (非法迁移 / DB 错误) 抛出, 由调用方决策 markFailed。
+ * <p>每个 mark 方法走 {@code PROPAGATION_REQUIRES_NEW} 短事务, 立刻把 status + lastStateChangeAt 写库, 让
+ * reconcile job 能识别 in-flight 阶段; 失败 (非法迁移 / DB 错误) 抛出, 由调用方决策 markFailed。
  *
  * <p>放 infrastructure 层 (合法引用 DocumentJpaRepository), application 层管道只看 port。
  */
@@ -48,15 +48,13 @@ public class JpaDocumentStateAdapter implements DocumentStatePort {
                                             .orElseThrow(
                                                     () ->
                                                             new IllegalStateException(
-                                                                    "Document 不存在: "
-                                                                            + documentId));
+                                                                    "Document 不存在: " + documentId));
                             Document d = documentMapper.toDomain(entity);
                             d.markChunked(chunks);
                             documentMapper.toEntity(d, entity);
                             documentJpaRepository.save(entity);
                             log.debug(
-                                    "doc_state.mark_chunked doc_id={}, status=CHUNKED",
-                                    documentId);
+                                    "doc_state.mark_chunked doc_id={}, status=CHUNKED", documentId);
                         });
     }
 
@@ -76,7 +74,8 @@ public class JpaDocumentStateAdapter implements DocumentStatePort {
     }
 
     /** 通用无参状态机推进。 */
-    private void transition(Long documentId, java.util.function.Consumer<Document> mutator, String label) {
+    private void transition(
+            Long documentId, java.util.function.Consumer<Document> mutator, String label) {
         shortTx()
                 .executeWithoutResult(
                         status -> {
@@ -86,13 +85,13 @@ public class JpaDocumentStateAdapter implements DocumentStatePort {
                                             .orElseThrow(
                                                     () ->
                                                             new IllegalStateException(
-                                                                    "Document 不存在: "
-                                                                            + documentId));
+                                                                    "Document 不存在: " + documentId));
                             Document d = documentMapper.toDomain(entity);
                             mutator.accept(d);
                             documentMapper.toEntity(d, entity);
                             documentJpaRepository.save(entity);
-                            log.debug("doc_state.transition doc_id={}, status={}", documentId, label);
+                            log.debug(
+                                    "doc_state.transition doc_id={}, status={}", documentId, label);
                         });
     }
 }

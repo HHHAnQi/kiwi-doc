@@ -6,6 +6,7 @@ import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.ParseTask;
 import com.xxx.ragdoc.infrastructure.mq.ParseTaskSubmitMessage;
 import com.xxx.ragdoc.parser.application.ParseTaskService;
+import com.xxx.ragdoc.parser.application.ParseCompletionService;
 import com.xxx.ragdoc.parser.application.ParseWorker;
 import java.time.Clock;
 import java.time.Duration;
@@ -54,6 +55,7 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
     private final DocumentRepository documentRepository;
     private final ParseWorker worker;
     private final ParseTaskService parseTaskService;
+    private final ParseCompletionService completionService;
     private final Clock clock;
 
     @Override
@@ -84,7 +86,14 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
 
         // step 6: lease(只在 PENDING 状态可抢). 若 latest 不是 PENDING(可能 RUNNING — 另 worker 在跑),
         // 跳过让原 worker 干完; FAILED 也跳过让心跳 retry 走.
-        ParseTask leased = leaseTask(latest, leasedBy, now);
+        ParseTask leased =
+                parseTaskRepository
+                        .leaseById(
+                                latest.id(),
+                                leasedBy,
+                                now.plus(Duration.ofMinutes(leaseDurationMinutes)),
+                                now)
+                        .orElse(null);
         if (leased == null) {
             log.info(
                     "parse_task.lease_skipped task_id={}, status={} (in-flight or retrying)",
@@ -99,53 +108,42 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
             // 否则 step 12a 的 doc.markIndexed 会因状态不连续而抛, 由 consumer 推进完整链路,
             // 导致 doc 卡 UPLOADED, 前端 readyCount 永远算不到这条 doc。
             // (sync 路径 TikaParsingTrigger.trigger 在 try 入口就 startParsing, async 路径之前漏了)
-            Document docForState = documentRepository.findById(leased.documentId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Document 不存在: " + leased.documentId()));
-            docForState.startParsing();
+            Document docForState =
+                    documentRepository
+                            .findById(leased.documentId())
+                            .orElseThrow(
+                                    () ->
+                                            new IllegalStateException(
+                                                    "Document 不存在: " + leased.documentId()));
+            if (leased.triggerType() == ParseTask.TriggerType.REBUILD) {
+                docForState.beginGenerationBuild(leased.generation());
+            } else {
+                docForState.startParsing();
+            }
             documentRepository.save(docForState);
 
             List<com.xxx.ragdoc.domain.document.Chunk> savedChunks = worker.execute(leased);
-            int chunksWritten = savedChunks.size();
             // step 12a: success — Task 4 状态机推进到 INDEXED
             //   异步路径里 worker.execute 内部不做中间态持久化 (跨模块添加 statePort 成本高),
             //   末尾由 consumer 一次性推进 CHUNKED → EMBEDDING → INDEXING → INDEXED。
             //   reconcile job 仍能正确识别 (startParsing 后到此处之间任一异常仍 markFailed)。
             //   中间态不在 MySQL 落地不影响正确性, 仅影响 reconcile 判"卡在哪步"的精度 — 可接受
             //   (异步路径里卡死由 ParseTask 状态机的 VisibilityTimeoutScheduler 兜底, 不靠 doc.status)。
-            ParseTask parsed = parseTaskService.markParsed(withChunks(leased, chunksWritten));
-            try {
-                Document doc =
-                        documentRepository
-                                .findById(leased.documentId())
-                                .orElseThrow(
-                                        () ->
-                                                new IllegalStateException(
-                                                        "Document 不存在: " + leased.documentId()));
-                doc.markChunked(savedChunks);
-                doc.markEmbedding();
-                doc.markIndexing();
-                doc.markIndexed();
-                documentRepository.save(doc);
-                log.info(
-                        "parse_task.done task_id={}, doc_id={}, status={}, chunks={}",
-                        leased.id(),
-                        leased.documentId(),
-                        parsed.status(),
-                        chunksWritten);
-            } catch (Exception e) {
-                // parse_tasks 已 PARSED; doc.markIndexed 异常不致命(下次 chat 仍可读到 chunks),
-                // 仅 log warn 不抛, 不让 broker 重投避免重复跑同 task.
-                log.warn(
-                        "parse_task.doc_markIndexed_failed task_id={}, err={}",
-                        leased.id(),
-                        e.getMessage());
-            }
+            ParseTask parsed = completionService.complete(leased, savedChunks);
+            log.info(
+                    "parse_task.done task_id={}, doc_id={}, status={}, chunks={}",
+                    leased.id(), leased.documentId(), parsed.status(), savedChunks.size());
         } catch (Exception e) {
             // step 12b: failed — 走 ParseTaskService.markFailed, 自动判 retry_count vs max_retries
             // → FAILED/PENDING 或 CANCELLED(DLQ)
             try {
                 parseTaskService.markFailed(leased, e);
+                if (leased.triggerType() == ParseTask.TriggerType.REBUILD) {
+                    documentRepository.findById(leased.documentId()).ifPresent(doc -> {
+                        doc.failGenerationBuild(leased.generation());
+                        documentRepository.save(doc);
+                    });
+                }
                 log.warn(
                         "parse_task.failed_handled task_id={}, err_class={}, err={}",
                         leased.id(),
@@ -161,60 +159,6 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
             }
             // 不 rethrow: 本方法已记录 failed, 不要让 broker 再 redelivery(重复 markFailed retry_count++)
         }
-    }
-
-    /** 抢占一条 task(spec §3.3 PENDING→RUNNING). 不走 leaseNextPending, 因为 message 已带 taskId. */
-    private ParseTask leaseTask(ParseTask task, String leasedBy, Instant now) {
-        // 显式 select+update 双步(不分两步原子也不冲突, TASK id 已由 message 唯一定位, 其他 worker 拿同
-        // msg id 才并发, RocketMQ CLUSTERING 保证同 message 一台消费)
-        if (task.status().name().equals("PENDING") && !task.visibleAt().isAfter(now)) {
-            Instant leaseUntil = now.plus(Duration.ofMinutes(leaseDurationMinutes));
-            ParseTask leased =
-                    new ParseTask(
-                            task.id(),
-                            task.documentId(),
-                            task.contentHash(),
-                            com.xxx.ragdoc.domain.document.ParseTaskStatus.RUNNING,
-                            task.retryCount(),
-                            task.maxRetries(),
-                            task.chunksWritten(),
-                            task.chunkSeqOffset(),
-                            task.errorMessage(),
-                            task.errorClass(),
-                            task.attempts(),
-                            leaseUntil,
-                            leasedBy,
-                            task.createdAt(),
-                            now);
-            try {
-                parseTaskRepository.update(leased);
-                return leased;
-            } catch (DataIntegrityViolationException e) {
-                log.debug("parse_task.lease_race_lost task_id={}", task.id());
-                return null;
-            }
-        }
-        return null;
-    }
-
-    /** 把 task 的 chunksWritten 字段置为 worker 返回的真实值, 供 markParsed 守卫检查. */
-    private ParseTask withChunks(ParseTask task, int chunksWritten) {
-        return new ParseTask(
-                task.id(),
-                task.documentId(),
-                task.contentHash(),
-                task.status(),
-                task.retryCount(),
-                task.maxRetries(),
-                chunksWritten,
-                task.chunkSeqOffset(),
-                task.errorMessage(),
-                task.errorClass(),
-                task.attempts(),
-                task.visibleAt(),
-                task.leasedBy(),
-                task.createdAt(),
-                task.updatedAt());
     }
 
     private static String hostnamePid() {

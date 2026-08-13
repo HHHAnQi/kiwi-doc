@@ -33,6 +33,8 @@ public class Document {
     // 详见 ADR-0001 与 docs/data/data-model.md。缺省值保证老调用方零改动。
     private final String source; // dubbo/nacos/seata/rocketmq/sentinel/unknown
     private final String version; // 自由版本号, null = 未指定
+    /** 同一逻辑文件跨版本稳定不变；默认由上传层从文件名推导，也可由连接器提供外部稳定 ID。 */
+    private final String logicalDocumentKey;
     private final String language; // zh/en
     private final String docType; // doc/blog/release-notes/spec/demo
 
@@ -41,27 +43,28 @@ public class Document {
     private String errorMessage;
     private List<Chunk> chunks;
     private boolean deleted;
+
     /**
-     * Phase 3 / P3-1 (修正版 Phase 3): 是否为同 source 的默认版本。
+     * 是否为同一逻辑文档的当前版本（字段名保留 default 兼容旧 API）。
      *
-     * <p>用途: 用户不传 explicit version 时 RetrieveService 按 is_default fallback 过滤,
-     * 避免跨版本混查 (Spring Boot 2 javax vs Spring Boot 3 jakarta)。
+     * <p>用途: 用户不传 explicit version 时 RetrieveService 只召回每个逻辑文档的 current 版本。
      *
-     * <p>不变量: 同 source + status=READY + deleted=false 时, 最多 1 条 isDefault=true
-     * (DocumentUploadService.upload + AdminEndpoint.setDefault 共同保证)。
+     * <p>不变量: 同 tenant + logicalDocumentKey + deleted=false 最多 1 条 isDefault=true，数据库唯一约束兜底。
      */
     private boolean isDefault;
 
     /**
      * Phase 3 / P3-2 (修正版 Phase 3): Milvus 向量是否待清理。
      *
-     * <p>用途: 软删文档时, chunks 在 @Transactional 内原子清, 但 Milvus 向量删除走 circuit breaker
-     * 可能熔断/超时, 不能阻塞 softDelete 主流程。失败时 markPendingMilvusDelete() 标记 pending=true,
-     * MilvusDeleteSweeper 定时扫 pending=true 重试, 成功后 clear()。
+     * <p>用途: 软删文档时, chunks 在 @Transactional 内原子清, 但 Milvus 向量删除走 circuit breaker 可能熔断/超时, 不能阻塞
+     * softDelete 主流程。失败时 markPendingMilvusDelete() 标记 pending=true, MilvusDeleteSweeper 定时扫
+     * pending=true 重试, 成功后 clear()。
      *
      * <p>不变量: 新建 doc 永远 pending=false; reactivate 时 clear (避免历史脏标记触发 sweeper 误删)。
      */
     private boolean pendingMilvusDelete;
+    private int activeGeneration = 1;
+    private Integer pendingGeneration;
 
     /**
      * Task 4: 状态机最后变更时间。reconcile job 扫「in-flight 超时」用: status IN
@@ -106,6 +109,30 @@ public class Document {
             String version,
             String language,
             String docType) {
+        return newUploaded(
+                contentHash,
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                tenantId,
+                source,
+                version,
+                language,
+                docType,
+                null);
+    }
+
+    public static Document newUploaded(
+            ContentHash contentHash,
+            String originalFilename,
+            String mimeType,
+            long sizeBytes,
+            String tenantId,
+            String source,
+            String version,
+            String language,
+            String docType,
+            String logicalDocumentKey) {
         return new Document(
                 null,
                 contentHash,
@@ -115,6 +142,7 @@ public class Document {
                 tenantId,
                 "unknown".equals(safe(source)) ? "unknown" : safe(source),
                 nullIfBlank(version), // version 可空; 空白也视作 null, 防下游 Milvus 写空串污染过滤
+                defaultIfBlank(logicalDocumentKey, legacyLogicalKey(originalFilename)),
                 defaultIfBlank(language, "zh"),
                 defaultIfBlank(docType, "doc"),
                 DocumentStatus.UPLOADED,
@@ -152,7 +180,8 @@ public class Document {
                 "unknown",
                 null,
                 "zh",
-                "doc");
+                "doc",
+                legacyLogicalKey(originalFilename));
     }
 
     /** 从持久化恢复(含业务元数据)。 */
@@ -172,6 +201,42 @@ public class Document {
             String version,
             String language,
             String docType) {
+        return restore(
+                id,
+                contentHash,
+                originalFilename,
+                mimeType,
+                sizeBytes,
+                tenantId,
+                status,
+                retryCount,
+                errorMessage,
+                chunks,
+                deleted,
+                source,
+                version,
+                language,
+                docType,
+                null);
+    }
+
+    public static Document restore(
+            DocumentId id,
+            ContentHash contentHash,
+            String originalFilename,
+            String mimeType,
+            long sizeBytes,
+            String tenantId,
+            DocumentStatus status,
+            int retryCount,
+            String errorMessage,
+            List<Chunk> chunks,
+            boolean deleted,
+            String source,
+            String version,
+            String language,
+            String docType,
+            String logicalDocumentKey) {
         return new Document(
                 id,
                 contentHash,
@@ -181,6 +246,7 @@ public class Document {
                 tenantId,
                 "unknown".equals(safe(source)) ? "unknown" : safe(source),
                 nullIfBlank(version), // 与 newUploaded 一致: 空白视作 null
+                defaultIfBlank(logicalDocumentKey, legacyLogicalKey(originalFilename)),
                 defaultIfBlank(language, "zh"),
                 defaultIfBlank(docType, "doc"),
                 status,
@@ -199,6 +265,7 @@ public class Document {
             String tenantId,
             String source,
             String version,
+            String logicalDocumentKey,
             String language,
             String docType,
             DocumentStatus status,
@@ -217,6 +284,8 @@ public class Document {
 
         this.source = Objects.requireNonNull(source, "source 不能为 null, 用 'unknown'");
         this.version = version;
+        this.logicalDocumentKey =
+                Objects.requireNonNull(logicalDocumentKey, "logicalDocumentKey 不能为 null");
         this.language = Objects.requireNonNull(language, "language 不能为 null, 用 'zh'");
         this.docType = Objects.requireNonNull(docType, "docType 不能为 null, 用 'doc'");
 
@@ -242,6 +311,10 @@ public class Document {
         return (s == null || s.isBlank()) ? null : s.trim();
     }
 
+    private static String legacyLogicalKey(String filename) {
+        return filename == null ? "unknown" : filename.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
     // ============================================================
     // 业务行为(状态机迁移 + 不变量约束)
     // ============================================================
@@ -249,8 +322,8 @@ public class Document {
     /**
      * 进入解析。仅 UPLOADED 可迁(V1 同步由 upload 流程立即触发)。
      *
-     * <p>幂等表层: 如果已 PARSING, 直接 no-op 返回(RocketMQ redelivery / parser restart 续点会再调一次,
-     * 不应抛 IllegalState)。READY/FAILED/UPLOADED 之外的非法迁移仍走 transitionTo 抛。
+     * <p>幂等表层: 如果已 PARSING, 直接 no-op 返回(RocketMQ redelivery / parser restart 续点会再调一次, 不应抛
+     * IllegalState)。READY/FAILED/UPLOADED 之外的非法迁移仍走 transitionTo 抛。
      *
      * <p>Task 4: 同样幂等适用于 CHUNKED/EMBEDDING/INDEXING (parse 队列重投, 已在管道中, 不重复迁移)。
      */
@@ -337,7 +410,8 @@ public class Document {
             throw new IllegalStateException("仅 FAILED / INDEXED 可触发 retry, 当前=" + status);
         }
         if (retryCount >= MAX_RETRY) {
-            throw new IllegalStateException("V10 重试上限 " + MAX_RETRY + " 次, 当前 retryCount=" + retryCount);
+            throw new IllegalStateException(
+                    "V10 重试上限 " + MAX_RETRY + " 次, 当前 retryCount=" + retryCount);
         }
         this.status = status.transitionTo(DocumentStatus.PARSING);
         this.retryCount = retryCount + 1;
@@ -363,8 +437,8 @@ public class Document {
      * documents.uk_content_hash 唯一约束, (b) chunks/Milvus 可走重切路径。 调用方须保证 chunks 已清(reactivate 不负责清旧
      * chunks, 状态机只关心自身)。
      *
-     * <p>Task 4: reactivate 是业务复活特权路径, 直接 set status=UPLOADED 不走 {@link #transitionTo}
-     * (因为 INDEXED/FAILED → UPLOADED 不在常规状态机规则里, 但业务上复活必须能从这里启动)。
+     * <p>Task 4: reactivate 是业务复活特权路径, 直接 set status=UPLOADED 不走 {@link #transitionTo} (因为
+     * INDEXED/FAILED → UPLOADED 不在常规状态机规则里, 但业务上复活必须能从这里启动)。
      */
     public void reactivate() {
         if (!this.deleted) {
@@ -439,6 +513,10 @@ public class Document {
         return version;
     }
 
+    public String logicalDocumentKey() {
+        return logicalDocumentKey;
+    }
+
     /** 业务元数据: 语言(zh/en), 缺省 'zh'。 */
     public String language() {
         return language;
@@ -471,7 +549,8 @@ public class Document {
     }
 
     public boolean canRetry() {
-        return (status == DocumentStatus.FAILED || status == DocumentStatus.INDEXED) && retryCount < MAX_RETRY;
+        return (status == DocumentStatus.FAILED || status == DocumentStatus.INDEXED)
+                && retryCount < MAX_RETRY;
     }
 
     /** Task 4: 状态机最后变更时间, reconcile 扫卡死用。 */
@@ -487,9 +566,8 @@ public class Document {
     /**
      * Task 4: 持久化恢复时反序列化时间戳, 不重新打戳。
      *
-     * <p>仅供 {@code DocumentMapper.toDomain} 调用 — 让从 DB 取回的 doc 保留真实时间戳 (reconcile
-     * 扫卡死的判定基准)。一旦任何一个 {@code mark*} 方法被调用, 后续打戳会由 {@link #touchStateChange}
-     * 覆盖。本方法是 package-private 是为减少误用面。
+     * <p>仅供 {@code DocumentMapper.toDomain} 调用 — 让从 DB 取回的 doc 保留真实时间戳 (reconcile 扫卡死的判定基准)。一旦任何一个
+     * {@code mark*} 方法被调用, 后续打戳会由 {@link #touchStateChange} 覆盖。本方法是 package-private 是为减少误用面。
      */
     public void amendLastStateChangeAt(Instant ts) {
         if (ts != null) {
@@ -497,17 +575,12 @@ public class Document {
         }
     }
 
-    /** Phase 3 / P3-1: 是否为同 source 的默认版本。 */
+    /** 是否为同一逻辑文档的当前可检索版本。字段名保留 isDefault 兼容旧 API。 */
     public boolean isDefault() {
         return isDefault;
     }
 
-    /**
-     * Phase 3 / P3-1: 标记为同 source 默认版本 (admin set-default 调用)。
-     *
-     * <p>不变量: 调用方 (DocumentManageService.setDefault) 必须保证先把同 source 老的 default
-     * 标 isDefault=false 才调本方法, 维持 "同 source + READY + !deleted 最多 1 default"。
-     */
+    /** 标记为同一逻辑文档的当前版本。唯一性由数据库和应用事务共同保证。 */
     public void markDefault() {
         this.isDefault = true;
     }
@@ -518,8 +591,8 @@ public class Document {
     }
 
     /**
-     * Phase 3 / P3-2: 软删文档后, Milvus 向量删除失败时由 DocumentManageService 调用,
-     * 标记 pending=true 让 sweeper 后续重试删除。
+     * Phase 3 / P3-2: 软删文档后, Milvus 向量删除失败时由 DocumentManageService 调用, 标记 pending=true 让 sweeper
+     * 后续重试删除。
      */
     public void markPendingMilvusDelete() {
         this.pendingMilvusDelete = true;
@@ -533,6 +606,40 @@ public class Document {
     /** Phase 3 / P3-2: 是否有待清理的 Milvus 向量; sweeper 用此过滤待重试文档。 */
     public boolean pendingMilvusDelete() {
         return pendingMilvusDelete;
+    }
+
+    public int activeGeneration() { return activeGeneration; }
+
+    public Integer pendingGeneration() { return pendingGeneration; }
+
+    public void amendGenerationState(int active, Integer pending) {
+        if (active < 1) throw new IllegalArgumentException("activeGeneration 必须 >= 1");
+        this.activeGeneration = active;
+        this.pendingGeneration = pending;
+    }
+
+    public void beginGenerationBuild(int generation) {
+        ensureNotDeleted();
+        if (generation <= activeGeneration) {
+            throw new IllegalStateException("新 generation 必须大于 activeGeneration");
+        }
+        if (pendingGeneration != null && pendingGeneration != generation) {
+            throw new IllegalStateException("已有 generation 正在构建: " + pendingGeneration);
+        }
+        pendingGeneration = generation;
+    }
+
+    public void activateGeneration(int generation) {
+        ensureNotDeleted();
+        if (pendingGeneration == null || pendingGeneration != generation) {
+            throw new IllegalStateException("generation 未处于待激活状态: " + generation);
+        }
+        activeGeneration = generation;
+        pendingGeneration = null;
+    }
+
+    public void failGenerationBuild(int generation) {
+        if (pendingGeneration != null && pendingGeneration == generation) pendingGeneration = null;
     }
 
     @Override

@@ -10,7 +10,7 @@ import java.time.Instant;
  * @param version V3 业务元数据: 版本号, 可空
  * @param language V3 业务元数据: 语言
  * @param docType V3 业务元数据: 文档类型
- * @param isDefault P3-1: 是否为同 source 默认版本
+ * @param isDefault 是否为同一逻辑文档的当前版本（旧字段名兼容）
  * @param pendingMilvusDelete P3-2: 软删后 Milvus 是否待清理
  */
 public record DocumentDetail(
@@ -26,7 +26,45 @@ public record DocumentDetail(
         Instant updatedAt,
         String source,
         String version,
+        String logicalDocumentKey,
         String language,
         String docType,
         boolean isDefault,
-        boolean pendingMilvusDelete) {}
+        boolean pendingMilvusDelete) {
+    public DocumentDetail(
+            Long docId,
+            String originalFilename,
+            String mimeType,
+            DocumentStatus status,
+            long sizeBytes,
+            long chunkCount,
+            int retryCount,
+            String errorMessage,
+            Instant createdAt,
+            Instant updatedAt,
+            String source,
+            String version,
+            String language,
+            String docType,
+            boolean isDefault,
+            boolean pendingMilvusDelete) {
+        this(
+                docId,
+                originalFilename,
+                mimeType,
+                status,
+                sizeBytes,
+                chunkCount,
+                retryCount,
+                errorMessage,
+                createdAt,
+                updatedAt,
+                source,
+                version,
+                originalFilename,
+                language,
+                docType,
+                isDefault,
+                pendingMilvusDelete);
+    }
+}

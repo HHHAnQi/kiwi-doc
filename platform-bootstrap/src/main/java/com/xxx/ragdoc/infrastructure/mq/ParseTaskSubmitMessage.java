@@ -27,4 +27,9 @@ import java.time.Instant;
  * @param submittedAt producer 发送时刻(UTC ISO-8601)
  */
 public record ParseTaskSubmitMessage(
-        Long taskId, Long documentId, String contentHash, Instant submittedAt) {}
+        Long taskId, Long documentId, String contentHash, int generation, Instant submittedAt) {
+    public ParseTaskSubmitMessage(
+            Long taskId, Long documentId, String contentHash, Instant submittedAt) {
+        this(taskId, documentId, contentHash, 1, submittedAt);
+    }
+}

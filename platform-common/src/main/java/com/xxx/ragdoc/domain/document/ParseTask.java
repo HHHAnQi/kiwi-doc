@@ -17,6 +17,9 @@ import java.util.List;
 public record ParseTask(
         Long id,
         Long documentId,
+        int generation,
+        TriggerType triggerType,
+        Long supersedesTaskId,
         String contentHash,
         ParseTaskStatus status,
         int retryCount,
@@ -28,8 +31,45 @@ public record ParseTask(
         List<Attempt> attempts,
         Instant visibleAt,
         String leasedBy,
+        DeliveryStatus deliveryStatus,
+        int deliveryAttempts,
+        Instant nextDeliveryAt,
+        String deliveryError,
         Instant createdAt,
         Instant updatedAt) {
+
+    public ParseTask(
+            Long id, Long documentId, String contentHash, ParseTaskStatus status,
+            int retryCount, int maxRetries, int chunksWritten, int chunkSeqOffset,
+            String errorMessage, String errorClass, List<Attempt> attempts,
+            Instant visibleAt, String leasedBy, Instant createdAt, Instant updatedAt) {
+        this(id, documentId, 1, TriggerType.UPLOAD, null, contentHash, status, retryCount, maxRetries, chunksWritten,
+                chunkSeqOffset, errorMessage, errorClass, attempts, visibleAt, leasedBy,
+                DeliveryStatus.PENDING, 0, visibleAt, null, createdAt, updatedAt);
+    }
+
+    public enum DeliveryStatus { PENDING, SENDING, SENT, DEAD }
+
+    public enum TriggerType { UPLOAD, RETRY, REBUILD, RECONCILE }
+
+    public ParseTask withExecutionState(
+            ParseTaskStatus newStatus,
+            int newRetryCount,
+            int newChunksWritten,
+            int newChunkSeqOffset,
+            String newErrorMessage,
+            String newErrorClass,
+            List<Attempt> newAttempts,
+            Instant newVisibleAt,
+            String newLeasedBy,
+            Instant newUpdatedAt) {
+        return new ParseTask(
+                id, documentId, generation, triggerType, supersedesTaskId, contentHash,
+                newStatus, newRetryCount, maxRetries, newChunksWritten, newChunkSeqOffset,
+                newErrorMessage, newErrorClass, newAttempts, newVisibleAt, newLeasedBy,
+                deliveryStatus, deliveryAttempts, nextDeliveryAt, deliveryError,
+                createdAt, newUpdatedAt);
+    }
 
     /** 单次 attempt 历史(V3 commit 3 dead letter 分析用)。 */
     public record Attempt(Instant at, long durationMs, String errorClass, String errorMessage) {}

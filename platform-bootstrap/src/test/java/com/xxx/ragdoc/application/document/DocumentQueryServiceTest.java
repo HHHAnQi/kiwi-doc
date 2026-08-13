@@ -25,8 +25,7 @@ import org.springframework.data.domain.PageRequest;
 
 /** DocumentQueryService 单测 - 纯读路径校验。 */
 @ExtendWith(MockitoExtension.class)
-@org.mockito.junit.jupiter.MockitoSettings(
-        strictness = org.mockito.quality.Strictness.LENIENT)
+@org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 class DocumentQueryServiceTest {
 
     @Mock private DocumentRepository documentRepository;
@@ -42,7 +41,9 @@ class DocumentQueryServiceTest {
                 com.xxx.ragdoc.application.auth.AuthContext.DEFAULT_PRINCIPAL);
         // mock resolver 默认返空 scope, 让 listAccessible 走正常 path
         when(permissionResolver.resolveAccessScope(any()))
-                .thenReturn(com.xxx.ragdoc.application.auth.AccessScope.of("default", java.util.Set.of()));
+                .thenReturn(
+                        com.xxx.ragdoc.application.auth.AccessScope.of(
+                                "default", java.util.Set.of()));
     }
 
     @AfterEach
@@ -125,8 +126,9 @@ class DocumentQueryServiceTest {
     void getDetail_ThrowsNotFoundIfMissing() {
         // accessGuard 自己内部加载 doc 99 → 找不到 → throw NotFoundException
         when(accessGuard.requireRead(999L))
-                .thenThrow(new com.xxx.ragdoc.common.exception.NotFoundException(
-                        com.xxx.ragdoc.common.exception.ErrorCode.DOC_NOT_FOUND, "miss"));
+                .thenThrow(
+                        new com.xxx.ragdoc.common.exception.NotFoundException(
+                                com.xxx.ragdoc.common.exception.ErrorCode.DOC_NOT_FOUND, "miss"));
 
         assertThatThrownBy(() -> queryService.getDetail(999L))
                 .isInstanceOf(NotFoundException.class);

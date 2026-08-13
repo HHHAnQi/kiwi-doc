@@ -19,6 +19,7 @@ import java.util.List;
 public record Chunk(
         Long id,
         Long documentId,
+        int generation,
         int seq,
         ChunkType type,
         String content,
@@ -27,6 +28,12 @@ public record Chunk(
         Long parentChunkId,
         String contentHash,
         List<String> sectionPath) {
+    public Chunk(
+            Long id, Long documentId, int seq, ChunkType type, String content, int page,
+            BoundingBox bbox, Long parentChunkId, String contentHash, List<String> sectionPath) {
+        this(id, documentId, 1, seq, type, content, page, bbox, parentChunkId, contentHash, sectionPath);
+    }
+
     public Chunk {
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("chunk content 不能为空");
@@ -41,5 +48,10 @@ public record Chunk(
         if (sectionPath == null) {
             sectionPath = List.of();
         }
+    }
+
+    public Chunk withGeneration(int value) {
+        return new Chunk(id, documentId, value, seq, type, content, page, bbox,
+                parentChunkId, contentHash, sectionPath);
     }
 }

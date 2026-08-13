@@ -6,7 +6,6 @@ import io.milvus.v2.common.DataType;
 import io.milvus.v2.common.IndexParam;
 import io.milvus.v2.service.collection.request.CreateCollectionReq;
 import io.milvus.v2.service.collection.request.DescribeCollectionReq;
-import io.milvus.v2.service.collection.request.DropCollectionReq;
 import io.milvus.v2.service.collection.request.HasCollectionReq;
 import io.milvus.v2.service.collection.response.DescribeCollectionResp;
 import java.util.List;
@@ -42,8 +41,7 @@ import org.springframework.stereotype.Component;
  *   <li>sparse_bm25: SPARSE_INVERTED_INDEX (BM25 metric)
  * </ul>
  *
- * <p>当前 collection schema 升级到 V2-C 双路召回版本时, 因为旧 schema 没 text/BM25 Function 字段, 启动会检测到 schema 不同并删旧
- * collection 重建。
+ * <p>启动只负责“空环境创建”和“已有环境校验”，绝不删除已有 collection。schema 升级必须通过新 collection 回灌、校验和配置切换完成。
  */
 @Slf4j
 @Component
@@ -56,6 +54,7 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
     public static final String FIELD_TEXT = "text";
     public static final String FIELD_SPARSE_BM25 = "sparse_bm25";
     public static final String FIELD_DOC_ID = "document_id";
+    public static final String FIELD_GENERATION = "ingestion_generation";
     public static final String FIELD_CHUNK_ID = "chunk_id";
     public static final String FIELD_PAGE = "page";
     public static final String FIELD_TENANT = "tenant_id";
@@ -63,6 +62,7 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
     // source/version/language/doc_type 支撑元数据过滤检索与按组件分组消融。
     public static final String FIELD_SOURCE = "source";
     public static final String FIELD_VERSION = "version";
+    public static final String FIELD_LOGICAL_DOCUMENT_KEY = "logical_document_key";
     public static final String FIELD_LANGUAGE = "language";
     public static final String FIELD_DOC_TYPE = "doc_type";
     public static final String FIELD_CHUNK_TYPE = "chunk_type";
@@ -90,22 +90,27 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
                     milvusClientV2.hasCollection(
                             HasCollectionReq.builder().collectionName(collection).build());
             if (has) {
-                // 检测 schema 是否是新的 BM25 版本; 旧版要重建
                 if (needsSchemaMigration(collection)) {
-                    log.warn(
-                            "⚠ Milvus collection '{}' 还是旧 schema(没 BM25 Function), 删除重建...",
-                            collection);
-                    milvusClientV2.dropCollection(
-                            DropCollectionReq.builder().collectionName(collection).build());
-                } else {
-                    log.info("✓ Milvus collection '{}' 已存在(BM25 schema), 跳过", collection);
-                    return;
+                    String message =
+                            "Milvus collection '" + collection
+                                    + "' schema 不兼容；请创建新 collection、全量回灌并切换 MILVUS_COLLECTION，应用不会自动删除数据";
+                    if (props.isFailOnSchemaMismatch()) {
+                        throw new IllegalStateException(message);
+                    }
+                    log.error(message);
                 }
+                log.info("✓ Milvus collection '{}' 已存在，校验完成", collection);
+                return;
             }
             createCollection(collection);
             log.info("✓ Milvus collection '{}' 已自动创建 + dense/sparse_bm25 索引就绪", collection);
         } catch (Exception e) {
-            log.warn("Milvus collection 初始化失败(应用仍可启动): {}", e.getMessage());
+            if (props.isFailOnSchemaMismatch()) {
+                throw e instanceof RuntimeException runtime
+                        ? runtime
+                        : new IllegalStateException("Milvus collection 初始化失败", e);
+            }
+            log.error("Milvus collection 初始化失败，检索可能不可用: {}", e.getMessage(), e);
         }
     }
 
@@ -120,7 +125,10 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
             boolean hasBm25 = fieldNames.contains(FIELD_SPARSE_BM25);
             boolean hasSource = fieldNames.contains(FIELD_SOURCE);
             boolean hasChunkType = fieldNames.contains(FIELD_CHUNK_TYPE);
-            boolean needsMigrate = hasLegacySparse || !hasBm25 || !hasSource || !hasChunkType;
+            boolean hasLogicalDocumentKey = fieldNames.contains(FIELD_LOGICAL_DOCUMENT_KEY);
+            boolean hasGeneration = fieldNames.contains(FIELD_GENERATION);
+            boolean needsMigrate = hasLegacySparse || !hasBm25 || !hasSource || !hasChunkType
+                    || !hasLogicalDocumentKey || !hasGeneration;
             log.info(
                     "milvus.schema_check fields={} hasLegacySparse={} hasBm25={} hasSource={} hasChunkType={} -> needsMigrate={}",
                     fieldNames,
@@ -131,9 +139,7 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
                     needsMigrate);
             return needsMigrate;
         } catch (Exception e) {
-            // describe 失败保守起见认为不需要重建(避免误删)
-            log.warn("describeCollection 失败, 跳过迁移检测: {}", e.getMessage());
-            return false;
+            throw new IllegalStateException("无法读取 Milvus collection schema: " + collection, e);
         }
     }
 
@@ -177,6 +183,11 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
                         .build());
         schema.addField(
                 io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_GENERATION)
+                        .dataType(DataType.Int32)
+                        .build());
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
                         .fieldName(FIELD_CHUNK_ID)
                         .dataType(DataType.Int64)
                         .build());
@@ -204,6 +215,12 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
                         .dataType(DataType.VarChar)
                         .maxLength(16)
                         .build()); // Milvus SDK 2.5 不支持 nullable(true); version 空时存空串, 读侧映射回 null
+        schema.addField(
+                io.milvus.v2.service.collection.request.AddFieldReq.builder()
+                        .fieldName(FIELD_LOGICAL_DOCUMENT_KEY)
+                        .dataType(DataType.VarChar)
+                        .maxLength(128)
+                        .build());
         schema.addField(
                 io.milvus.v2.service.collection.request.AddFieldReq.builder()
                         .fieldName(FIELD_LANGUAGE)

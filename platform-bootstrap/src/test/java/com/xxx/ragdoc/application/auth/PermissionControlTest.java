@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.xxx.ragdoc.application.chat.EmbeddingResult;
-import com.xxx.ragdoc.application.chat.RetrieveService;
 import com.xxx.ragdoc.application.chat.RerankProperties;
+import com.xxx.ragdoc.application.chat.RetrieveService;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.port.EmbeddingClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient;
@@ -21,7 +21,6 @@ import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
 import java.util.List;
 import java.util.Optional;
-import com.xxx.ragdoc.application.auth.AccessScope;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,16 +34,15 @@ import org.mockito.ArgumentCaptor;
  * <p>四条核心语义:
  *
  * <ol>
- *   <li><b>用户 A 不能查询用户 B 文档</b>: A 的 MetadataFilter.allowedDocIds 只含 A 自己的 doc, B 的 doc
- *       不会传入 Milvus ANN
+ *   <li><b>用户 A 不能查询用户 B 文档</b>: A 的 MetadataFilter.allowedDocIds 只含 A 自己的 doc, B 的 doc 不会传入 Milvus
+ *       ANN
  *   <li><b>admin 不受限</b>: allowedDocIds=null (哨兵), filter 不带 docId 子句
- *   <li><b>默认主体(单租户兼容)</b>: 无 token 时返 null, 同 admin 哨兵 — 让 tenant_id=default 兜底, 不破坏
- *       历史无 token 调用
+ *   <li><b>默认主体(单租户兼容)</b>: 无 token 时返 null, 同 admin 哨兵 — 让 tenant_id=default 兜底, 不破坏 历史无 token 调用
  *   <li><b>空集合 → NO_RECALL 短路</b>: 无可读文档时不再落 Milvus (攻击者拿到无权限 token 也不会触发任何检索)
  * </ol>
  *
- * <p>语义对照 Task 3 要求"禁止只通过 Prompt 限制模型": 本测试断言请求 <b>根本不会到达 vectorStore.search</b>
- * 当用户无可读文档, 且有可读时也只传白名单 — 这是 DB 层硬过滤, 与 LLM prompt 完全无关。
+ * <p>语义对照 Task 3 要求"禁止只通过 Prompt 限制模型": 本测试断言请求 <b>根本不会到达 vectorStore.search</b> 当用户无可读文档,
+ * 且有可读时也只传白名单 — 这是 DB 层硬过滤, 与 LLM prompt 完全无关。
  */
 @DisplayName("V9 文档权限控制 - RetrieveService 硬过滤")
 class PermissionControlTest {
@@ -57,19 +55,51 @@ class PermissionControlTest {
 
     /** 构造一个最小可运行的 RetrieveService, 所有 infra collaborator mock 掉。 */
     private static RetrieveService newRetrieveService(
-            PermissionResolverPort resolver,
-            VectorStore vs,
-            ChunkRepository cr) {
+            PermissionResolverPort resolver, VectorStore vs, ChunkRepository cr) {
         EmbeddingClient emb = mock(EmbeddingClient.class);
         when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[1024], null));
         RerankClient rr = mock(RerankClient.class);
         RerankProperties rp = new RerankProperties(); // enabled=false
         DocumentRepository dr = mock(DocumentRepository.class);
         when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
-        return new RetrieveService(emb, vs, cr, rr, rp, noopMetrics(), dr, resolver,
+        when(dr.findByIdIn(anyCollection()))
+                .thenAnswer(
+                        inv -> {
+                            java.util.Collection<Long> ids = inv.getArgument(0);
+                            String tenant = AuthContext.currentPrincipal().tenantId();
+                            return ids.stream()
+                                    .map(
+                                            id ->
+                                                    com.xxx.ragdoc.domain.document.Document.restore(
+                                                            new com.xxx.ragdoc.domain.shared
+                                                                    .DocumentId(id),
+                                                            new com.xxx.ragdoc.domain.shared
+                                                                    .ContentHash(
+                                                                    String.format("%064x", id)),
+                                                            "doc-" + id + ".md",
+                                                            "text/markdown",
+                                                            100,
+                                                            tenant,
+                                                            com.xxx.ragdoc.domain.document
+                                                                    .DocumentStatus.INDEXED,
+                                                            0,
+                                                            null,
+                                                            java.util.List.of(),
+                                                            false))
+                                    .toList();
+                        });
+        return new RetrieveService(
+                emb,
+                vs,
+                cr,
+                rr,
+                rp,
+                noopMetrics(),
+                dr,
+                resolver,
                 q -> vs.search(q.embedding(), q.text(), q.docId(), q.topK(), q.filter()),
                 new com.xxx.ragdoc.application.chat.QueryEnhanceProperties() // 默认 disabled
-        );
+                );
     }
 
     private static MetricsPort noopMetrics() {
@@ -79,8 +109,7 @@ class PermissionControlTest {
     }
 
     private static Chunk chunk(long id, long docId) {
-        return new Chunk(
-                id, docId, 0, ChunkType.TEXT, "正文 " + id, 0, null, null, "h", List.of());
+        return new Chunk(id, docId, 0, ChunkType.TEXT, "正文 " + id, 0, null, null, "h", List.of());
     }
 
     // ============================================================
@@ -102,7 +131,8 @@ class PermissionControlTest {
 
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
-            PermissionResolverPort resolver = p -> AccessScope.of(p.tenantId(), Set.of(10L)); // A 只能读 doc 10
+            PermissionResolverPort resolver =
+                    p -> AccessScope.of(p.tenantId(), Set.of(10L)); // A 只能读 doc 10
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
@@ -122,9 +152,7 @@ class PermissionControlTest {
         @Test
         @DisplayName("A 即便 Milvus 命中 B 的 chunk (假设 leak), RetrieveService 也不会回 B 的 doc_id")
         void shouldNeverReturnForeignDocEvenIfMilvusLeaks() {
-            // 此用例防 (单测内的) Milvus filter 失效路径 — 验证即便下层 leak, 我们也明确不在此拦截,
-            // 但白名单本身已经把 B 的 docId 排除在 ANN 之外 (上一用例已断言)
-            // 这里更关键: A 拿到 chunk 列表必须都是白名单内的 docId
+            // 此用例防 Milvus 标量过滤失效：索引即使返回越权候选，应用层仍以 AccessScope 白名单拒绝。
             Principal userA =
                     new Principal(
                             "default", "userA", Set.of("role:default", "role:user"), "token-a");
@@ -133,19 +161,18 @@ class PermissionControlTest {
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
             when(vs.search(any(), anyString(), any(), anyInt(), any()))
-                    .thenReturn(List.of(new ScoredChunk(101L, 0.9f))); // chunk 101 属 doc 10
-            when(cr.findByIdIn(anyList())).thenReturn(List.of(chunk(101L, 10L)));
-            PermissionResolverPort resolver = p -> AccessScope.of(p.tenantId(), Set.of(10L)); // 仅 doc 10 白名单
+                    .thenReturn(List.of(new ScoredChunk(201L, 0.9f))); // 模拟泄漏：chunk 201 属 doc 20
+            when(cr.findByIdIn(anyList())).thenReturn(List.of(chunk(201L, 20L)));
+            PermissionResolverPort resolver =
+                    p -> AccessScope.of(p.tenantId(), Set.of(10L)); // 仅 doc 10 白名单
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
             // when
-            RetrieveService.RetrieveResult r =
-                    svc.retrieve(new ChatCommand("查询", null, null));
+            RetrieveService.RetrieveResult r = svc.retrieve(new ChatCommand("查询", null, null));
 
-            // then: 命中的 citation 全部 docId=10, 不出现 20
-            assertThat(r.items()).isNotEmpty();
-            assertThat(r.items()).allSatisfy(c -> assertThat(c.docId()).isEqualTo(10L));
+            // then: fail closed，不把 doc 20 内容交给 rerank/LLM
+            assertThat(r.items()).isEmpty();
         }
     }
 
@@ -170,7 +197,8 @@ class PermissionControlTest {
 
             VectorStore vs = mock(VectorStore.class);
             ChunkRepository cr = mock(ChunkRepository.class);
-            PermissionResolverPort resolver = p -> AccessScope.tenantAdmin(p.tenantId()); // admin 哨兵
+            PermissionResolverPort resolver =
+                    p -> AccessScope.tenantAdmin(p.tenantId()); // admin 哨兵
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
@@ -236,8 +264,7 @@ class PermissionControlTest {
 
             RetrieveService svc = newRetrieveService(resolver, vs, cr);
 
-            RetrieveService.RetrieveResult r =
-                    svc.retrieve(new ChatCommand("我没权限的查询", null, null));
+            RetrieveService.RetrieveResult r = svc.retrieve(new ChatCommand("我没权限的查询", null, null));
 
             // 关键断言: vectorStore.search 必须从未被调
             verifyNoInteractions(vs);

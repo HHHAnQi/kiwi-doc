@@ -6,6 +6,7 @@ import com.xxx.ragdoc.application.document.ParsingTrigger;
 import com.xxx.ragdoc.application.document.SecurityScannerProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingProperties;
 import com.xxx.ragdoc.application.document.chunking.ChunkingService;
+import com.xxx.ragdoc.application.document.ingestion.IngestionPolicy;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.DocumentStatePort;
@@ -16,7 +17,6 @@ import com.xxx.ragdoc.application.document.security.port.SecurityScannerPort;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
 import com.xxx.ragdoc.domain.document.Document;
-import com.xxx.ragdoc.domain.document.DocumentStatus;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -42,7 +42,8 @@ import org.springframework.stereotype.Component;
  *   <li>{@link EmbeddingClient#embedBatch} 批量生成 dense+sparse 向量
  *   <li>{@link ChunkRepository#saveAll} 落库(含清旧, 幂等)
  *   <li>{@link VectorStore#upsertChunks} 写 Milvus
- *   <li>doc.markChunked(savedChunks); doc.markEmbedding(); doc.markIndexing(); doc.markIndexed(); { tmp = doc.markReady(chunks) 状态机迁移到 READY
+ *   <li>doc.markChunked(savedChunks); doc.markEmbedding(); doc.markIndexing(); doc.markIndexed(); {
+ *       tmp = doc.markReady(chunks) 状态机迁移到 READY
  * </ol>
  *
  * <p>异常处理: 任一步失败 → markFailed 并落库; 传播异常给上游 DocumentUploadService 决策(是否回滚/重试)。 资源安全(Scanner/流)不在此管:
@@ -67,20 +68,25 @@ public class TikaParsingTrigger implements ParsingTrigger {
     private final ChunkRepository chunkRepository;
     private final VectorStore vectorStore;
     private final ChunkingProperties chunkingProps;
+
     /**
-     * Task 4 / V10: 中间态推进端口 (CHUNKED / EMBEDDING / INDEXING / INDEXED)。
-     * 让 reconcile job 能识别 in-flight 阶段并扫卡死。可选注入 — 缺省 (测试) 时仅推进内存聚合根,
-     * 不持久化中间态, 但终端 markIndexed 仍由外层 trigger + documentRepository.save 兜底。
+     * Task 4 / V10: 中间态推进端口 (CHUNKED / EMBEDDING / INDEXING / INDEXED)。 让 reconcile job 能识别
+     * in-flight 阶段并扫卡死。可选注入 — 缺省 (测试) 时仅推进内存聚合根, 不持久化中间态, 但终端 markIndexed 仍由外层 trigger +
+     * documentRepository.save 兜底。
      */
     private final DocumentStatePort statePort;
+
     /**
-     * Task 8 / V14 RAG Security: 文档级 prompt-injection scanner。
-     * 可选注入 — bean 默认 always-on (无 ConditionalOnProperty), 内部 properties.isEnabled() 决定真扫;
-     * 测试可传 null 走老路径兼容。
+     * Task 8 / V14 RAG Security: 文档级 prompt-injection scanner。 可选注入 — bean 默认 always-on (无
+     * ConditionalOnProperty), 内部 properties.isEnabled() 决定真扫; 测试可传 null 走老路径兼容。
      */
     private final SecurityScannerPort securityScanner;
+
     /** Task 8: scanner 配置 (always injected, 默认 disabled)。 */
     private final SecurityScannerProperties securityScannerProperties;
+
+    /** 同步/异步共用的脱敏与质量门禁。 */
+    private final IngestionPolicy ingestionPolicy;
 
     /** Tika 是线程安全(内部 facade 单例), 复用即可。 */
     private final Tika tika = new Tika();
@@ -116,6 +122,14 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         documentId,
                         fullText.length());
                 fullText = fullText.substring(0, MAX_TEXT_LENGTH);
+            }
+
+            int redactionCount = 0;
+            if (ingestionPolicy != null) {
+                IngestionPolicy.PreparedText prepared =
+                        ingestionPolicy.prepareText(documentId, fullText);
+                fullText = prepared.text();
+                redactionCount = prepared.redactionCount();
             }
 
             // ============ Task 8 / V14 Security Scan (防 prompt injection) ============
@@ -160,9 +174,9 @@ public class TikaParsingTrigger implements ParsingTrigger {
             List<Chunk> savedChunks;
 
             if (useParentChild) {
-                savedChunks = parseParentChild(doc, documentId, fullText);
+                savedChunks = parseParentChild(doc, documentId, fullText, redactionCount);
             } else {
-                savedChunks = parseFlat(doc, documentId, fullText);
+                savedChunks = parseFlat(doc, documentId, fullText, redactionCount);
             }
 
             // 9. 状态机迁移终端: PARSING → ... → INDEXED
@@ -202,7 +216,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
     }
 
     /** flat 模式: 单层 token-based 切片 + embed + 入 Milvus + markReady(返回 savedChunks)。 */
-    private List<Chunk> parseFlat(Document doc, Long documentId, String fullText) {
+    private List<Chunk> parseFlat(
+            Document doc, Long documentId, String fullText, int redactionCount) {
         List<ChunkingService.SectionedFlatChunk> sectioned =
                 chunkingService.chunkSectioned(fullText);
         if (sectioned.isEmpty()) {
@@ -228,6 +243,10 @@ public class TikaParsingTrigger implements ParsingTrigger {
                             sha256Hex(text),
                             sectioned.get(i).sectionPath()));
         }
+        if (ingestionPolicy != null) {
+            chunks = ingestionPolicy.deduplicateChunks(documentId, chunks, redactionCount);
+            chunkTexts = chunks.stream().map(Chunk::content).toList();
+        }
         // Task 4: 顺序 — CHUNKED 在切片完成时; EMBEDDING 在调 embedding 前;
         //          INDEXING 在 upsert 前; INDEXED 在外层 trigger 完成。
         // flat 路径: chunks 已构造 (in-memory), 先 mark CHUNKED
@@ -238,7 +257,10 @@ public class TikaParsingTrigger implements ParsingTrigger {
         doc.markEmbedding();
         statePort.markEmbedding(documentId);
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
-        if (embeddings.size() != chunks.size()) {
+        if (ingestionPolicy != null) {
+            ingestionPolicy.validateEmbeddings(
+                    documentId, embeddings, chunks.size(), redactionCount);
+        } else if (embeddings.size() != chunks.size()) {
             throw new IllegalStateException("embed 数量与 chunks 不一致");
         }
         List<Chunk> savedChunks = chunkRepository.saveAll(documentId, chunks);
@@ -250,7 +272,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         doc.language(),
                         doc.docType(),
                         ChunkType.TEXT.name(),
-                        doc.tenantId());
+                        doc.tenantId(),
+                        doc.logicalDocumentKey());
         // INDEXING: Milvus upsert 前再迁
         doc.markIndexing();
         statePort.markIndexing(documentId);
@@ -269,7 +292,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
      *   <li>child.parentChunkId 关联到真实 parent chunk id
      * </ul>
      */
-    private List<Chunk> parseParentChild(Document doc, Long documentId, String fullText) {
+    private List<Chunk> parseParentChild(
+            Document doc, Long documentId, String fullText, int redactionCount) {
         List<ChunkingService.SectionedParentChildChunk> pcChunks =
                 chunkingService.chunkParentChildSectioned(fullText);
         if (pcChunks.isEmpty()) {
@@ -285,6 +309,7 @@ public class TikaParsingTrigger implements ParsingTrigger {
                 uniqueParentTexts.add(pc.parentText());
             }
         }
+
         log.info(
                 "parse.parent_child_chunked doc_id={}, children={}, unique_parents={}",
                 documentId,
@@ -345,12 +370,21 @@ public class TikaParsingTrigger implements ParsingTrigger {
             childTexts.add(pc.childText());
         }
 
+        if (ingestionPolicy != null) {
+            childChunks = new java.util.ArrayList<>(
+                    ingestionPolicy.deduplicateChunks(documentId, childChunks, redactionCount));
+            childTexts = childChunks.stream().map(Chunk::content).collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        }
+
         // 步骤 C: embed 只 children
         // Task 4: CHUNKED → EMBEDDING
         doc.markEmbedding();
         statePort.markEmbedding(documentId);
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(childTexts);
-        if (embeddings.size() != childChunks.size()) {
+        if (ingestionPolicy != null) {
+            ingestionPolicy.validateEmbeddings(
+                    documentId, embeddings, childChunks.size(), redactionCount);
+        } else if (embeddings.size() != childChunks.size()) {
             throw new IllegalStateException("embed 数量与 child chunks 不一致");
         }
 
@@ -367,7 +401,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
                         doc.language(),
                         doc.docType(),
                         ChunkType.CHILD.name(),
-                        doc.tenantId());
+                        doc.tenantId(),
+                        doc.logicalDocumentKey());
         // Task 4: EMBEDDING → INDEXING
         doc.markIndexing();
         statePort.markIndexing(documentId);

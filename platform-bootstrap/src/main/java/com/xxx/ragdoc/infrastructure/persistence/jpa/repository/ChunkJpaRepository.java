@@ -12,7 +12,13 @@ import org.springframework.stereotype.Repository;
 public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
 
     /** count 用于文档详情(不强制 join document; 软删 doc 的 chunk 暂不计入可由 service 决定)。 */
-    long countByDocumentId(Long documentId);
+    @Query("SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
+            + "AND d.id=c.documentId AND c.generation=d.activeGeneration")
+    long countActiveByDocumentId(@Param("documentId") Long documentId);
+
+    @Query("SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
+            + "AND d.id=c.documentId AND c.generation=d.activeGeneration AND c.chunkType <> 'PARENT'")
+    long countIndexableByDocumentId(@Param("documentId") Long documentId);
 
     /** 单条: 必须保证父 doc 未软删(Scenario 6 "查已软删文档的 chunk → 404")。 */
     @Query(
@@ -22,6 +28,7 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
               AND EXISTS (
                 SELECT 1 FROM DocumentEntity d
                 WHERE d.id = c.documentId AND d.deletedAt IS NULL
+                  AND c.generation = d.activeGeneration
               )
             """)
     Optional<ChunkEntity> findActiveById(@Param("id") Long id);
@@ -37,6 +44,7 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
               AND EXISTS (
                 SELECT 1 FROM DocumentEntity d
                 WHERE d.id = c.documentId AND d.deletedAt IS NULL
+                  AND c.generation = d.activeGeneration
               )
             """)
     List<ChunkEntity> findActiveByIdIn(@Param("ids") List<Long> ids);
@@ -44,9 +52,9 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
     /**
      * 按 (docId, seq, chunkType) 精确定位: 同样校验父 doc 未软删。
      *
-     * <p>V3 parent-child 切片模式下, 同 (docId, seq) 可能同时存在 PARENT 与 CHILD 两条,
-     * 旧版只按 (docId, seq) 查 + Optional getSingleResult 会抛 NonUniqueResultException
-     * 导致 /chunks/{id}/neighbors 500。现显式按当前 chunk 的 type 过滤, 保证唯一。
+     * <p>V3 parent-child 切片模式下, 同 (docId, seq) 可能同时存在 PARENT 与 CHILD 两条, 旧版只按 (docId, seq) 查 +
+     * Optional getSingleResult 会抛 NonUniqueResultException 导致 /chunks/{id}/neighbors 500。现显式按当前
+     * chunk 的 type 过滤, 保证唯一。
      */
     @Query(
             """
@@ -57,10 +65,13 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
               AND EXISTS (
                 SELECT 1 FROM DocumentEntity d
                 WHERE d.id = c.documentId AND d.deletedAt IS NULL
+                  AND c.generation = d.activeGeneration
               )
             """)
     Optional<ChunkEntity> findActiveByDocAndSeq(
-            @Param("docId") Long docId, @Param("seq") int seq, @Param("chunkType") String chunkType);
+            @Param("docId") Long docId,
+            @Param("seq") int seq,
+            @Param("chunkType") String chunkType);
 
     /** 拉取某页全部 chunk: 校验父 doc 未软删, 按 seq 升序。 */
     @Query(
@@ -71,6 +82,7 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
               AND EXISTS (
                 SELECT 1 FROM DocumentEntity d
                 WHERE d.id = c.documentId AND d.deletedAt IS NULL
+                  AND c.generation = d.activeGeneration
               )
             ORDER BY c.seq ASC
             """)
@@ -84,10 +96,13 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
               AND EXISTS (
                 SELECT 1 FROM DocumentEntity d
                 WHERE d.id = c.documentId AND d.deletedAt IS NULL
+                  AND c.generation = d.activeGeneration
               )
             """)
     int maxPageOfDocument(@Param("docId") Long docId);
 
     /** V2: 重新解析前清除旧 chunks。 */
     void deleteByDocumentId(Long documentId);
+
+    void deleteByDocumentIdAndGeneration(Long documentId, Integer generation);
 }

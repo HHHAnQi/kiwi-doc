@@ -3,8 +3,8 @@ package com.xxx.ragdoc.application.auth;
 /**
  * V9 RAG-Perm-001: 把上传文档的 owner ACL 落库的端口。
  *
- * <p>application 层 UploadService 依赖此接口 — 它不感知 infra 的 JPA Repository / Entity, 维持 DDD 分层。
- * 实现: {@code infrastructure.auth.JpaAclWriter}。
+ * <p>application 层 UploadService 依赖此接口 — 它不感知 infra 的 JPA Repository / Entity, 维持 DDD 分层。 实现:
+ * {@code infrastructure.auth.JpaAclWriter}。
  *
  * <p>语义:
  *

@@ -1,6 +1,5 @@
 package com.xxx.ragdoc.infrastructure.auth;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -71,7 +70,8 @@ class JpaAclWriterIdempotentTest {
         writer.grantOwnerAcl(2L, "userA", "TENANT");
 
         // 关键断言: doc2 真的写到 repo 了
-        verify(aclRepo).save(argThat(a -> a.getDocumentId() == 2L && "userA".equals(a.getPrincipalId())));
+        verify(aclRepo)
+                .save(argThat(a -> a.getDocumentId() == 2L && "userA".equals(a.getPrincipalId())));
     }
 
     @Test

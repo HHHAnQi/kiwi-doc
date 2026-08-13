@@ -58,9 +58,9 @@ public class JpaDocumentRepository implements DocumentRepository {
     }
 
     @Override
-    public Optional<Document> findByContentHash(ContentHash hash) {
+    public Optional<Document> findByContentHash(ContentHash hash, String tenantId) {
         try {
-            return jpa.findByContentHashAndTenantId(hash.value(), "default")
+            return jpa.findByContentHashAndTenantId(hash.value(), tenantId)
                     .map(DocumentMapper::toDomain);
         } catch (DataIntegrityViolationException e) {
             // 极端:并发同 hash 写入,按"已存在但未读到"返回空,由 app 层重试读
@@ -72,6 +72,12 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public Optional<Document> findById(Long id) {
         return jpa.findById(id).map(DocumentMapper::toDomain);
+    }
+
+    @Override
+    public java.util.List<Document> findByIdIn(java.util.Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) return java.util.List.of();
+        return jpa.findAllById(ids).stream().map(DocumentMapper::toDomain).toList();
     }
 
     @Override
@@ -96,6 +102,7 @@ public class JpaDocumentRepository implements DocumentRepository {
                                 e.getUpdatedAt(),
                                 e.getSource(),
                                 e.getVersion(),
+                                e.getLogicalDocumentKey(),
                                 e.getLanguage(),
                                 e.getDocType(),
                                 Boolean.TRUE.equals(e.getIsDefault()), // P3-1
@@ -119,22 +126,27 @@ public class JpaDocumentRepository implements DocumentRepository {
             // 无任何可访问 doc → 返空页
             return Page.empty(pageable);
         } else {
-            page = jpa.listAccessibleExplicit(tenantId, allowedDocumentIds, statusStr, kw, pageable);
+            page =
+                    jpa.listAccessibleExplicit(
+                            tenantId, allowedDocumentIds, statusStr, kw, pageable);
         }
-        return page.map(e -> new DocumentSummary(
-                e.getId(),
-                e.getOriginalFilename(),
-                DocumentStatus.valueOf(e.getStatus()),
-                e.getSizeBytes(),
-                chunkRepository.countByDocumentId(e.getId()),
-                e.getCreatedAt(),
-                e.getUpdatedAt(),
-                e.getSource(),
-                e.getVersion(),
-                e.getLanguage(),
-                e.getDocType(),
-                Boolean.TRUE.equals(e.getIsDefault()),
-                Boolean.TRUE.equals(e.getPendingMilvusDelete())));
+        return page.map(
+                e ->
+                        new DocumentSummary(
+                                e.getId(),
+                                e.getOriginalFilename(),
+                                DocumentStatus.valueOf(e.getStatus()),
+                                e.getSizeBytes(),
+                                chunkRepository.countByDocumentId(e.getId()),
+                                e.getCreatedAt(),
+                                e.getUpdatedAt(),
+                                e.getSource(),
+                                e.getVersion(),
+                                e.getLogicalDocumentKey(),
+                                e.getLanguage(),
+                                e.getDocType(),
+                                Boolean.TRUE.equals(e.getIsDefault()),
+                                Boolean.TRUE.equals(e.getPendingMilvusDelete())));
     }
 
     @Override
@@ -142,8 +154,7 @@ public class JpaDocumentRepository implements DocumentRepository {
         // DEV-V3-C: 与 listForSummary 一致地过滤 deletedAt IS NOT NULL,
         // 否则软删后 GET /documents/{id} 仍返回 200, 与列表"无声消失"链路不一致。
         // findById 不带过滤, 用 lambda 显式校验 deletedAt == null。
-        return jpa
-                .findById(id)
+        return jpa.findById(id)
                 .filter(e -> e.getDeletedAt() == null)
                 .map(
                         e ->
@@ -160,6 +171,7 @@ public class JpaDocumentRepository implements DocumentRepository {
                                         e.getUpdatedAt(),
                                         e.getSource(),
                                         e.getVersion(),
+                                        e.getLogicalDocumentKey(),
                                         e.getLanguage(),
                                         e.getDocType(),
                                         Boolean.TRUE.equals(e.getIsDefault()), // P3-1
@@ -171,8 +183,7 @@ public class JpaDocumentRepository implements DocumentRepository {
         if (source == null || source.isBlank()) return Optional.empty();
         // Phase 3 / P3-1: default version fallback 用于 retrieve 时按 source 找最新默认版本过滤,
         // 避免跨版本混查。约定: 同 source + READY + !deleted 最多 1 条 is_default=true.
-        return jpa
-                .findFirstBySourceAndStatusAndIsDefaultTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
+        return jpa.findFirstBySourceAndStatusAndIsDefaultTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
                         source, DocumentStatus.INDEXED.name())
                 .map(DocumentMapper::toDomain);
     }
@@ -186,9 +197,72 @@ public class JpaDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public boolean existsCurrentByLogicalKey(String tenantId, String logicalDocumentKey) {
+        if (tenantId == null || tenantId.isBlank()
+                || logicalDocumentKey == null || logicalDocumentKey.isBlank()) return false;
+        return jpa.existsByTenantIdAndLogicalDocumentKeyAndIsDefaultTrueAndDeletedAtIsNull(
+                tenantId, logicalDocumentKey);
+    }
+
+    @Override
+    public Optional<Document> findCurrentByLogicalKeyForUpdate(
+            String tenantId, String logicalDocumentKey) {
+        if (tenantId == null || tenantId.isBlank()
+                || logicalDocumentKey == null || logicalDocumentKey.isBlank()) {
+            return Optional.empty();
+        }
+        return jpa.findCurrentForUpdate(tenantId, logicalDocumentKey).map(DocumentMapper::toDomain);
+    }
+
+    @Override
+    public Optional<java.util.Set<Long>> findCurrentIndexedIds(String tenantId, String source) {
+        if (tenantId == null || tenantId.isBlank()) return Optional.of(java.util.Set.of());
+        String normalizedSource = source == null || source.isBlank() ? null : source.trim();
+        return Optional.of(jpa.findCurrentIndexedIds(tenantId, normalizedSource));
+    }
+
+    @Override
+    public Optional<java.util.Map<Long, Integer>> findActiveGenerations(
+            String tenantId,
+            String source,
+            String version,
+            String language,
+            java.util.Collection<Long> candidateDocumentIds) {
+        if (tenantId == null || tenantId.isBlank()) return Optional.of(java.util.Map.of());
+        String normalizedSource = normalize(source);
+        String normalizedVersion = normalize(version);
+        String normalizedLanguage = normalize(language);
+        java.util.stream.Stream<DocumentEntity> documents =
+                candidateDocumentIds == null
+                        ? jpa.findRetrievableForGenerationFilter(
+                                        tenantId,
+                                        normalizedSource,
+                                        normalizedVersion,
+                                        normalizedLanguage)
+                                .stream()
+                        : jpa.findAllById(candidateDocumentIds).stream();
+        java.util.Map<Long, Integer> result = documents
+                .filter(e -> tenantId.equals(e.getTenantId()))
+                .filter(e -> e.getDeletedAt() == null)
+                .filter(e -> DocumentStatus.INDEXED.name().equals(e.getStatus()))
+                .filter(e -> normalizedSource == null || normalizedSource.equals(e.getSource()))
+                .filter(e -> normalizedVersion == null || normalizedVersion.equals(e.getVersion()))
+                .filter(e -> normalizedLanguage == null || normalizedLanguage.equals(e.getLanguage()))
+                .collect(java.util.stream.Collectors.toUnmodifiableMap(
+                        DocumentEntity::getId,
+                        e -> e.getActiveGeneration() == null ? 1 : e.getActiveGeneration()));
+        return Optional.of(result);
+    }
+
+    private static String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    @Override
     public java.util.List<Document> findDocsPendingMilvusDelete(int limit) {
         // P3-2: sweeper 用; 按 id asc 防同一文档跨周期被反复排在后面饿死。
-        return jpa.findByPendingMilvusDeleteTrueOrderByIdAsc(
+        return jpa
+                .findByPendingMilvusDeleteTrueOrderByIdAsc(
                         org.springframework.data.domain.PageRequest.of(0, limit))
                 .stream()
                 .map(DocumentMapper::toDomain)
@@ -198,7 +272,8 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public java.util.List<Document> findIndexed(int limit) {
         // Task 4: reconcile 查向量丢失用; INDEXED 是检索终态, 每条都该有向量在 Milvus
-        return jpa.findByStatusAndDeletedAtIsNullOrderByLastStateChangeAtAsc(
+        return jpa
+                .findByStatusAndDeletedAtIsNullOrderByLastStateChangeAtAsc(
                         DocumentStatus.INDEXED.name(),
                         org.springframework.data.domain.PageRequest.of(0, limit))
                 .stream()
@@ -209,9 +284,23 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public java.util.List<Document> findStuckInPipeline(int thresholdMinutes, int limit) {
         // Task 4: reconcile 扫卡死; 阈值分钟 → 截止时刻
-        java.time.Instant threshold = java.time.Instant.now().minus(thresholdMinutes, java.time.temporal.ChronoUnit.MINUTES);
-        return jpa.findStuckInPipeline(
+        java.time.Instant threshold =
+                java.time.Instant.now()
+                        .minus(thresholdMinutes, java.time.temporal.ChronoUnit.MINUTES);
+        return jpa
+                .findStuckInPipeline(
                         threshold, org.springframework.data.domain.PageRequest.of(0, limit))
+                .stream()
+                .map(DocumentMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public java.util.List<Document> findUploadedWithoutParseTask(
+            java.time.Instant olderThan, int limit) {
+        return jpa.findUploadedWithoutParseTask(
+                        olderThan,
+                        org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
                 .stream()
                 .map(DocumentMapper::toDomain)
                 .toList();

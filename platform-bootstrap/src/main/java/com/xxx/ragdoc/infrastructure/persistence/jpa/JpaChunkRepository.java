@@ -24,7 +24,12 @@ public class JpaChunkRepository implements ChunkRepository {
 
     @Override
     public long countByDocumentId(Long documentId) {
-        return jpa.countByDocumentId(documentId);
+        return jpa.countActiveByDocumentId(documentId);
+    }
+
+    @Override
+    public long countIndexableByDocumentId(Long documentId) {
+        return jpa.countIndexableByDocumentId(documentId);
     }
 
     @Override
@@ -42,8 +47,8 @@ public class JpaChunkRepository implements ChunkRepository {
 
     @Override
     public Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq, ChunkType chunkType) {
-        return jpa
-                .findActiveByDocAndSeq(documentId, seq, chunkType == null ? null : chunkType.name())
+        return jpa.findActiveByDocAndSeq(
+                        documentId, seq, chunkType == null ? null : chunkType.name())
                 .map(ChunkMapper::toDomain);
     }
 
@@ -73,6 +78,16 @@ public class JpaChunkRepository implements ChunkRepository {
 
     @Override
     @org.springframework.transaction.annotation.Transactional
+    public List<Chunk> saveAll(Long documentId, int generation, List<Chunk> chunks) {
+        jpa.deleteByDocumentIdAndGeneration(documentId, generation);
+        List<ChunkEntity> entities = chunks.stream()
+                .map(c -> c.withGeneration(generation))
+                .map(ChunkMapper::toNewEntity).toList();
+        return jpa.saveAll(entities).stream().map(ChunkMapper::toDomain).toList();
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
     public List<Chunk> saveAllAppend(Long documentId, List<Chunk> chunks) {
         // 不清旧。供 Parent-Child 两阶段写入: 先 saveAll(parents) 拿 id, 再用 children 调本方法追加。
         // 调用方需自己保证幂等(整体上层用 deleteByDocumentId 清旧后再两阶段写)。
@@ -85,7 +100,14 @@ public class JpaChunkRepository implements ChunkRepository {
     @org.springframework.transaction.annotation.Transactional
     public void deleteByDocumentId(Long documentId) {
         // P3-3 fix: bulk delete 是 modifying query, 必须在 tx 里。
-        // 调用方: DocumentManageService.softDelete (chunks 清除 in-tx) + DocumentManageService.attemptMilvusDelete 不调本方法
+        // 调用方: DocumentManageService.softDelete (chunks 清除 in-tx) +
+        // DocumentManageService.attemptMilvusDelete 不调本方法
         jpa.deleteByDocumentId(documentId);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteByDocumentIdAndGeneration(Long documentId, int generation) {
+        jpa.deleteByDocumentIdAndGeneration(documentId, generation);
     }
 }

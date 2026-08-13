@@ -27,11 +27,50 @@ public interface ParseTaskRepository {
     /** 按 id 查单条。 */
     Optional<ParseTask> findById(Long id);
 
-    /** 按 content_hash 查(幂等命中场景)。 */
-    Optional<ParseTask> findByContentHash(String contentHash);
-
-    /** 按 documentId 查(回链查最新状态)。 */
+    /** 按 documentId 查最新 generation。 */
     Optional<ParseTask> findByDocumentId(Long documentId);
+
+    default Optional<ParseTask> findByDocumentIdAndGeneration(Long documentId, int generation) {
+        return findByDocumentId(documentId).filter(t -> t.generation() == generation);
+    }
+
+    default int nextGeneration(Long documentId) {
+        return findByDocumentId(documentId).map(t -> t.generation() + 1).orElse(1);
+    }
+
+    /** 按消息中的 taskId 原子执行 PENDING→RUNNING；重复消息只能有一个消费者成功。 */
+    default Optional<ParseTask> leaseById(
+            Long taskId, String leasedBy, Instant leaseUntil, Instant now) {
+        Optional<ParseTask> current = findById(taskId);
+        if (current.isEmpty()) return Optional.empty();
+        ParseTask task = current.get();
+        if (task.status() != ParseTaskStatus.PENDING || task.visibleAt().isAfter(now)) {
+            return Optional.empty();
+        }
+        ParseTask leased =
+                task.withExecutionState(
+                        ParseTaskStatus.RUNNING, task.retryCount(), task.chunksWritten(),
+                        task.chunkSeqOffset(), task.errorMessage(), task.errorClass(),
+                        task.attempts(), leaseUntil, leasedBy, now);
+        update(leased);
+        return Optional.of(leased);
+    }
+
+    /** 原子抢占一批待投递/租约过期的任务；多实例中只有抢占成功者可发送。 */
+    default List<ParseTask> claimDueForDelivery(
+            String leasedBy, Instant now, Instant leaseUntil, int limit) {
+        return findDueForDelivery(now, limit);
+    }
+
+    /** MQ broker 确认成功后记录投递完成，Relay 不再重复发送同一轮任务。 */
+    default void markDeliverySucceeded(Long taskId, Instant now) {}
+
+    /** MQ 发送失败；达到上限后进入 DEAD，停止自动投递。 */
+    default void markDeliveryFailed(
+            Long taskId, Instant nextAttemptAt, String error, Instant now, int maxAttempts) {}
+
+    /** 运维人工重放 DEAD 消息；仅允许 DEAD → PENDING。 */
+    default boolean replayDeadDelivery(Long taskId, Instant now) { return false; }
 
     /**
      * 原子 lease: 抢占一条 PENDING + visible_at ≤ now 的 task。
@@ -60,4 +99,9 @@ public interface ParseTaskRepository {
 
     /** 找出过期但仍 FAILED(redelivery delay 到点) → 回 PENDING 的候选; 实现也可合并进 leaseNextPending。 */
     List<ParseTask> findDueRetry(Instant now, ParseTaskStatus status);
+
+    /** 批量获取需要重新投递的持久化任务；parse_tasks 的 PENDING 行即可靠投递账本。 */
+    default List<ParseTask> findDueForDelivery(Instant now, int limit) {
+        return findDueRetry(now, ParseTaskStatus.PENDING).stream().limit(limit).toList();
+    }
 }

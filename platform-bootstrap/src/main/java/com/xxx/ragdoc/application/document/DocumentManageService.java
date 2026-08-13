@@ -33,15 +33,16 @@ public class DocumentManageService {
     // Phase 3 / P3-2: 软删同步清 chunks (in-tx 原子) + Milvus 向量 (out-of-tx, 失败标 pending 由 sweeper 重试)
     private final ChunkRepository chunkRepository;
     private final VectorStore vectorStore;
+
     /**
-     * Phase 3 / P3-2: Milvus 重试路径用编程式短事务, 避免 @Transactional 把 Milvus 远程调用 (秒级)
-     * 包进事务持锁过久 (复用 DocumentUploadService 教训: P3-A 重灌死锁根因)。
+     * Phase 3 / P3-2: Milvus 重试路径用编程式短事务, 避免 @Transactional 把 Milvus 远程调用 (秒级) 包进事务持锁过久 (复用
+     * DocumentUploadService 教训: P3-A 重灌死锁根因)。
      */
     private final TransactionTemplate shortTx;
 
     /**
-     * Task 11 / P0: 文档访问权限守卫。 retry/setDefault/unarchive/softDelete 全部前置校验:
-     * WRITE 等级以上 (retry/setDefault/unarchive) 或 OWNER (delete)。
+     * Task 11 / P0: 文档访问权限守卫。 retry/setDefault/unarchive/softDelete 全部前置校验: WRITE 等级以上
+     * (retry/setDefault/unarchive) 或 OWNER (delete)。
      */
     private final DocumentAccessGuard accessGuard;
 
@@ -70,8 +71,10 @@ public class DocumentManageService {
      * <p>一致性策略 (类似 DocumentUploadService P3-A 教训: 不要把 Milvus / 远程调用包进 @Transactional):
      *
      * <ol>
-     *   <li>短事务 (REQUIRES_NEW): 设软删标志 + unmark default + mark pending=true + MySQL 删 chunks + save doc。
-     *   <li>事务外调 Milvus delete (走 attemptMilvusDelete: 成功 → 短事务清 pending; 失败 → 保留 pending 等 sweeper)。
+     *   <li>短事务 (REQUIRES_NEW): 设软删标志 + unmark default + mark pending=true + MySQL 删 chunks + save
+     *       doc。
+     *   <li>事务外调 Milvus delete (走 attemptMilvusDelete: 成功 → 短事务清 pending; 失败 → 保留 pending 等
+     *       sweeper)。
      * </ol>
      *
      * <p>因此本方法无 @Transactional 注解, 改用 shortTx 编程式边界。
@@ -87,7 +90,7 @@ public class DocumentManageService {
             throw new DomainException(
                     ErrorCode.DOC_NOT_FAILED, "仅 READY/FAILED 文档可删除, 当前状态=" + doc.status());
         }
-        // 同 source default 文档被软删 → unmark default, 让 DocumentUploadService / set-default 下次决策正确。
+        // 当前版本被软删 → 清 current，让同一逻辑文档后续上传可重新选择 current。
         if (doc.isDefault()) {
             doc.unmarkDefault();
             log.info("delete.unmark_default doc_id={}, source={}", id, doc.source());
@@ -163,14 +166,30 @@ public class DocumentManageService {
         parsingTrigger.trigger(id);
     }
 
+    /** 对当前文档创建新的影子 ingestion generation；旧 generation 在成功切换前继续服务。 */
+    public void rebuild(Long id) {
+        accessGuard.requireWrite(id);
+        Document doc = loadOrThrow(id);
+        if (doc.deleted()) {
+            throw new DomainException(ErrorCode.DOC_NOT_FAILED, "已删除文档不可重建");
+        }
+        if (doc.status() != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED) {
+            throw new DomainException(
+                    ErrorCode.DOC_NOT_FAILED, "仅 INDEXED 文档可重建, 当前状态=" + doc.status());
+        }
+        parsingTrigger.rebuild(id);
+        log.info("rebuild.triggered doc_id={}", id);
+    }
+
     /**
-     * Phase 3 / P3-3: 把指定文档设为同 source 的默认版本。
+     * 把指定文档设为同一逻辑文档的当前版本。
      *
-     * <p>不变量: 同 source + READY + !deleted 最多 1 条 isDefault=true。本方法:
+     * <p>不变量: 同 tenant + logicalDocumentKey + !deleted 最多 1 条 isDefault=true。本方法:
      *
      * <ol>
      *   <li>加载目标 doc; 校验 READY + 未删 → 否则 409。
-     *   <li>查该 source 当前 default (findDefaultReadyBySource); 若已是本 doc 幂等返; 若不同 unmark old + mark new。
+     *   <li>查该 source 当前 default (findDefaultReadyBySource); 若已是本 doc 幂等返; 若不同 unmark old + mark
+     *       new。
      *   <li>短事务 (REQUIRES_NEW) 原子提交两个 save, 避免并发设默认时数据竞态。
      * </ol>
      */
@@ -180,7 +199,7 @@ public class DocumentManageService {
         Document doc = loadOrThrow(id);
         if (doc.status() != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED) {
             throw new DomainException(
-                    ErrorCode.DOC_NOT_FAILED, "仅 READY 文档可设默认, 当前状态=" + doc.status());
+                    ErrorCode.DOC_NOT_FAILED, "仅 INDEXED 文档可设为当前版本, 当前状态=" + doc.status());
         }
         if (doc.deleted()) {
             throw new DomainException(ErrorCode.DOC_NOT_FAILED, "已软删的文档不可设默认");
@@ -189,18 +208,23 @@ public class DocumentManageService {
             log.info("set_default.idempotent doc_id={}, source={}", id, doc.source());
             return;
         }
-        java.util.Optional<Document> oldDefaultOpt =
-                documentRepository.findDefaultReadyBySource(doc.source());
         shortTx.executeWithoutResult(
                 status -> {
+                    java.util.Optional<Document> oldDefaultOpt =
+                            documentRepository.findCurrentByLogicalKeyForUpdate(
+                                    doc.tenantId(), doc.logicalDocumentKey());
+                    if (oldDefaultOpt.isEmpty()) {
+                        // 兼容尚未实现逻辑 key 锁查询的旧适配器；正式 JPA 适配器始终走上面的加锁路径。
+                        oldDefaultOpt = documentRepository.findDefaultReadyBySource(doc.source());
+                    }
                     oldDefaultOpt.ifPresent(
                             old -> {
                                 old.unmarkDefault();
                                 documentRepository.save(old);
                                 log.info(
-                                        "set_default.unmark_old old_doc_id={}, source={}",
+                                        "set_current.unmark_old old_doc_id={}, logical_key={}",
                                         old.id().value(),
-                                        old.source());
+                                        old.logicalDocumentKey());
                             });
                     doc.markDefault();
                     documentRepository.save(doc);
@@ -223,7 +247,8 @@ public class DocumentManageService {
         if (!doc.deleted()) {
             throw new DomainException(ErrorCode.DOC_NOT_FAILED, "文档未删除, 无需 unarchive");
         }
-        // 短事务原子完成 reactivate + save (域方法不变量保证 deleted=false + status=UPLOADED + 重置 retry/err/pending)
+        // 短事务原子完成 reactivate + save (域方法不变量保证 deleted=false + status=UPLOADED + 重置
+        // retry/err/pending)
         doc.reactivate();
         shortTx.executeWithoutResult(status -> documentRepository.save(doc));
         log.info(

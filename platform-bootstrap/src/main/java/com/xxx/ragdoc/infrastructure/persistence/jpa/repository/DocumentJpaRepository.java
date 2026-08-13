@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -41,9 +43,7 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
     Page<DocumentEntity> listForSummary(
             @Param("status") String status, @Param("keyword") String keyword, Pageable pageable);
 
-    /**
-     * Task 11 / P0: tenant + 可选 status/keyword 过滤的 admin 路径 (本 tenant 全可见, 不加 allowedDocIds)。
-     */
+    /** Task 11 / P0: tenant + 可选 status/keyword 过滤的 admin 路径 (本 tenant 全可见, 不加 allowedDocIds)。 */
     @org.springframework.data.jpa.repository.Query(
             """
             SELECT d FROM DocumentEntity d
@@ -59,9 +59,7 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
             @Param("keyword") String keyword,
             Pageable pageable);
 
-    /**
-     * Task 11 / P0: tenant + allowedDocumentIds 双过滤的普通用户路径。
-     */
+    /** Task 11 / P0: tenant + allowedDocumentIds 双过滤的普通用户路径。 */
     @org.springframework.data.jpa.repository.Query(
             """
             SELECT d FROM DocumentEntity d
@@ -82,8 +80,8 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
     /**
      * Phase 3 / P3-1: 按 source 找 is_default=true 且 READY 未软删的最新一条。
      *
-     * <p>理论返回 0 或 1 条 (同 source 至多 1 个 default, DocumentUploadService + set-default 保证);
-     * 加 OrderBy + findFirst 防御数据异常 (DBA 误操作产生 2 条 default 时取最新, 不抛错)。
+     * <p>理论返回 0 或 1 条 (同 source 至多 1 个 default, DocumentUploadService + set-default 保证); 加 OrderBy
+     * + findFirst 防御数据异常 (DBA 误操作产生 2 条 default 时取最新, 不抛错)。
      */
     Optional<DocumentEntity>
             findFirstBySourceAndStatusAndIsDefaultTrueAndDeletedAtIsNullOrderByCreatedAtDesc(
@@ -92,14 +90,45 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
     /**
      * Phase 3 / P3-1: source 下是否已存在任意未软删的 default 文档 (不限 status)。
      *
-     * <p>DocumentUploadService 调用: 新增 doc 时若本查询返 false, 则把新 doc 标 default;
-     * 返 true 则不抢 (维持老 default)。
+     * <p>DocumentUploadService 调用: 新增 doc 时若本查询返 false, 则把新 doc 标 default; 返 true 则不抢 (维持老
+     * default)。
      */
     boolean existsBySourceAndIsDefaultTrueAndDeletedAtIsNull(String source);
 
+    boolean existsByTenantIdAndLogicalDocumentKeyAndIsDefaultTrueAndDeletedAtIsNull(
+            String tenantId, String logicalDocumentKey);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+            "SELECT d FROM DocumentEntity d WHERE d.tenantId = :tenantId "
+                    + "AND d.logicalDocumentKey = :logicalDocumentKey "
+                    + "AND d.isDefault = true AND d.deletedAt IS NULL")
+    Optional<DocumentEntity> findCurrentForUpdate(
+            @Param("tenantId") String tenantId,
+            @Param("logicalDocumentKey") String logicalDocumentKey);
+
+    @Query(
+            "SELECT d.id FROM DocumentEntity d WHERE d.tenantId = :tenantId "
+                    + "AND d.status = 'INDEXED' AND d.isDefault = true AND d.deletedAt IS NULL "
+                    + "AND (:source IS NULL OR d.source = :source)")
+    java.util.Set<Long> findCurrentIndexedIds(
+            @Param("tenantId") String tenantId, @Param("source") String source);
+
+    @Query(
+            "SELECT d FROM DocumentEntity d WHERE d.tenantId = :tenantId "
+                    + "AND d.status = 'INDEXED' AND d.deletedAt IS NULL "
+                    + "AND (:source IS NULL OR d.source = :source) "
+                    + "AND (:version IS NULL OR d.version = :version) "
+                    + "AND (:language IS NULL OR d.language = :language)")
+    java.util.List<DocumentEntity> findRetrievableForGenerationFilter(
+            @Param("tenantId") String tenantId,
+            @Param("source") String source,
+            @Param("version") String version,
+            @Param("language") String language);
+
     /**
-     * Phase 3 / P3-2: MilvusDeleteSweeper 定时拉取 pending_milvus_delete=true 的文档重试删除。
-     * 用 Pageable 控制单批上限 (Spring Data 不支持 TopN + 自定义 OrderBy 直接派生, 用 Pageable 更显式)。
+     * Phase 3 / P3-2: MilvusDeleteSweeper 定时拉取 pending_milvus_delete=true 的文档重试删除。 用 Pageable
+     * 控制单批上限 (Spring Data 不支持 TopN + 自定义 OrderBy 直接派生, 用 Pageable 更显式)。
      */
     java.util.List<DocumentEntity> findByPendingMilvusDeleteTrueOrderByIdAsc(
             org.springframework.data.domain.Pageable pageable);
@@ -115,9 +144,7 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
                     + "AND d.visibility <> 'PRIVATE'")
     java.util.List<Long> findNonPrivateDocIdsByTenant(@Param("tenantId") String tenantId);
 
-    /**
-     * V9 RAG-Perm-001: 拿所有 PUBLIC 文档 id (跨租户公开), 用于 PermissionResolver 同租户并集的扩展集。
-     */
+    /** V9 RAG-Perm-001: 拿所有 PUBLIC 文档 id (跨租户公开), 用于 PermissionResolver 同租户并集的扩展集。 */
     @Query(
             "SELECT d.id FROM DocumentEntity d "
                     + "WHERE d.deletedAt IS NULL "
@@ -145,5 +172,14 @@ public interface DocumentJpaRepository extends JpaRepository<DocumentEntity, Lon
                     + "ORDER BY d.lastStateChangeAt ASC")
     java.util.List<DocumentEntity> findStuckInPipeline(
             @Param("threshold") java.time.Instant threshold,
+            org.springframework.data.domain.Pageable pageable);
+
+    @Query(
+            "SELECT d FROM DocumentEntity d WHERE d.status='UPLOADED' "
+                    + "AND d.deletedAt IS NULL AND d.createdAt<:olderThan "
+                    + "AND NOT EXISTS (SELECT t.id FROM ParseTaskEntity t WHERE t.documentId=d.id) "
+                    + "ORDER BY d.id ASC")
+    java.util.List<DocumentEntity> findUploadedWithoutParseTask(
+            @Param("olderThan") java.time.Instant olderThan,
             org.springframework.data.domain.Pageable pageable);
 }
