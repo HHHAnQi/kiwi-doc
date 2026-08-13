@@ -1,0 +1,4 @@
+# KB snapshot data — generated, do NOT commit.
+# See README.md in this directory for regeneration instructions.
+*.ndjson
+*.jsonl
