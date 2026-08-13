@@ -26,8 +26,8 @@ import java.util.Objects;
  *
  * <h3>不可变设计</h3>
  *
- * final class + private final 字段 + 构造器一次定型, 任何状态变更走 {@link #appendTurn(Turn)}
- * / {@link #withCompression(String, List, Instant)} 等 with- 方法返回新实例。这避免了:
+ * final class + private final 字段 + 构造器一次定型, 任何状态变更走 {@link #appendTurn(Turn)} / {@link
+ * #withCompression(String, List, Instant)} 等 with- 方法返回新实例。这避免了:
  *
  * <ul>
  *   <li>异步压缩线程与主 chat 线程 race condition
@@ -61,8 +61,7 @@ public final class ConversationContext {
             @JsonProperty("createdAt") Instant createdAt,
             @JsonProperty("lastActiveAt") Instant lastActiveAt,
             @JsonProperty("summaryUpdatedAt") Instant summaryUpdatedAt) {
-        this.conversationId =
-                Objects.requireNonNull(conversationId, "conversationId 不能为空");
+        this.conversationId = Objects.requireNonNull(conversationId, "conversationId 不能为空");
         this.userId = userId;
         this.tenantScope = tenantScope;
         this.recentTurns =

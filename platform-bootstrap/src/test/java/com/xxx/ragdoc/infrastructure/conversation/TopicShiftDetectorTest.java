@@ -84,8 +84,7 @@ class TopicShiftDetectorTest {
                 .thenReturn(emb(vec(1.0f, 0.0f)))
                 .thenReturn(emb(vec(0.0f, 1.0f)));
 
-        ConversationContext ctx =
-                ConversationContext.empty("c1").appendTurn(turn("Sentinel 流控?"));
+        ConversationContext ctx = ConversationContext.empty("c1").appendTurn(turn("Sentinel 流控?"));
         boolean shift = detector.isTopicShift("Nacos 配置中心是什么", ctx);
 
         assertThat(shift).isTrue();
@@ -105,8 +104,7 @@ class TopicShiftDetectorTest {
 
     @Test
     void embed抛异常_应返回false_不挂chat() {
-        when(embeddingClient.embed(any()))
-                .thenThrow(new RuntimeException("BGE-M3 service down"));
+        when(embeddingClient.embed(any())).thenThrow(new RuntimeException("BGE-M3 service down"));
 
         ConversationContext ctx = ConversationContext.empty("c1").appendTurn(turn("Q"));
         boolean shift = detector.isTopicShift("新 Q", ctx);
@@ -148,7 +146,11 @@ class TopicShiftDetectorTest {
         // cos(60°) = 0.5, 但 < 0.5 才 shift; 等于阈值不算 shift
         when(embeddingClient.embed(any()))
                 .thenReturn(emb(new float[] {1.0f, 0.0f}))
-                .thenReturn(emb(new float[] {(float) Math.cos(Math.PI / 3), (float) Math.sin(Math.PI / 3)}));
+                .thenReturn(
+                        emb(
+                                new float[] {
+                                    (float) Math.cos(Math.PI / 3), (float) Math.sin(Math.PI / 3)
+                                }));
 
         ConversationContext ctx = ConversationContext.empty("c1").appendTurn(turn("Q"));
         boolean shift = detector.isTopicShift("Q2", ctx);

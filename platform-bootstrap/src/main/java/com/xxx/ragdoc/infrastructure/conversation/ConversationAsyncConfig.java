@@ -24,18 +24,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  *   <li>threadNamePrefix "conv-compress-": 线程 dump 一目了然
  * </ul>
  *
- * <p>{@code @EnableAsync} 必须加 (Spring 默认 fallback proxy 时也要), 否则 {@code @Async} 注解无效。
- * 用一个 dedicated @Configuration 加 @EnableAsync 比加在 Application 类更内聚。
+ * <p>{@code @EnableAsync} 必须加 (Spring 默认 fallback proxy 时也要), 否则 {@code @Async} 注解无效。 用一个
+ * dedicated @Configuration 加 @EnableAsync 比加在 Application 类更内聚。
  *
  * @author Phase 1 / C6 (ADR-0011)
  */
 @Slf4j
 @Configuration
 @EnableAsync
-@ConditionalOnProperty(
-        prefix = "rag.conversation",
-        name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.conversation", name = "enabled", havingValue = "true")
 public class ConversationAsyncConfig {
 
     @Bean(name = "historyCompressorPool")
@@ -48,8 +45,7 @@ public class ConversationAsyncConfig {
         // 队列满 → silent drop (不阻塞调用线程, 不抛异常); 下次 save 还会再触发
         exec.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
         exec.initialize();
-        log.info(
-                "historyCompressorPool enabled: core=2, max=2, queue=100, rejectPolicy=Discard");
+        log.info("historyCompressorPool enabled: core=2, max=2, queue=100, rejectPolicy=Discard");
         return exec;
     }
 }

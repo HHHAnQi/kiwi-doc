@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.infrastructure.conversation;
 
 import com.xxx.ragdoc.application.chat.conversation.ContextualizeResult;
-import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
 import com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
@@ -17,8 +16,8 @@ import org.springframework.stereotype.Component;
 /**
  * 多轮对话 query 重写器, ADR-0011 §4。
  *
- * <p>LlamaIndex {@code condense_question} 流派: 输入 currQuery + 最近 N turn history, 让 fallback LLM
- * 改写成 standalone query (无指代), 喂 retrieve。LLM 失败回退原 query, 用户不感知。
+ * <p>LlamaIndex {@code condense_question} 流派: 输入 currQuery + 最近 N turn history, 让 fallback LLM 改写成
+ * standalone query (无指代), 喂 retrieve。LLM 失败回退原 query, 用户不感知。
  *
  * <h3>关键决策 (见 ADR-0011 §4 §9.4)</h3>
  *
@@ -37,14 +36,13 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        prefix = "rag.conversation",
-        name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.conversation", name = "enabled", havingValue = "true")
 public class QueryContextualizer implements QueryContextualizerPort {
 
-    /** 取 history 最近 N turn 喂 rewrite LLM, 控制 prompt input token (~500)。
-     *  不用 rollingSummary: 是压缩过的, 喂 rewrite LLM 反而扰指代消解。 */
+    /**
+     * 取 history 最近 N turn 喂 rewrite LLM, 控制 prompt input token (~500)。 不用 rollingSummary: 是压缩过的, 喂
+     * rewrite LLM 反而扰指代消解。
+     */
     private static final int HISTORY_TURNS_FED = 3;
 
     private static final String CONDENSE_PROMPT_TEMPLATE =
@@ -70,9 +68,7 @@ public class QueryContextualizer implements QueryContextualizerPort {
     private final RagdocMetrics metrics;
 
     public QueryContextualizer(
-            LlmRouter llmRouter,
-            CircuitBreakerRegistry cbRegistry,
-            RagdocMetrics metrics) {
+            LlmRouter llmRouter, CircuitBreakerRegistry cbRegistry, RagdocMetrics metrics) {
         // 走 fallback LLM (DeepSeek-V3 便宜); LlmRouter 没 fallback 时退到 primary (rare, rare)
         this.rewriteClient = llmRouter.getRouteClient("fallback");
         // 单独 cb instance "rewrite-llm", 不与主 LLM 共用 cb pool
@@ -88,7 +84,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
      *
      * @param currQuery 当前 turn 用户原始输入
      * @param recentTurns ConversationContext.recentTurns(), may be empty
-     * @return 三类 outcome (skip / ok / failed); 调用方调 {@link ContextualizeResult#retrieveQuery} 拿实际跑去 retrieve 的 query
+     * @return 三类 outcome (skip / ok / failed); 调用方调 {@link ContextualizeResult#retrieveQuery} 拿实际跑去
+     *     retrieve 的 query
      */
     public ContextualizeResult contextualize(String currQuery, List<Turn> recentTurns) {
         long t0 = System.currentTimeMillis();

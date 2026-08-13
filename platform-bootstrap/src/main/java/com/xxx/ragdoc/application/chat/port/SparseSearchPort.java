@@ -4,12 +4,12 @@ import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import java.util.List;
 
 /**
- * PR-4 / EMS-PR4: 稀疏关键词检索端口 (BM25-style)。让 application 层 (KeywordSearchTool) 通过此 port
- * 调用 infrastructure 层的 SparseRetriever / Milvus BM25 通路, 不破坏 ArchUnit "application 不依赖
- * infrastructure" 规则。
+ * PR-4 / EMS-PR4: 稀疏关键词检索端口 (BM25-style)。让 application 层 (KeywordSearchTool) 通过此 port 调用
+ * infrastructure 层的 SparseRetriever / Milvus BM25 通路, 不破坏 ArchUnit "application 不依赖 infrastructure"
+ * 规则。
  *
- * <p>port 只接收已经过 ACL sentinel 决策的 {@code allowedDocIds} (null = admin 全租户 / 空 set = NO_RECALL);
- * 实现 (SparseRetrieverAdapter) 把 allowedDocIds 翻译成 Milvus {@code expr} 字符串。
+ * <p>port 只接收已经过 ACL sentinel 决策的 {@code allowedDocIds} (null = admin 全租户 / 空 set = NO_RECALL); 实现
+ * (SparseRetrieverAdapter) 把 allowedDocIds 翻译成 Milvus {@code expr} 字符串。
  *
  * <p>第 1 版只做 Milvus BM25 (SparseRetriever); 未来可换 ES / Lucene 不动 application。
  */

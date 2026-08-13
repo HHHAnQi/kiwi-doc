@@ -61,10 +61,16 @@ class ChatServiceTest {
     @Mock private com.xxx.ragdoc.application.metrics.MetricsPort metrics;
 
     // Phase 1 / C4: 多轮对话 3 件 optional bean, @InjectMocks 自动注入到 setConversationDeps
-    @Mock private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
+    @Mock
+    private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
+
     // 架构债清理: mock port 接口而非 infrastructure 实现类, 让 application test 不依赖 infrastructure
-    @Mock private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort queryContextualizer;
-    @Mock private com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort promptAssembler;
+    @Mock
+    private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort
+            queryContextualizer;
+
+    @Mock
+    private com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort promptAssembler;
 
     @InjectMocks private ChatService chatService;
 
@@ -324,7 +330,10 @@ class ChatServiceTest {
                     ConversationContext.empty(CONV_ID)
                             .appendTurn(
                                     new ConversationContext.Turn(
-                                            "Sentinel?", "10", List.of(1L), StateHint.OK,
+                                            "Sentinel?",
+                                            "10",
+                                            List.of(1L),
+                                            StateHint.OK,
                                             java.time.Instant.now()));
             when(conversationStore.findById(CONV_ID)).thenReturn(java.util.Optional.of(ctx));
             // 2. rewriter 返回 ok, rewritten query
@@ -338,24 +347,27 @@ class ChatServiceTest {
                             new RetrieveService.RetrieveResult(
                                     List.of(
                                             new RetrieveService.Citation(
-                                                    19L, 6L, 0,
-                                                    "Hystrix 文本", "Hystrix 文本", 0.9f,
+                                                    19L,
+                                                    6L,
+                                                    0,
+                                                    "Hystrix 文本",
+                                                    "Hystrix 文本",
+                                                    0.9f,
                                                     List.of())),
-                                    "not_enabled", 0.9f, 0f));
+                                    "not_enabled",
+                                    0.9f,
+                                    0f));
             when(chatClient.chat(any(), any())).thenReturn("Hystrix 默认 10");
             when(promptAssembler.buildHistoryBlock(any(), anyBoolean()))
                     .thenReturn("[最近对话] Q: Sentinel? A: 10");
             ArgumentCaptor<ConversationContext> ctxCaptor =
                     ArgumentCaptor.forClass(ConversationContext.class);
 
-            ChatResult r =
-                    chatService.chat(
-                            new ChatCommand("那 Hystrix 呢", null, 5), TID, CONV_ID);
+            ChatResult r = chatService.chat(new ChatCommand("那 Hystrix 呢", null, 5), TID, CONV_ID);
 
             assertThat(r.stateHint()).isEqualTo(StateHint.OK);
             // verify retrieve 收到 rewritten query, 不是原 query
-            ArgumentCaptor<ChatCommand> cmdCaptor =
-                    ArgumentCaptor.forClass(ChatCommand.class);
+            ArgumentCaptor<ChatCommand> cmdCaptor = ArgumentCaptor.forClass(ChatCommand.class);
             verify(retrieveService).retrieve(cmdCaptor.capture());
             assertThat(cmdCaptor.getValue().query()).isEqualTo("Hystrix 默认 QPS");
             // verify history 写回 — 新 ctx 含 2 turns
@@ -373,7 +385,10 @@ class ChatServiceTest {
                     ConversationContext.empty(CONV_ID)
                             .appendTurn(
                                     new ConversationContext.Turn(
-                                            "Sentinel?", "10", List.of(1L), StateHint.OK,
+                                            "Sentinel?",
+                                            "10",
+                                            List.of(1L),
+                                            StateHint.OK,
                                             java.time.Instant.now()));
             when(conversationStore.findById(CONV_ID)).thenReturn(java.util.Optional.of(ctx));
             when(queryContextualizer.contextualize(any(), any()))
@@ -385,16 +400,20 @@ class ChatServiceTest {
                             new RetrieveService.RetrieveResult(
                                     List.of(
                                             new RetrieveService.Citation(
-                                                    19L, 6L, 0,
-                                                    "Hystrix 文本", "Hystrix 文本", 0.9f,
+                                                    19L,
+                                                    6L,
+                                                    0,
+                                                    "Hystrix 文本",
+                                                    "Hystrix 文本",
+                                                    0.9f,
                                                     List.of())),
-                                    "not_enabled", 0.9f, 0f));
+                                    "not_enabled",
+                                    0.9f,
+                                    0f));
             when(chatClient.chat(any(), any())).thenThrow(new RuntimeException("LLM timeout"));
             when(promptAssembler.buildHistoryBlock(any(), anyBoolean())).thenReturn("");
 
-            ChatResult r =
-                    chatService.chat(
-                            new ChatCommand("那 Hystrix 呢", null, 5), TID, CONV_ID);
+            ChatResult r = chatService.chat(new ChatCommand("那 Hystrix 呢", null, 5), TID, CONV_ID);
 
             assertThat(r.stateHint()).isEqualTo(StateHint.LLM_DEGRADED);
             // 关键: history 不写回 (防 LLM 出错消息污染下次 rewrite)
@@ -410,10 +429,16 @@ class ChatServiceTest {
                             new RetrieveService.RetrieveResult(
                                     List.of(
                                             new RetrieveService.Citation(
-                                                    19L, 6L, 0,
-                                                    "Sentinel 文本", "Sentinel 文本", 0.9f,
+                                                    19L,
+                                                    6L,
+                                                    0,
+                                                    "Sentinel 文本",
+                                                    "Sentinel 文本",
+                                                    0.9f,
                                                     List.of())),
-                                    "not_enabled", 0.9f, 0f));
+                                    "not_enabled",
+                                    0.9f,
+                                    0f));
             when(chatClient.chat(any(), any())).thenReturn("answer");
 
             ChatResult r = chatService.chat(new ChatCommand("Sentinel?", null, 5), TID, null);

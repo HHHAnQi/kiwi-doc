@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
@@ -11,7 +12,6 @@ import com.xxx.ragdoc.application.chat.port.ChatTracesRepository;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.metrics.MetricsPort;
-import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import java.util.List;
@@ -32,12 +32,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 /**
  * Task 9 / V15: ChatService × TraceObserver 完整 trace 字段契约测试。
  *
- * <p>任务文档要求 11 字段全上 trace, badcase 一键追踪全链。本测试在 OK 路径下, 验证
- * 4 个关键 observation 调用 (startTrace / retrieve.observe / llm.observe / endTrace) 携带不
- * 缺失的 metadata。
+ * <p>任务文档要求 11 字段全上 trace, badcase 一键追踪全链。本测试在 OK 路径下, 验证 4 个关键 observation 调用 (startTrace /
+ * retrieve.observe / llm.observe / endTrace) 携带不 缺失的 metadata。
  *
- * <p>字段: request_id / user_id / conversation_id / query / retrieved_chunks /
- * retrieval_score / rerank_score / prompt_version / model_version / token_usage / latency。
+ * <p>字段: request_id / user_id / conversation_id / query / retrieved_chunks / retrieval_score /
+ * rerank_score / prompt_version / model_version / token_usage / latency。
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -61,8 +60,10 @@ class ChatServiceTraceContractTest {
         // 用户登录模拟 (Task 9: user_id 必须从 AuthContext 出来)
         AuthContext.set(
                 new com.xxx.ragdoc.domain.auth.Principal(
-                        "default", "userXYZ",
-                        java.util.Set.of("role:default", "role:user"), "token"));
+                        "default",
+                        "userXYZ",
+                        java.util.Set.of("role:default", "role:user"),
+                        "token"));
 
         when(chatMessages.getEmptyKbMessage()).thenReturn("EMPTY");
         when(chatMessages.getNoRecallMessage()).thenReturn("NORECALL");
@@ -77,18 +78,20 @@ class ChatServiceTraceContractTest {
                         new RetrieveService.RetrieveResult(
                                 List.of(
                                         new RetrieveService.Citation(
-                                                19L, 6L, 0,
+                                                19L,
+                                                6L,
+                                                0,
                                                 "Sentinel 文本短句",
                                                 "Sentinel 限流策略全文较长",
-                                                0.92f, List.of("sec"))),
+                                                0.92f,
+                                                List.of("sec"))),
                                 "applied",
                                 0.92f,
                                 0.85f));
         when(chatClient.chat(anyString(), anyList())).thenReturn("Sentinel 是阿里流控组件");
         when(chatClient.currentModel()).thenReturn("qwen-max-2024");
         when(chatClient.lastUsage())
-                .thenReturn(java.util.Optional.of(
-                        new ChatClient.TokenUsage(120, 35, 155)));
+                .thenReturn(java.util.Optional.of(new ChatClient.TokenUsage(120, 35, 155)));
         lenient().when(traceObserver.startTrace(any(), any(), any())).thenReturn(TID.value());
     }
 
@@ -107,12 +110,12 @@ class ChatServiceTraceContractTest {
         // ============ startTrace: user_id + query + conversation_id + prompt_version + model
         // _version ============
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<Map<String, Object>> startCaptor =
-                ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, Object>> startCaptor = ArgumentCaptor.forClass(Map.class);
         verify(traceObserver).startTrace(eq(TID.value()), eq("userXYZ"), startCaptor.capture());
         Map<String, Object> startMeta = startCaptor.getValue();
-        assertThat(startMeta).containsKeys(
-                "query", "conversation_id", "user_id", "prompt_version", "model_version");
+        assertThat(startMeta)
+                .containsKeys(
+                        "query", "conversation_id", "user_id", "prompt_version", "model_version");
         assertThat(startMeta.get("query")).isEqualTo("Sentinel 是什么?");
         assertThat(startMeta.get("user_id")).isEqualTo("userXYZ");
         assertThat(startMeta.get("conversation_id")).isEqualTo("conv-abc");
@@ -121,8 +124,7 @@ class ChatServiceTraceContractTest {
 
         // ============ RETRIEVE observation: retrieved_chunks + retrieval_score + rerank_scor
         // e ============
-        ArgumentCaptor<Map<String, Object>> retrieveMetaCaptor =
-                ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, Object>> retrieveMetaCaptor = ArgumentCaptor.forClass(Map.class);
         verify(traceObserver)
                 .observe(
                         eq(TID.value()),
@@ -133,19 +135,20 @@ class ChatServiceTraceContractTest {
                         anyLong(),
                         retrieveMetaCaptor.capture());
         Map<String, Object> retrieveMeta = retrieveMetaCaptor.getValue();
-        assertThat(retrieveMeta).containsKeys("retrieved_chunks", "top1_retrieval_score", "top1_rerank_score");
+        assertThat(retrieveMeta)
+                .containsKeys("retrieved_chunks", "top1_retrieval_score", "top1_rerank_score");
         assertThat(retrieveMeta.get("top1_retrieval_score")).isNotNull();
         assertThat(retrieveMeta.get("top1_rerank_score")).isNotNull();
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> chunks = (List<Map<String, Object>>) retrieveMeta.get("retrieved_chunks");
+        List<Map<String, Object>> chunks =
+                (List<Map<String, Object>>) retrieveMeta.get("retrieved_chunks");
         assertThat(chunks).hasSize(1);
         assertThat(chunks.get(0).get("chunk_id")).isEqualTo(19L);
         assertThat(chunks.get(0).get("doc_id")).isEqualTo(6L);
         assertThat(chunks.get(0).get("score")).isEqualTo(0.92f);
 
         // ============ LLM observation: prompt_version + model_version + token_usage ============
-        ArgumentCaptor<Map<String, Object>> llmMetaCaptor =
-                ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, Object>> llmMetaCaptor = ArgumentCaptor.forClass(Map.class);
         verify(traceObserver)
                 .observe(
                         eq(TID.value()),
@@ -156,7 +159,8 @@ class ChatServiceTraceContractTest {
                         anyLong(),
                         llmMetaCaptor.capture());
         Map<String, Object> llmMeta = llmMetaCaptor.getValue();
-        assertThat(llmMeta).containsKeys("prompt_version", "model_version", "token_usage", "latency_ms");
+        assertThat(llmMeta)
+                .containsKeys("prompt_version", "model_version", "token_usage", "latency_ms");
         assertThat(llmMeta.get("model_version")).isEqualTo("qwen-max-2024");
         assertThat(llmMeta.get("prompt_version")).isEqualTo("v2-cite");
         @SuppressWarnings("unchecked")
@@ -166,8 +170,7 @@ class ChatServiceTraceContractTest {
         assertThat(usage.get("total")).isEqualTo(155);
 
         // ============ endTrace: chat_latency_ms ============
-        ArgumentCaptor<Map<String, Object>> endMetaCaptor =
-                ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor<Map<String, Object>> endMetaCaptor = ArgumentCaptor.forClass(Map.class);
         // 取最后一次 endTrace 调用 (sync chat 终点)
         verify(traceObserver, atLeastOnce()).endTrace(eq(TID.value()), endMetaCaptor.capture());
         Map<String, Object> endMeta = endMetaCaptor.getValue();
@@ -196,8 +199,7 @@ class ChatServiceTraceContractTest {
     private String invokeResolvePromptVersion() {
         // resolvePromptVersion 是 private 方法; 反射调避免破封装
         try {
-            return (String)
-                    ReflectionTestUtils.invokeMethod(chatService, "resolvePromptVersion");
+            return (String) ReflectionTestUtils.invokeMethod(chatService, "resolvePromptVersion");
         } catch (Exception e) {
             throw new AssertionError(e);
         }

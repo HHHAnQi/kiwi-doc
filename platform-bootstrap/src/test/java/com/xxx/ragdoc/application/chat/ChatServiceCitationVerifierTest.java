@@ -13,13 +13,11 @@ import com.xxx.ragdoc.application.chat.verification.VerificationResult;
 import com.xxx.ragdoc.application.chat.verification.VerificationResult.CitationScore;
 import com.xxx.ragdoc.application.chat.verification.VerificationResult.Outcome;
 import com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort;
-import com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort.Evidence;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.metrics.MetricsPort;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -55,9 +53,17 @@ class ChatServiceCitationVerifierTest {
     @Mock private ChatClient chatClient;
     @Mock private TraceObserver traceObserver;
     @Mock private MetricsPort metrics;
-    @Mock private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
-    @Mock private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort queryContextualizer;
-    @Mock private com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort promptAssembler;
+
+    @Mock
+    private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
+
+    @Mock
+    private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort
+            queryContextualizer;
+
+    @Mock
+    private com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort promptAssembler;
+
     @Mock private CitationVerifierPort citationVerifier;
     @Mock private CitationVerifierProperties citationVerifierProperties;
 
@@ -79,8 +85,13 @@ class ChatServiceCitationVerifierTest {
                         new RetrieveService.RetrieveResult(
                                 List.of(
                                         new RetrieveService.Citation(
-                                                19L, 6L, 0, "Sentinel 文本", "Sentinel 限流策略全文",
-                                                0.9f, List.of("sec"))),
+                                                19L,
+                                                6L,
+                                                0,
+                                                "Sentinel 文本",
+                                                "Sentinel 限流策略全文",
+                                                0.9f,
+                                                List.of("sec"))),
                                 "not_enabled",
                                 0.9f,
                                 0f));
@@ -89,7 +100,8 @@ class ChatServiceCitationVerifierTest {
 
         // verifier bean + properties injected
         chatService.setCitationVerifier(citationVerifier);
-        ReflectionTestUtils.setField(chatService, "citationVerifierProperties", citationVerifierProperties);
+        ReflectionTestUtils.setField(
+                chatService, "citationVerifierProperties", citationVerifierProperties);
         when(citationVerifierProperties.isEnabled()).thenReturn(true);
         when(citationVerifierProperties.getScoreThreshold()).thenReturn(0.5);
     }
@@ -107,8 +119,13 @@ class ChatServiceCitationVerifierTest {
             when(citationVerifier.verify(anyString(), anyList()))
                     .thenReturn(
                             new VerificationResult(
-                                    Outcome.PASS, 0.9,
-                                    List.of(new CitationScore(19L, VerificationResult.Verdict.ENTAILMENT, 0.9)),
+                                    Outcome.PASS,
+                                    0.9,
+                                    List.of(
+                                            new CitationScore(
+                                                    19L,
+                                                    VerificationResult.Verdict.ENTAILMENT,
+                                                    0.9)),
                                     null));
 
             ChatResult r = runChat();
@@ -131,8 +148,13 @@ class ChatServiceCitationVerifierTest {
             when(citationVerifier.verify(anyString(), anyList()))
                     .thenReturn(
                             new VerificationResult(
-                                    Outcome.FAIL, 0.0,
-                                    List.of(new CitationScore(19L, VerificationResult.Verdict.CONTRADICTION, 0.0)),
+                                    Outcome.FAIL,
+                                    0.0,
+                                    List.of(
+                                            new CitationScore(
+                                                    19L,
+                                                    VerificationResult.Verdict.CONTRADICTION,
+                                                    0.0)),
                                     null));
 
             ChatResult r = runChat();
@@ -156,8 +178,11 @@ class ChatServiceCitationVerifierTest {
             when(citationVerifier.verify(anyString(), anyList()))
                     .thenReturn(
                             new VerificationResult(
-                                    Outcome.FAIL, 0.2,
-                                    List.of(new CitationScore(19L, VerificationResult.Verdict.UNKNOWN, 0.2)),
+                                    Outcome.FAIL,
+                                    0.2,
+                                    List.of(
+                                            new CitationScore(
+                                                    19L, VerificationResult.Verdict.UNKNOWN, 0.2)),
                                     null));
 
             ChatResult r = runChat();
@@ -198,7 +223,8 @@ class ChatServiceCitationVerifierTest {
         @DisplayName("yq 无 citations → verification=null 透传")
         void noCitationsSkipsVerify() {
             // 改 mock 让召回返空 → NO_RECALL (不达 OK 分支), verification 应 null
-            when(retrieveService.retrieve(any())).thenReturn(RetrieveService.RetrieveResult.empty());
+            when(retrieveService.retrieve(any()))
+                    .thenReturn(RetrieveService.RetrieveResult.empty());
 
             ChatResult r = runChat();
 

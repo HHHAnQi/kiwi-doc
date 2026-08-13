@@ -35,17 +35,14 @@ import org.springframework.stereotype.Component;
  *   <li>命中 cb 熔断 → catch CallNotPermittedException, 等下个 turn 重试
  * </ul>
  *
- * <p>{@code @ConditionalOnProperty rag.conversation.compress=true} 启用本类 (双 flag 守门:
- * enabled=true 主开关 + compress=true 压缩专项开关)。
+ * <p>{@code @ConditionalOnProperty rag.conversation.compress=true} 启用本类 (双 flag 守门: enabled=true
+ * 主开关 + compress=true 压缩专项开关)。
  *
  * @author Phase 1 / C6 (ADR-0011)
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        prefix = "rag.conversation",
-        name = "compress",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.conversation", name = "compress", havingValue = "true")
 public class HistoryCompressor implements HistoryCompressorPort {
 
     /** 摘要 LLM 输出最小长度, 短于此视为 LLM 异常 → 拒收。 */

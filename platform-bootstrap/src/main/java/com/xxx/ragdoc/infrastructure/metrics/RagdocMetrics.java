@@ -1,9 +1,7 @@
 package com.xxx.ragdoc.infrastructure.metrics;
 
 import com.xxx.ragdoc.application.metrics.MetricsPort;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -11,8 +9,8 @@ import org.springframework.stereotype.Component;
 /**
  * Phase 3.A: RAG 核心 SLO 指标统一暴露口。
  *
- * <p>所有 5 项 SLO 集中在本类, 避免散落在 service / controller 多处直接拿 {@link MeterRegistry} 导致
- * tag / unit / 命名漂移。chat / retrieve / rerank 路径各自调对应方法, 不感知 Micrometer API。
+ * <p>所有 5 项 SLO 集中在本类, 避免散落在 service / controller 多处直接拿 {@link MeterRegistry} 导致 tag / unit /
+ * 命名漂移。chat / retrieve / rerank 路径各自调对应方法, 不感知 Micrometer API。
  *
  * <h3>5 项 SLO 指标</h3>
  *
@@ -21,10 +19,12 @@ import org.springframework.stereotype.Component;
  *   <li>{@code ragdoc.chat.total_latency} (Timer, ms): chat/chatStream 端到端, ADR-0004 L1 ≤ 15s p95
  *   <li>{@code ragdoc.retrieve.recall_count} (Counter / DistributionSummary): 每次 retrieve 的 finalN
  *   <li>{@code ragdoc.rerank.latency} (Timer, ms): rerank 客户端耗时(仅 rerank 路径)
- *   <li>{@code ragdoc.llm.call_total} (Counter): LLM 调用次数 + tag {@code outcome=ok|degraded|fallback}
+ *   <li>{@code ragdoc.llm.call_total} (Counter): LLM 调用次数 + tag {@code
+ *       outcome=ok|degraded|fallback}
  * </ol>
  *
- * <p>所有 timer 直方图 + percentile 在 {@code application.yml} {@code management.metrics.distribution} 配置。
+ * <p>所有 timer 直方图 + percentile 在 {@code application.yml} {@code management.metrics.distribution}
+ * 配置。
  *
  * <p>架构师备注:
  *
@@ -78,6 +78,20 @@ public class RagdocMetrics implements MetricsPort {
         registry.timer("ragdoc.retrieve.total_latency").record(durationMs, TimeUnit.MILLISECONDS);
     }
 
+    @Override
+    public void recordRetrieveStaleHit(int count) {
+        if (count > 0) {
+            registry.counter("ragdoc.retrieve.stale_hit_total").increment(count);
+        }
+    }
+
+    @Override
+    public void recordRetrieveSecurityRejectedHit(int count) {
+        if (count > 0) {
+            registry.counter("ragdoc.retrieve.security_rejected_hit_total").increment(count);
+        }
+    }
+
     // ───── Phase 1 / C2 (ADR-0011 §11): conversation / memory SLO ─────
 
     /**
@@ -98,7 +112,8 @@ public class RagdocMetrics implements MetricsPort {
     /**
      * 压缩结果 count.
      *
-     * @param outcome ok=压缩成功; failed=LLM/Redis 异常; invalid=quality gate 拒绝(摘要太短); skipped=debounce / size 不足
+     * @param outcome ok=压缩成功; failed=LLM/Redis 异常; invalid=quality gate 拒绝(摘要太短); skipped=debounce
+     *     / size 不足
      */
     public void incrementCompression(String outcome) {
         registry.counter("ragdoc.conversation.compression_total", "outcome", outcome).increment();
@@ -119,6 +134,7 @@ public class RagdocMetrics implements MetricsPort {
      * Phase 3 / P3-5: LLM 调用 token 使用量 counter。
      *
      * <p>Grafana 通过 PromQL 按 model 单价换算近似成本 (USD/天 / 周累计):
+     *
      * <pre>
      *   # 例: 7d 总成本估算
      *   sum_over_time(ragdoc_llm_token_total{type="prompt"}[7d]) * $GLM_PRICE_PER_K_PROMPT / 1000
@@ -140,8 +156,7 @@ public class RagdocMetrics implements MetricsPort {
      */
     public void recordTokens(int promptTokens, int completionTokens, String route, String model) {
         if (promptTokens > 0) {
-            registry
-                    .counter(
+            registry.counter(
                             "ragdoc.llm.token_total",
                             "type",
                             "prompt",
@@ -152,8 +167,7 @@ public class RagdocMetrics implements MetricsPort {
                     .increment(promptTokens);
         }
         if (completionTokens > 0) {
-            registry
-                    .counter(
+            registry.counter(
                             "ragdoc.llm.token_total",
                             "type",
                             "completion",

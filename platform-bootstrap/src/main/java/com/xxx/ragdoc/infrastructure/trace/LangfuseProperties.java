@@ -35,8 +35,8 @@ public class LangfuseProperties {
     /**
      * 触发 batch flush 的累计 observation 阈值(Phase 1.E)。
      *
-     * <p>buffer 内任意 traceId 的 pending observation 数 ≥ 此值时, 立即触发 send, 不等 定时周期。
-     * 设为 0 时禁用, 仅靠 flush-interval 周期 + endTrace 触发。
+     * <p>buffer 内任意 traceId 的 pending observation 数 ≥ 此值时, 立即触发 send, 不等 定时周期。 设为 0 时禁用, 仅靠
+     * flush-interval 周期 + endTrace 触发。
      */
     private int flushBatchSize = 50;
 

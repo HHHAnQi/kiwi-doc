@@ -18,6 +18,10 @@ import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import com.xxx.ragdoc.application.metrics.MetricsPort;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.ChunkType;
+import com.xxx.ragdoc.domain.document.Document;
+import com.xxx.ragdoc.domain.document.DocumentStatus;
+import com.xxx.ragdoc.domain.shared.ContentHash;
+import com.xxx.ragdoc.domain.shared.DocumentId;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -125,6 +129,32 @@ class RetrieveServiceEvidenceTest {
         when(emb.embed(any())).thenReturn(new EmbeddingResult(new float[8], null));
         DocumentRepository dr = mock(DocumentRepository.class);
         when(dr.findDefaultReadyBySource(any())).thenReturn(Optional.empty());
+        when(dr.findByIdIn(anyCollection()))
+                .thenAnswer(
+                        inv -> {
+                            java.util.Collection<Long> ids = inv.getArgument(0);
+                            return ids.stream()
+                                    .map(
+                                            id ->
+                                                    Document.restore(
+                                                            new DocumentId(id),
+                                                            new ContentHash(
+                                                                    String.format("%064x", id)),
+                                                            "doc-" + id + ".md",
+                                                            "text/markdown",
+                                                            100,
+                                                            TENANT,
+                                                            DocumentStatus.INDEXED,
+                                                            0,
+                                                            null,
+                                                            List.of(),
+                                                            false,
+                                                            "test",
+                                                            "v-real",
+                                                            "zh",
+                                                            "doc"))
+                                    .toList();
+                        });
         return new RetrieveService(
                 emb,
                 vs,

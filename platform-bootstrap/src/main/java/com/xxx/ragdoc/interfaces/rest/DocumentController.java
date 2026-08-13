@@ -47,7 +47,9 @@ public class DocumentController {
             @RequestParam(value = "source", required = false) String source,
             @RequestParam(value = "version", required = false) String version,
             @RequestParam(value = "language", required = false) String language,
-            @RequestParam(value = "doc_type", required = false) String docType)
+            @RequestParam(value = "doc_type", required = false) String docType,
+            @RequestParam(value = "logical_document_key", required = false)
+                    String logicalDocumentKey)
             throws IOException {
         log.info(
                 "rest.document.upload.start filename={}, size={}, source={}, trace_id={}",
@@ -67,7 +69,8 @@ public class DocumentController {
                         source,
                         version,
                         language,
-                        docType);
+                        docType,
+                        logicalDocumentKey);
 
         UploadResult result = uploadService.upload(cmd);
 
@@ -126,8 +129,15 @@ public class DocumentController {
         return ResponseEntity.accepted().build();
     }
 
+    @PostMapping("/{id}/rebuild")
+    @Operation(summary = "创建新的影子 ingestion generation 并在成功后切换")
+    public ResponseEntity<Void> rebuild(@PathVariable Long id) {
+        manageService.rebuild(id);
+        return ResponseEntity.accepted().build();
+    }
+
     @PostMapping("/{id}/default")
-    @Operation(summary = "设为同 source 的默认版本 (RetrieveService fallback)")
+    @Operation(summary = "设为同一逻辑文档的当前版本")
     public ResponseEntity<Void> setDefault(@PathVariable Long id) {
         manageService.setDefault(id);
         return ResponseEntity.ok().build();

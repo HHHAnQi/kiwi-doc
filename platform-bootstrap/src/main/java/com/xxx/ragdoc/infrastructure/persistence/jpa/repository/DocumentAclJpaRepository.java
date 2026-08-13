@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 /**
  * document_acl 表 Spring Data JPA 仓库 (V9 RAG-Perm-001)。
  *
- * <p>{@link #findReadableDocIds} 求 (principalType, principalId, perms) → granted docIds 集合;
- * 调用方 PermissionResolver 把 USER/ROLE/TENANT 三档各查一次取并集。
+ * <p>{@link #findReadableDocIds} 求 (principalType, principalId, perms) → granted docIds 集合; 调用方
+ * PermissionResolver 把 USER/ROLE/TENANT 三档各查一次取并集。
  */
 @Repository
 public interface DocumentAclJpaRepository extends JpaRepository<DocumentAclEntity, Long> {
@@ -37,13 +37,9 @@ public interface DocumentAclJpaRepository extends JpaRepository<DocumentAclEntit
     /**
      * Task 11 P0: 严格按 (documentId, principalType, principalId, perm) 四元组判定 ACL 是否存在。
      *
-     * <p>替代旧 {@link JpaAclWriter} 用 {@code findReadableDocIds(USER, owner, OWNER).isEmpty()}
-     * 误判 — 那个查询无 documentId 维度, owner 在任意 doc 上有 OWNER 即返 true,
-     * 导致第二份文档跳过 ACL 写入 (问题 4 根因)。
+     * <p>替代旧 {@link JpaAclWriter} 用 {@code findReadableDocIds(USER, owner, OWNER).isEmpty()} 误判 —
+     * 那个查询无 documentId 维度, owner 在任意 doc 上有 OWNER 即返 true, 导致第二份文档跳过 ACL 写入 (问题 4 根因)。
      */
     boolean existsByDocumentIdAndPrincipalTypeAndPrincipalIdAndPerm(
-            Long documentId,
-            String principalType,
-            String principalId,
-            String perm);
+            Long documentId, String principalType, String principalId, String perm);
 }

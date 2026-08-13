@@ -23,10 +23,10 @@ import reactor.core.publisher.Flux;
  * <p>切换 LLM: 仿照本类新建 XxxChatClient, 配 base-url + model + key 即可。 本类只依赖 OpenAI 协议, 不调任何 DashScope 私有
  * API, 因此同样适用于 DeepSeek / Kimi / vLLM / Ollama 等 OpenAI 兼容服务商。
  *
- * <p><b>Phase 1.B (2026-08-03) deprecated</b>: 多路由 + fallback 由 {@link LlmRouter} +
- * {@link OpenAiCompatibleLlmClient} 取代。本类保留代码作为单 route 兼容路径, 通过
- * {@code @ConditionalOnMissingBean(LlmRouter.class)} 仅当 LlmRouter 不存在时(如 legacy
- * 单测或 V1 mode)才装配。生产 chat-app 走 LlmRouter(@Primary)。
+ * <p><b>Phase 1.B (2026-08-03) deprecated</b>: 多路由 + fallback 由 {@link LlmRouter} + {@link
+ * OpenAiCompatibleLlmClient} 取代。本类保留代码作为单 route 兼容路径, 通过
+ * {@code @ConditionalOnMissingBean(LlmRouter.class)} 仅当 LlmRouter 不存在时(如 legacy 单测或 V1 mode)才装配。生产
+ * chat-app 走 LlmRouter(@Primary)。
  */
 @Deprecated(forRemoval = false)
 @Slf4j
@@ -199,12 +199,12 @@ public class DashScopeChatClient implements ChatClient {
         ArrayNode messages = body.putArray("messages");
         ObjectNode sysMsg = messages.addObject();
         sysMsg.put("role", "system");
-         sysMsg.put("content", systemPrompt);
-         ObjectNode userMsg = messages.addObject();
-         userMsg.put("role", "user");
-         userMsg.put("content", userPrompt);
-         return body;
-     }
+        sysMsg.put("content", systemPrompt);
+        ObjectNode userMsg = messages.addObject();
+        userMsg.put("role", "user");
+        userMsg.put("content", userPrompt);
+        return body;
+    }
 
     /** baseline prompt — Phase 0/2.0 锁定的 system prompt (faithfulness 数字稳的版本)。 */
     private String buildBaselinePrompt() {
@@ -223,8 +223,8 @@ public class DashScopeChatClient implements ChatClient {
     }
 
     /**
-     * Phase 2.A relaxed prompt — 实证降低 refusal_rate 但触发 RAGAS length-coupling。
-     * 默认 OFF, 将来严谨 A/B 时再开(chatMessages.isPromptRelaxRefusal = true)。
+     * Phase 2.A relaxed prompt — 实证降低 refusal_rate 但触发 RAGAS length-coupling。 默认 OFF, 将来严谨 A/B
+     * 时再开(chatMessages.isPromptRelaxRefusal = true)。
      */
     private String buildRelaxedPrompt() {
         return "你是 Spring Cloud Alibaba 技术文档助手,帮助用户理解 Nacos/Sentinel/Seata/RocketMQ 等组件。"

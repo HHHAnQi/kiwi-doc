@@ -21,25 +21,22 @@ import org.springframework.stereotype.Component;
 /**
  * Task 7: {@link CitationVerifierPort} LLM 实现。
  *
- * <p>调 {@code LlmRouter.getRouteClient("fallback")} 走便宜 LLM 做 NLI judge, 输出严格 JSON
- * {@code [{chunk_id, verdict, score}, ...]}。失败/超时/熔断/解析错返 {@link VerificationResult#error},
- * 不挂 chat 主流程。
+ * <p>调 {@code LlmRouter.getRouteClient("fallback")} 走便宜 LLM 做 NLI judge, 输出严格 JSON {@code
+ * [{chunk_id, verdict, score}, ...]}。失败/超时/熔断/解析错返 {@link VerificationResult#error}, 不挂 chat 主流程。
  *
  * <p>设计决策 (mirror ADR-0011 §4 + Tasks 5/6):
  *
  * <ul>
  *   <li>走 fallback route (DeepSeek-V3 便宜), 不浪费 primary GLM-4-plus token 做 NLI judge
- *   <li>独立 CircuitBreaker {@code "citation-verifier-llm"}, 隔离主 chat + rewrite-llm + query-enhance-llm
+ *   <li>独立 CircuitBreaker {@code "citation-verifier-llm"}, 隔离主 chat + rewrite-llm +
+ *       query-enhance-llm
  *   <li>整体 score = MIN(citation scores), 与"任一 citation 未支持就 FAIL"对齐 (faithfulness 严格)
  *   <li>Prompt 改自 {@code eval/metrics/generation_metrics.py:108-115} faithfulness 范式
  * </ul>
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        prefix = "rag.citation-verifier",
-        name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.citation-verifier", name = "enabled", havingValue = "true")
 public class LlmCitationVerifier implements CitationVerifierPort {
 
     private static final String CB_NAME = "citation-verifier-llm";
@@ -73,9 +70,7 @@ public class LlmCitationVerifier implements CitationVerifierPort {
             判定: """;
 
     public LlmCitationVerifier(
-            LlmRouter router,
-            CircuitBreakerRegistry cbRegistry,
-            RagdocMetrics metrics) {
+            LlmRouter router, CircuitBreakerRegistry cbRegistry, RagdocMetrics metrics) {
         this.judgeClient = router.getRouteClient("fallback");
         this.cb = cbRegistry.circuitBreaker(CB_NAME);
         log.info(
@@ -137,16 +132,19 @@ public class LlmCitationVerifier implements CitationVerifierPort {
             log.warn(
                     "citation_verify.parse_failed no_json_in_response, raw_head={}",
                     raw == null ? "" : raw.substring(0, Math.min(80, raw.length())));
-            return VerificationResult.error("parse_failed: no JSON in response (elapsed=" + elapsed + "ms)");
+            return VerificationResult.error(
+                    "parse_failed: no JSON in response (elapsed=" + elapsed + "ms)");
         }
         String jsonStr = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
         try {
             JsonNode root = objectMapper.readTree(jsonStr);
             JsonNode arr = root.get("verdicts");
             if (arr == null || !arr.isArray()) {
-                log.warn("citation_verify.parse_failed verdicts_not_array, raw_head={}",
+                log.warn(
+                        "citation_verify.parse_failed verdicts_not_array, raw_head={}",
                         raw.substring(0, Math.min(80, raw.length())));
-                return VerificationResult.error("parse_failed: verdicts not array (elapsed=" + elapsed + "ms)");
+                return VerificationResult.error(
+                        "parse_failed: verdicts not array (elapsed=" + elapsed + "ms)");
             }
             List<CitationScore> scores = new ArrayList<>();
             for (JsonNode v : arr) {
@@ -158,7 +156,8 @@ public class LlmCitationVerifier implements CitationVerifierPort {
                 }
             }
             if (scores.isEmpty()) {
-                return VerificationResult.error("parse_failed: no valid verdict entries (elapsed=" + elapsed + "ms)");
+                return VerificationResult.error(
+                        "parse_failed: no valid verdict entries (elapsed=" + elapsed + "ms)");
             }
             // 整体 score = MIN(citation scores): 任一未支持就 FAIL (faithfulness 严格)
             double overall = scores.stream().mapToDouble(CitationScore::score).min().orElse(0.0);
@@ -176,7 +175,8 @@ public class LlmCitationVerifier implements CitationVerifierPort {
                     "citation_verify.parse_failed err={}, raw_head={}",
                     parseEx.getMessage(),
                     raw.substring(0, Math.min(80, raw.length())));
-            return VerificationResult.error("parse_failed: " + parseEx.getMessage() + " (elapsed=" + elapsed + "ms)");
+            return VerificationResult.error(
+                    "parse_failed: " + parseEx.getMessage() + " (elapsed=" + elapsed + "ms)");
         }
     }
 

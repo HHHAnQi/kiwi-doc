@@ -9,8 +9,8 @@ import java.time.Instant;
 /**
  * principal 表 Entity (V9 RAG-Perm-001)。
  *
- * <p>token (PK) → (tenant_id, user_id, roles)。AuthFilter 解析 Authorization Bearer 时查这张表;
- * 找不到/无 header 走默认 principal, 不直接抛 401 (单租户兼容)。
+ * <p>token (PK) → (tenant_id, user_id, roles)。AuthFilter 解析 Authorization Bearer 时查这张表; 找不到/无
+ * header 走默认 principal, 不直接抛 401 (单租户兼容)。
  *
  * <p>记录是 infra 持久化模型; application 层通过 PermissionResolver 看 domain.Principal。
  */

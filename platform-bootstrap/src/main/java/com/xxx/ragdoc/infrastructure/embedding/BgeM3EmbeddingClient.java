@@ -49,8 +49,7 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
     private final CircuitBreaker circuitBreaker;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public BgeM3EmbeddingClient(
-            EmbeddingProperties props, CircuitBreakerRegistry cbRegistry) {
+    public BgeM3EmbeddingClient(EmbeddingProperties props, CircuitBreakerRegistry cbRegistry) {
         this.props = props;
         // cbRegistry 已由 application.yml resilience4j.circuitbreaker.instances.embedding 装载配置,
         // 这里仅按名取 instance。若配置缺失则按 registry default config 新建。

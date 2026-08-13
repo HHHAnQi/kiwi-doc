@@ -39,7 +39,7 @@ class RRFFusionerTest {
         // 严格: chunk2 = 1/62 + 1/61 = 0.03252; chunk1 = 1/61 + 1/62 = 0.03252 相等
         // 但浮点顺序差异, 这里仅断言两个 chunk 都在, 且都是精确 RRF 分数
         assertThat(fused).hasSize(2);
-        assertThat(fused.stream().map(ScoredChunk::chunkId)).containsExactlyInAnyOrder(1L, 2L);
+        assertThat(fused.stream().map(ScoredChunk::chunkId)).containsExactly(1L, 2L);
         // 双方分数近似相等 (RRF k=60, 同chunk两侧rank互换, 总和相同)
         assertThat(Math.abs(fused.get(0).score() - fused.get(1).score())).isLessThan(1e-5f);
     }
@@ -73,11 +73,12 @@ class RRFFusionerTest {
     @Test
     @DisplayName("topK 截断: 仅返回前 topK 个")
     void truncateToTopK() {
-        List<ScoredChunk> dense = List.of(
-                new ScoredChunk(10L, 0.9f),
-                new ScoredChunk(20L, 0.8f),
-                new ScoredChunk(30L, 0.7f),
-                new ScoredChunk(40L, 0.6f));
+        List<ScoredChunk> dense =
+                List.of(
+                        new ScoredChunk(10L, 0.9f),
+                        new ScoredChunk(20L, 0.8f),
+                        new ScoredChunk(30L, 0.7f),
+                        new ScoredChunk(40L, 0.6f));
         List<ScoredChunk> fused = fusioner.fuse(List.of(dense), 60, 2);
         assertThat(fused).hasSize(2);
         assertThat(fused.get(0).chunkId()).isEqualTo(10L);
@@ -101,7 +102,54 @@ class RRFFusionerTest {
         assertThat(fused10.get(0).score()).isGreaterThan(fused100.get(0).score());
     }
 
+    @Test
+    @DisplayName("同一路重复 chunk 只按最佳排名贡献一次")
+    void duplicateWithinOneChannelContributesOnlyOnce() {
+        List<ScoredChunk> malformedDense =
+                List.of(
+                        new ScoredChunk(1L, 0.9f),
+                        new ScoredChunk(1L, 0.8f),
+                        new ScoredChunk(2L, 0.7f));
+
+        List<RRFFusioner.FusionResult> detailed =
+                fusioner.fuseDetailed(List.of(malformedDense), 60, 5);
+
+        assertThat(detailed).hasSize(2);
+        assertThat(detailed.get(0).chunkId()).isEqualTo(1L);
+        assertThat(detailed.get(0).fusedScore()).isCloseTo(1d / 61d, withinDouble(1e-9));
+        assertThat(detailed.get(0).matchedChannelCount()).isEqualTo(1);
+        assertThat(detailed.get(0).contributions()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("融合分数相同时按命中路数、最佳排名、chunkId 确定性排序")
+    void tiesUseDeterministicOrdering() {
+        List<ScoredChunk> dense =
+                List.of(new ScoredChunk(20L, 0.9f), new ScoredChunk(10L, 0.8f));
+        List<ScoredChunk> sparse =
+                List.of(new ScoredChunk(10L, 9f), new ScoredChunk(20L, 8f));
+
+        for (int i = 0; i < 20; i++) {
+            assertThat(fusioner.fuse(List.of(dense, sparse), 60, 5))
+                    .extracting(ScoredChunk::chunkId)
+                    .containsExactly(10L, 20L);
+        }
+    }
+
+    @Test
+    @DisplayName("topK 非法时返回空结果")
+    void invalidTopKReturnsEmpty() {
+        assertThat(
+                        fusioner.fuse(
+                                List.of(List.of(new ScoredChunk(1L, 1f))), 60, 0))
+                .isEmpty();
+    }
+
     private static org.assertj.core.data.Offset<Float> within(float tolerance) {
+        return org.assertj.core.data.Offset.offset(tolerance);
+    }
+
+    private static org.assertj.core.data.Offset<Double> withinDouble(double tolerance) {
         return org.assertj.core.data.Offset.offset(tolerance);
     }
 }

@@ -9,10 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * PR-4: 把 infrastructure 的 {@link SparseRetriever} (Milvus BM25) 暴露为 application {@link SparseSearchPort}。
+ * PR-4: 把 infrastructure 的 {@link SparseRetriever} (Milvus BM25) 暴露为 application {@link
+ * SparseSearchPort}。
  *
- * <p>把 ACL {@code allowedDocIds} (null=admin / 空=NO_RECALL) + tenant + source/version 翻译成 Milvus {@code expr}。
- * 复用既有 {@link MilvusFilterExprBuilder} expr 生成逻辑保持一致。
+ * <p>把 ACL {@code allowedDocIds} (null=admin / 空=NO_RECALL) + tenant + source/version 翻译成 Milvus
+ * {@code expr}。 复用既有 {@link MilvusFilterExprBuilder} expr 生成逻辑保持一致。
  */
 @Slf4j
 @Component
@@ -46,8 +47,11 @@ public class SparseRetrieverAdapter implements SparseSearchPort {
             return sparseRetriever.search(queryText, expr, topK);
         } catch (RuntimeException ex) {
             // SparseRetriever 内部已 fail-soft 返回 empty; 此处只兜底未捕获异常
-            log.warn("sparse_retriever.uncaught_exception tenant={} query_len={} err={}",
-                    tenantId, queryText == null ? 0 : queryText.length(), ex.toString());
+            log.warn(
+                    "sparse_retriever.uncaught_exception tenant={} query_len={} err={}",
+                    tenantId,
+                    queryText == null ? 0 : queryText.length(),
+                    ex.toString());
             throw ex;
         }
     }

@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>控制 {@link com.xxx.ragdoc.application.chat.conversation.port.QueryProcessorPort} 实现是否启用、走哪条路。
  *
- * <p>沿用 {@code RerankProperties} 模式 (enabled 主开关 + mode 子配置) — 默认全部关闭,
- * 改 env {@code RAG_QUERY_ENHANCE_ENABLED=true} 开启。
+ * <p>沿用 {@code RerankProperties} 模式 (enabled 主开关 + mode 子配置) — 默认全部关闭, 改 env {@code
+ * RAG_QUERY_ENHANCE_ENABLED=true} 开启。
  *
  * <p>启用前必备: fallback LLM route 已配 (走 LlmRouter 便宜 route, DeepSeek-v3 等)。
  */
@@ -30,6 +30,9 @@ public class QueryEnhanceProperties {
 
     /** LLM 超时, 毫秒。默认 5s — enhance 失败不挂主流程。 */
     private int timeoutMs = 5000;
+
+    /** 多 Query 结果融合使用的 RRF 平滑常数。 */
+    private int fusionRrfK = 60;
 
     public enum Mode {
         REWRITE,

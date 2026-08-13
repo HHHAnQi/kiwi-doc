@@ -10,7 +10,6 @@ import com.xxx.ragdoc.infrastructure.llm.LlmRouter;
 import com.xxx.ragdoc.infrastructure.llm.OpenAiCompatibleLlmClient;
 import com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -68,8 +67,7 @@ class QueryProcessorTest {
     @Test
     @DisplayName("parrot-echo: rewrite == original 且无 expansion → SKIP")
     void parrotEchoSkipped() throws Exception {
-        when(routeClient.chat(anyString(), anyList()))
-                .thenReturn("{\"rewritten\": \"原始query\"}");
+        when(routeClient.chat(anyString(), anyList())).thenReturn("{\"rewritten\": \"原始query\"}");
         EnhanceResult r = qp.enhance("原始query", null);
         assertThat(r.outcome()).isEqualTo("skip");
         assertThat(r.primaryQuery()).isEqualTo("原始query");
@@ -78,8 +76,7 @@ class QueryProcessorTest {
     @Test
     @DisplayName("LLM 抛异常 → FAILED fallback original, 不挂主流程")
     void llmExceptionReturnsFailed() throws Exception {
-        when(routeClient.chat(anyString(), anyList()))
-                .thenThrow(new RuntimeException("LLM 503"));
+        when(routeClient.chat(anyString(), anyList())).thenThrow(new RuntimeException("LLM 503"));
         EnhanceResult r = qp.enhance("query", null);
         assertThat(r.outcome()).isEqualTo("failed");
         assertThat(r.primaryQuery()).isEqualTo("query");
@@ -134,8 +131,7 @@ class QueryProcessorTest {
         @DisplayName("maxExpansionQueries 截断超出条数")
         void maxExpansionTruncated() throws Exception {
             when(routeClient.chat(anyString(), anyList()))
-                    .thenReturn(
-                            "{\"expansions\": [\"a\", \"b\", \"c\", \"d\", \"e\"]}");
+                    .thenReturn("{\"expansions\": [\"a\", \"b\", \"c\", \"d\", \"e\"]}");
             EnhanceResult r = qp.enhance("query", null);
             assertThat(r.expandedQueries()).hasSize(3); // 受 props.max=3 截断
         }
@@ -154,13 +150,13 @@ class QueryProcessorTest {
         @DisplayName("both 模式: rewrite + expansions 同时有")
         void rewritePlusExpansions() throws Exception {
             when(routeClient.chat(anyString(), anyList()))
-                    .thenReturn(
-                            "{\"rewritten\": \"主改写\", \"expansions\": [\"扩展1\", \"扩展2\"]}");
+                    .thenReturn("{\"rewritten\": \"主改写\", \"expansions\": [\"扩展1\", \"扩展2\"]}");
             EnhanceResult r = qp.enhance("query", null);
             assertThat(r.outcome()).isEqualTo("ok");
             assertThat(r.primaryQuery()).isEqualTo("主改写");
             assertThat(r.expandedQueries()).containsExactly("扩展1", "扩展2");
-            assertThat(r.allQueries()).containsExactly("主改写", "扩展1", "扩展2");
+            // Expansion 场景必须保留原始 Query，防止改写漂移导致基础召回能力丢失。
+            assertThat(r.allQueries()).containsExactly("主改写", "query", "扩展1", "扩展2");
         }
     }
 

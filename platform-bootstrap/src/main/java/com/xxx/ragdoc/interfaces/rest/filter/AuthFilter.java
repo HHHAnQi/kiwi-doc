@@ -33,8 +33,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  *
  * <ul>
  *   <li>无 token / 异常 token / 未知 token / DB 异常 → <b>401</b>; 不再 fallback DEFAULT_PRINCIPAL
- *   <li>仅 dev/local profile + {@code rag.auth.dev-default-principal-enabled=true} 时, magic
- *       token ({@code dev-default-token}) 才走 DEFAULT_PRINCIPAL
+ *   <li>仅 dev/local profile + {@code rag.auth.dev-default-principal-enabled=true} 时, magic token
+ *       ({@code dev-default-token}) 才走 DEFAULT_PRINCIPAL
  *   <li>认证失败时 <b>不</b> 调 Controller (chain.doFilter 不被执行)
  *   <li>finally 清 AuthContext 防 ThreadLocal 串号
  *   <li>health check / swagger 等 allowlist 路径放行 (无 token 可访问)
@@ -56,8 +56,8 @@ public class AuthFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     /**
-     * 用 {@link ObjectProvider} 可选注入 — 切片测试 (@WebMvcTest 不装 JPA Repositories) 也能装配;
-     * 生产环境 JPA 完整加载, repo 始终存在。
+     * 用 {@link ObjectProvider} 可选注入 — 切片测试 (@WebMvcTest 不装 JPA Repositories) 也能装配; 生产环境 JPA 完整加载,
+     * repo 始终存在。
      */
     private final ObjectProvider<PrincipalJpaRepository> repoProvider;
 
@@ -128,7 +128,11 @@ public class AuthFilter extends OncePerRequestFilter {
 
             // 5) 成功 — set ThreadLocal, 调下游
             AuthContext.set(p);
-            log.debug("auth.resolved user={} tenant={} roles={}", p.userId(), p.tenantId(), p.roles());
+            log.debug(
+                    "auth.resolved user={} tenant={} roles={}",
+                    p.userId(),
+                    p.tenantId(),
+                    p.roles());
             chain.doFilter(request, response);
         } finally {
             // 防 ThreadLocal 串号 (P0 不变量: tomcat 线程复用前必须清)

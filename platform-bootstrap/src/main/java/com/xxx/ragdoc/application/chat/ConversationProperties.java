@@ -19,8 +19,8 @@ import org.springframework.stereotype.Component;
  *     ttl-hours: 24
  * </pre>
  *
- * <p>架构债清理: 本类从 infrastructure.conversation 包移到 application.chat (与 ChatMessages 同包),
- * 让 ChatService 不再依赖 infrastructure 层。配置 @ConditionalOnProperty / bean scan 不受影响。
+ * <p>架构债清理: 本类从 infrastructure.conversation 包移到 application.chat (与 ChatMessages 同包), 让 ChatService
+ * 不再依赖 infrastructure 层。配置 @ConditionalOnProperty / bean scan 不受影响。
  *
  * @author Phase 1 / C2 (ADR-0011)
  */

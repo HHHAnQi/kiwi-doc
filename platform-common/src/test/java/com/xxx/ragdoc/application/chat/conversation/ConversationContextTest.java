@@ -159,8 +159,15 @@ class ConversationContextTest {
         assertThatThrownBy(
                         () ->
                                 new ConversationContext(
-                                        null, "u", null, List.of(), null, 0,
-                                        Instant.now(), Instant.now(), null))
+                                        null,
+                                        "u",
+                                        null,
+                                        List.of(),
+                                        null,
+                                        0,
+                                        Instant.now(),
+                                        Instant.now(),
+                                        null))
                 .isInstanceOf(NullPointerException.class);
     }
 
@@ -180,9 +187,8 @@ class ConversationContextTest {
     /**
      * 构造有 N 个 OK turn 的 ctx, summaryUpdatedAt 控制为传入值。
      *
-     * <p>用 {@link ConversationContext#withCompression} 路径植入 summaryUpdatedAt — 这是该字段
-     * 唯一可写的合法 path(实际生产中只有异步压缩任务会写)。保留所有 turn 不丢, 测试只看
-     * needsCompression 阈值判定。
+     * <p>用 {@link ConversationContext#withCompression} 路径植入 summaryUpdatedAt — 这是该字段 唯一可写的合法
+     * path(实际生产中只有异步压缩任务会写)。保留所有 turn 不丢, 测试只看 needsCompression 阈值判定。
      *
      * <p>注意: 用 placeholder summary "__test__" 而非 null —— withCompression 的 newSummary 不可空。
      */

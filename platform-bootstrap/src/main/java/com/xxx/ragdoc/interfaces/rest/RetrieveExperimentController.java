@@ -32,14 +32,16 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>admin-token 守门: 仅 role:admin 可调 — 防滥用导致生产 Milvus 被刷
  * </ul>
  *
- * <p>用法: 离线评测 / 内部 ablation — agent 拿 admin-token 跑同一组 query 两次
- * (mode=dense / mode=hybrid), 收 metric 输出 dense_vs_hybrid report。
+ * <p>用法: 离线评测 / 内部 ablation — agent 拿 admin-token 跑同一组 query 两次 (mode=dense / mode=hybrid), 收
+ * metric 输出 dense_vs_hybrid report。
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/retrieve")
 @RequiredArgsConstructor
-@Tag(name = "RetrieveExperiment", description = "Task 5 AB 实验: per-request mode override (admin-only)")
+@Tag(
+        name = "RetrieveExperiment",
+        description = "Task 5 AB 实验: per-request mode override (admin-only)")
 public class RetrieveExperimentController {
 
     private final RetrieveService retrieveService;
@@ -79,7 +81,8 @@ public class RetrieveExperimentController {
                         request.source(),
                         request.version(),
                         request.language());
-        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode, request.enhance());
+        RetrieveService.RetrieveResult result =
+                retrieveService.retrieve(cmd, mode, request.enhance());
         log.info(
                 "retrieve.experiment_done trace_id={}, mode={}, items={}",
                 org.slf4j.MDC.get(TraceIdFilter.MDC_TRACE_KEY),

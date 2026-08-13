@@ -11,8 +11,8 @@ package com.xxx.ragdoc.application.chat.conversation;
  *   <li>{@code failed}: LLM/网络异常, fallback 用原 query 走 (用户不感知)
  * </ul>
  *
- * <p>调用方根据 {@link #outcome} 和 {@link #retrieveQuery} 决策 retrieve 路径, 不感知 rewrite
- * 内部失败 / 成功细节。metrics 上调由 {@code QueryContextualizer} 内部完成, 调用方无需重复。
+ * <p>调用方根据 {@link #outcome} 和 {@link #retrieveQuery} 决策 retrieve 路径, 不感知 rewrite 内部失败 /
+ * 成功细节。metrics 上调由 {@code QueryContextualizer} 内部完成, 调用方无需重复。
  *
  * @author Phase 1 / C3 (ADR-0011)
  */

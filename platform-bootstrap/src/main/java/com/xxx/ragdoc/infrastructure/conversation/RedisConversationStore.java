@@ -42,10 +42,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        prefix = "rag.conversation",
-        name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.conversation", name = "enabled", havingValue = "true")
 public class RedisConversationStore implements ConversationStore {
 
     private static final String KEY_PREFIX = "ragdoc:conv:";
@@ -54,8 +51,7 @@ public class RedisConversationStore implements ConversationStore {
     private final ConversationProperties props;
     private final ObjectMapper mapper;
 
-    public RedisConversationStore(
-            StringRedisTemplate redis, ConversationProperties props) {
+    public RedisConversationStore(StringRedisTemplate redis, ConversationProperties props) {
         this.redis = redis;
         this.props = props;
         // JavaTimeModule for Instant (de)serialization.

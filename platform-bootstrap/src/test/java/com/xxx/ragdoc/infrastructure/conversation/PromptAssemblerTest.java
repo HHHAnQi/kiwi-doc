@@ -46,8 +46,7 @@ class PromptAssemblerTest {
 
     @Test
     void 有recentTurns无summary_应只返回对话段() {
-        ConversationContext ctx =
-                ConversationContext.empty("conv-1").appendTurn(turn("Q1", "A1"));
+        ConversationContext ctx = ConversationContext.empty("conv-1").appendTurn(turn("Q1", "A1"));
         String block = assembler.buildHistoryBlock(ctx, false);
         assertThat(block).contains("[最近对话]");
         assertThat(block).contains("Q: Q1");
@@ -67,8 +66,7 @@ class PromptAssemblerTest {
 
     @Test
     void topic_shift为true_应跳过recentTurns保留summary() {
-        ConversationContext ctx =
-                ConversationContext.empty("conv-1").appendTurn(turn("Q", "A"));
+        ConversationContext ctx = ConversationContext.empty("conv-1").appendTurn(turn("Q", "A"));
         String block = assembler.buildHistoryBlock(ctx, true);
         // 没有 summary, 也没有 recent turns (因为 topic shift) → 空串
         assertThat(block).isEmpty();
@@ -116,8 +114,7 @@ class PromptAssemblerTest {
     @Test
     void 空botAnswer_不应抛NPE_但应输出Q行() {
         // Turn 验证 state/botAnswer 非 null; 这里测空botAnswer 是否 graceful
-        ConversationContext ctx =
-                ConversationContext.empty("conv-1").appendTurn(turn("Q", ""));
+        ConversationContext ctx = ConversationContext.empty("conv-1").appendTurn(turn("Q", ""));
         String block = assembler.buildHistoryBlock(ctx, false);
         assertThat(block).contains("Q: Q");
         // 空 botAnswer → "A:" + trim 输出 "A:" (建造时 builder 末尾 trim 掉了 trailing 空白)

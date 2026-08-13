@@ -151,8 +151,7 @@ public class LangfuseTraceObserver implements TraceObserver {
             obs.put("endTime", Instant.now(clock).plusMillis(durationMs).toString());
         if (metadata != null && !metadata.isEmpty()) obs.put("metadata", metadata);
 
-        List<Map<String, Object>> pending =
-                buffer.computeIfAbsent(traceId, k -> new ArrayList<>());
+        List<Map<String, Object>> pending = buffer.computeIfAbsent(traceId, k -> new ArrayList<>());
         pending.add(wrap("observation-create", obs));
 
         // Phase 1.E: 阈值 flush — 单 trace observation 累积 ≥ flushBatchSize 时立刻 drain,
@@ -190,8 +189,8 @@ public class LangfuseTraceObserver implements TraceObserver {
     /**
      * Phase 1.E: 把某 trace 当前 buffer 内积压的 observation 提前 flush 一次。
      *
-     * <p>包含一个 trace-create(body.id = traceId)做 server side upsert, 保证后续 observation 不会因 trace 不存在 被 drop。
-     * 已结束的 trace(endTrace 已 remove)不应进此路径 — 调用方应先 check traces.containsKey。
+     * <p>包含一个 trace-create(body.id = traceId)做 server side upsert, 保证后续 observation 不会因 trace 不存在 被
+     * drop。 已结束的 trace(endTrace 已 remove)不应进此路径 — 调用方应先 check traces.containsKey。
      */
     private void flushTraceIncremental(String traceId) {
         Map<String, Object> trace = traces.get(traceId);

@@ -12,8 +12,8 @@ import java.time.Instant;
 /**
  * document_acl 表 Entity (V9 RAG-Perm-001)。
  *
- * <p>多对多授权: USER/ROLE/TENANT × READ/WRITE/OWNER。求用户可读 docId 集合时, 把它的 user_id +
- * 所有 role + tenant_id 分别查 principal_id, 求并集去重。
+ * <p>多对多授权: USER/ROLE/TENANT × READ/WRITE/OWNER。求用户可读 docId 集合时, 把它的 user_id + 所有 role + tenant_id
+ * 分别查 principal_id, 求并集去重。
  */
 @Entity
 @Table(

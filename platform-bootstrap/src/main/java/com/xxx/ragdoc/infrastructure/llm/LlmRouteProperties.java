@@ -9,11 +9,12 @@ import org.springframework.stereotype.Component;
 /**
  * Phase 1.B (2026-08-03): LLM 多路由配置 primary / secondary / fallback。
  *
- * <p>设计: 启动期绑定三档路由(name + base-url + api-key + model + role), 由 {@link LlmRouter}
- * 根据 role 决定调用顺序; primary 失败 → fallback 自动接管。每档 route 独立 CircuitBreaker
- * (resilience4j instance name = "llm-" + role)。
+ * <p>设计: 启动期绑定三档路由(name + base-url + api-key + model + role), 由 {@link LlmRouter} 根据 role 决定调用顺序;
+ * primary 失败 → fallback 自动接管。每档 route 独立 CircuitBreaker (resilience4j instance name = "llm-" +
+ * role)。
  *
  * <p>yml 示例:
+ *
  * <pre>{@code
  * rag:
  *   llm:
@@ -54,9 +55,7 @@ public class LlmRouteProperties {
 
     private List<Route> routes = new ArrayList<>();
 
-    /**
-     * 单个路由条目。所有字段都支持 env 替换(yml 走 ${ENV_NAME} 语法)。
-     */
+    /** 单个路由条目。所有字段都支持 env 替换(yml 走 ${ENV_NAME} 语法)。 */
     @Data
     public static class Route {
         /** 路由实例名, 必须在 routes[] 里全局唯一。primary/fallback/vllm 等。 */

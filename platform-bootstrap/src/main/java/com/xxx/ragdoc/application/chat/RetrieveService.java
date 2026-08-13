@@ -13,8 +13,11 @@ import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.port.Retriever;
+import com.xxx.ragdoc.application.document.port.ReciprocalRankFusion;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
+import com.xxx.ragdoc.common.exception.ErrorCode;
+import com.xxx.ragdoc.common.exception.InfraException;
 import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.document.Chunk;
 import com.xxx.ragdoc.domain.document.Document;
@@ -159,6 +162,7 @@ public class RetrieveService {
         //   enhance 决策: per-request enhance==true → 强制; enhance==false → 强制关;
         //   enhance==null → 走全局 rag.query-enhance.enabled (默认 false)
         String effectiveQuery = cmd.query();
+        List<String> retrievalQueries = List.of(cmd.query());
         if (shouldEnhance(enhance)) {
             if (queryEnhancePort == null) {
                 // bean 未装配 (rag.query-enhance.enabled=false) → 静默降级 fallback
@@ -166,6 +170,9 @@ public class RetrieveService {
             } else {
                 EnhanceResult er = queryEnhancePort.enhance(cmd.query(), principal);
                 effectiveQuery = er.primaryQuery();
+                // 最多 = 主改写 + 原始 Query + N 条 expansion；LinkedHashSet 会自动合并相同主/原 Query。
+                int maxQueries = Math.max(1, queryEnhanceProps.getMaxExpansionQueries() + 2);
+                retrievalQueries = er.allQueries().stream().limit(maxQueries).toList();
                 if (!"ok".equals(er.outcome())) {
                     log.info(
                             "retrieve.query_enhance_non_ok outcome={}, fallback_using_original={}, reason={}",
@@ -176,33 +183,49 @@ public class RetrieveService {
             }
         }
 
-        // 1. query → embed(单条), 用 enhance 后的 query
-        EmbeddingResult queryEmbedding = embeddingClient.embed(effectiveQuery);
-
-        // 2. ① + ② 召回(fetchK 条) + 元数据过滤
-        //    P3-1 P0 fix: 跨版本混查 bug 修复
-        //    用户没传 version 但传了 source → 找 source 的 default version fallback,
-        //    避免 javax (Spring Boot 2) vs jakarta (Spring Boot 3) 同 source 混查产生用户信任崩塌。
-        //    调用方没传 source / source 无 default (新 source 未上传 / 全软删) → 不强加 version, 走全库检索。
+        // 1. 解析召回过滤条件。未显式指定版本/文档时，只允许各逻辑文档的 current id，
+        //    避免旧实现按 source 选一个全局默认版本而误伤同 source 下的其他文件。
         String effectiveVersion = cmd.version();
         boolean usedDefaultVersion = false;
-        if (effectiveVersion == null && cmd.source() != null) {
-            Optional<Document> defaultDoc =
-                    documentRepository.findDefaultReadyBySource(cmd.source());
-            if (defaultDoc.isPresent()) {
-                effectiveVersion = defaultDoc.get().version();
-                usedDefaultVersion = effectiveVersion != null;
-                if (usedDefaultVersion) {
-                    log.info(
-                            "retrieve.default_version_fallback source={}, default_version={}",
-                            cmd.source(),
-                            effectiveVersion);
+        if (effectiveVersion == null && cmd.docId() == null) {
+            Optional<java.util.Set<Long>> currentIdsResult =
+                    documentRepository.findCurrentIndexedIds(principal.tenantId(), cmd.source());
+            if (currentIdsResult.isPresent()) {
+                java.util.Set<Long> currentIds = currentIdsResult.get();
+                allowedDocIds =
+                        allowedDocIds == null
+                                ? currentIds
+                                : allowedDocIds.stream()
+                                        .filter(currentIds::contains)
+                                        .collect(java.util.stream.Collectors.toUnmodifiableSet());
+                if (allowedDocIds.isEmpty()) {
+                    metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+                    metrics.recordRetrieveRecall(0);
+                    return RetrieveResult.empty();
                 }
-            } else {
-                log.debug(
-                        "retrieve.no_default_version source={}, fallback skipped (no default READY doc)",
-                        cmd.source());
+            } else if (cmd.source() != null) {
+                // 兼容自定义/旧版 DocumentRepository 适配器：尚不支持 current-id 查询时保留 V7 fallback。
+                Optional<Document> defaultDoc =
+                        documentRepository.findDefaultReadyBySource(cmd.source());
+                if (defaultDoc.isPresent()) {
+                    effectiveVersion = defaultDoc.get().version();
+                    usedDefaultVersion = effectiveVersion != null;
+                }
             }
+        }
+        java.util.Collection<Long> generationCandidates =
+                cmd.docId() == null ? allowedDocIds : java.util.Set.of(cmd.docId());
+        Optional<java.util.Map<Long, Integer>> activeGenerationsResult =
+                documentRepository.findActiveGenerations(
+                        principal.tenantId(),
+                        cmd.source(),
+                        effectiveVersion,
+                        cmd.language(),
+                        generationCandidates);
+        if (activeGenerationsResult.isPresent() && activeGenerationsResult.get().isEmpty()) {
+            metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+            metrics.recordRetrieveRecall(0);
+            return RetrieveResult.empty();
         }
         VectorStore.MetadataFilter filter =
                 new VectorStore.MetadataFilter(
@@ -210,19 +233,60 @@ public class RetrieveService {
                         effectiveVersion,
                         cmd.language(),
                         principal.tenantId(),
-                        allowedDocIds);
+                        allowedDocIds,
+                        activeGenerationsResult.orElse(null));
         // Task 5 起走 Retriever 接口 (DENSE/HYBRID 路由 + RRF 融合), 替代直接 vectorStore.search。
         // mode=null 让 Retriever 走全局 RetrieveProperties 默认 (老行为不变, 兼容向后)。
-        Retriever.Query rq =
-                new Retriever.Query(
-                        queryEmbedding,
-                        effectiveQuery, // Task 6: enhance 后的 query (retrieval 用); 未 enhance 时 ==
-                        // cmd.query()
-                        cmd.docId(),
-                        fetchK,
-                        filter.isEmpty() ? null : filter,
-                        mode);
-        List<ScoredChunk> hits = retriever.search(rq);
+        // 2. 每个 Query 独立 Embedding + 检索，随后做 Query 级 RRF。所有分支复用完全相同的
+        // Tenant/ACL/版本/generation 过滤条件；单个扩展失败不拖垮主链，全部失败才报基础设施错误。
+        List<List<ScoredChunk>> queryRankings = new ArrayList<>();
+        RuntimeException lastRetrievalFailure = null;
+        for (int queryIndex = 0; queryIndex < retrievalQueries.size(); queryIndex++) {
+            String retrievalQuery = retrievalQueries.get(queryIndex);
+            try {
+                EmbeddingResult queryEmbedding = embeddingClient.embed(retrievalQuery);
+                Retriever.Query rq =
+                        new Retriever.Query(
+                                queryEmbedding,
+                                retrievalQuery,
+                                cmd.docId(),
+                                fetchK,
+                                filter.isEmpty() ? null : filter,
+                                mode);
+                queryRankings.add(retriever.search(rq));
+            } catch (RuntimeException e) {
+                lastRetrievalFailure = e;
+                log.warn(
+                        "retrieve.query_branch_failed query_index={}, total_queries={}, primary={}, error={}",
+                        queryIndex,
+                        retrievalQueries.size(),
+                        queryIndex == 0,
+                        e.getMessage());
+            }
+        }
+        if (queryRankings.isEmpty()) {
+            metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+            log.error(
+                    "retrieve.infrastructure_failed query_len={}, fetchK={}, query_count={}, error={}",
+                    cmd.query().length(),
+                    fetchK,
+                    retrievalQueries.size(),
+                    lastRetrievalFailure == null ? "unknown" : lastRetrievalFailure.getMessage());
+            throw new InfraException(
+                    ErrorCode.RAG_RETRIEVAL_FAILED,
+                    "检索基础设施调用失败",
+                    lastRetrievalFailure);
+        }
+        List<ScoredChunk> hits =
+                queryRankings.size() == 1
+                        ? queryRankings.get(0)
+                        : ReciprocalRankFusion.fuse(
+                                queryRankings, queryEnhanceProps.getFusionRrfK(), fetchK);
+        log.info(
+                "retrieve.multi_query_done requested={}, succeeded={}, fused_hits={}",
+                retrievalQueries.size(),
+                queryRankings.size(),
+                hits.size());
         if (hits.isEmpty()) {
             log.info("retrieve.empty query_len={}, fetchK={}", cmd.query().length(), fetchK);
             metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
@@ -239,26 +303,84 @@ public class RetrieveService {
         for (Chunk c : chunkRepository.findByIdIn(hitIds)) {
             chunkMap.put(c.id(), c);
         }
-        // 过滤掉查不到 chunk 元数据的 hit(保序)
-        List<ScoredChunk> validHits =
-                hits.stream().filter(h -> chunkMap.containsKey(h.chunkId())).toList();
+
+        // Milvus 是派生索引，命中后必须用 MySQL SoT 二次确认文档仍处于可检索状态且租户一致。
+        Set<Long> hitDocumentIds =
+                chunkMap.values().stream()
+                        .map(Chunk::documentId)
+                        .collect(java.util.stream.Collectors.toSet());
+        Map<Long, Document> documentMap = new HashMap<>();
+        for (Document d : documentRepository.findByIdIn(hitDocumentIds)) {
+            if (d.id() != null) documentMap.put(d.id().value(), d);
+        }
+
+        // Milvus 是派生索引，不能把它的 ACL/状态过滤结果当作最终授权依据：逐条用 MySQL SoT 二次校验。
+        List<ScoredChunk> validHits = new ArrayList<>(hits.size());
+        int staleHitCount = 0;
+        int securityRejectedHitCount = 0;
+        for (ScoredChunk hit : hits) {
+            Chunk chunk = chunkMap.get(hit.chunkId());
+            Document document = chunk == null ? null : documentMap.get(chunk.documentId());
+            if (chunk == null
+                    || document == null
+                    || document.isDeleted()
+                    || document.status()
+                            != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED
+                    || chunk.generation() != document.activeGeneration()) {
+                staleHitCount++;
+                continue;
+            }
+            boolean tenantAllowed = principal.tenantId().equals(document.tenantId());
+            boolean documentAllowed =
+                    allowedDocIds == null || allowedDocIds.contains(chunk.documentId());
+            if (!tenantAllowed || !documentAllowed) {
+                securityRejectedHitCount++;
+                continue;
+            }
+            validHits.add(hit);
+        }
+        if (staleHitCount > 0) {
+            metrics.recordRetrieveStaleHit(staleHitCount);
+            log.error(
+                    "retrieve.stale_index_hit total_hits={}, stale_hits={}, tenant={}",
+                    hits.size(),
+                    staleHitCount,
+                    principal.tenantId());
+        }
+        if (securityRejectedHitCount > 0) {
+            metrics.recordRetrieveSecurityRejectedHit(securityRejectedHitCount);
+            log.error(
+                    "retrieve.security_rejected_index_hit total_hits={}, rejected_hits={}, tenant={}",
+                    hits.size(),
+                    securityRejectedHitCount,
+                    principal.tenantId());
+        }
+        if (validHits.isEmpty() && staleHitCount > 0) {
+            metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+            throw new InfraException(ErrorCode.RAG_RETRIEVAL_FAILED, "检索索引与元数据不一致，已拒绝使用陈旧结果");
+        }
+        if (validHits.isEmpty()) {
+            metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
+            metrics.recordRetrieveRecall(0);
+            return RetrieveResult.empty();
+        }
 
         // PR-1 / EMS-PR1: initialRetrieval 段证据 (rerank 前, 严格 validHits 序)
         //   - tenantId 来自 Principal (服务端注入, 不接受 caller 传)
         //   - 无 rerankScore; retrievalScore = hybrid/dense 分数
         //   - documentVersion 用本检索上下文解析出的 effectiveVersion (cmd.version 或 default fallback)
         final String tenantId = principal.tenantId();
-        final String docVersionForEvidence = effectiveVersion;
         List<Evidence> initialEvidences =
                 validHits.stream()
                         .map(
                                 h -> {
                                     Chunk c = chunkMap.get(h.chunkId());
+                                    Document d = documentMap.get(c.documentId());
                                     return Evidence.of(
                                             tenantId,
                                             c.documentId(),
                                             c.id(),
-                                            docVersionForEvidence,
+                                            d.version(),
                                             c.content(),
                                             (double) h.score(),
                                             null,
@@ -292,7 +414,8 @@ public class RetrieveService {
                         topN,
                         top1HybridScore);
                 rerankT0 = System.currentTimeMillis();
-                List<ScoredChunk> reranked = rerankClient.rerank(cmd.query(), candidates, topN);
+                // 必须与召回使用同一个 effectiveQuery；否则开启 query rewrite 后会用旧问题精排新候选。
+                List<ScoredChunk> reranked = rerankClient.rerank(effectiveQuery, candidates, topN);
                 metrics.recordRerankLatency(System.currentTimeMillis() - rerankT0, true);
                 if (!reranked.isEmpty()) {
                     finalHits = reranked;
@@ -340,6 +463,7 @@ public class RetrieveService {
                         .map(
                                 h -> {
                                     Chunk c = chunkMap.get(h.chunkId());
+                                    Document d = documentMap.get(c.documentId());
                                     Double rerankScore = rerankApplied ? (double) h.score() : null;
                                     Double retrievalScore =
                                             rerankApplied ? null : (double) h.score();
@@ -347,7 +471,7 @@ public class RetrieveService {
                                             tenantId,
                                             c.documentId(),
                                             c.id(),
-                                            docVersionForEvidence,
+                                            d.version(),
                                             c.content(),
                                             retrievalScore,
                                             rerankScore,
@@ -417,7 +541,7 @@ public class RetrieveService {
                     addFinalContextEvidence(
                             finalContextEvidences,
                             tenantId,
-                            docVersionForEvidence,
+                            documentMap.get(c.documentId()).version(),
                             c,
                             contextChunk,
                             hit,
@@ -437,7 +561,7 @@ public class RetrieveService {
             addFinalContextEvidence(
                     finalContextEvidences,
                     tenantId,
-                    docVersionForEvidence,
+                    documentMap.get(c.documentId()).version(),
                     c,
                     contextChunk,
                     hit,

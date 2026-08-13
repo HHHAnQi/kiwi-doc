@@ -23,8 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 /**
- * {@link RetrieveController} WebMvc IT: 仅起 Spring MVC 切片, mock 掉 RetrieveService 与三个
- * properties bean; 不需要 MySQL/Milvus/Redis/Docker, 可独立跑通。
+ * {@link RetrieveController} WebMvc IT: 仅起 Spring MVC 切片, mock 掉 RetrieveService 与三个 properties
+ * bean; 不需要 MySQL/Milvus/Redis/Docker, 可独立跑通。
  *
  * <p>验证:
  *
@@ -37,11 +37,7 @@ import org.springframework.test.web.servlet.ResultActions;
  */
 @WebMvcTest(controllers = RetrieveController.class, properties = "rag.auth.filter-enabled=false")
 @Import(com.xxx.ragdoc.interfaces.rest.error.GlobalExceptionHandler.class)
-@TestPropertySource(
-        properties = {
-            "llm.model=glm-4-plus-test",
-            "embedding.model=BAAI/bge-m3-test"
-        })
+@TestPropertySource(properties = {"llm.model=glm-4-plus-test", "embedding.model=BAAI/bge-m3-test"})
 class RetrieveControllerWebMvcTest {
 
     @Autowired private MockMvc mockMvc;
@@ -71,8 +67,7 @@ class RetrieveControllerWebMvcTest {
                     mockMvc.perform(
                                     post("/api/v1/retrieve")
                                             .contentType(MediaType.APPLICATION_JSON)
-                                            .content(
-                                                    "{\"query\":\"dubbo 延迟连接\",\"top_k\":5}"))
+                                            .content("{\"query\":\"dubbo 延迟连接\",\"top_k\":5}"))
                             .andExpect(status().isOk());
 
             String json = r.andReturn().getResponse().getContentAsString();

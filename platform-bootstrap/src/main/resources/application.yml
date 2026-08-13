@@ -48,6 +48,28 @@ app:
     dev-token: ${APP_DEV_TOKEN:dev-token-change-me}
     admin-token: ${APP_ADMIN_TOKEN:admin-token-change-me}
 
+rag:
+  agent:
+    lease:
+      ttl-seconds: ${RAG_AGENT_LEASE_TTL_SECONDS:30}
+      heartbeat-seconds: ${RAG_AGENT_LEASE_HEARTBEAT_SECONDS:10}
+    planner:
+      enabled: ${RAG_AGENT_PLANNER_ENABLED:false}
+      model-enabled: ${RAG_AGENT_MODEL_PLANNER_ENABLED:false}
+      planned-pipeline-enabled: ${RAG_AGENT_PLANNED_PIPELINE_ENABLED:false}
+      max-plan-steps: ${RAG_AGENT_MAX_PLAN_STEPS:3}
+      max-replans: ${RAG_AGENT_MAX_REPLANS:1}
+      min-router-confidence: ${RAG_AGENT_MIN_ROUTER_CONFIDENCE:0.80}
+    recovery:
+      enabled: ${RAG_AGENT_RECOVERY_ENABLED:true}
+      stale-seconds: ${RAG_AGENT_RECOVERY_STALE_SECONDS:300}
+      scan-ms: ${RAG_AGENT_RECOVERY_SCAN_MS:60000}
+      batch-size: ${RAG_AGENT_RECOVERY_BATCH_SIZE:100}
+  security-scanner:
+    enabled: ${RAG_SECURITY_SCANNER_ENABLED:true}
+    block-on-malicious: ${RAG_SECURITY_BLOCK_MALICIOUS:true}
+    malicious-threshold: ${RAG_SECURITY_MALICIOUS_THRESHOLD:3}
+
 # 可观测
 management:
   endpoints:

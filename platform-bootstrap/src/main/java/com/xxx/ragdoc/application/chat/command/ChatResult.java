@@ -26,9 +26,8 @@ public record ChatResult(
          */
         EvidenceSnapshot evidenceSnapshot,
         /**
-         * PR-7f.2c-pre: 本次 chat 实际命中的 PipelineType (由 Orchestrator 在出参处附加)。
-         * null = 未填充 (兼容旧 pipeline 直接 new ChatResult 的路径)。
-         * 评测 Runner Adapter 据此判断 PLANNED_AGENT 是否真实生效。
+         * PR-7f.2c-pre: 本次 chat 实际命中的 PipelineType (由 Orchestrator 在出参处附加)。 null = 未填充 (兼容旧
+         * pipeline 直接 new ChatResult 的路径)。 评测 Runner Adapter 据此判断 PLANNED_AGENT 是否真实生效。
          */
         PipelineType pipelineType) {
 
@@ -97,14 +96,19 @@ public record ChatResult(
     }
 
     /**
-     * PR-7f.2c-pre: 在不重写其它字段的前提下, 给一份已有 ChatResult 附加 pipelineType。
-     * Orchestrator 在 pipeline.execute(...) 之后调用此方法, 把 ctx.effectivePipeline() 透传给
-     * Controller / 评测 Runner Adapter。Pipeline 内部构造的 ChatResult 不必感知此字段。
+     * PR-7f.2c-pre: 在不重写其它字段的前提下, 给一份已有 ChatResult 附加 pipelineType。 Orchestrator 在
+     * pipeline.execute(...) 之后调用此方法, 把 ctx.effectivePipeline() 透传给 Controller / 评测 Runner
+     * Adapter。Pipeline 内部构造的 ChatResult 不必感知此字段。
      */
     public ChatResult withPipelineType(PipelineType pipelineType) {
         if (pipelineType == null) return this;
         return new ChatResult(
-                this.answer, this.citations, this.stateHint, this.traceId,
-                this.verification, this.evidenceSnapshot, pipelineType);
+                this.answer,
+                this.citations,
+                this.stateHint,
+                this.traceId,
+                this.verification,
+                this.evidenceSnapshot,
+                pipelineType);
     }
 }

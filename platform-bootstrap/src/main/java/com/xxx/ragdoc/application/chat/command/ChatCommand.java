@@ -9,8 +9,8 @@ package com.xxx.ragdoc.application.chat.command;
  * @param source 可选; 限定来源组件(dubbo/nacos/seata/rocketmq/sentinel), 不传 = 不限
  * @param version 可选; 限定版本
  * @param language 可选; 限定语言(zh/en)
- * @param conversationId 可选 (Phase 1 / PR-2): 多轮对话 ID。null/blank = stateless 老路径。
- *     PR-2 中由 Orchestrator/Classic Pipeline 透传给 ChatService, 不进 Pipeline 业务字段集 (非 docId 类过滤条件)。
+ * @param conversationId 可选 (Phase 1 / PR-2): 多轮对话 ID。null/blank = stateless 老路径。 PR-2 中由
+ *     Orchestrator/Classic Pipeline 透传给 ChatService, 不进 Pipeline 业务字段集 (非 docId 类过滤条件)。
  */
 public record ChatCommand(
         String query,
@@ -44,22 +44,27 @@ public record ChatCommand(
     }
 
     /** PR-1/2 之前 6 字段构造器 (跑老测试 / RetrieveServiceTest mock)。 */
-    public ChatCommand(String query, Long docId, Integer topK, String source, String version, String language) {
+    public ChatCommand(
+            String query,
+            Long docId,
+            Integer topK,
+            String source,
+            String version,
+            String language) {
         this(query, docId, topK, source, version, language, null);
     }
 
     /**
      * Phase 1 / C4 (ADR-0011 §7): 返回 query 被替换, 其他字段保持不变的副本。
      *
-     * <p>用于多轮对话: ChatService 把 userQuery 经 QueryContextualizer 改写成 standalone query 后,
-     * 用本方法构造新 cmd 喂 {@code RetrieveService.retrieve} (retrieve 用 standalone query),
-     * 但 cmd 其他字段 (docId/topK/source/version/language) 全保留。
+     * <p>用于多轮对话: ChatService 把 userQuery 经 QueryContextualizer 改写成 standalone query 后, 用本方法构造新 cmd
+     * 喂 {@code RetrieveService.retrieve} (retrieve 用 standalone query), 但 cmd 其他字段
+     * (docId/topK/source/version/language) 全保留。
      *
-     * <p>注意: 实际原 user query 从 ChatService 入参 cmd.query 或 finalRetrieveQuery 局部变量都拿得到,
-     * 这是 retrieve-dedicated 的副本, 不污染原 cmd (后续 LLM prompt 仍用原 user query)。
+     * <p>注意: 实际原 user query 从 ChatService 入参 cmd.query 或 finalRetrieveQuery 局部变量都拿得到, 这是
+     * retrieve-dedicated 的副本, 不污染原 cmd (后续 LLM prompt 仍用原 user query)。
      */
     public ChatCommand withQuery(String newQuery) {
-        return new ChatCommand(
-                newQuery, docId, topK, source, version, language, conversationId);
+        return new ChatCommand(newQuery, docId, topK, source, version, language, conversationId);
     }
 }

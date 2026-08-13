@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.infrastructure.conversation;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -83,8 +82,7 @@ class QueryContextualizerTest {
         // LLM 直接复读了原 query
         when(routeClient.chat(anyString(), anyList())).thenReturn("那 Hystrix 呢");
 
-        ContextualizeResult r =
-                ctx.contextualize("那 Hystrix 呢", List.of(turn("Sentinel?", "10")));
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Sentinel?", "10")));
 
         assertThat(r.outcome()).isEqualTo("skip");
         // retrieve query 是原 query (rewritten == original 已被 skip)
@@ -96,8 +94,7 @@ class QueryContextualizerTest {
     void LLM含原query子串_也算鹦鹉_skip() throws Exception {
         when(routeClient.chat(anyString(), anyList())).thenReturn("那 Hystrix 呢 详细说说");
 
-        ContextualizeResult r =
-                ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
 
         assertThat(r.outcome()).isEqualTo("skip");
     }
@@ -107,8 +104,7 @@ class QueryContextualizerTest {
         when(routeClient.chat(anyString(), anyList()))
                 .thenThrow(new RuntimeException("DeepSeek connection refused"));
 
-        ContextualizeResult r =
-                ctx.contextualize("那 Hystrix 呢", List.of(turn("Sentinel?", "10")));
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Sentinel?", "10")));
 
         assertThat(r.outcome()).isEqualTo("failed");
         assertThat(r.retrieveQuery()).isEqualTo("那 Hystrix 呢"); // fallback 原 query
@@ -117,11 +113,9 @@ class QueryContextualizerTest {
 
     @Test
     void LLM返回带引号空格_应trim() throws Exception {
-        when(routeClient.chat(anyString(), anyList()))
-                .thenReturn("  \"Hystrix 默认阈值\"  ");
+        when(routeClient.chat(anyString(), anyList())).thenReturn("  \"Hystrix 默认阈值\"  ");
 
-        ContextualizeResult r =
-                ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
 
         assertThat(r.outcome()).isEqualTo("ok");
         assertThat(r.retrieveQuery()).isEqualTo("Hystrix 默认阈值");
@@ -142,11 +136,9 @@ class QueryContextualizerTest {
     @Test
     void 大写空格不影响鹦鹉检测() throws Exception {
         // 这种情况 rewrite 直接尾随, 应该 skip
-        when(routeClient.chat(anyString(), anyList()))
-                .thenReturn("那 hystrix 呢");
+        when(routeClient.chat(anyString(), anyList())).thenReturn("那 hystrix 呢");
 
-        ContextualizeResult r =
-                ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
 
         // 空格 + 大小写已 normalized, 检测得到
         assertThat(r.outcome()).isEqualTo("skip");

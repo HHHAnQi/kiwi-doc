@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 /**
  * 多轮对话 prompt 拼装, ADR-0011 §7 + §8.4。
  *
- * <p>设计选择: <b>不改 {@code ChatClient#chat(query, context)} 签名</b>, 而是把 history+summary
- * 压成一个 "history block" 字符串, 作为 retrieved context 列表的<b>第一条</b> entry 喂给 LLM。
- * LLM 把它当成 context 的一部分读, 主 GLM-4-plus 完全不感知多轮。这种最小侵入策略让:
+ * <p>设计选择: <b>不改 {@code ChatClient#chat(query, context)} 签名</b>, 而是把 history+summary 压成一个 "history
+ * block" 字符串, 作为 retrieved context 列表的<b>第一条</b> entry 喂给 LLM。 LLM 把它当成 context 的一部分读, 主 GLM-4-plus
+ * 完全不感知多轮。这种最小侵入策略让:
  *
  * <ul>
  *   <li>{@code OpenAiCompatibleLlmClient} 不动一行代码 (A/B baseline 零回归风险)
@@ -34,17 +34,14 @@ import org.springframework.stereotype.Component;
  *
  * <h3>硬 cut 兜底 (ADR-0011 §8.4)</h3>
  *
- * 极端情况: 压缩失败 + 用户连发 20 turn → buffer 不归档 → history block 超 token budget。
- * 本类直接截断为 max 5 turn (从老的砍) + 上调 {@link RagdocMetrics#incrementHistoryForceTruncate}。
+ * 极端情况: 压缩失败 + 用户连发 20 turn → buffer 不归档 → history block 超 token budget。 本类直接截断为 max 5 turn (从老的砍)
+ * + 上调 {@link RagdocMetrics#incrementHistoryForceTruncate}。
  *
  * @author Phase 1 / C4 (ADR-0011)
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        prefix = "rag.conversation",
-        name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.conversation", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class PromptAssembler implements PromptAssemblerPort {
 
@@ -89,7 +86,9 @@ public class PromptAssembler implements PromptAssemblerPort {
             sb.append("[最近对话]\n");
             for (Turn t : turns) {
                 sb.append("Q: ").append(t.userQuery()).append("\n");
-                sb.append("A: ").append(truncate(t.botAnswer(), ANSWER_TRUNCATE_CHARS)).append("\n");
+                sb.append("A: ")
+                        .append(truncate(t.botAnswer(), ANSWER_TRUNCATE_CHARS))
+                        .append("\n");
             }
         }
 

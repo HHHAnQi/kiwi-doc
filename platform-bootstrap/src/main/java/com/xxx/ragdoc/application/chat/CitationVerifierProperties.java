@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 /**
  * Task 7: Citation Verification 配置 (NLI-based, 走 fallback LLM)。
  *
- * <p>沿用 {@link RerankProperties} / {@code QueryEnhanceProperties} 模式 (enabled 主开关 +
- * 子配置)。默认全部关闭, 改 {@code RAG_CITATION_VERIFIER_ENABLED=true} 开启。
+ * <p>沿用 {@link RerankProperties} / {@code QueryEnhanceProperties} 模式 (enabled 主开关 + 子配置)。默认全部关闭, 改
+ * {@code RAG_CITATION_VERIFIER_ENABLED=true} 开启。
  *
  * <p>行为选型 (任务文档: 重新生成 / 拒答):
  *

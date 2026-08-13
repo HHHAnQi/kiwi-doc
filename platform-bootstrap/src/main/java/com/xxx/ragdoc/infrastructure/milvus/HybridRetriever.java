@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
  *
  * <p>组合 {@link DenseRetriever} + {@link SparseRetriever} + {@link RRFFusioner}.
  *
- * <p>与 {@link MilvusVectorStore#searchHybrid} 的关系: searchHybrid 把 dense+sparse 一起送 SDK
- * RRFRanker (单次 RPC); HybridRetriever 是 application 层手工融合 (两次 RPC + 本地 RRF 公式),
- * 让 Task 5 AB 实验能独立 manifest dense vs sparse 候选, observe recall.
+ * <p>与 {@link MilvusVectorStore#searchHybrid} 的关系: searchHybrid 把 dense+sparse 一起送 SDK RRFRanker
+ * (单次 RPC); HybridRetriever 是 application 层手工融合 (两次 RPC + 本地 RRF 公式), 让 Task 5 AB 实验能独立 manifest
+ * dense vs sparse 候选, observe recall.
  *
  * <p>用法: mode=HYBRID 走本类; mode=DENSE 走 {@link DenseRetriever} 直接 (单路无融合)。
  */

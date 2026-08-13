@@ -43,16 +43,15 @@ public class ChatMessages {
     // 见 eval/PHASE2A_REPORT.md + eval/EVAL_BASELINE_CERT.md。
 
     /**
-     * Phase 2.A Upgrade A1: 放宽 prompt 第5条 "完全无关就答无" 判定。
-     * OFF=baseline 行为(严格拒答, faithfulness 数字更稳); ON=放宽判定让 code-only / 弱相关 ctx
-     * 也能引出答案(refusal_rate -2.5~6pp, 但 RAGAS context_recall 长度耦合 -24pp)。
+     * Phase 2.A Upgrade A1: 放宽 prompt 第5条 "完全无关就答无" 判定。 OFF=baseline 行为(严格拒答, faithfulness 数字更稳);
+     * ON=放宽判定让 code-only / 弱相关 ctx 也能引出答案(refusal_rate -2.5~6pp, 但 RAGAS context_recall 长度耦合
+     * -24pp)。
      */
     private boolean promptRelaxRefusal = false;
 
     /**
-     * Phase 2.A Upgrade A2: Lost-in-the-Middle context 重排 (Liu et al. 2023)。
-     * OFF=按 score 自然顺序喂 LLM; ON=最高分放 context 头, 次高分放尾, 其余交替中段。
-     * 单独贡献未验证(Phase 2.A 与 A1 同跑), 待 Phase 2.B 单独 A/B。
+     * Phase 2.A Upgrade A2: Lost-in-the-Middle context 重排 (Liu et al. 2023)。 OFF=按 score 自然顺序喂 LLM;
+     * ON=最高分放 context 头, 次高分放尾, 其余交替中段。 单独贡献未验证(Phase 2.A 与 A1 同跑), 待 Phase 2.B 单独 A/B。
      */
     private boolean litmReorder = false;
 
@@ -63,14 +62,14 @@ public class ChatMessages {
     // flag 默认 OFF; eval 跑留一 ≮ baseline 才开。
 
     /**
-     * Phase 2.B / P2-2: V2 prompt 启用 flag。优先级: promptV2 > promptRelaxRefusal > baseline。
-     * V2 启用时 promptRelaxRefusal 不生效 (V2 ≠ relaxed, 是更严格而非更宽松)。
+     * Phase 2.B / P2-2: V2 prompt 启用 flag。优先级: promptV2 > promptRelaxRefusal > baseline。 V2 启用时
+     * promptRelaxRefusal 不生效 (V2 ≠ relaxed, 是更严格而非更宽松)。
      */
     private boolean promptV2 = false;
 
     /**
-     * Phase 2.B / P2-2: V2 是否强制要求 LLM 在每个事实后面标 citation [n]。
-     * ON=任何非通用陈述都要有 [n]; OFF=只关键事实。default ON, 可经此 flag 关闭做 A/B。
+     * Phase 2.B / P2-2: V2 是否强制要求 LLM 在每个事实后面标 citation [n]。 ON=任何非通用陈述都要有 [n]; OFF=只关键事实。default
+     * ON, 可经此 flag 关闭做 A/B。
      */
     private boolean promptV2Citation = true;
 }

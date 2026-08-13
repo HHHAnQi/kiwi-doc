@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
- * Task 5: {@link RetrieveExperimentController} 单元测试 — 不用 MockMvc (filter chain 走 ThreadLocal
- * 跨线程, 单测不模拟), 直接调 controller 方法。AuthContext 用 ReflectionTestUtils 模拟。
+ * Task 5: {@link RetrieveExperimentController} 单元测试 — 不用 MockMvc (filter chain 走 ThreadLocal 跨线程,
+ * 单测不模拟), 直接调 controller 方法。AuthContext 用 ReflectionTestUtils 模拟。
  */
 @DisplayName("Task 5 RetrieveExperimentController")
 class RetrieveExperimentControllerUnitTest {
@@ -68,7 +68,8 @@ class RetrieveExperimentControllerUnitTest {
                     new com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest(
                             "test query", null, 5, null, null, null, "hybrid");
             when(retrieveService.retrieve(any(), any(), any()))
-                    .thenReturn(new RetrieveService.RetrieveResult(List.of(), "not_enabled", 0f, 0f));
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(List.of(), "not_enabled", 0f, 0f));
 
             controller.experiment(req);
 
@@ -83,7 +84,8 @@ class RetrieveExperimentControllerUnitTest {
                     new com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest(
                             "test query", null, 5, null, null, null, "dense");
             when(retrieveService.retrieve(any(), any(), any()))
-                    .thenReturn(new RetrieveService.RetrieveResult(List.of(), "not_enabled", 0f, 0f));
+                    .thenReturn(
+                            new RetrieveService.RetrieveResult(List.of(), "not_enabled", 0f, 0f));
 
             controller.experiment(req);
 
@@ -98,8 +100,7 @@ class RetrieveExperimentControllerUnitTest {
                     new com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest(
                             "test query", null, 5, null, null, null, "hybrid");
 
-            assertThatThrownBy(() -> controller.experiment(req))
-                    .isInstanceOf(BaseException.class);
+            assertThatThrownBy(() -> controller.experiment(req)).isInstanceOf(BaseException.class);
             verifyNoInteractions(retrieveService);
         }
     }
@@ -130,8 +131,7 @@ class RetrieveExperimentControllerUnitTest {
                     new com.xxx.ragdoc.interfaces.rest.dto.RetrieveRequest(
                             "test query", null, 5, null, null, null, "banana");
 
-            assertThatThrownBy(() -> controller.experiment(req))
-                    .isInstanceOf(BaseException.class);
+            assertThatThrownBy(() -> controller.experiment(req)).isInstanceOf(BaseException.class);
             verifyNoInteractions(retrieveService);
         }
     }

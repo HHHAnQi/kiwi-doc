@@ -3,8 +3,6 @@ package com.xxx.ragdoc.infrastructure.llm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.xxx.ragdoc.application.chat.ChatMessages;
-import com.xxx.ragdoc.infrastructure.llm.LlmProperties;
-import com.xxx.ragdoc.infrastructure.llm.LlmRouteProperties;
 import com.xxx.ragdoc.infrastructure.llm.LlmRouteProperties.Route;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +11,7 @@ import org.junit.jupiter.api.Test;
  * Phase 2.B / P2-2: V2 prompt 选择优先级单测。
  *
  * <p>不进 LLM HTTP 调用, 仅断言:
+ *
  * <ul>
  *   <li>V2 flag ON → buildSystemPrompt 走 V2 分支 (含 V2 特征词)
  *   <li>V2 OFF + relaxed ON → 走 relaxed 分支
@@ -124,7 +123,8 @@ class OpenAiCompatibleLlmClientPromptV2Test {
         assertThat(prompt).contains("片段与问题完全无关时");
     }
 
-    private static String invokeBuildSystemPrompt(OpenAiCompatibleLlmClient client) throws Exception {
+    private static String invokeBuildSystemPrompt(OpenAiCompatibleLlmClient client)
+            throws Exception {
         var m = OpenAiCompatibleLlmClient.class.getDeclaredMethod("buildSystemPrompt");
         m.setAccessible(true);
         return (String) m.invoke(client);

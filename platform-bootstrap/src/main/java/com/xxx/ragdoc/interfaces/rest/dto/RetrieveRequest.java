@@ -10,9 +10,9 @@ import jakarta.validation.constraints.Size;
 /**
  * 检索评测用的直接召回请求 DTO。
  *
- * <p>与 {@link ChatRequest} 同字段(无 conversation_id), 但不接入 LLM。仅给 Retrieval Evaluation
- * Framework 调用 — 让离线评测直接拿到 RetrieveService 原始 {@code score} 算 MRR/NDCG, 而无需付费/等待
- * LLM, 也避免 {@code ChatResult.Citation} 把 score 丢弃后只能用 rank 近似。
+ * <p>与 {@link ChatRequest} 同字段(无 conversation_id), 但不接入 LLM。仅给 Retrieval Evaluation Framework 调用 —
+ * 让离线评测直接拿到 RetrieveService 原始 {@code score} 算 MRR/NDCG, 而无需付费/等待 LLM, 也避免 {@code
+ * ChatResult.Citation} 把 score 丢弃后只能用 rank 近似。
  *
  * <p>Task 5 (V11 Hybrid Retrieval): 增加 {@code mode} 字段做 per-request override。
  *
@@ -58,14 +58,25 @@ public record RetrieveRequest(
     }
 
     /** Task 5: 全 6 字段但不带 mode override, 兼容老 caller。 */
-    public RetrieveRequest(String query, Long docId, Integer topK, String source, String version, String language) {
+    public RetrieveRequest(
+            String query,
+            Long docId,
+            Integer topK,
+            String source,
+            String version,
+            String language) {
         this(query, docId, topK, source, version, language, null, null);
     }
 
     /** Task 5: 7 字段(含 mode, 不含 enhance), 兼容 AB 实验老调用方。 */
     public RetrieveRequest(
-            String query, Long docId, Integer topK, String source, String version, String language, String mode) {
+            String query,
+            Long docId,
+            Integer topK,
+            String source,
+            String version,
+            String language,
+            String mode) {
         this(query, docId, topK, source, version, language, mode, null);
     }
 }
-

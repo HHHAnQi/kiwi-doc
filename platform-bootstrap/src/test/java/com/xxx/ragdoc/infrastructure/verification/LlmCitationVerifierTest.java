@@ -32,7 +32,9 @@ class LlmCitationVerifierTest {
         judgeClient = mock(OpenAiCompatibleLlmClient.class);
         router = mock(LlmRouter.class);
         when(router.getRouteClient("fallback")).thenReturn(judgeClient);
-        verifier = new LlmCitationVerifier(router, CircuitBreakerRegistry.ofDefaults(), mock(RagdocMetrics.class));
+        verifier =
+                new LlmCitationVerifier(
+                        router, CircuitBreakerRegistry.ofDefaults(), mock(RagdocMetrics.class));
     }
 
     @Test
@@ -47,7 +49,8 @@ class LlmCitationVerifierTest {
         VerificationResult r =
                 verifier.verify(
                         "Dubbo 用 dubbo.protocol.port 配置端口",
-                        List.of(new Evidence(1L, "Dubbo uses dubbo.protocol.port for the port."),
+                        List.of(
+                                new Evidence(1L, "Dubbo uses dubbo.protocol.port for the port."),
                                 new Evidence(2L, "Default port 20880.")));
         assertThat(r.outcome()).isEqualTo(VerificationResult.Outcome.PASS);
         assertThat(r.overallScore()).isCloseTo(0.8, within(0.001));
@@ -95,8 +98,7 @@ class LlmCitationVerifierTest {
         when(judgeClient.chat(anyString(), anyList()))
                 .thenReturn(
                         "```json\n{\"verdicts\":[{\"chunk_id\":1,\"verdict\":\"entailment\",\"score\":0.9}]}\n```");
-        VerificationResult r =
-                verifier.verify("ans", List.of(new Evidence(1L, "ev1")));
+        VerificationResult r = verifier.verify("ans", List.of(new Evidence(1L, "ev1")));
         assertThat(r.outcome()).isEqualTo(VerificationResult.Outcome.PASS);
     }
 
@@ -104,8 +106,7 @@ class LlmCitationVerifierTest {
     @DisplayName("LLM 返非法 JSON (无 verdicts key) → ERROR")
     void invalidJsonReturnsError() throws Exception {
         when(judgeClient.chat(anyString(), anyList())).thenReturn("I cannot help with that.");
-        VerificationResult r =
-                verifier.verify("ans", List.of(new Evidence(1L, "ev1")));
+        VerificationResult r = verifier.verify("ans", List.of(new Evidence(1L, "ev1")));
         assertThat(r.outcome()).isEqualTo(VerificationResult.Outcome.ERROR);
         assertThat(r.errorMessage()).contains("parse_failed");
     }
@@ -113,10 +114,8 @@ class LlmCitationVerifierTest {
     @Test
     @DisplayName("LLM 抛异常 → ERROR, 不挂主流程")
     void llmExceptionReturnsError() throws Exception {
-        when(judgeClient.chat(anyString(), anyList()))
-                .thenThrow(new RuntimeException("LLM 503"));
-        VerificationResult r =
-                verifier.verify("ans", List.of(new Evidence(1L, "ev1")));
+        when(judgeClient.chat(anyString(), anyList())).thenThrow(new RuntimeException("LLM 503"));
+        VerificationResult r = verifier.verify("ans", List.of(new Evidence(1L, "ev1")));
         assertThat(r.outcome()).isEqualTo(VerificationResult.Outcome.ERROR);
         assertThat(r.errorMessage()).contains("LLM 503");
     }
@@ -145,8 +144,7 @@ class LlmCitationVerifierTest {
         when(judgeClient.chat(anyString(), anyList()))
                 .thenReturn(
                         "{\"verdicts\":[{\"chunk_id\":1,\"verdict\":\"entailment\",\"score\":1.5}]}");
-        VerificationResult r =
-                verifier.verify("ans", List.of(new Evidence(1L, "ev")));
+        VerificationResult r = verifier.verify("ans", List.of(new Evidence(1L, "ev")));
         assertThat(r.citationScores().get(0).score()).isEqualTo(1.0);
     }
 

@@ -9,9 +9,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>切换 LLM: 改 base-url + model + api-key 三项即可, 代码不动。
  *
- * <p>Phase 1.B (2026-08-03): 加 maxTokens / temperature 字段(之前 DashScopeChatClient
- * 写死 temperature=0.3)。这两个字段在多 route / fallback 切换时不一定一样, 让 yml 控制。
- * rag.llm.routes[i].* 可独立覆盖。
+ * <p>Phase 1.B (2026-08-03): 加 maxTokens / temperature 字段(之前 DashScopeChatClient 写死
+ * temperature=0.3)。这两个字段在多 route / fallback 切换时不一定一样, 让 yml 控制。 rag.llm.routes[i].* 可独立覆盖。
  */
 @Data
 @Component

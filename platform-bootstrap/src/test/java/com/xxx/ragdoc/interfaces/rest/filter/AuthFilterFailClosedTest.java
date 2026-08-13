@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.interfaces.rest.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.xxx.ragdoc.application.auth.AuthContext;
@@ -210,7 +209,8 @@ class AuthFilterFailClosedTest {
             when(repo.findByToken("tokB")).thenReturn(Optional.of(b));
 
             java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(2);
-            java.util.List<String> errors = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+            java.util.List<String> errors =
+                    java.util.Collections.synchronizedList(new java.util.ArrayList<>());
 
             Runnable ra =
                     () -> {
@@ -219,7 +219,8 @@ class AuthFilterFailClosedTest {
                             FilterChain c = mock(FilterChain.class);
                             doAnswer(
                                             inv -> {
-                                                String userId = AuthContext.currentPrincipal().userId();
+                                                String userId =
+                                                        AuthContext.currentPrincipal().userId();
                                                 if (!"userA".equals(userId)) {
                                                     errors.add("threadA saw " + userId);
                                                 }
@@ -241,7 +242,8 @@ class AuthFilterFailClosedTest {
                             FilterChain c = mock(FilterChain.class);
                             doAnswer(
                                             inv -> {
-                                                String userId = AuthContext.currentPrincipal().userId();
+                                                String userId =
+                                                        AuthContext.currentPrincipal().userId();
                                                 if (!"userB".equals(userId)) {
                                                     errors.add("threadB saw " + userId);
                                                 }

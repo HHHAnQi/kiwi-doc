@@ -3,8 +3,8 @@ package com.xxx.ragdoc.application.chat.conversation.port;
 /**
  * HistoryCompressor 端口 (ADR-0011 §6.5 / Phase 1 / C6)。
  *
- * <p>异步触发: Tier S RollingSummary — 把 ConversationContext 中 near-window (3 轮)
- * 之外的 turns 摘要压成一条 {@code summaryTurn}, 释放 context 长度。
+ * <p>异步触发: Tier S RollingSummary — 把 ConversationContext 中 near-window (3 轮) 之外的 turns 摘要压成一条
+ * {@code summaryTurn}, 释放 context 长度。
  *
  * <p>实现侧约定:
  *

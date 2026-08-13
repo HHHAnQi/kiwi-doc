@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.infrastructure.llm;
 
 import com.xxx.ragdoc.application.chat.port.ChatClient;
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
@@ -17,19 +16,20 @@ import reactor.core.publisher.Flux;
  * Phase 1.B (2026-08-03): ChatClient 的 @Primary 实现 — 多路由 + 自动 fallback + CircuitBreaker。
  *
  * <p>工作流程:
+ *
  * <ol>
- *   <li>启动期从 {@link LlmRouteProperties} 解析 routes, 按 primary/fallback role 名找两个 Route
- *       分别 new {@link OpenAiCompatibleLlmClient}(不绑死 baseUrl）。DashScopeChatClient 保留兼容性
- *       但不再被 ChatService 直注(因为 LlmRouter @Primary 优先)。
- *   <li>{@link #chat} 调用: 直接走 primary, 异常 → fallback 接管。两档都熔断 → throw
- *       CallNotPermittedException (ChatService catch 后走 StateHint.LLM_DEGRADED 兜底, 与 baseline 行为一致)。
+ *   <li>启动期从 {@link LlmRouteProperties} 解析 routes, 按 primary/fallback role 名找两个 Route 分别 new {@link
+ *       OpenAiCompatibleLlmClient}(不绑死 baseUrl）。DashScopeChatClient 保留兼容性 但不再被 ChatService 直注(因为
+ *       LlmRouter @Primary 优先)。
+ *   <li>{@link #chat} 调用: 直接走 primary, 异常 → fallback 接管。两档都熔断 → throw CallNotPermittedException
+ *       (ChatService catch 后走 StateHint.LLM_DEGRADED 兜底, 与 baseline 行为一致)。
  *   <li>{@link #chatStream} 同理, 用 {@link CircuitBreakerOperator} 装饰 Flux。
  * </ol>
  *
  * <p>CircuitBreaker 配置在 application.yml 挂到 instance name=llm-primary / llm-fallback。
  *
- * <p>backward compat: 当 routes 为空 (老 .env 配置只有 LLM_BASE_URL/LLM_API_KEY/LLM_MODEL) 时,
- * 自动从 {@link LlmProperties} 兜底构造 1 个 primary route, fallback 缺省则不做 fallback。
+ * <p>backward compat: 当 routes 为空 (老 .env 配置只有 LLM_BASE_URL/LLM_API_KEY/LLM_MODEL) 时, 自动从 {@link
+ * LlmProperties} 兜底构造 1 个 primary route, fallback 缺省则不做 fallback。
  */
 @Slf4j
 @Primary
@@ -58,7 +58,8 @@ public class LlmRouter implements ChatClient {
             log.info("llm.router.primary from LlmProperties (model={})", primaryRoute.getModel());
         }
 
-        LlmRouteProperties.Route fallbackRoute = routeProps.findByRole(routeProps.getFallbackRole());
+        LlmRouteProperties.Route fallbackRoute =
+                routeProps.findByRole(routeProps.getFallbackRole());
         // 配置 sanity: fallback 仅当 baseUrl + apiKey 都非空才启用,
         // 否则视为 "fallback 未配置"(高度 backward compat — 老 .env 不配 LLM_FALLBACK_* 时自动降级到无 fallback)。
         if (fallbackRoute != null
@@ -69,17 +70,24 @@ public class LlmRouter implements ChatClient {
 
         this.primary = new OpenAiCompatibleLlmClient(primaryRoute, llmProps, chatMessages);
         this.primaryCb = cbRegistry.circuitBreaker("llm-primary");
-        log.info("llm.router.primary initialized: route={}, model={}, cb-state={}",
-                primary.getRouteName(), primary.getModel(), primaryCb.getState());
+        log.info(
+                "llm.router.primary initialized: route={}, model={}, cb-state={}",
+                primary.getRouteName(),
+                primary.getModel(),
+                primaryCb.getState());
 
         if (fallbackRoute != null) {
             this.fallback = new OpenAiCompatibleLlmClient(fallbackRoute, llmProps, chatMessages);
             this.fallbackCb = cbRegistry.circuitBreaker("llm-fallback");
-            log.info("llm.router.fallback initialized: route={}, model={}, cb-state={}",
-                    fallback.getRouteName(), fallback.getModel(), fallbackCb.getState());
+            log.info(
+                    "llm.router.fallback initialized: route={}, model={}, cb-state={}",
+                    fallback.getRouteName(),
+                    fallback.getModel(),
+                    fallbackCb.getState());
         } else {
-            log.warn("llm.router.no_fallback — primary 失败时直接抛"
-                    + " (Phase 1.B 推荐 .env 配 LLM_FALLBACK_API_KEY/BASE_URL/MODEL 启用 fallback)");
+            log.warn(
+                    "llm.router.no_fallback — primary 失败时直接抛"
+                            + " (Phase 1.B 推荐 .env 配 LLM_FALLBACK_API_KEY/BASE_URL/MODEL 启用 fallback)");
         }
     }
 
@@ -109,7 +117,9 @@ public class LlmRouter implements ChatClient {
         if ("fallback".equalsIgnoreCase(role)) return fallback != null ? fallback : primary;
         // 模糊匹配 role 名: 优先按 routes 配的 name 字段
         LlmRouteProperties.Route matched = routeProps.findByRole(role);
-        if (matched != null && fallback != null && matched.getName().equals(fallback.getRouteName())) {
+        if (matched != null
+                && fallback != null
+                && matched.getName().equals(fallback.getRouteName())) {
             return fallback;
         }
         return primary;
@@ -121,13 +131,14 @@ public class LlmRouter implements ChatClient {
     }
 
     /**
-     * Phase 3 / P3-5: 上一次 chat 路由到的客户端 (primary / fallback null=未跑过)。 volatile 弱一致;
-     * ChatService 在 chat() 返回后立即取 lastUsage → 这里也立即返最近一次的客户端 usage。
+     * Phase 3 / P3-5: 上一次 chat 路由到的客户端 (primary / fallback null=未跑过)。 volatile 弱一致; ChatService 在
+     * chat() 返回后立即取 lastUsage → 这里也立即返最近一次的客户端 usage。
      */
     private volatile OpenAiCompatibleLlmClient lastUsedClient;
 
     @Override
-    public java.util.Optional<com.xxx.ragdoc.application.chat.port.ChatClient.TokenUsage> lastUsage() {
+    public java.util.Optional<com.xxx.ragdoc.application.chat.port.ChatClient.TokenUsage>
+            lastUsage() {
         OpenAiCompatibleLlmClient c = lastUsedClient;
         return c == null ? java.util.Optional.empty() : c.lastUsage();
     }
@@ -141,28 +152,30 @@ public class LlmRouter implements ChatClient {
     @Override
     public String chat(String query, List<String> context) throws Exception {
         try {
-                    return primaryCb.executeSupplier(() -> {
-                try {
-                    lastUsedClient = primary;
-                    return primary.chat(query, context);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            return primaryCb.executeSupplier(
+                    () -> {
+                        try {
+                            lastUsedClient = primary;
+                            return primary.chat(query, context);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
         } catch (Exception primaryErr) {
             if (!isFallbackConfigured()) {
                 log.warn("llm.router.primary_failed_no_fallback query_len={}", query.length());
                 throw primaryErr;
             }
             log.warn("llm.router.primary_failed_to_fallback reason={}", rootCause(primaryErr));
-            return fallbackCb.executeSupplier(() -> {
-                try {
-                    lastUsedClient = fallback;
-                    return fallback.chat(query, context);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            return fallbackCb.executeSupplier(
+                    () -> {
+                        try {
+                            lastUsedClient = fallback;
+                            return fallback.chat(query, context);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
         }
     }
 
@@ -170,15 +183,20 @@ public class LlmRouter implements ChatClient {
     public Flux<String> chatStream(String query, List<String> context) {
         return primary.chatStream(query, context)
                 .transformDeferred(CircuitBreakerOperator.of(primaryCb))
-                .onErrorResume(e -> {
-                    if (!isFallbackConfigured()) {
-                        log.warn("llm.router.stream_primary_failed_no_fallback query_len={}", query.length());
-                        return Flux.error(e);
-                    }
-                    log.warn("llm.router.stream_primary_failed_to_fallback reason={}", rootCause(e));
-                    return fallback.chatStream(query, context)
-                            .transformDeferred(CircuitBreakerOperator.of(fallbackCb));
-                });
+                .onErrorResume(
+                        e -> {
+                            if (!isFallbackConfigured()) {
+                                log.warn(
+                                        "llm.router.stream_primary_failed_no_fallback query_len={}",
+                                        query.length());
+                                return Flux.error(e);
+                            }
+                            log.warn(
+                                    "llm.router.stream_primary_failed_to_fallback reason={}",
+                                    rootCause(e));
+                            return fallback.chatStream(query, context)
+                                    .transformDeferred(CircuitBreakerOperator.of(fallbackCb));
+                        });
     }
 
     private static boolean isBlank(String s) {

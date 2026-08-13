@@ -16,7 +16,8 @@ import com.xxx.ragdoc.domain.auth.Principal;
  *       </ul>
  *   <li><b>Expansion</b>: 复杂问题拆多元查询 (multiview retrieval)
  *       <ul>
- *         <li>"Dubbo 服务级别的超时配置项有哪些?" → [主, "Dubbo provider timeout", "Dubbo consumer timeout", "Dubbo 方法级 timeout"]
+ *         <li>"Dubbo 服务级别的超时配置项有哪些?" → [主, "Dubbo provider timeout", "Dubbo consumer timeout",
+ *             "Dubbo 方法级 timeout"]
  *       </ul>
  * </ul>
  *
@@ -35,8 +36,8 @@ import com.xxx.ragdoc.domain.auth.Principal;
  *   <li>parrot-echo (rewrite == original) → {@link EnhanceResult#skipped}, 避免无意义循环
  * </ul>
  *
- * <p>Port 放 platform-common 是为让 ChatService / RetrieveService (application 层) 依赖接口而非
- * infra, 维持 ArchUnit "application 不依赖 infrastructure" 纪律。
+ * <p>Port 放 platform-common 是为让 ChatService / RetrieveService (application 层) 依赖接口而非 infra, 维持
+ * ArchUnit "application 不依赖 infrastructure" 纪律。
  */
 public interface QueryProcessorPort {
 

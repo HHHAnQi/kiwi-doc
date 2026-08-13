@@ -1,6 +1,7 @@
 package com.xxx.ragdoc.infrastructure.milvus;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -31,10 +32,10 @@ class HybridRetrieverTest {
         HybridRetriever hr = new HybridRetriever(dense, sparse, rrf, props);
 
         EmbeddingResult emb = new EmbeddingResult(new float[16], null);
-        when(dense.search(eq(emb), any(), anyInt())).thenReturn(
-                List.of(new ScoredChunk(1L, 0.9f), new ScoredChunk(2L, 0.8f)));
-        when(sparse.search(anyString(), any(), anyInt())).thenReturn(
-                List.of(new ScoredChunk(2L, 5.0f)));
+        when(dense.search(eq(emb), any(), anyInt()))
+                .thenReturn(List.of(new ScoredChunk(1L, 0.9f), new ScoredChunk(2L, 0.8f)));
+        when(sparse.search(anyString(), any(), anyInt()))
+                .thenReturn(List.of(new ScoredChunk(2L, 5.0f)));
 
         List<ScoredChunk> out = hr.search(emb, "query", "doc_id == 1", 5);
 
@@ -59,8 +60,8 @@ class HybridRetrieverTest {
         // mode=HYBRID per-request override
         Retriever.Query hybridQ =
                 new Retriever.Query(emb, "q1", null, 5, null, Retriever.Mode.HYBRID);
-        when(hybrid.search(any(), anyString(), any(), anyInt())).thenReturn(
-                List.of(new ScoredChunk(99L, 0.5f)));
+        when(hybrid.search(any(), anyString(), any(), anyInt()))
+                .thenReturn(List.of(new ScoredChunk(99L, 0.5f)));
         r.search(hybridQ);
         verify(hybrid).search(any(), anyString(), any(), eq(5));
         verifyNoInteractions(dense);
@@ -94,20 +95,19 @@ class HybridRetrieverTest {
     }
 
     @Test
-    @DisplayName("MilvusRetriever: 底层抛异常 → 返空列表不传播 (chat 主流程不被破坏)")
-    void milvusRetrieverReturnsEmptyOnFailure() {
+    @DisplayName("MilvusRetriever: 底层抛异常必须传播，不能伪装成零召回")
+    void milvusRetrieverPropagatesFailure() {
         DenseRetriever dense = mock(DenseRetriever.class);
         HybridRetriever hybrid = mock(HybridRetriever.class);
         RetrieveProperties props = new RetrieveProperties();
         MilvusRetriever r = new MilvusRetriever(dense, hybrid, props);
 
         EmbeddingResult emb = new EmbeddingResult(new float[16], null);
-        Retriever.Query q =
-                new Retriever.Query(emb, "q", null, 5, null, Retriever.Mode.DENSE);
+        Retriever.Query q = new Retriever.Query(emb, "q", null, 5, null, Retriever.Mode.DENSE);
         when(dense.search(any(), any(), anyInt())).thenThrow(new RuntimeException("Milvus down"));
 
-        List<ScoredChunk> out = r.search(q);
-
-        assertThat(out).isEmpty();
+        assertThatThrownBy(() -> r.search(q))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Milvus down");
     }
 }

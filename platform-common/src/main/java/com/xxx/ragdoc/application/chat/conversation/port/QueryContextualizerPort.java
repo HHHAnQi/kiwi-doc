@@ -20,8 +20,8 @@ import java.util.List;
  *   <li>history 空直接跳过 LLM; 同步路径
  * </ul>
  *
- * <p>本 port 把 application.ChatService 与 infrastructure.QueryContextualizer 解耦,
- * 让 ArchUnit "application 不依赖 infrastructure" 规则不破。
+ * <p>本 port 把 application.ChatService 与 infrastructure.QueryContextualizer 解耦, 让 ArchUnit
+ * "application 不依赖 infrastructure" 规则不破。
  */
 public interface QueryContextualizerPort {
 

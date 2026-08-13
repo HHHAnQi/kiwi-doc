@@ -32,6 +32,7 @@ milvus:
   host: ${MILVUS_HOST:localhost}
   port: ${MILVUS_PORT:19530}
   collection: ${MILVUS_COLLECTION:documents_v1}
+  fail-on-schema-mismatch: ${MILVUS_FAIL_ON_SCHEMA_MISMATCH:true}
 
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
@@ -101,6 +102,7 @@ rag:
     enabled: ${RAG_QUERY_ENHANCE_ENABLED:false}
     mode: ${RAG_QUERY_ENHANCE_MODE:rewrite}     # rewrite | expansion | both
     max-expansion-queries: ${RAG_QUERY_ENHANCE_MAX_EXPANSIONS:3}
+    fusion-rrf-k: ${RAG_QUERY_ENHANCE_FUSION_RRF_K:60}
     timeout-ms: ${RAG_QUERY_ENHANCE_TIMEOUT_MS:5000}
 
   # ─── Task 7 / V13 Citation Verification ──────────────────────

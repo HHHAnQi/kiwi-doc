@@ -25,8 +25,8 @@ import org.springframework.test.web.servlet.ResultActions;
  * Phase 3 / P3-3 WebMvc IT: 新增端点 /default + /unarchive 路由 + DTO 新字段 (isDefault /
  * pendingMilvusDelete) JSON 序列化验证。
  *
- * <p>切片: @WebMvcTest 仅起 Spring MVC 切片 (mock 掉 application service), 不需要 MySQL /
- * Milvus / Redis / Docker — 故本章可独立跑通, 不在 IT 失败队列里。
+ * <p>切片: @WebMvcTest 仅起 Spring MVC 切片 (mock 掉 application service), 不需要 MySQL / Milvus / Redis /
+ * Docker — 故本章可独立跑通, 不在 IT 失败队列里。
  */
 @WebMvcTest(controllers = DocumentController.class, properties = "rag.auth.filter-enabled=false")
 @Import(com.xxx.ragdoc.interfaces.rest.error.GlobalExceptionHandler.class)

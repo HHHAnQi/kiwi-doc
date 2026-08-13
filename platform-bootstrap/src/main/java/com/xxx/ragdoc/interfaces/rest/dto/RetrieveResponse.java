@@ -8,11 +8,11 @@ import java.util.List;
 /**
  * 检索评测用的直接召回响应 DTO。
  *
- * <p>与 {@link ChatResponse} 同形(不含 answer/state_hint), 但保留 {@code score} 字段 — {@code score}
- * 在 ChatResult.Citation 阶段被剥离, 评测脚本无法经 /chat 算基于真实分数的 MRR/NDCG, 故单独定义直召回响应。
+ * <p>与 {@link ChatResponse} 同形(不含 answer/state_hint), 但保留 {@code score} 字段 — {@code score} 在
+ * ChatResult.Citation 阶段被剥离, 评测脚本无法经 /chat 算基于真实分数的 MRR/NDCG, 故单独定义直召回响应。
  *
- * <p>顶层附 {@code model_version}/{@code embedding_version}/{@code rerank_model}/{@code rerank_enabled},
- * 让 eval_report.json 无需额外读 .env 即可记录 "这次结果是在什么模型栈下跑的" — 可复现性是本框架的目标。
+ * <p>顶层附 {@code model_version}/{@code embedding_version}/{@code rerank_model}/{@code
+ * rerank_enabled}, 让 eval_report.json 无需额外读 .env 即可记录 "这次结果是在什么模型栈下跑的" — 可复现性是本框架的目标。
  *
  * <p>{@code from()} 的 model/embedding 参数为纯 String, 而非 LlmProperties/EmbeddingProperties — 后者在
  * infrastructure 包下, interfaces 包依赖它违反 ArchUnit (见 ArchitectureTest#interfaces不直接访问Infrastructure)。
@@ -61,8 +61,8 @@ public record RetrieveResponse(
     }
 
     /**
-     * 引用单元。与 {@code ChatResponse.Citation} 同形, 多一个 {@code score}: 当 {@code rerank_enabled=true} 时
-     * 是 cross-encoder relevance_score, 否则是 hybrid(dense+BM25 RRF) 分数。
+     * 引用单元。与 {@code ChatResponse.Citation} 同形, 多一个 {@code score}: 当 {@code rerank_enabled=true} 时 是
+     * cross-encoder relevance_score, 否则是 hybrid(dense+BM25 RRF) 分数。
      */
     public record Citation(
             Long chunkId,

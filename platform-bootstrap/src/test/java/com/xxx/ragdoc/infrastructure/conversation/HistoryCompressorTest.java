@@ -8,7 +8,6 @@ import com.xxx.ragdoc.application.chat.ConversationProperties;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext;
 import com.xxx.ragdoc.application.chat.conversation.ConversationContext.Turn;
 import com.xxx.ragdoc.application.chat.conversation.port.ConversationStore;
-import com.xxx.ragdoc.application.chat.port.ChatClient;
 import com.xxx.ragdoc.domain.shared.StateHint;
 import com.xxx.ragdoc.infrastructure.llm.LlmRouter;
 import com.xxx.ragdoc.infrastructure.llm.OpenAiCompatibleLlmClient;
@@ -144,8 +143,7 @@ class HistoryCompressorTest {
     void save异常_应返save_failed_不挂线程() throws Exception {
         when(store.findById(anyString())).thenReturn(Optional.of(ctxWithTurns(6)));
         when(summaryClient.chat(anyString(), anyList())).thenReturn("这是有效的摘要文本啊");
-        doThrow(new RuntimeException("redis down"))
-                .when(store).save(any());
+        doThrow(new RuntimeException("redis down")).when(store).save(any());
 
         // 不应抛 (后台线程吞掉)
         compressor.compress("c1");

@@ -41,10 +41,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
-@ConditionalOnProperty(
-        prefix = "rag.query-enhance",
-        name = "enabled",
-        havingValue = "true")
+@ConditionalOnProperty(prefix = "rag.query-enhance", name = "enabled", havingValue = "true")
 public class QueryProcessor implements QueryProcessorPort {
 
     /** cb instance 名 — 独立于 rewrite-llm (多轮) 与主 chat cb pool。 */

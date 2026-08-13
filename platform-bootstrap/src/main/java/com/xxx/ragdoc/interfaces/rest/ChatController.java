@@ -134,8 +134,7 @@ public class ChatController {
 
         // PR-2: SSE 经 Orchestrator 路由; AGENTIC 在订阅前抛 → GlobalExceptionHandler 转 422,
         // 不进入 SSE 单终态契约 (避免在没有流出的情况下产生额外终态事件)。
-        chatOrchestrator
-                .stream(cmd, tid, request.mode())
+        chatOrchestrator.stream(cmd, tid, request.mode())
                 .subscribe(
                         event -> {
                             try {

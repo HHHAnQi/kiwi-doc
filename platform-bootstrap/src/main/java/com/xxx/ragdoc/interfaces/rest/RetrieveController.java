@@ -22,16 +22,16 @@ import org.springframework.web.bind.annotation.RestController;
  * 直接召回 REST 接口(检索评测专用)。
  *
  * <p>仅在 {@link RetrieveService} 上包一层薄转换: 接 {@code /api/v1/retrieve}, 调 {@link
- * RetrieveService#retrieve}, 返 {@link RetrieveResponse}。不接入 ChatService / LLM,
- * 让离线评测直接拿到含 score 的原始召回结果算 MRR/NDCG, 不耗 LLM token。
+ * RetrieveService#retrieve}, 返 {@link RetrieveResponse}。不接入 ChatService / LLM, 让离线评测直接拿到含 score
+ * 的原始召回结果算 MRR/NDCG, 不耗 LLM token。
  *
- * <p>零业务侵入: 不修改 RetrieveService / ChatService / ChatController 任何一行;
- * `/api/v1/chat` 行为完全不变。鉴权沿用 app.auth.dev-token(由全局 filter/拦截器处理, 与 ChatController 一致)。
+ * <p>零业务侵入: 不修改 RetrieveService / ChatService / ChatController 任何一行; `/api/v1/chat` 行为完全不变。鉴权沿用
+ * app.auth.dev-token(由全局 filter/拦截器处理, 与 ChatController 一致)。
  *
- * <p>模型版本注入: 注意 ArchUnit 规则 "interfaces 不直接访问 infrastructure" (见 ArchitectureTest#interfaces不直接访问Infrastructure),
- * 故这里**不**注入 {@code LlmProperties/EmbeddingProperties}(它们在 infrastructure 包下), 改用
- * {@code @Value} 把同一属性键绑成纯 String — 不引入类依赖, 不破规则。{@link RerankProperties} 已在 application 包,
- * 可直接注入。
+ * <p>模型版本注入: 注意 ArchUnit 规则 "interfaces 不直接访问 infrastructure" (见
+ * ArchitectureTest#interfaces不直接访问Infrastructure), 故这里**不**注入 {@code
+ * LlmProperties/EmbeddingProperties}(它们在 infrastructure 包下), 改用 {@code @Value} 把同一属性键绑成纯 String —
+ * 不引入类依赖, 不破规则。{@link RerankProperties} 已在 application 包, 可直接注入。
  */
 @Slf4j
 @RestController
@@ -70,7 +70,8 @@ public class RetrieveController {
                         request.language());
         // Task 5: per-request mode override (null=全局默认, 兼容老调用方)
         Retriever.Mode mode = parseMode(request.mode());
-        RetrieveService.RetrieveResult result = retrieveService.retrieve(cmd, mode, request.enhance());
+        RetrieveService.RetrieveResult result =
+                retrieveService.retrieve(cmd, mode, request.enhance());
         log.info(
                 "retrieve.endpoint_done trace_id={}, mode={}, rerank_state={}, items={}",
                 org.slf4j.MDC.get(TraceIdFilter.MDC_TRACE_KEY),
