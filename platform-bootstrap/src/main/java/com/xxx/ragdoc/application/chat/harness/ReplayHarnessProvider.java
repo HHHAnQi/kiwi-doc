@@ -60,10 +60,16 @@ public class ReplayHarnessProvider implements HarnessProvider {
 
         FixtureRecord record;
         try {
-            record = store.find(replayKey)
-                    .orElseThrow(() -> fail(invocation, replayKey,
-                            FixtureStore.FixtureUnavailableException.Reason.NOT_FOUND,
-                            "fixture not found"));
+            record =
+                    store.find(replayKey)
+                            .orElseThrow(
+                                    () ->
+                                            fail(
+                                                    invocation,
+                                                    replayKey,
+                                                    FixtureStore.FixtureUnavailableException.Reason
+                                                            .NOT_FOUND,
+                                                    "fixture not found"));
         } catch (FixtureStore.FixtureUnavailableException ex) {
             throw fail(invocation, replayKey, ex.reason, ex.getMessage());
         }
@@ -73,7 +79,9 @@ public class ReplayHarnessProvider implements HarnessProvider {
                 || !record.componentVersion().equals(invocation.componentVersion())
                 || record.componentType() != invocation.componentType()
                 || record.callIndex() != invocation.callIndex()) {
-            throw fail(invocation, replayKey,
+            throw fail(
+                    invocation,
+                    replayKey,
                     FixtureStore.FixtureUnavailableException.Reason.COMPONENT_VERSION_MISMATCH,
                     "component identity mismatch in stored fixture");
         }
@@ -81,14 +89,21 @@ public class ReplayHarnessProvider implements HarnessProvider {
         // 2. request hash 严格匹配 (注意: store 内的 requestHash 是 record 时 caller 算的; 现在用同样算法复算)
         String currentRequestHash = resultMapper.requestHash(request);
         if (!currentRequestHash.equals(record.requestHash())) {
-            throw fail(invocation, replayKey,
+            throw fail(
+                    invocation,
+                    replayKey,
                     FixtureStore.FixtureUnavailableException.Reason.REQUEST_MISMATCH,
-                    "request hash mismatch current=" + currentRequestHash + " stored=" + record.requestHash());
+                    "request hash mismatch current="
+                            + currentRequestHash
+                            + " stored="
+                            + record.requestHash());
         }
 
         // 3. permissionScope / index 版本严格匹配 (replayKey 已包含, 这里 double-check)
         if (!invokeContextMatches(invocation, record)) {
-            throw fail(invocation, replayKey,
+            throw fail(
+                    invocation,
+                    replayKey,
                     FixtureStore.FixtureUnavailableException.Reason.REQUEST_MISMATCH,
                     "permissionScopeVersion/indexVersion mismatch");
         }
@@ -125,7 +140,11 @@ public class ReplayHarnessProvider implements HarnessProvider {
                 };
         log.warn(
                 "harness.replay_failed component={} callidx={} reason={} msg={}",
-                invocation.componentName(), invocation.callIndex(), code, message);
-        return new FixtureStore.FixtureUnavailableException(replayKey, reason, code + ": " + message);
+                invocation.componentName(),
+                invocation.callIndex(),
+                code,
+                message);
+        return new FixtureStore.FixtureUnavailableException(
+                replayKey, reason, code + ": " + message);
     }
 }

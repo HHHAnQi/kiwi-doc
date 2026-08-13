@@ -34,8 +34,6 @@ public record AgentBudget(
 
     /** PR-6 PRD: 保守默认 (max-steps 3, max-tool-calls 5, planner 0 / replan 0)。 */
     public static AgentBudget pr6Default() {
-        return new AgentBudget(
-                3, 5, 0, 0,
-                30_000L, 0, 0, 0, BigDecimal.ZERO);
+        return new AgentBudget(3, 5, 0, 0, 30_000L, 0, 0, 0, BigDecimal.ZERO);
     }
 }

@@ -7,7 +7,6 @@ import com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary;
 import com.xxx.ragdoc.application.chat.sufficiency.EvidenceConflict;
 import com.xxx.ragdoc.application.chat.sufficiency.RecommendedAction;
 import com.xxx.ragdoc.application.chat.sufficiency.RequirementCoverage;
-import com.xxx.ragdoc.application.chat.sufficiency.CoverageStatus;
 import com.xxx.ragdoc.application.chat.sufficiency.SufficiencyDecision;
 import com.xxx.ragdoc.application.chat.sufficiency.SufficiencyStatus;
 import java.util.List;
@@ -29,37 +28,56 @@ class ReplanDecisionCoordinatorTest {
     }
 
     private PhaseExecutionResult successfulPhase(String runId, List<Evidence> newEvidence) {
-        return new PhaseExecutionResult(runId, 0, 5L,
-                List.of("s1"), newEvidence, newEvidence,
+        return new PhaseExecutionResult(
+                runId,
+                0,
+                5L,
+                List.of("s1"),
+                newEvidence,
+                newEvidence,
                 AgentUsage.zero().incStep().incRealToolCall(),
                 new AgentBudgetReservation(0, 0, 0, 0, 0, java.math.BigDecimal.ZERO),
-                List.of(), Set.of(), Set.of(),
-                false, "", null);
+                List.of(),
+                Set.of(),
+                Set.of(),
+                false,
+                "",
+                null);
     }
 
     private SufficiencyDecision insufficient(String... missing) {
         return SufficiencyDecision.rule(
                 SufficiencyStatus.INSUFFICIENT,
                 List.of(RequirementCoverage.notCovered("R1", "n/a")),
-                List.of(missing), List.of(),
+                List.of(missing),
+                List.of(),
                 RecommendedAction.REFUSE_NO_EVIDENCE,
                 "RULE_INSUFFICIENT");
     }
 
     private SufficiencyDecision sufficient() {
-        return SufficiencyDecision.rule(SufficiencyStatus.SUFFICIENT,
+        return SufficiencyDecision.rule(
+                SufficiencyStatus.SUFFICIENT,
                 List.of(RequirementCoverage.covered("R1", List.of("ev1"), "")),
-                List.of(), List.of(), RecommendedAction.ANSWER, "OK");
+                List.of(),
+                List.of(),
+                RecommendedAction.ANSWER,
+                "OK");
     }
 
     private SufficiencyDecision conflicted() {
-        return SufficiencyDecision.rule(SufficiencyStatus.CONFLICTED,
+        return SufficiencyDecision.rule(
+                SufficiencyStatus.CONFLICTED,
                 List.of(),
                 List.of(),
-                List.of(new EvidenceConflict("R1",
-                        EvidenceConflict.ConflictType.VERSION_VALUE_MISMATCH,
-                        List.of("ev1", "ev2"), "v mismatch")),
-                RecommendedAction.REFUSE_CONFLICT, "CONFLICT");
+                List.of(
+                        new EvidenceConflict(
+                                "R1",
+                                EvidenceConflict.ConflictType.VERSION_VALUE_MISMATCH,
+                                List.of("ev1", "ev2"),
+                                "v mismatch")),
+                RecommendedAction.REFUSE_CONFLICT,
+                "CONFLICT");
     }
 
     private AgentBudget budget(int steps, int toolCalls) {
@@ -67,8 +85,7 @@ class ReplanDecisionCoordinatorTest {
     }
 
     private Evidence ev(String tenant, String content) {
-        return Evidence.of(tenant, 1L, 10L, "v1", content, 0.9, null,
-                "semantic_search", Map.of());
+        return Evidence.of(tenant, 1L, 10L, "v1", content, 0.9, null, "semantic_search", Map.of());
     }
 
     @Test
@@ -76,13 +93,16 @@ class ReplanDecisionCoordinatorTest {
     void allowReplan() {
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "new")));
         SufficiencyDecision s = insufficient("R1");
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, s,
-                Set.of(/* prior accumulated */),
-                EvidenceCoverageSummary.empty(),
-                0 /* replanCount */, 1 /* maxReplans */,
-                false /* cancel */,
-                budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        s,
+                        Set.of(/* prior accumulated */ ),
+                        EvidenceCoverageSummary.empty(),
+                        0 /* replanCount */,
+                        1 /* maxReplans */,
+                        false /* cancel */,
+                        budget(3, 3));
         assertThat(d.allowed()).isTrue();
     }
 
@@ -90,10 +110,16 @@ class ReplanDecisionCoordinatorTest {
     @DisplayName("拒绝: SUFFICIENT → noReplanNeeded (READY_TO_ANSWER)")
     void sufficientDoesNotReplan() {
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "x")));
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, sufficient(),
-                Set.of(), EvidenceCoverageSummary.empty(),
-                0, 1, false, budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        sufficient(),
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        false,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.READY_TO_ANSWER);
     }
@@ -102,11 +128,16 @@ class ReplanDecisionCoordinatorTest {
     @DisplayName("拒绝: replanCount >= maxReplans → REFUSED_NO_EVIDENCE REPLAN_EXHAUSTED")
     void replanExhausted() {
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "x")));
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, insufficient("R1"),
-                Set.of(), EvidenceCoverageSummary.empty(),
-                1 /* replanCount=1 */, 1 /* maxReplans */,
-                false, budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        insufficient("R1"),
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        1 /* replanCount=1 */,
+                        1 /* maxReplans */,
+                        false,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.REFUSED_NO_EVIDENCE);
         assertThat(d.reasonIfRefused()).isEqualTo("REPLAN_EXHAUSTED");
@@ -117,11 +148,16 @@ class ReplanDecisionCoordinatorTest {
     void noProgressRefused() {
         // Phase 中 newEvidence 为空 (这就触发 NO_PROGRESS)
         PhaseExecutionResult phase = successfulPhase("r1", List.of());
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, insufficient("R1"),
-                Set.of() /* prior accumulated */,
-                EvidenceCoverageSummary.empty(),
-                0, 1, false, budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        insufficient("R1"),
+                        Set.of() /* prior accumulated */,
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        false,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.REFUSED_NO_EVIDENCE);
         assertThat(d.reasonIfRefused()).isEqualTo("AGENT_NO_PROGRESS");
@@ -131,10 +167,16 @@ class ReplanDecisionCoordinatorTest {
     @DisplayName("拒绝: CONFLICTED → REFUSED_CONFLICT")
     void conflictRefused() {
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "x")));
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, conflicted(),
-                Set.of(), EvidenceCoverageSummary.empty(),
-                0, 1, false, budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        conflicted(),
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        false,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.REFUSED_CONFLICT);
     }
@@ -143,10 +185,16 @@ class ReplanDecisionCoordinatorTest {
     @DisplayName("拒绝: cancel → CANCELLED (USER_CANCELLED)")
     void cancelRefused() {
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "x")));
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, insufficient("R1"),
-                Set.of(), EvidenceCoverageSummary.empty(),
-                0, 1, true /* cancel */, budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        insufficient("R1"),
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        true /* cancel */,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.CANCELLED);
     }
@@ -154,17 +202,32 @@ class ReplanDecisionCoordinatorTest {
     @Test
     @DisplayName("拒绝: Phase 内 premature=TOOL_FAILED → 直接转 TOOL_FAILED")
     void prematureToolFailed() {
-        PhaseExecutionResult phase = new PhaseExecutionResult(
-                "r1", 0, 3L,
-                List.of("s1"), List.of(), List.of(),
-                AgentUsage.zero(), new AgentBudgetReservation(0, 0, 0, 0, 0, java.math.BigDecimal.ZERO),
-                List.of(), Set.of(), Set.of(),
-                true /* requiredStepFailed */, "REQUIRED_TOOL_FAILED",
-                AgentRunStatus.TOOL_FAILED /* premature */);
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, insufficient("R1"),
-                Set.of(), EvidenceCoverageSummary.empty(),
-                0, 1, false, budget(3, 3));
+        PhaseExecutionResult phase =
+                new PhaseExecutionResult(
+                        "r1",
+                        0,
+                        3L,
+                        List.of("s1"),
+                        List.of(),
+                        List.of(),
+                        AgentUsage.zero(),
+                        new AgentBudgetReservation(0, 0, 0, 0, 0, java.math.BigDecimal.ZERO),
+                        List.of(),
+                        Set.of(),
+                        Set.of(),
+                        true /* requiredStepFailed */,
+                        "REQUIRED_TOOL_FAILED",
+                        AgentRunStatus.TOOL_FAILED /* premature */);
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        insufficient("R1"),
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        false,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.TOOL_FAILED);
     }
@@ -172,15 +235,25 @@ class ReplanDecisionCoordinatorTest {
     @Test
     @DisplayName("拒绝: missingRequirementIds 空 → REFUSED_NO_EVIDENCE NO_MISSING_REQUIREMENT")
     void noMissingNotReplenable() {
-        SufficiencyDecision insuffNoMissing = SufficiencyDecision.rule(
-                SufficiencyStatus.INSUFFICIENT, List.of(),
-                List.of(), List.of(),
-                RecommendedAction.REFUSE_NO_EVIDENCE, "no missing");
+        SufficiencyDecision insuffNoMissing =
+                SufficiencyDecision.rule(
+                        SufficiencyStatus.INSUFFICIENT,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        RecommendedAction.REFUSE_NO_EVIDENCE,
+                        "no missing");
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "x")));
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, insuffNoMissing,
-                Set.of(), EvidenceCoverageSummary.empty(),
-                0, 1, false, budget(3, 3));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        insuffNoMissing,
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        false,
+                        budget(3, 3));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.REFUSED_NO_EVIDENCE);
         assertThat(d.reasonIfRefused()).isEqualTo("NO_MISSING_REQUIREMENT");
@@ -191,10 +264,16 @@ class ReplanDecisionCoordinatorTest {
     void budgetExceeded() {
         PhaseExecutionResult phase = successfulPhase("r1", List.of(ev("tA", "x")));
         // usedSteps=1 usedToolCalls=1, budget=1/1 → 1-1=0 不允许 Replan
-        ReplanDecisionCoordinator.ReplanDecision d = coord.decide(
-                phase, insufficient("R1"),
-                Set.of(), EvidenceCoverageSummary.empty(),
-                0, 1, false, budget(1, 1));
+        ReplanDecisionCoordinator.ReplanDecision d =
+                coord.decide(
+                        phase,
+                        insufficient("R1"),
+                        Set.of(),
+                        EvidenceCoverageSummary.empty(),
+                        0,
+                        1,
+                        false,
+                        budget(1, 1));
         assertThat(d.allowed()).isFalse();
         assertThat(d.terminalStatusIfRefused()).isEqualTo(AgentRunStatus.BUDGET_EXCEEDED);
         assertThat(d.reasonIfRefused()).isEqualTo("REPLAN_BUDGET_INSUFFICIENT");

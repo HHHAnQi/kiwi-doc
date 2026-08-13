@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +20,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-/** PR-7a: {@link ModelPlannerProvider} — JSON 解析路径 + Provider 错误转换 (不直接验证 happy JSON 反序列化, 因 ToolInput polymorphic)。 */
+/**
+ * PR-7a: {@link ModelPlannerProvider} — JSON 解析路径 + Provider 错误转换 (不直接验证 happy JSON 反序列化, 因
+ * ToolInput polymorphic)。
+ */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ModelPlannerProvider - PR-7a JSON-only + 错误分类")
@@ -39,11 +41,17 @@ class ModelPlannerProviderTest {
 
     private PlannerRequest request() {
         return new PlannerRequest(
-                "r-1", "q", TaskIntent.MULTI_HOP, List.of(), Map.of(),
+                "r-1",
+                "q",
+                TaskIntent.MULTI_HOP,
+                List.of(),
+                Map.of(),
                 List.of(EvidenceRequirement.fact("R1", "d", true)),
-                EvidenceCoverageSummary.empty(), List.of(),
+                EvidenceCoverageSummary.empty(),
+                List.of(),
                 new AgentBudgetView(3, 3, 3, 3, 30000, 1),
-                List.of(new PlannerToolDescriptor("semantic_search", "v1", "d", Map.of())), 0);
+                List.of(new PlannerToolDescriptor("semantic_search", "v1", "d", Map.of())),
+                0);
     }
 
     @Test
@@ -59,8 +67,7 @@ class ModelPlannerProviderTest {
     @DisplayName("非 JSON 输出 → INVALID_JSON")
     void nonJsonOutput() throws Exception {
         when(chatClient.chat(anyString(), anyList())).thenReturn("I cannot help with that.");
-        assertThatThrownBy(() -> provider.plan(request()))
-                .isInstanceOf(PlannerException.class);
+        assertThatThrownBy(() -> provider.plan(request())).isInstanceOf(PlannerException.class);
     }
 
     @Test
@@ -70,8 +77,10 @@ class ModelPlannerProviderTest {
                 .thenThrow(new java.util.concurrent.TimeoutException("timed out"));
         assertThatThrownBy(() -> provider.plan(request()))
                 .isInstanceOf(PlannerException.class)
-                .satisfies(t -> assertThat(((PlannerException) t).reason)
-                        .isEqualTo(PlannerException.Reason.TIMEOUT));
+                .satisfies(
+                        t ->
+                                assertThat(((PlannerException) t).reason)
+                                        .isEqualTo(PlannerException.Reason.TIMEOUT));
     }
 
     @Test
@@ -81,8 +90,10 @@ class ModelPlannerProviderTest {
                 .thenThrow(new RuntimeException("backend down"));
         assertThatThrownBy(() -> provider.plan(request()))
                 .isInstanceOf(PlannerException.class)
-                .satisfies(t -> assertThat(((PlannerException) t).reason)
-                        .isEqualTo(PlannerException.Reason.PROVIDER_ERROR));
+                .satisfies(
+                        t ->
+                                assertThat(((PlannerException) t).reason)
+                                        .isEqualTo(PlannerException.Reason.PROVIDER_ERROR));
     }
 
     @Test
@@ -103,9 +114,11 @@ class ModelPlannerProviderTest {
     @DisplayName("buildPrompt: 包含 allowedTools + 安全警告 + 不含 token")
     void promptSafer() {
         String prompt = ModelPlannerProvider.buildPrompt(request());
-        assertThat(prompt).contains("allowedTools", "semantic_search")
+        assertThat(prompt)
+                .contains("allowedTools", "semantic_search")
                 .contains("UNTRUSTED"); // 安全警告
-        assertThat(prompt.toLowerCase()).doesNotContain("rawtoken=")
+        assertThat(prompt.toLowerCase())
+                .doesNotContain("rawtoken=")
                 .doesNotContain("tenantoverride="); // 不含身份 Literal
     }
 }

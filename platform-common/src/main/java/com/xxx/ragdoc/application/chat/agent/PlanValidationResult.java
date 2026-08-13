@@ -7,11 +7,13 @@ import java.util.List;
  *
  * <p>{@link #throwIfInvalid()} 让调用方直接抛 {@link InvalidAgentPlanException} 而不必写 if。
  */
-public record PlanValidationResult(boolean valid, List<PlanValidationError> errors, List<String> topologicalStepOrder) {
+public record PlanValidationResult(
+        boolean valid, List<PlanValidationError> errors, List<String> topologicalStepOrder) {
 
     public PlanValidationResult {
         errors = errors == null ? List.of() : List.copyOf(errors);
-        topologicalStepOrder = topologicalStepOrder == null ? List.of() : List.copyOf(topologicalStepOrder);
+        topologicalStepOrder =
+                topologicalStepOrder == null ? List.of() : List.copyOf(topologicalStepOrder);
         // 不变量: 合法时 errors 必空且拓扑序非空; 非法时 errors 非空且拓扑序空
         if (valid && !errors.isEmpty()) {
             throw new IllegalArgumentException("PlanValidationResult.valid=true 但 errors 非空");

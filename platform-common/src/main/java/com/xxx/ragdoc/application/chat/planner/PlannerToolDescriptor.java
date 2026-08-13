@@ -3,8 +3,8 @@ package com.xxx.ragdoc.application.chat.planner;
 import java.util.Map;
 
 /**
- * PR-7a / EMS-PR7 §4.2: Planner 可见的 Tool 描述。仅暴露 schema (name/version/description),
- * 不暴露 Principal/Token/内部状态 (Revision §5.2 数据最小化)。
+ * PR-7a / EMS-PR7 §4.2: Planner 可见的 Tool 描述。仅暴露 schema (name/version/description), 不暴露
+ * Principal/Token/内部状态 (Revision §5.2 数据最小化)。
  */
 public record PlannerToolDescriptor(
         String name,

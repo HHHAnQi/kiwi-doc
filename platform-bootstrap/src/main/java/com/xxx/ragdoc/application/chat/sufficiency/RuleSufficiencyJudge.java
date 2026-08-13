@@ -29,8 +29,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>规则优先原则: 规则可判定时不调 Model (Revision §6.4)。返回 {@code source="RULE"}。
  *
- * <p>UNDETERMINED 时 Pipeline 根据 {@link SufficiencyRequest#allowModelFallback()} 决定调用 ModelJudge,
- * 否则 Pipeline 保守转 REFUSE_NO_EVIDENCE。
+ * <p>UNDETERMINED 时 Pipeline 根据 {@link SufficiencyRequest#allowModelFallback()} 决定调用 ModelJudge, 否则
+ * Pipeline 保守转 REFUSE_NO_EVIDENCE。
  */
 @Slf4j
 @Component
@@ -40,17 +40,19 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
     @Override
     public SufficiencyDecision evaluate(SufficiencyRequest request) {
         if (request == null) throw new IllegalArgumentException("request");
-        // index Evidence by sourceStepId-aligned requirement (Evidence metadata.requirementIds) + 按 tenantId 取可信
+        // index Evidence by sourceStepId-aligned requirement (Evidence metadata.requirementIds) + 按
+        // tenantId 取可信
         Map<String, List<Evidence>> reqIdToEvidence = new HashMap<>();
         for (Evidence e : request.evidence()) {
             // 只判服务端注入 tenantId 一致的 evidence (EvidenceAccumulator 已 filter 过)
             Object reqIdsObj = e.metadata() == null ? null : e.metadata().get("requirementIds");
             if (reqIdsObj instanceof List<?> list) {
                 for (Object o : list) {
-                    if (o instanceof String s) reqIdToEvidence.computeIfAbsent(s, k -> new ArrayList<>()).add(e);
+                    if (o instanceof String s)
+                        reqIdToEvidence.computeIfAbsent(s, k -> new ArrayList<>()).add(e);
                 }
             }
-            //也允许 COMPARISON_SIDE / sideKey 等 metadata fallback (PR-7b 第一版不实现, 留 PR-7c Pipeline 注入)
+            // 也允许 COMPARISON_SIDE / sideKey 等 metadata fallback (PR-7b 第一版不实现, 留 PR-7c Pipeline 注入)
         }
 
         List<RequirementCoverage> coverages = new ArrayList<>();
@@ -78,27 +80,30 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
             EvidenceConflict conflict = detectVersionValueConflict(req, distinct);
             if (conflict != null) {
                 conflicts.add(conflict);
-                coverages.add(RequirementCoverage.conflicted(
-                        req.requirementId(),
-                        distinct.stream().map(Evidence::evidenceId).toList(),
-                        conflict.type().name()));
+                coverages.add(
+                        RequirementCoverage.conflicted(
+                                req.requirementId(),
+                                distinct.stream().map(Evidence::evidenceId).toList(),
+                                conflict.type().name()));
                 continue;
             }
 
             if (!entityMatch || !filterMatch) {
-                coverages.add(RequirementCoverage.notCovered(
-                        req.requirementId(),
-                        "EVIDENCE_ENTITY_OR_FILTER_MISMATCH"));
+                coverages.add(
+                        RequirementCoverage.notCovered(
+                                req.requirementId(), "EVIDENCE_ENTITY_OR_FILTER_MISMATCH"));
                 if (req.required()) missing.add(req.requirementId());
                 continue;
             }
 
-            // 类型映射: FACT/ENTITY_ATTRIBUTE/TEMPORAL/COMPARISON_SIDE → 规则可判; RELATION/FOLLOW_UP_ENTITY → 复杂语义
+            // 类型映射: FACT/ENTITY_ATTRIBUTE/TEMPORAL/COMPARISON_SIDE → 规则可判;
+            // RELATION/FOLLOW_UP_ENTITY → 复杂语义
             if (req.type() == RequirementType.RELATION
                     || req.type() == RequirementType.FOLLOW_UP_ENTITY) {
                 // 规则只能判"有证据"; 不判语义充分; 标 UNDETERMINED 让 Model 决策 (若启用)
-                coverages.add(RequirementCoverage.notCovered(
-                        req.requirementId(), "RULE_CANNOT_VERIFY_SEMANTIC"));
+                coverages.add(
+                        RequirementCoverage.notCovered(
+                                req.requirementId(), "RULE_CANNOT_VERIFY_SEMANTIC"));
                 anyUndeterminable = true;
                 if (req.required()) {
                     // 不立即标 missing — Pipeline 调 Model 后再决策
@@ -107,23 +112,30 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
                 continue;
             }
 
-            coverages.add(RequirementCoverage.covered(
-                    req.requirementId(),
-                    distinct.stream().map(Evidence::evidenceId).toList(),
-                    "RULE_FULLY_COVERED"));
+            coverages.add(
+                    RequirementCoverage.covered(
+                            req.requirementId(),
+                            distinct.stream().map(Evidence::evidenceId).toList(),
+                            "RULE_FULLY_COVERED"));
         }
 
         // 1. CONFLICTED 优先
         if (!conflicts.isEmpty()) {
             return SufficiencyDecision.rule(
-                    SufficiencyStatus.CONFLICTED, coverages,
-                    List.of() /* missing 不重要 */, conflicts,
-                    RecommendedAction.REFUSE_CONFLICT, "RULE_VERSION_VALUE_CONFLICT");
+                    SufficiencyStatus.CONFLICTED,
+                    coverages,
+                    List.of() /* missing 不重要 */,
+                    conflicts,
+                    RecommendedAction.REFUSE_CONFLICT,
+                    "RULE_VERSION_VALUE_CONFLICT");
         }
         // 2. UNDETERMINED (语义无法判定)
         if (anyUndeterminable) {
             return SufficiencyDecision.rule(
-                    SufficiencyStatus.UNDETERMINED, coverages, missing, List.of(),
+                    SufficiencyStatus.UNDETERMINED,
+                    coverages,
+                    missing,
+                    List.of(),
                     RecommendedAction.REFUSE_NO_EVIDENCE /* 保守默认; Pipeline 可调 Model 覆盖 */,
                     "RULE_SEMANTIC_UNDETERMINED");
         }
@@ -131,13 +143,17 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
         if (!missing.isEmpty()) {
             SufficiencyStatus status = SufficiencyStatus.INSUFFICIENT;
             RecommendedAction action = RecommendedAction.REFUSE_NO_EVIDENCE;
-            return SufficiencyDecision.rule(status, coverages, missing, List.of(),
-                    action, "RULE_INSUFFICIENT_REQ_MISSING");
+            return SufficiencyDecision.rule(
+                    status, coverages, missing, List.of(), action, "RULE_INSUFFICIENT_REQ_MISSING");
         }
         // 4. required 全部 COVERED; optional 缺也无所谓
         return SufficiencyDecision.rule(
-                SufficiencyStatus.SUFFICIENT, coverages, List.of(), List.of(),
-                RecommendedAction.ANSWER, "RULE_SUFFICIENT");
+                SufficiencyStatus.SUFFICIENT,
+                coverages,
+                List.of(),
+                List.of(),
+                RecommendedAction.ANSWER,
+                "RULE_SUFFICIENT");
     }
 
     /** 同 contentHash dedup — 防止重复 evidence 制造虚假 multi-coverage。 */
@@ -152,8 +168,8 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
     }
 
     /**
-     * entity 匹配: 任何 targetEntity 出现在 evidence content / metadata / sourceTool 即算命中。
-     * 空 targetEntities 视为 wildcard (无约束)。
+     * entity 匹配: 任何 targetEntity 出现在 evidence content / metadata / sourceTool 即算命中。 空
+     * targetEntities 视为 wildcard (无约束)。
      */
     static boolean matchesTargetEntities(List<Evidence> ev, List<String> targetEntities) {
         if (targetEntities == null || targetEntities.isEmpty()) return true;
@@ -161,7 +177,8 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
             String lowT = t.toLowerCase(java.util.Locale.ROOT);
             boolean anyMatch = false;
             for (Evidence e : ev) {
-                String c = e.content() == null ? "" : e.content().toLowerCase(java.util.Locale.ROOT);
+                String c =
+                        e.content() == null ? "" : e.content().toLowerCase(java.util.Locale.ROOT);
                 if (c.contains(lowT)) {
                     anyMatch = true;
                     break;
@@ -173,8 +190,8 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
     }
 
     /**
-     * filter 匹配: expectedFilters.version 必须在至少一个 Evidence 的 documentVersion 出现;
-     * source 同理。空 expectedFilters wildcard。
+     * filter 匹配: expectedFilters.version 必须在至少一个 Evidence 的 documentVersion 出现; source 同理。空
+     * expectedFilters wildcard。
      */
     static boolean matchesExpectedFilters(List<Evidence> ev, Map<String, Object> expected) {
         if (expected == null || expected.isEmpty()) return true;
@@ -199,8 +216,8 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
     }
 
     /**
-     * 简单 version-value 冲突检测: 两条 Evidence documentVersion 均非空且不同 → CONFLICT。
-     * (PR-7b v1 只识别 VERSION_VALUE_MISMATCH; PR-7d 复杂冲突留给 Model Judge)
+     * 简单 version-value 冲突检测: 两条 Evidence documentVersion 均非空且不同 → CONFLICT。 (PR-7b v1 只识别
+     * VERSION_VALUE_MISMATCH; PR-7d 复杂冲突留给 Model Judge)
      */
     static EvidenceConflict detectVersionValueConflict(EvidenceRequirement req, List<Evidence> ev) {
         Set<String> distinctVersions = new HashSet<>();

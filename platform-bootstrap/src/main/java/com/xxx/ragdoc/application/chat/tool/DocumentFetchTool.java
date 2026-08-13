@@ -1,15 +1,14 @@
 package com.xxx.ragdoc.application.chat.tool;
 
+import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.chunk.ChunkQueryService;
 import com.xxx.ragdoc.application.chunk.query.ChunkDetail;
 import com.xxx.ragdoc.application.chunk.query.ChunkNeighbors;
-import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.document.DocumentAccessGuard;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.common.exception.ErrorCode;
 import com.xxx.ragdoc.common.exception.NotFoundException;
 import com.xxx.ragdoc.domain.auth.Principal;
-import com.xxx.ragdoc.domain.document.Chunk;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,7 +71,8 @@ public class DocumentFetchTool implements AgentTool<DocumentFetchInput, Document
     }
 
     @Override
-    public ToolResult<DocumentFetchOutput> execute(DocumentFetchInput input, ToolExecutionContext context) {
+    public ToolResult<DocumentFetchOutput> execute(
+            DocumentFetchInput input, ToolExecutionContext context) {
         long t0 = System.currentTimeMillis();
         Principal principal = context.principal();
 
@@ -145,7 +145,8 @@ public class DocumentFetchTool implements AgentTool<DocumentFetchInput, Document
                 }
             } catch (NotFoundException nfe) {
                 // 邻居不存在不算失败, anchor 仍可用
-                log.debug("doc_fetch.no_neighbor chunk_id={} err={}", anchor.id(), nfe.getMessage());
+                log.debug(
+                        "doc_fetch.no_neighbor chunk_id={} err={}", anchor.id(), nfe.getMessage());
             }
         }
 
@@ -160,13 +161,17 @@ public class DocumentFetchTool implements AgentTool<DocumentFetchInput, Document
                 chunkIds.add(parent.id());
                 mode = mode.equals("NEIGHBOR") ? "NEIGHBOR+PARENT" : "PARENT";
             } catch (NotFoundException nfe) {
-                log.debug("doc_fetch.no_parent parent_chunk_id={} err={}", anchor.parentChunkId(), nfe.getMessage());
+                log.debug(
+                        "doc_fetch.no_parent parent_chunk_id={} err={}",
+                        anchor.parentChunkId(),
+                        nfe.getMessage());
             }
         }
 
-        List<ChunkDetail> trimmed = collected.size() > descriptor().maxResults()
-                ? collected.subList(0, descriptor().maxResults())
-                : collected;
+        List<ChunkDetail> trimmed =
+                collected.size() > descriptor().maxResults()
+                        ? collected.subList(0, descriptor().maxResults())
+                        : collected;
 
         List<Evidence> evidences = new ArrayList<>();
         for (ChunkDetail cd : trimmed) {
@@ -206,7 +211,8 @@ public class DocumentFetchTool implements AgentTool<DocumentFetchInput, Document
                 Map.of());
     }
 
-    private static ChunkQueryService.Direction toQueryDirection(DocumentFetchInput.FetchDirection d) {
+    private static ChunkQueryService.Direction toQueryDirection(
+            DocumentFetchInput.FetchDirection d) {
         return switch (d) {
             case NEXT -> ChunkQueryService.Direction.NEXT;
             case PREV -> ChunkQueryService.Direction.PREV;

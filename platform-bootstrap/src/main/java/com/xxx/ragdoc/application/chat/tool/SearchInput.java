@@ -1,7 +1,5 @@
 package com.xxx.ragdoc.application.chat.tool;
 
-import java.util.List;
-
 /**
  * PR-4 / EMS-PR4: semantic_search / keyword_search / metadata_search 三个检索 Tool 的共用 input。
  *
@@ -64,9 +62,12 @@ public record SearchInput(String query, Integer topK, SearchFilters filters) imp
 
         /** 字典序固定顺序输出, 让 dedup 不被字段顺序打乱。 */
         public String normalizedString() {
-            return "language=" + (language == null ? "" : language.toLowerCase())
-                    + "|source=" + (source == null ? "" : source.toLowerCase())
-                    + "|version=" + (version == null ? "" : version.toLowerCase());
+            return "language="
+                    + (language == null ? "" : language.toLowerCase())
+                    + "|source="
+                    + (source == null ? "" : source.toLowerCase())
+                    + "|version="
+                    + (version == null ? "" : version.toLowerCase());
         }
 
         private static String blankToNull(String s) {

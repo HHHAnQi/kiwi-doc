@@ -32,6 +32,7 @@ public record PlannerResponse(
 
     /** 推荐的 reasonCode 短代码 (PlannerProvider 实现按表选用; Assembler 不强制校验具体值)。 */
     public static final String INITIAL_MULTI_HOP_PLAN = "INITIAL_MULTI_HOP_PLAN";
+
     public static final String FOLLOW_UP_ENTITY_SEARCH = "FOLLOW_UP_ENTITY_SEARCH";
     public static final String MISSING_REQUIREMENT_RECOVERY = "MISSING_REQUIREMENT_RECOVERY";
 

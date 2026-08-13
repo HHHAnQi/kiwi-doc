@@ -31,15 +31,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
- * PR-3.3: {@link TargetedRagPipeline} 把 RouterDecision.filters→ChatCommand 的映射测试 +
- * 委托 ChatService 测试 + 无 filter 降级测试。
+ * PR-3.3: {@link TargetedRagPipeline} 把 RouterDecision.filters→ChatCommand 的映射测试 + 委托 ChatService
+ * 测试 + 无 filter 降级测试。
  */
 @DisplayName("TargetedRagPipeline - PR-3.3")
 class TargetedRagPipelineTest {
 
     private static final TraceId TID = new TraceId("targeted-trace");
-    private static final Principal PRINCIPAL =
-            new Principal("tenant-A", "user-1", Set.of(), "tok");
+    private static final Principal PRINCIPAL = new Principal("tenant-A", "user-1", Set.of(), "tok");
 
     private ChatService chatService;
     private TargetedRagPipeline pipeline;
@@ -66,7 +65,13 @@ class TargetedRagPipelineTest {
                         0.9,
                         "VERSION_LOOKUP");
         return new ChatExecutionContext(
-                "req-1", PRINCIPAL, ChatMode.AUTO, PipelineType.TARGETED_RAG, TID, ExecutionPolicy.defaults(), d);
+                "req-1",
+                PRINCIPAL,
+                ChatMode.AUTO,
+                PipelineType.TARGETED_RAG,
+                TID,
+                ExecutionPolicy.defaults(),
+                d);
     }
 
     private ChatExecutionContext ctxNoFilter() {
@@ -87,8 +92,9 @@ class TargetedRagPipelineTest {
         @DisplayName("filters.versions[0] → cmd.version")
         void versionApplied() {
             ChatCommand orig = new ChatCommand("v2.3 新增接口", null, 5);
-            ChatCommand targeted = TargetedRagPipeline.applyTargetedFilters(
-                    orig, ctxWithFilters(Map.of("versions", List.of("v2.3"))));
+            ChatCommand targeted =
+                    TargetedRagPipeline.applyTargetedFilters(
+                            orig, ctxWithFilters(Map.of("versions", List.of("v2.3"))));
             assertThat(targeted.version()).isEqualTo("v2.3");
             assertThat(targeted.query()).isEqualTo("v2.3 新增接口"); // query 原文保留
             assertThat(targeted.source()).isNull();
@@ -98,8 +104,9 @@ class TargetedRagPipelineTest {
         @DisplayName("filters.products[0] → cmd.source")
         void productApplied() {
             ChatCommand orig = new ChatCommand("Nacos 健康检查在哪一节", null, 5);
-            ChatCommand targeted = TargetedRagPipeline.applyTargetedFilters(
-                    orig, ctxWithFilters(Map.of("products", List.of("Nacos"))));
+            ChatCommand targeted =
+                    TargetedRagPipeline.applyTargetedFilters(
+                            orig, ctxWithFilters(Map.of("products", List.of("Nacos"))));
             assertThat(targeted.source()).isEqualTo("Nacos");
             assertThat(targeted.version()).isNull();
         }
@@ -108,8 +115,15 @@ class TargetedRagPipelineTest {
         @DisplayName("用户显式 cmd.source/version 不被 Router 覆盖")
         void userExplicitPriority() {
             ChatCommand orig = new ChatCommand("v1.0 文档", null, 5, "Dubbo", "v1.0", null, null);
-            ChatCommand targeted = TargetedRagPipeline.applyTargetedFilters(
-                    orig, ctxWithFilters(Map.of("versions", List.of("v9.9"), "products", List.of("Sentinel"))));
+            ChatCommand targeted =
+                    TargetedRagPipeline.applyTargetedFilters(
+                            orig,
+                            ctxWithFilters(
+                                    Map.of(
+                                            "versions",
+                                            List.of("v9.9"),
+                                            "products",
+                                            List.of("Sentinel"))));
             assertThat(targeted.version()).isEqualTo("v1.0");
             assertThat(targeted.source()).isEqualTo("Dubbo");
         }
@@ -119,8 +133,9 @@ class TargetedRagPipelineTest {
         void noFilterNoOp() {
             ChatCommand orig = new ChatCommand("错误码 10086 怎么解决", null, 5);
             // filters 只有 errorCodes 没有 versions / products
-            ChatCommand targeted = TargetedRagPipeline.applyTargetedFilters(
-                    orig, ctxWithFilters(Map.of("errorCodes", List.of("10086"))));
+            ChatCommand targeted =
+                    TargetedRagPipeline.applyTargetedFilters(
+                            orig, ctxWithFilters(Map.of("errorCodes", List.of("10086"))));
             assertThat(targeted).isSameAs(orig);
         }
 
@@ -153,7 +168,8 @@ class TargetedRagPipelineTest {
             ChatResult stub = ChatResult.of(StateHint.OK, "答案", TID);
             when(chatService.chat(any(), eq(TID), any())).thenReturn(stub);
 
-            ChatResult r = pipeline.execute(orig, ctxWithFilters(Map.of("versions", List.of("v2.5.1"))));
+            ChatResult r =
+                    pipeline.execute(orig, ctxWithFilters(Map.of("versions", List.of("v2.5.1"))));
 
             assertThat(r).isSameAs(stub);
             org.mockito.ArgumentCaptor<ChatCommand> captor =
@@ -167,7 +183,8 @@ class TargetedRagPipelineTest {
         void streamPassesTargetedCommand() {
             ChatCommand orig = new ChatCommand("Nacos 健康检查哪一节", null, 5);
             ChatStreamEvent head = new ChatStreamEvent.DoneEvent(TID.value(), StateHint.OK.name());
-            when(chatService.chatStream(any(), eq(TID))).thenReturn(reactor.core.publisher.Flux.just(head));
+            when(chatService.chatStream(any(), eq(TID)))
+                    .thenReturn(reactor.core.publisher.Flux.just(head));
 
             pipeline.stream(orig, ctxWithFilters(Map.of("products", List.of("Nacos"))))
                     .collectList()

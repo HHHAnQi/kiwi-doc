@@ -23,8 +23,8 @@ import com.xxx.ragdoc.application.chat.tool.ToolStatus;
  *
  * <p>UNKNOWN 状态直接 fail-closed 转 FAILED_TERMINAL。
  *
- * <p>语义"RUNNING → FAILED_RETRYABLE → FAILED_TERMINAL"两步收敛在 Executor 内完成;
- * 这里只为单一 Tool 调用返回结果 — 当前 PR 不自动重试, 直接给 FAILED_TERMINAL。
+ * <p>语义"RUNNING → FAILED_RETRYABLE → FAILED_TERMINAL"两步收敛在 Executor 内完成; 这里只为单一 Tool 调用返回结果 — 当前 PR
+ * 不自动重试, 直接给 FAILED_TERMINAL。
  */
 public final class ToolStatusMapper {
 

@@ -92,7 +92,10 @@ class PlannedAgentActivationSmokeTest {
                 return new RouterDecision(
                         TaskIntent.MULTI_HOP,
                         ExecutionStrategy.CLASSIC_RAG,
-                        List.of(), Map.of(), 0.95, "SMOKE_MULTI_HOP");
+                        List.of(),
+                        Map.of(),
+                        0.95,
+                        "SMOKE_MULTI_HOP");
             }
         };
     }
@@ -102,14 +105,14 @@ class PlannedAgentActivationSmokeTest {
     void flagTrueRoutesToPlannedAgent() {
         plannerProperties.setPlannedPipelineEnabled(true);
         ExecutionStrategyResolver resolver = new ExecutionStrategyResolver(plannerProperties);
-        ChatOrchestrator orchestrator = new ChatOrchestrator(
-                registry, traceObserver, routerProperties, multiHopRouter(), resolver);
+        ChatOrchestrator orchestrator =
+                new ChatOrchestrator(
+                        registry, traceObserver, routerProperties, multiHopRouter(), resolver);
 
         ChatResult stub = ChatResult.of(StateHint.OK, "agent answer", TID);
         when(plannedPipeline.execute(any(), any())).thenReturn(stub);
 
-        ChatResult r = orchestrator.execute(
-                new ChatCommand("q", null, 5), TID, ChatMode.AUTO);
+        ChatResult r = orchestrator.execute(new ChatCommand("q", null, 5), TID, ChatMode.AUTO);
 
         verify(plannedPipeline, times(1)).execute(any(), any());
         verify(classicPipeline, times(0)).execute(any(), any());
@@ -119,18 +122,36 @@ class PlannedAgentActivationSmokeTest {
     }
 
     @Test
+    @DisplayName("显式 AGENTIC + 双开关开启 → 不依赖 Router，直达 PLANNED_AGENT")
+    void explicitAgenticRoutesDirectlyWhenCapabilityEnabled() {
+        plannerProperties.setPlannedPipelineEnabled(true);
+        ExecutionStrategyResolver resolver = new ExecutionStrategyResolver(plannerProperties);
+        ChatOrchestrator orchestrator =
+                new ChatOrchestrator(
+                        registry, traceObserver, routerProperties, multiHopRouter(), resolver);
+        when(plannedPipeline.execute(any(), any()))
+                .thenReturn(ChatResult.of(StateHint.OK, "agent answer", TID));
+
+        ChatResult result =
+                orchestrator.execute(new ChatCommand("q", null, 5), TID, ChatMode.AGENTIC);
+
+        verify(plannedPipeline).execute(any(), any());
+        assertThat(result.pipelineType()).isEqualTo(PipelineType.PLANNED_AGENT);
+    }
+
+    @Test
     @DisplayName("flag=false (默认) + MULTI_HOP → zero-diff, ClassicRagPipeline 被调用, 不触发 Planned")
     void flagDefaultFalseZeroDiff() {
         // plannerProperties 默认 plannedPipelineEnabled=false
         ExecutionStrategyResolver resolver = new ExecutionStrategyResolver(plannerProperties);
-        ChatOrchestrator orchestrator = new ChatOrchestrator(
-                registry, traceObserver, routerProperties, multiHopRouter(), resolver);
+        ChatOrchestrator orchestrator =
+                new ChatOrchestrator(
+                        registry, traceObserver, routerProperties, multiHopRouter(), resolver);
 
         ChatResult stub = ChatResult.of(StateHint.OK, "classic answer", TID);
         when(classicPipeline.execute(any(), any())).thenReturn(stub);
 
-        ChatResult r = orchestrator.execute(
-                new ChatCommand("q", null, 5), TID, ChatMode.AUTO);
+        ChatResult r = orchestrator.execute(new ChatCommand("q", null, 5), TID, ChatMode.AUTO);
 
         verify(classicPipeline, times(1)).execute(any(), any());
         verify(plannedPipeline, times(0)).execute(any(), any());
@@ -142,23 +163,27 @@ class PlannedAgentActivationSmokeTest {
     void flagTrueButLowConfidenceStaysClassic() {
         plannerProperties.setPlannedPipelineEnabled(true);
         ExecutionStrategyResolver resolver = new ExecutionStrategyResolver(plannerProperties);
-        RuleBasedTaskRouter lowConfRouter = new RuleBasedTaskRouter() {
-            @Override
-            public RouterDecision route(String query) {
-                return new RouterDecision(
-                        TaskIntent.MULTI_HOP,
-                        ExecutionStrategy.CLASSIC_RAG,
-                        List.of(), Map.of(), 0.5, "SMOKE_LOW_CONF");
-            }
-        };
-        ChatOrchestrator orchestrator = new ChatOrchestrator(
-                registry, traceObserver, routerProperties, lowConfRouter, resolver);
+        RuleBasedTaskRouter lowConfRouter =
+                new RuleBasedTaskRouter() {
+                    @Override
+                    public RouterDecision route(String query) {
+                        return new RouterDecision(
+                                TaskIntent.MULTI_HOP,
+                                ExecutionStrategy.CLASSIC_RAG,
+                                List.of(),
+                                Map.of(),
+                                0.5,
+                                "SMOKE_LOW_CONF");
+                    }
+                };
+        ChatOrchestrator orchestrator =
+                new ChatOrchestrator(
+                        registry, traceObserver, routerProperties, lowConfRouter, resolver);
 
         when(classicPipeline.execute(any(), any()))
                 .thenReturn(ChatResult.of(StateHint.OK, "x", TID));
 
-        ChatResult r = orchestrator.execute(
-                new ChatCommand("q", null, 5), TID, ChatMode.AUTO);
+        ChatResult r = orchestrator.execute(new ChatCommand("q", null, 5), TID, ChatMode.AUTO);
 
         verify(plannedPipeline, times(0)).execute(any(), any());
         verify(classicPipeline, times(1)).execute(any(), any());
@@ -170,17 +195,22 @@ class PlannedAgentActivationSmokeTest {
     void flagTrueButNonMultiHopStaysClassic() {
         plannerProperties.setPlannedPipelineEnabled(true);
         ExecutionStrategyResolver resolver = new ExecutionStrategyResolver(plannerProperties);
-        RuleBasedTaskRouter factRouter = new RuleBasedTaskRouter() {
-            @Override
-            public RouterDecision route(String query) {
-                return new RouterDecision(
-                        TaskIntent.FACT,
-                        ExecutionStrategy.CLASSIC_RAG,
-                        List.of(), Map.of(), 0.95, "SMOKE_FACT");
-            }
-        };
-        ChatOrchestrator orchestrator = new ChatOrchestrator(
-                registry, traceObserver, routerProperties, factRouter, resolver);
+        RuleBasedTaskRouter factRouter =
+                new RuleBasedTaskRouter() {
+                    @Override
+                    public RouterDecision route(String query) {
+                        return new RouterDecision(
+                                TaskIntent.FACT,
+                                ExecutionStrategy.CLASSIC_RAG,
+                                List.of(),
+                                Map.of(),
+                                0.95,
+                                "SMOKE_FACT");
+                    }
+                };
+        ChatOrchestrator orchestrator =
+                new ChatOrchestrator(
+                        registry, traceObserver, routerProperties, factRouter, resolver);
 
         when(classicPipeline.execute(any(), any()))
                 .thenReturn(ChatResult.of(StateHint.OK, "x", TID));

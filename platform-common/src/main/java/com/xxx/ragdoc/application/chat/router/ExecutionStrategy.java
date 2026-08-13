@@ -1,8 +1,8 @@
 package com.xxx.ragdoc.application.chat.router;
 
 /**
- * PR-3 / EMS-PR3: Router 选定的执行策略。是 PipelineType 的子集表达, 但保留 REFUSE 语义
- * (PipelineType 中没有"拒绝"类型 — 拒绝由 Orchestrator 在 dispatch 前提前处理, 不进入任何 Pipeline)。
+ * PR-3 / EMS-PR3: Router 选定的执行策略。是 PipelineType 的子集表达, 但保留 REFUSE 语义 (PipelineType 中没有"拒绝"类型 — 拒绝由
+ * Orchestrator 在 dispatch 前提前处理, 不进入任何 Pipeline)。
  *
  * <ul>
  *   <li>{@link #CLASSIC_RAG} — 走既有 Classic RAG (Dense 或 Hybrid 由 retrieve mode 决定)

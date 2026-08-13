@@ -7,7 +7,8 @@ package com.xxx.ragdoc.application.chat.harness;
  * @param error 结构化 error (outcome.error 的镜像), 仅 ERROR 类
  * @param outcome 记录用 outcome; REPLAY 中调用方据 outcome 决定抛/返回
  */
-public record InvocationResult<RES>(RES result, FixtureError error, FixtureOutcome.OutcomeResult outcome) {
+public record InvocationResult<RES>(
+        RES result, FixtureError error, FixtureOutcome.OutcomeResult outcome) {
 
     public static <RES> InvocationResult<RES> ok(RES r, FixtureOutcome.OutcomeResult outcome) {
         return new InvocationResult<>(r, null, outcome);

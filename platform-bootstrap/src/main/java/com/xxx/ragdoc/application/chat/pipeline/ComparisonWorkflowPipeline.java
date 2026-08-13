@@ -9,7 +9,6 @@ import com.xxx.ragdoc.application.chat.comparison.ComparisonExecutorProperties;
 import com.xxx.ragdoc.application.chat.router.RouterDecision;
 import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.StateHint;
-import com.xxx.ragdoc.domain.shared.TraceId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,12 +47,15 @@ import reactor.core.publisher.Flux;
 public class ComparisonWorkflowPipeline implements ChatPipeline {
 
     public static final String PIPELINE_VERSION = "comparison-workflow-v1";
+
     /** 比较工作流至少要看到的 A/B 两方证据数量阈值 (任一方为 0 即 REFUSE_NO_EVIDENCE)。 */
     public static final int MIN_CITATIONS_PER_SIDE = 1;
 
     private final ChatService chatService;
+
     /** PR-6c: 可选注入 — Flag=false 时为 null (或可用, 但不调用)。 */
     private final ComparisonAgentExecutor agentExecutor;
+
     private final ComparisonExecutorProperties properties;
 
     @Autowired
@@ -81,13 +83,16 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
             }
             // agentResult == null: 仅 init/配置层面无法进入 executor, 此时按 properties 决定是否 fallback
             if (!properties.isCompatibilityFallbackEnabled()) {
-                log.warn("comparison.executor.skipped_fallback_disabled request_id={}",
+                log.warn(
+                        "comparison.executor.skipped_fallback_disabled request_id={}",
                         context.requestId());
-                return ChatResult.of(StateHint.EMPTY_KB,
+                return ChatResult.of(
+                        StateHint.EMPTY_KB,
                         "Comparison Agent Executor 初始化失败, 兼容回退已禁用",
                         context.traceId());
             }
-            log.warn("comparison.executor.falling_back_to_legacy request_id={}",
+            log.warn(
+                    "comparison.executor.falling_back_to_legacy request_id={}",
                     context.requestId());
         }
         return runLegacyPath(command, context);
@@ -99,24 +104,33 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
             RouterDecision decision = context.routerDecision();
             Map<String, Object> filters = decision != null ? decision.filters() : Map.of();
             return agentExecutor.execute(
-                    command, filters, decision,
-                    context.requestId(), context.principal(), context.traceId());
+                    command,
+                    filters,
+                    decision,
+                    context.requestId(),
+                    context.principal(),
+                    context.traceId());
         } catch (com.xxx.ragdoc.application.chat.agent.AgentRunInitializationException
-                | com.xxx.ragdoc.application.chat.agent.PlanValidationResult.InvalidAgentPlanException
+                | com.xxx.ragdoc.application.chat.agent.PlanValidationResult
+                        .InvalidAgentPlanException
                 | IllegalStateException ex) {
             // 配置 / 初始化层面异常 — 返回 null 触发上层 fallback 决策 (§3 compatibility-only)
-            log.warn("comparison.agent_path_init_failed request_id={} reason={}",
-                    context.requestId(), ex.toString());
+            log.warn(
+                    "comparison.agent_path_init_failed request_id={} reason={}",
+                    context.requestId(),
+                    ex.toString());
             return null;
         } catch (Exception ex) {
             // Composer / AgentRun Executor 抛业务异常 → 不回退 (§3), 返回结构化 NO_RECALL
-            log.warn("comparison.agent_path_business_error request_id={} reason={}",
-                    context.requestId(), ex.toString());
+            log.warn(
+                    "comparison.agent_path_business_error request_id={} reason={}",
+                    context.requestId(),
+                    ex.toString());
             // 避免权限/预算/超时等业务异常被 silently fallback
-            properties.setComparisonExecutorEnabled(properties.isComparisonExecutorEnabled()); // no-op, 保留
-            return ChatResult.of(StateHint.NO_RECALL,
-                    "Comparison 执行失败: " + ex.getMessage(),
-                    context.traceId());
+            properties.setComparisonExecutorEnabled(
+                    properties.isComparisonExecutorEnabled()); // no-op, 保留
+            return ChatResult.of(
+                    StateHint.NO_RECALL, "Comparison 执行失败: " + ex.getMessage(), context.traceId());
         }
     }
 
@@ -144,10 +158,8 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
         ChatCommand cmdA = command.withQuery(subQueryA);
         ChatCommand cmdB = command.withQuery(subQueryB);
 
-        ChatResult resultA =
-                chatService.chat(cmdA, context.traceId(), command.conversationId());
-        ChatResult resultB =
-                chatService.chat(cmdB, context.traceId(), command.conversationId());
+        ChatResult resultA = chatService.chat(cmdA, context.traceId(), command.conversationId());
+        ChatResult resultB = chatService.chat(cmdB, context.traceId(), command.conversationId());
 
         return mergeAndAssemble(resultA, resultB, command, context, ab);
     }
@@ -185,18 +197,18 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
     }
 
     private static String firstString(Object o) {
-        if (o instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof String s) return s;
+        if (o instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof String s)
+            return s;
         return null;
     }
 
     private static String secondString(Object o) {
-        if (o instanceof List<?> list && list.size() >= 2 && list.get(1) instanceof String s) return s;
+        if (o instanceof List<?> list && list.size() >= 2 && list.get(1) instanceof String s)
+            return s;
         return null;
     }
 
-    /**
-     * 合并 A/B 两次结果, 不引入新 LLM 综合调用。 (PR-3.4 旧路径; PR-6c Flag=true 时不走到此方法)
-     */
+    /** 合并 A/B 两次结果, 不引入新 LLM 综合调用。 (PR-3.4 旧路径; PR-6c Flag=true 时不走到此方法) */
     static ChatResult mergeAndAssemble(
             ChatResult a, ChatResult b, ChatCommand orig, ChatExecutionContext ctx, Pair ab) {
         List<ChatResult.Citation> aCits = nonNull(a.citations());
@@ -205,7 +217,10 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
         if (aCits.isEmpty() || bCits.isEmpty()) {
             log.info(
                     "pipeline.workflow.no_evidence aCits={}, bCits={}, state_a={}, state_b={}",
-                    aCits.size(), bCits.size(), a.stateHint(), b.stateHint());
+                    aCits.size(),
+                    bCits.size(),
+                    a.stateHint(),
+                    b.stateHint());
             return ChatResult.of(
                     StateHint.NO_RECALL,
                     "至少一方 (A=" + ab.a + " 或 B=" + ab.b + ") 缺乏可引用的文档证据, 暂时无法给出比较答案。",
@@ -227,13 +242,7 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
                         + "】\n"
                         + b.answer();
 
-        return new ChatResult(
-                mergedAnswer,
-                merged,
-                StateHint.OK,
-                ctx.traceId(),
-                null,
-                null);
+        return new ChatResult(mergedAnswer, merged, StateHint.OK, ctx.traceId(), null, null);
     }
 
     static List<ChatResult.Citation> mergeCitations(
@@ -253,4 +262,3 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
         return list == null ? List.of() : list;
     }
 }
-

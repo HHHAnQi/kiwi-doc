@@ -2,30 +2,28 @@ package com.xxx.ragdoc.application.chat.planned;
 
 import com.xxx.ragdoc.application.chat.agent.AgentRunStatus;
 import com.xxx.ragdoc.application.chat.agent.CancellationTokenSource;
-import com.xxx.ragdoc.application.chat.agent.CancellationTokenSource;
 import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
 import com.xxx.ragdoc.application.chat.pipeline.ChatExecutionContext;
 import com.xxx.ragdoc.application.chat.pipeline.ChatPipeline;
 import com.xxx.ragdoc.application.chat.router.RouterDecision;
-import com.xxx.ragdoc.application.chat.tool.ToolRegistry;
+import com.xxx.ragdoc.common.exception.DomainException;
+import com.xxx.ragdoc.common.exception.ErrorCode;
 import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.StateHint;
-import com.xxx.ragdoc.domain.shared.TraceId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 /**
- * PR-7c.3c / EMS-PR7 §8 + §9: 薄适配层 — 调 {@link PlannedAgentExecutionCoordinator#prepare}
- * 取得 PreparedGroundedAnswer → 单次 GroundedAnswerComposer → ChatResult (同步);
- * SSE 留 PR-7c.3c-2。
+ * PR-7c.3c / EMS-PR7 §8 + §9: 薄适配层 — 调 {@link PlannedAgentExecutionCoordinator#prepare} 取得
+ * PreparedGroundedAnswer → 单次 GroundedAnswerComposer → ChatResult (同步); SSE 留 PR-7c.3c-2。
  *
- * <p>Run 终态由 {@link PlannedAgentExecutionCoordinator} 通过 Finalizer 写到 READY_TO_ANSWER
- * (成功时) 或对应失败终态; 本 Pipeline 在 Answer Composer 成功后再 Finalize 写 ANSWERED,
- * Answer 失败按对应终态 (TIMED_OUT / SYSTEM_FAILED)。
+ * <p>Run 终态由 {@link PlannedAgentExecutionCoordinator} 通过 Finalizer 写到 READY_TO_ANSWER (成功时)
+ * 或对应失败终态; 本 Pipeline 在 Answer Composer 成功后再 Finalize 写 ANSWERED, Answer 失败按对应终态 (TIMED_OUT /
+ * SYSTEM_FAILED)。
  *
  * <p>ChatOrchestrator 已经按 ExecutionStrategyResolver 路由策略为 PLANNED_AGENT 时获取本 Bean。
  */
@@ -47,114 +45,190 @@ public class PlannedAgentPipeline implements ChatPipeline {
     @Override
     public ChatResult execute(ChatCommand command, ChatExecutionContext context) {
         if (!plannerProperties.isEnabled()) {
-            // 直接走 classic 兜底 (Orchestrator 路由本不应到达; 但防双重保险)
-            return ChatResult.of(StateHint.NO_RECALL,
-                    "PLANNED_AGENT pipeline disabled", context.traceId());
+            // 能力关闭属于部署配置错误，不能伪装成“没有召回”。
+            throw new DomainException(
+                    ErrorCode.AGENTIC_MODE_UNAVAILABLE, "Planned Agent pipeline 未启用");
         }
         RouterDecision decision = context.routerDecision();
-        var prepared = coordinator.prepare(
-                command.query(), decision,
-                context.requestId(), context.principal(),
-                CancellationTokenSource.CancellationToken.never(),
-                allowedToolDescriptors(),
-                com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy.pr6Default());
+        var prepared =
+                coordinator.prepare(
+                        command.query(),
+                        decision,
+                        context.requestId(),
+                        context.principal(),
+                        CancellationTokenSource.CancellationToken.never(),
+                        allowedToolDescriptors(),
+                        com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy.pr6Default());
         if (!prepared.ok()) {
-            return ChatResult.of(StateHint.NO_RECALL,
-                    humanizeFailure(prepared), context.traceId());
+            return ChatResult.of(StateHint.NO_RECALL, humanizeFailure(prepared), context.traceId());
         }
         PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
         // 单次 Answer generation
         EvidenceGroundedAnswerComposer.GroundedAnswer answer;
         try {
-            answer = answerComposer.compose(new EvidenceGroundedAnswerComposer.GroundedAnswerRequest(
-                    command.query(),
-                    p.requirements(),
-                    p.coverage(),
-                    p.evidence(),
-                    context.principal().tenantId(),
-                    p.runId()));
+            answer =
+                    answerComposer.compose(
+                            new EvidenceGroundedAnswerComposer.GroundedAnswerRequest(
+                                    command.query(),
+                                    p.requirements(),
+                                    p.coverage(),
+                                    p.evidence(),
+                                    context.principal().tenantId(),
+                                    p.runId()));
         } catch (Exception ex) {
             log.warn("planned.answer_composer_failed run={} err={}", p.runId(), ex.toString());
-            runFinalizer.finalize(p.runId(), p.readyRunVersion(),
+            runFinalizer.finalize(
+                    p.runId(),
+                    p.readyRunVersion(),
                     java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                    AgentRunStatus.SYSTEM_FAILED, "ANSWER_COMPOSER_FAILED",
-                    p.usage(), p.reservation());
+                    AgentRunStatus.SYSTEM_FAILED,
+                    "ANSWER_COMPOSER_FAILED",
+                    p.usage(),
+                    p.reservation());
             return ChatResult.of(StateHint.NO_RECALL, "答案生成失败", context.traceId());
         }
         // Final Answer Cas ANSWERED
-        runFinalizer.finalize(p.runId(), p.readyRunVersion(),
+        PlannedAgentRunFinalizer.FinalizeOutcome outcome = runFinalizer.finalize(
+                p.runId(),
+                p.readyRunVersion(),
                 java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                AgentRunStatus.ANSWERED, "PLANNED_ANSWER_READY",
-                p.usage(), p.reservation());
+                AgentRunStatus.ANSWERED,
+                "PLANNED_ANSWER_READY",
+                p.usage(),
+                p.reservation());
+        if (!outcome.written() && !outcome.idempotent()) {
+            log.warn(
+                    "planned.answer_finalize_conflict run={} winner={} conflict={}",
+                    p.runId(),
+                    outcome.effectiveTerminal(),
+                    outcome.conflict());
+            return ChatResult.of(StateHint.NO_RECALL, "Agent 运行状态已被取消或终止", context.traceId());
+        }
         // Citation (PR-7c.3c 简化: 用 evidenceIds 直接转 Citation, disabled verifier 走安全 skip)
         var citations = buildCitations(p);
-        return new ChatResult(answer.text(), citations, StateHint.OK, context.traceId(),
-                null, null);
+        return new ChatResult(
+                answer.text(), citations, StateHint.OK, context.traceId(), null, null);
     }
 
     @Override
     public Flux<ChatStreamEvent> stream(ChatCommand command, ChatExecutionContext context) {
-        // PR-7c.3c-2: SSE 流式路径 — 与同步共享 prepare; 单终态契约 (PR-0)
         CancellationTokenSource cts = new CancellationTokenSource();
+        // prepare 包含 Planner/检索/工具远程 IO，必须延迟到订阅并移出 WebFlux 事件循环。
+        // doOnCancel 把断连传播到每个 Step 前置关口；具体远程客户端仍需各自超时兜底。
+        return Flux.defer(() -> streamPrepared(command, context, cts))
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                .doOnCancel(cts::cancel);
+    }
+
+    private Flux<ChatStreamEvent> streamPrepared(
+            ChatCommand command, ChatExecutionContext context, CancellationTokenSource cts) {
+        // PR-7c.3c-2: SSE 流式路径 — 与同步共享 prepare; 单终态契约 (PR-0)
         RouterDecision decision = context.routerDecision();
         PlannedAgentExecutionCoordinator.PrepareResult prepared;
         try {
-            prepared = coordinator.prepare(
-                    command.query(), decision,
-                    context.requestId(), context.principal(),
-                    cts.token(),
-                    allowedToolDescriptors(),
-                    com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy.pr6Default());
+            prepared =
+                    coordinator.prepare(
+                            command.query(),
+                            decision,
+                            context.requestId(),
+                            context.principal(),
+                            cts.token(),
+                            allowedToolDescriptors(),
+                            com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy
+                                    .pr6Default());
         } catch (RuntimeException ex) {
-            log.warn("planned.sse.prepare_failed req={} err={}", context.requestId(), ex.toString());
-            return Flux.just((ChatStreamEvent) new ChatStreamEvent.ErrorEvent(
-                    context.traceId() == null ? "" : context.traceId().value(),
-                    "PLANNED_PREPARE_FAILED:" + ex.getMessage()));
+            log.warn(
+                    "planned.sse.prepare_failed req={} err={}", context.requestId(), ex.toString());
+            return Flux.just(
+                    (ChatStreamEvent)
+                            new ChatStreamEvent.ErrorEvent(
+                                    context.traceId() == null ? "" : context.traceId().value(),
+                                    "PLANNED_PREPARE_FAILED:" + ex.getMessage()));
         }
         if (!prepared.ok()) {
-            return Flux.just((ChatStreamEvent) new ChatStreamEvent.ErrorEvent(
-                    context.traceId() == null ? "" : context.traceId().value(),
-                    humanizeFailure(prepared)));
+            return Flux.just(
+                    (ChatStreamEvent)
+                            new ChatStreamEvent.ErrorEvent(
+                                    context.traceId() == null ? "" : context.traceId().value(),
+                                    humanizeFailure(prepared)));
         }
         PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
         if (cts.token().isCancelled()) {
-            runFinalizer.finalize(p.runId(), p.readyRunVersion(),
+            runFinalizer.finalize(
+                    p.runId(),
+                    p.readyRunVersion(),
                     java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                    AgentRunStatus.CANCELLED, "USER_CANCELLED",
-                    p.usage(), p.reservation());
-            return Flux.just((ChatStreamEvent) new ChatStreamEvent.ErrorEvent(
-                    context.traceId() == null ? "" : context.traceId().value(), "已取消"));
+                    AgentRunStatus.CANCELLED,
+                    "USER_CANCELLED",
+                    p.usage(),
+                    p.reservation());
+            return Flux.just(
+                    (ChatStreamEvent)
+                            new ChatStreamEvent.ErrorEvent(
+                                    context.traceId() == null ? "" : context.traceId().value(),
+                                    "已取消"));
         }
         EvidenceGroundedAnswerComposer.GroundedAnswerRequest req =
                 new EvidenceGroundedAnswerComposer.GroundedAnswerRequest(
                         command.query(),
-                        p.requirements(), p.coverage(), p.evidence(),
-                        context.principal().tenantId(), p.runId());
+                        p.requirements(),
+                        p.coverage(),
+                        p.evidence(),
+                        context.principal().tenantId(),
+                        p.runId());
         // 流式 Answer + 单 DoneEvent 收尾 (终态由 Finalizer 写)
         return answerComposer.stream(req)
                 .map(token -> (ChatStreamEvent) token)
-                .concatWith(reactor.core.publisher.Mono.fromCallable(() -> {
-                    runFinalizer.finalize(p.runId(), p.readyRunVersion(),
-                            java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                            AgentRunStatus.ANSWERED, "PLANNED_ANSWER_STREAMED",
-                            p.usage(), p.reservation());
-                    return (ChatStreamEvent) new ChatStreamEvent.DoneEvent(
-                            context.traceId() == null ? "" : context.traceId().value(), "OK");
-                }))
-                .onErrorResume(err -> {
-                    log.warn("planned.sse.answer_failed run={} err={}", p.runId(), err.toString());
-                    runFinalizer.finalize(p.runId(), p.readyRunVersion(),
-                            java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                            AgentRunStatus.SYSTEM_FAILED, "ANSWER_STREAM_FAILED",
-                            p.usage(), p.reservation());
-                    return reactor.core.publisher.Flux.just(
-                            (ChatStreamEvent) new ChatStreamEvent.ErrorEvent(
-                                    context.traceId() == null ? "" : context.traceId().value(),
-                                    "答案流失败"));
-                });
+                .concatWith(
+                        reactor.core.publisher.Mono.fromCallable(
+                                () -> {
+                                    PlannedAgentRunFinalizer.FinalizeOutcome outcome =
+                                            runFinalizer.finalize(
+                                            p.runId(),
+                                            p.readyRunVersion(),
+                                            java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
+                                            AgentRunStatus.ANSWERED,
+                                            "PLANNED_ANSWER_STREAMED",
+                                            p.usage(),
+                                            p.reservation());
+                                    if (!outcome.written() && !outcome.idempotent()) {
+                                        throw new IllegalStateException(
+                                                "Agent 终态已被抢占: "
+                                                        + outcome.effectiveTerminal());
+                                    }
+                                    return (ChatStreamEvent)
+                                            new ChatStreamEvent.DoneEvent(
+                                                    context.traceId() == null
+                                                            ? ""
+                                                            : context.traceId().value(),
+                                                    "OK");
+                                }))
+                .onErrorResume(
+                        err -> {
+                            log.warn(
+                                    "planned.sse.answer_failed run={} err={}",
+                                    p.runId(),
+                                    err.toString());
+                            runFinalizer.finalize(
+                                    p.runId(),
+                                    p.readyRunVersion(),
+                                    java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
+                                    AgentRunStatus.SYSTEM_FAILED,
+                                    "ANSWER_STREAM_FAILED",
+                                    p.usage(),
+                                    p.reservation());
+                            return reactor.core.publisher.Flux.just(
+                                    (ChatStreamEvent)
+                                            new ChatStreamEvent.ErrorEvent(
+                                                    context.traceId() == null
+                                                            ? ""
+                                                            : context.traceId().value(),
+                                                    "答案流失败"));
+                        });
     }
 
-    private java.util.List<com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor> allowedToolDescriptors() {
+    private java.util.List<com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor>
+            allowedToolDescriptors() {
         return java.util.List.of(
                 new com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor(
                         "semantic_search", "v1", "semantic search", java.util.Map.of()),
@@ -170,9 +244,15 @@ public class PlannedAgentPipeline implements ChatPipeline {
             PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p) {
         java.util.List<ChatResult.Citation> out = new java.util.ArrayList<>();
         for (var e : p.evidence()) {
-            out.add(new ChatResult.Citation(
-                    e.chunkId(), e.documentId(), 0,
-                    safeSnippet(e.content()), e.content(), java.util.List.of(), null));
+            out.add(
+                    new ChatResult.Citation(
+                            e.chunkId(),
+                            e.documentId(),
+                            0,
+                            safeSnippet(e.content()),
+                            e.content(),
+                            java.util.List.of(),
+                            null));
         }
         return out;
     }

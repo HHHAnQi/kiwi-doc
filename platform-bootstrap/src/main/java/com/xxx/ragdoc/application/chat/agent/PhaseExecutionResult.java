@@ -8,8 +8,8 @@ import java.util.Set;
 /**
  * PR-7c / EMS-PR7 §2.3: 单 Phase 执行结果 (KEEP_EXECUTING 模式)。
  *
- * <p>PlannedAgentPipeline 据此构造 {@code SufficiencyRequest}; {@link AgentRunPhaseExecutor}
- * 在 KEEP_EXECUTING 模式<b>不</b>写终态 CAS。
+ * <p>PlannedAgentPipeline 据此构造 {@code SufficiencyRequest}; {@link AgentRunPhaseExecutor} 在
+ * KEEP_EXECUTING 模式<b>不</b>写终态 CAS。
  *
  * <p>关键字段:
  *
@@ -23,8 +23,8 @@ import java.util.Set;
  *   <li>{@code discoveredEntities}: 本 Phase 新出现的实体 (用于派生 Requirement)。
  *   <li>{@code requiredStepFailed}: 本 Phase required Step 是否终态失败 → 终止 Replan, 转 TOOL_FAILED。
  *   <li>{@code failureReasonCode}: 失败短代码 (污染预算/超时等) — null 表示无 failure。
- *   <li>{@code prematureTerminal}: 若 Phase 内已转 Run 终态 (Cancel/Timeout/Budget/Conflict),
- *       Pipeline 不再调 Sufficiency。
+ *   <li>{@code prematureTerminal}: 若 Phase 内已转 Run 终态 (Cancel/Timeout/Budget/Conflict), Pipeline
+ *       不再调 Sufficiency。
  * </ul>
  */
 public record PhaseExecutionResult(
@@ -47,7 +47,8 @@ public record PhaseExecutionResult(
         if (runId == null || runId.isBlank()) throw new IllegalArgumentException("runId");
         executedStepIds = executedStepIds == null ? List.of() : List.copyOf(executedStepIds);
         newEvidence = newEvidence == null ? List.of() : List.copyOf(newEvidence);
-        accumulatedEvidence = accumulatedEvidence == null ? List.of() : List.copyOf(accumulatedEvidence);
+        accumulatedEvidence =
+                accumulatedEvidence == null ? List.of() : List.copyOf(accumulatedEvidence);
         if (usage == null) usage = AgentUsage.zero();
         if (reservation == null) reservation = AgentBudgetReservation.zero();
         completedSteps = completedSteps == null ? List.of() : List.copyOf(completedSteps);

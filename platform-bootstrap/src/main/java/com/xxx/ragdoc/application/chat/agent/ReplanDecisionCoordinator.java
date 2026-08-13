@@ -24,8 +24,8 @@ import org.springframework.stereotype.Component;
  *   <li>无 PERMISSION_DENIED
  *   <li>无 TIMEOUT
  *   <li>无 CANCELLATION
- *   <li>Budget 足够 (PhaseExecutionResult.reservation 至少有 1 step + 1 toolCall 余额;
- *       或 inferred remaining budget > 0)
+ *   <li>Budget 足够 (PhaseExecutionResult.reservation 至少有 1 step + 1 toolCall 余额; 或 inferred
+ *       remaining budget > 0)
  *   <li>required Tool 未 terminal failure (requiredStepFailed=false)
  *   <li>无 Conflict (sufficiency.conflicts.isEmpty())
  *   <li>Phase 真有进展 (AgentProgressDetector = PROGRESS)
@@ -66,7 +66,8 @@ public class ReplanDecisionCoordinator {
 
         // 1. Phase 内已 premature terminal → 直接转相应终态, 不 Replan
         if (phaseResult.prematureTerminal() != null) {
-            return ReplanDecision.refuse(toRefuseTerminal(phaseResult.prematureTerminal()),
+            return ReplanDecision.refuse(
+                    toRefuseTerminal(phaseResult.prematureTerminal()),
                     phaseResult.failureReasonCode());
         }
 
@@ -81,46 +82,50 @@ public class ReplanDecisionCoordinator {
         }
         if (sufficiency.status() == SufficiencyStatus.CONFLICTED
                 || !sufficiency.conflicts().isEmpty()) {
-            return ReplanDecision.refuse(AgentRunStatus.REFUSED_CONFLICT,
-                    "REPLAN_BLOCKED_BY_CONFLICT");
+            return ReplanDecision.refuse(
+                    AgentRunStatus.REFUSED_CONFLICT, "REPLAN_BLOCKED_BY_CONFLICT");
         }
 
         // 4. 必要前置状态: INSUFFICIENT / UNDETERMINED + missingRequirementIds 非空
         if (sufficiency.missingRequirementIds().isEmpty()) {
-            return ReplanDecision.refuse(AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "NO_MISSING_REQUIREMENT");
+            return ReplanDecision.refuse(
+                    AgentRunStatus.REFUSED_NO_EVIDENCE, "NO_MISSING_REQUIREMENT");
         }
 
         // 5. Replan 次数已用完
         if (replanCount >= Math.max(0, maxReplans)) {
-            return ReplanDecision.refuse(AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "REPLAN_EXHAUSTED");
+            return ReplanDecision.refuse(AgentRunStatus.REFUSED_NO_EVIDENCE, "REPLAN_EXHAUSTED");
         }
 
         // 6. 进展检测 — 无进展直接 REFUSED_NO_EVIDENCE
-        AgentProgressDetector.Outcome progress = progressDetector.detect(
-                priorAccumulatedEvidenceIds,
-                phaseResult.newEvidence(),
-                phaseResult.discoveredEntities(),
-                priorCoverage == null ? java.util.List.of() : priorCoverage.uncoveredRequirementIds(),
-                sufficiency.missingRequirementIds());
+        AgentProgressDetector.Outcome progress =
+                progressDetector.detect(
+                        priorAccumulatedEvidenceIds,
+                        phaseResult.newEvidence(),
+                        phaseResult.discoveredEntities(),
+                        priorCoverage == null
+                                ? java.util.List.of()
+                                : priorCoverage.uncoveredRequirementIds(),
+                        sufficiency.missingRequirementIds());
         if (progress == AgentProgressDetector.Outcome.NO_PROGRESS) {
-            return ReplanDecision.refuse(AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "AGENT_NO_PROGRESS");
+            return ReplanDecision.refuse(AgentRunStatus.REFUSED_NO_EVIDENCE, "AGENT_NO_PROGRESS");
         }
 
         // 7. Budget 检查 — 至少留 1 step + 1 toolCall 余额
         if (remainingBudget != null) {
             if (remainingBudget.maxSteps() - phaseResult.usage().usedSteps() <= 0
                     || remainingBudget.maxToolCalls() - phaseResult.usage().usedToolCalls() <= 0) {
-                return ReplanDecision.refuse(AgentRunStatus.BUDGET_EXCEEDED,
-                        "REPLAN_BUDGET_INSUFFICIENT");
+                return ReplanDecision.refuse(
+                        AgentRunStatus.BUDGET_EXCEEDED, "REPLAN_BUDGET_INSUFFICIENT");
             }
         }
 
         // 全部通过 — 允许 Replan
-        log.info("replan.allowed run={} replanCount={} missing={}",
-                phaseResult.runId(), replanCount, sufficiency.missingRequirementIds());
+        log.info(
+                "replan.allowed run={} replanCount={} missing={}",
+                phaseResult.runId(),
+                replanCount,
+                sufficiency.missingRequirementIds());
         return ReplanDecision.allow(phaseResult, sufficiency);
     }
 
@@ -142,8 +147,12 @@ public class ReplanDecisionCoordinator {
         }
 
         static ReplanDecision noReplanNeeded() {
-            return new ReplanDecision(false, "SUFFICIENCY_ALREADY_SUFFICIENT",
-                    AgentRunStatus.READY_TO_ANSWER, null, null);
+            return new ReplanDecision(
+                    false,
+                    "SUFFICIENCY_ALREADY_SUFFICIENT",
+                    AgentRunStatus.READY_TO_ANSWER,
+                    null,
+                    null);
         }
 
         static ReplanDecision refuse(AgentRunStatus terminal, String reason) {

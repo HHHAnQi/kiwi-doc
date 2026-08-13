@@ -1,8 +1,8 @@
 package com.xxx.ragdoc.application.chat.agent;
 
 /**
- * PR-6b.1 / EMS-PR6 §11.2: 多 CAS 事务内任一 CAS 失败, 抛本异常让 Spring `@Transactional REQUIRES_NEW`
- * 整体回滚 — 不允许半提交 (Reservation CAS 成功但 Step CAS 失败, 或反向)。
+ * PR-6b.1 / EMS-PR6 §11.2: 多 CAS 事务内任一 CAS 失败, 抛本异常让 Spring `@Transactional REQUIRES_NEW` 整体回滚 —
+ * 不允许半提交 (Reservation CAS 成功但 Step CAS 失败, 或反向)。
  *
  * <p>Executor 捕获后:
  *

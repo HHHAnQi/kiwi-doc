@@ -17,7 +17,8 @@ import java.util.List;
  * </ul>
  */
 public record CitationVerifyInput(
-        @NotBlank(message = "claim 不能为空") @Size(max = 2000, message = "claim 上限 2000 字符") String claim,
+        @NotBlank(message = "claim 不能为空") @Size(max = 2000, message = "claim 上限 2000 字符")
+                String claim,
         List<Evidence> evidences)
         implements ToolInput {
 

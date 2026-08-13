@@ -6,8 +6,8 @@ import java.util.List;
 /**
  * PR-4 / EMS-PR4: 检索类 Tool 的统一 output 标记接口。
  *
- * <p>让 ToolExecutor 可在 ACL post-check 阶段统一过滤无权 Evidence (不依赖每个 Tool 自己实现)。
- * Tool 的具体 output record 实现本接口, 提供 with Evidences copy 方法。
+ * <p>让 ToolExecutor 可在 ACL post-check 阶段统一过滤无权 Evidence (不依赖每个 Tool 自己实现)。 Tool 的具体 output record
+ * 实现本接口, 提供 with Evidences copy 方法。
  */
 public interface EvidenceListOutput extends ToolOutput {
 

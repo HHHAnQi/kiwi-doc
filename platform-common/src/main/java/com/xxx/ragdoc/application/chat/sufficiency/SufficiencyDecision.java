@@ -33,7 +33,8 @@ public record SufficiencyDecision(
         if (action == null) action = RecommendedAction.REFUSE_NO_EVIDENCE;
         if (reasonCode == null) reasonCode = "";
         if (source == null) source = "RULE";
-        // 不变量: CONFLICTED 必须有 conflicts; CONFLICTED 不要遗漏 -> CONFLICTED+空 conflicts 视为 SYSTEM_FAILED bug
+        // 不变量: CONFLICTED 必须有 conflicts; CONFLICTED 不要遗漏 -> CONFLICTED+空 conflicts 视为 SYSTEM_FAILED
+        // bug
         if (status == SufficiencyStatus.CONFLICTED && conflicts.isEmpty()) {
             throw new IllegalArgumentException("CONFLICTED 必须含 ≥1 EvidenceConflict");
         }
@@ -52,7 +53,8 @@ public record SufficiencyDecision(
             RecommendedAction action,
             String reason) {
         String shortReason = reason == null ? "" : reason;
-        return new SufficiencyDecision(status, coverage, missing, conflicts, action, shortReason, "RULE");
+        return new SufficiencyDecision(
+                status, coverage, missing, conflicts, action, shortReason, "RULE");
     }
 
     public static SufficiencyDecision model(
@@ -63,7 +65,8 @@ public record SufficiencyDecision(
             RecommendedAction action,
             String reason) {
         String shortReason = reason == null ? "" : reason;
-        return new SufficiencyDecision(status, coverage, missing, conflicts, action, shortReason, "MODEL");
+        return new SufficiencyDecision(
+                status, coverage, missing, conflicts, action, shortReason, "MODEL");
     }
 
     /** False Sufficient 防护: rule/model source 反查 (评测 / Trace)。 */

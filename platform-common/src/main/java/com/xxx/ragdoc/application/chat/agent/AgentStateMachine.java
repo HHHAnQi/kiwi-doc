@@ -1,6 +1,5 @@
 package com.xxx.ragdoc.application.chat.agent;
 
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -47,11 +46,16 @@ public final class AgentStateMachine {
         };
         for (AgentRunStatus s :
                 new AgentRunStatus[] {
-                    AgentRunStatus.RECEIVED, AgentRunStatus.ROUTED, AgentRunStatus.PLANNED,
-                    AgentRunStatus.EXECUTING, AgentRunStatus.READY_TO_ANSWER
+                    AgentRunStatus.RECEIVED,
+                    AgentRunStatus.ROUTED,
+                    AgentRunStatus.PLANNED,
+                    AgentRunStatus.EXECUTING,
+                    AgentRunStatus.READY_TO_ANSWER
                 }) {
             for (AgentRunStatus f : failures) {
-                TRANSITIONS.computeIfAbsent(s, k -> java.util.EnumSet.noneOf(AgentRunStatus.class)).add(f);
+                TRANSITIONS
+                        .computeIfAbsent(s, k -> java.util.EnumSet.noneOf(AgentRunStatus.class))
+                        .add(f);
             }
         }
     }

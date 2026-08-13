@@ -37,13 +37,31 @@ public class PlanValidator {
     static final Pattern SAFE_STEP_ID = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_-]{0,63}$");
 
     /** banned identity/security 字段名 (与 ToolExecutor BANNED 同步)。 */
-    static final Set<String> BANNED_INPUT_FIELDS = Set.of(
-            "tenantid", "userid", "principal", "rawprincipal", "raw_principal", "role",
-            "adminoverride", "admin_override",
-            "permissionscope", "permission_scope", "permissionscopeversion",
-            "authorization", "authorizationheader", "token", "rawtoken", "raw_token",
-            "apikey", "api_key", "cookie", "connectionstring", "connection_string",
-            "password", "secret");
+    static final Set<String> BANNED_INPUT_FIELDS =
+            Set.of(
+                    "tenantid",
+                    "userid",
+                    "principal",
+                    "rawprincipal",
+                    "raw_principal",
+                    "role",
+                    "adminoverride",
+                    "admin_override",
+                    "permissionscope",
+                    "permission_scope",
+                    "permissionscopeversion",
+                    "authorization",
+                    "authorizationheader",
+                    "token",
+                    "rawtoken",
+                    "raw_token",
+                    "apikey",
+                    "api_key",
+                    "cookie",
+                    "connectionstring",
+                    "connection_string",
+                    "password",
+                    "secret");
 
     /** 测试/CI 时可为 null, 让 PlanValidator 不做 ToolRegistry 存在性校验。 */
     private final ToolRegistry toolRegistry;
@@ -58,7 +76,8 @@ public class PlanValidator {
      * @param plan 待校验计划 (非空)
      * @param policy 执行策略 (含 allowedTools + budget.maxSteps)
      */
-    public PlanValidationResult validate(DeterministicExecutionPlan plan, AgentExecutionPolicy policy) {
+    public PlanValidationResult validate(
+            DeterministicExecutionPlan plan, AgentExecutionPolicy policy) {
         List<PlanValidationResult.PlanValidationError> errors = new ArrayList<>();
 
         // 1. Plan 基础
@@ -73,8 +92,14 @@ public class PlanValidator {
             return invalid(errors);
         }
         if (plan.steps().size() > policy.budget().maxSteps()) {
-            errors.add(err("PLAN_TOO_MANY_STEPS", null,
-                    "steps=" + plan.steps().size() + " > maxSteps=" + policy.budget().maxSteps()));
+            errors.add(
+                    err(
+                            "PLAN_TOO_MANY_STEPS",
+                            null,
+                            "steps="
+                                    + plan.steps().size()
+                                    + " > maxSteps="
+                                    + policy.budget().maxSteps()));
         }
 
         // 2. StepId 唯一 + 安全 + banned
@@ -128,14 +153,31 @@ public class PlanValidator {
                     continue;
                 }
                 if (!tool.descriptor().version().equals(tv)) {
-                    errors.add(err("TOOL_VERSION_MISMATCH", step.stepId(),
-                            "tool=" + tn + " 期望 version=" + tv + " 实际=" + tool.descriptor().version()));
+                    errors.add(
+                            err(
+                                    "TOOL_VERSION_MISMATCH",
+                                    step.stepId(),
+                                    "tool="
+                                            + tn
+                                            + " 期望 version="
+                                            + tv
+                                            + " 实际="
+                                            + tool.descriptor().version()));
                     continue;
                 }
                 if (!tool.inputType().isInstance(step.input())) {
-                    errors.add(err("INPUT_TYPE_MISMATCH", step.stepId(),
-                            "tool=" + tn + " 期望 input=" + tool.inputType().getSimpleName()
-                                    + " 实际=" + (step.input() == null ? "null" : step.input().getClass().getSimpleName())));
+                    errors.add(
+                            err(
+                                    "INPUT_TYPE_MISMATCH",
+                                    step.stepId(),
+                                    "tool="
+                                            + tn
+                                            + " 期望 input="
+                                            + tool.inputType().getSimpleName()
+                                            + " 实际="
+                                            + (step.input() == null
+                                                    ? "null"
+                                                    : step.input().getClass().getSimpleName())));
                     continue;
                 }
             }
@@ -161,7 +203,8 @@ public class PlanValidator {
                     errors.add(err("DUPLICATE_DEPENDENCY", step.stepId(), "dependsOn 重复: " + dep));
                 }
                 if (!byId.containsKey(dep)) {
-                    errors.add(err("DEPENDENCY_NOT_FOUND", step.stepId(), "依赖的 stepId 不存在: " + dep));
+                    errors.add(
+                            err("DEPENDENCY_NOT_FOUND", step.stepId(), "依赖的 stepId 不存在: " + dep));
                 }
                 if (dep.equals(step.stepId())) {
                     errors.add(err("SELF_DEPENDENCY", step.stepId(), "依赖自身"));
@@ -210,11 +253,13 @@ public class PlanValidator {
         return sorted.size() == byId.size() ? sorted : null;
     }
 
-    private static PlanValidationResult.PlanValidationError err(String code, String stepId, String msg) {
+    private static PlanValidationResult.PlanValidationError err(
+            String code, String stepId, String msg) {
         return new PlanValidationResult.PlanValidationError(code, stepId, msg);
     }
 
-    private static PlanValidationResult invalid(List<PlanValidationResult.PlanValidationError> errors) {
+    private static PlanValidationResult invalid(
+            List<PlanValidationResult.PlanValidationError> errors) {
         return new PlanValidationResult(false, List.copyOf(errors), List.of());
     }
 

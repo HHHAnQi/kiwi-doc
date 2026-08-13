@@ -10,8 +10,8 @@ import reactor.core.publisher.Flux;
 /**
  * PR-7c.3a / EMS-PR7 §2.1 + §7: 通用 Evidence-grounded Answer Composer 接口。
  *
- * <p>与 PR-6c 的 {@code ComparisonAnswerComposer} 区分: PR-7c MULTI_HOP 跑 Both-side 后用单 LLM 调用
- * 把所有授权 Evidence + Requirement 结构化组装为最终答案。ComparisonWorkflow 仍用自己的 Composer。
+ * <p>与 PR-6c 的 {@code ComparisonAnswerComposer} 区分: PR-7c MULTI_HOP 跑 Both-side 后用单 LLM 调用 把所有授权
+ * Evidence + Requirement 结构化组装为最终答案。ComparisonWorkflow 仍用自己的 Composer。
  *
  * <p>只允许:
  *
@@ -59,9 +59,7 @@ public interface EvidenceGroundedAnswerComposer {
     }
 
     /** Composer 返回 (text + 用到的 evidence ids — Citation 仅来自最终 Evidence)。 */
-    record GroundedAnswer(
-            String text,
-            List<String> usedEvidenceIds) {
+    record GroundedAnswer(String text, List<String> usedEvidenceIds) {
 
         public GroundedAnswer {
             if (text == null) text = "";

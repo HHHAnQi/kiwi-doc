@@ -3,6 +3,7 @@ package com.xxx.ragdoc.infrastructure.persistence.jpa.repository;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.AgentRunEntity;
 import java.util.Collection;
 import java.util.List;
+import java.time.Instant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,14 @@ import org.springframework.stereotype.Repository;
 public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, String> {
 
     List<AgentRunEntity> findByTenantIdOrderByCreatedAtDesc(String tenantId);
+
+    @Query(
+            "SELECT e FROM AgentRunEntity e WHERE e.updatedAt < :updatedBefore "
+                    + "AND e.status IN :statuses ORDER BY e.updatedAt ASC")
+    List<AgentRunEntity> findStaleNonTerminal(
+            @Param("updatedBefore") Instant updatedBefore,
+            @Param("statuses") Collection<String> statuses,
+            org.springframework.data.domain.Pageable pageable);
 
     /**
      * CAS state transition: 受影响行数 1=成功 / 0=冲突或不匹配。
@@ -100,4 +109,34 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("reservationJson") String reservationJson,
             @Param("evidenceIdsJson") String evidenceIdsJson,
             @Param("evidenceCount") int evidenceCount);
+
+    @Modifying
+    @Query(
+            "UPDATE AgentRunEntity e SET e.ownerId=:ownerId, e.leaseUntil=:leaseUntil, "
+                    + "e.heartbeatAt=:now, e.updatedAt=:now "
+                    + "WHERE e.runId=:runId AND e.status IN :statuses AND "
+                    + "(e.ownerId IS NULL OR e.leaseUntil < :now OR e.ownerId=:ownerId)")
+    int claimLease(
+            @Param("runId") String runId,
+            @Param("ownerId") String ownerId,
+            @Param("leaseUntil") Instant leaseUntil,
+            @Param("now") Instant now,
+            @Param("statuses") Collection<String> statuses);
+
+    @Modifying
+    @Query(
+            "UPDATE AgentRunEntity e SET e.leaseUntil=:leaseUntil, e.heartbeatAt=:now, "
+                    + "e.updatedAt=:now WHERE e.runId=:runId AND e.ownerId=:ownerId "
+                    + "AND e.status IN :statuses")
+    int heartbeat(
+            @Param("runId") String runId,
+            @Param("ownerId") String ownerId,
+            @Param("leaseUntil") Instant leaseUntil,
+            @Param("now") Instant now,
+            @Param("statuses") Collection<String> statuses);
+
+    @Modifying
+    @Query("UPDATE AgentRunEntity e SET e.ownerId=NULL, e.leaseUntil=NULL "
+            + "WHERE e.runId=:runId AND e.ownerId=:ownerId")
+    int releaseLease(@Param("runId") String runId, @Param("ownerId") String ownerId);
 }

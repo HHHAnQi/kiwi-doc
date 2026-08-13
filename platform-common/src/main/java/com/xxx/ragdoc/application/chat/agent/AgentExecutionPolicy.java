@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.application.chat.agent;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -10,12 +9,14 @@ import java.util.Set;
  * <p>关键字段:
  *
  * <ul>
- *   <li>{@link #allowedTools} — Step 调用的 Tool 名白名单; {@link com.xxx.ragdoc.application.chat.agent.AgentToolStep#toolName()}
- *       必须在此集合内, 否则 PlanValidator fail-closed
+ *   <li>{@link #allowedTools} — Step 调用的 Tool 名白名单; {@link
+ *       com.xxx.ragdoc.application.chat.agent.AgentToolStep#toolName()} 必须在此集合内, 否则 PlanValidator
+ *       fail-closed
  *   <li>{@link #maxEvidence} — {@code EvidenceAccumulator} 保留上限, 防爆炸
  *   <li>{@link #continueOnEmptyResult} — EMPTY_RESULT 是否终止后续 Step (PR-6 比较工作流需 true)
  *   <li>{@link #continueOnRetryableFailure} — PR-6 默认 false (RETRYABLE 不自动重试)
- *   <li>{@link #failOnPermissionDenied} — true (任何 Step PERMISSION_DENIED 转化成 Run 级 REFUSED_PERMISSION)
+ *   <li>{@link #failOnPermissionDenied} — true (任何 Step PERMISSION_DENIED 转化成 Run 级
+ *       REFUSED_PERMISSION)
  * </ul>
  *
  * <p>{@code deadline} 由 Run 全局 {@link AgentBudget#maxExecutionMillis()} 派生（不算 Tool）。
@@ -39,7 +40,10 @@ public record AgentExecutionPolicy(
         if (maxEvidenceTokens <= 0) maxEvidenceTokens = 4000;
     }
 
-    /** 默认策略用 PR-6 全 Tool 白名单: semantic_search/keyword_search/metadata_search/document_fetch/citation_verify. */
+    /**
+     * 默认策略用 PR-6 全 Tool 白名单:
+     * semantic_search/keyword_search/metadata_search/document_fetch/citation_verify.
+     */
     public static AgentExecutionPolicy pr6Default() {
         return new AgentExecutionPolicy(
                 AgentBudget.pr6Default(),

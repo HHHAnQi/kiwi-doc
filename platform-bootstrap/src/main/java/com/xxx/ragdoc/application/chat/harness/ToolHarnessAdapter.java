@@ -2,15 +2,16 @@ package com.xxx.ragdoc.application.chat.harness;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.xxx.ragdoc.application.chat.tool.ToolError;
 import com.xxx.ragdoc.application.chat.tool.ToolResult;
 import com.xxx.ragdoc.application.chat.tool.ToolStatus;
 import lombok.RequiredArgsConstructor;
 
 /**
- * PR-5: Tool 的 {@link ObjectResultMapper}。让 ToolResult 可被 Harness 记录/回放; ToolError 安全映射到 FixtureError。
+ * PR-5: Tool 的 {@link ObjectResultMapper}。让 ToolResult 可被 Harness 记录/回放; ToolError 安全映射到
+ * FixtureError。
  *
- * <p>REPLAY 时 ToolExecutor 之外层调用方拿到 ToolResult=outcome.success() 的反序列化 copy, 不再触发 Milvus/Embedding/Verifier。
+ * <p>REPLAY 时 ToolExecutor 之外层调用方拿到 ToolResult=outcome.success() 的反序列化 copy, 不再触发
+ * Milvus/Embedding/Verifier。
  *
  * <p>关键: ToolError 不保存完整堆栈; safeMessage 已经是脱敏的 (PR-4 ToolError 契约)。
  */
@@ -44,7 +45,8 @@ public class ToolHarnessAdapter implements ObjectResultMapper {
                     new com.xxx.ragdoc.application.chat.tool.ToolError(
                             error.errorCode(), error.safeMessage(), "", error.retryable());
             // ToolResult.failure 需要 callId/toolName/toolVersion, 我们用 placeholder; caller 用前 reset
-            return ToolResult.failure("replay", "replayed-tool", "v1", status, te, 0, java.util.Map.of());
+            return ToolResult.failure(
+                    "replay", "replayed-tool", "v1", status, te, 0, java.util.Map.of());
         }
         // SUCCESS → 反序列化 output (Tool 自己的 typed record); 由 caller 用 resultClass 解析器
         // 为保持通用性, 这里返回一个 wrapper Node, 让 caller 用 mapper.convertValue 转 typed
@@ -54,21 +56,34 @@ public class ToolHarnessAdapter implements ObjectResultMapper {
     @Override
     public FixtureOutcome.OutcomeResult toOutcome(Object liveResult, Throwable thrown) {
         if (thrown != null) {
-            FixtureError err = new FixtureError(
-                    "TOOL_EXCEPTION", safeMsg(thrown.getMessage()),
-                    false, thrown.getClass().getSimpleName(), FixtureError.Category.GENERIC);
+            FixtureError err =
+                    new FixtureError(
+                            "TOOL_EXCEPTION",
+                            safeMsg(thrown.getMessage()),
+                            false,
+                            thrown.getClass().getSimpleName(),
+                            FixtureError.Category.GENERIC);
             return FixtureOutcome.OutcomeResult.error(err);
         }
         if (liveResult instanceof ToolResult<?> tr) {
             ToolStatus s = tr.status();
-            FixtureError err = tr.error() == null ? null : new FixtureError(
-                    tr.error().errorCode(), tr.error().safeMessage(),
-                    tr.error().retryable(),
-                    tr.error().dependency(), mapToFixtureCategory(s));
-            JsonNode respNode = tr.output() == null ? null : canonical.canonicalize(canonical.toJsonNode(tr.output()));
+            FixtureError err =
+                    tr.error() == null
+                            ? null
+                            : new FixtureError(
+                                    tr.error().errorCode(),
+                                    tr.error().safeMessage(),
+                                    tr.error().retryable(),
+                                    tr.error().dependency(),
+                                    mapToFixtureCategory(s));
+            JsonNode respNode =
+                    tr.output() == null
+                            ? null
+                            : canonical.canonicalize(canonical.toJsonNode(tr.output()));
             return new FixtureOutcome.OutcomeResult(mapToOutcome(s), respNode, err);
         }
-        return FixtureOutcome.OutcomeResult.success(canonical.canonicalize(canonical.toJsonNode(liveResult)));
+        return FixtureOutcome.OutcomeResult.success(
+                canonical.canonicalize(canonical.toJsonNode(liveResult)));
     }
 
     private static FixtureOutcome.Outcome mapToOutcome(ToolStatus s) {
@@ -81,6 +96,7 @@ public class ToolHarnessAdapter implements ObjectResultMapper {
             default -> FixtureOutcome.Outcome.ERROR;
         };
     }
+
     private static ToolStatus mapToToolStatus(FixtureError err) {
         return switch (err.category()) {
             case TIMEOUT -> ToolStatus.TIMEOUT;

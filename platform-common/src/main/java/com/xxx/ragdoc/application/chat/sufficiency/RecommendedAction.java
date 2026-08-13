@@ -8,7 +8,8 @@ package com.xxx.ragdoc.application.chat.sufficiency;
  * <ul>
  *   <li>{@link #ANSWER} — SUFFICIENT → 调 Answer Composer (使用最终证据)
  *   <li>{@link #REPLAN} — INSUFFICIENT + replan 仍允许 → 调 Planner (replanIndex=1)
- *   <li>{@link #REFUSE_NO_EVIDENCE} — INSUFFICIENT + 无 Replan / UNDETERMINED 保守 → Run REFUSED_NO_EVIDENCE
+ *   <li>{@link #REFUSE_NO_EVIDENCE} — INSUFFICIENT + 无 Replan / UNDETERMINED 保守 → Run
+ *       REFUSED_NO_EVIDENCE
  *   <li>{@link #REFUSE_CONFLICT} — CONFLICTED → Run REFUSED_CONFLICT (不掩盖冲突)
  * </ul>
  */

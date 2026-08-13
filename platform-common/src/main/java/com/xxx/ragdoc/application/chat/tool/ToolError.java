@@ -13,17 +13,14 @@ package com.xxx.ragdoc.application.chat.tool;
  *   <li>敏感原文 (PII / 内部业务数据)
  * </ul>
  *
- * <p>{@link #dependency()} 是结构化的下游名称 (e.g. "milvus", "embedding", "mysql", "verification-llm"),
- * 用于 Metrics / Trace 不暴露具体 host。
+ * <p>{@link #dependency()} 是结构化的下游名称 (e.g. "milvus", "embedding", "mysql", "verification-llm"), 用于
+ * Metrics / Trace 不暴露具体 host。
  *
  * <p>{@link #error_code()} 使用项目既有 {@link com.xxx.ragdoc.common.exception.ErrorCode} 之一 (PR-4 会在
  * 该枚举新增 TOOL_* 系列); safeMessage 是 fallback 文字。
  */
 public record ToolError(
-        String errorCode,
-        String safeMessage,
-        String dependency,
-        boolean retryable) {
+        String errorCode, String safeMessage, String dependency, boolean retryable) {
 
     public ToolError {
         if (errorCode == null || errorCode.isBlank()) {

@@ -26,15 +26,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * PR-2 / EMS-PR2: {@link ClassicRagPipeline} 委托测试 — 确保改造后真正路由到 ChatService 既有同步
- * 与 SSE 链路, 没有"二套实现"行为偏移, 也没有 Evidence / stateHint / Trace 字段丢失。
+ * PR-2 / EMS-PR2: {@link ClassicRagPipeline} 委托测试 — 确保改造后真正路由到 ChatService 既有同步 与 SSE 链路,
+ * 没有"二套实现"行为偏移, 也没有 Evidence / stateHint / Trace 字段丢失。
  */
 @DisplayName("ClassicRagPipeline - PR-2 委托既有 ChatService")
 class ClassicRagPipelineTest {
 
     private static final TraceId TID = new TraceId("classic-trace-1");
-    private static final Principal PRINCIPAL =
-            new Principal("tenant-A", "user-1", Set.of(), "tok");
+    private static final Principal PRINCIPAL = new Principal("tenant-A", "user-1", Set.of(), "tok");
 
     private ChatService chatService;
     private ClassicRagPipeline pipeline;
@@ -66,7 +65,12 @@ class ClassicRagPipelineTest {
 
         ChatExecutionContext ctx =
                 new ChatExecutionContext(
-                        "req-1", PRINCIPAL, ChatMode.RAG, PipelineType.CLASSIC_RAG, TID, ExecutionPolicy.defaults());
+                        "req-1",
+                        PRINCIPAL,
+                        ChatMode.RAG,
+                        PipelineType.CLASSIC_RAG,
+                        TID,
+                        ExecutionPolicy.defaults());
 
         ChatResult r = pipeline.execute(cmd, ctx);
 
@@ -78,11 +82,17 @@ class ClassicRagPipelineTest {
     @DisplayName("conversationId 为 null 时也走 ChatService (老 stateless 路径)")
     void executeNullConversationId() {
         ChatCommand cmd = new ChatCommand("测试", null, 5);
-        when(chatService.chat(eq(cmd), eq(TID), any())).thenReturn(ChatResult.of(StateHint.OK, "x", TID));
+        when(chatService.chat(eq(cmd), eq(TID), any()))
+                .thenReturn(ChatResult.of(StateHint.OK, "x", TID));
 
         ChatExecutionContext ctx =
                 new ChatExecutionContext(
-                        "req-1", PRINCIPAL, ChatMode.AUTO, PipelineType.CLASSIC_RAG, TID, ExecutionPolicy.defaults());
+                        "req-1",
+                        PRINCIPAL,
+                        ChatMode.AUTO,
+                        PipelineType.CLASSIC_RAG,
+                        TID,
+                        ExecutionPolicy.defaults());
 
         pipeline.execute(cmd, ctx);
 
@@ -99,10 +109,14 @@ class ClassicRagPipelineTest {
 
         ChatExecutionContext ctx =
                 new ChatExecutionContext(
-                        "req-1", PRINCIPAL, ChatMode.AUTO, PipelineType.CLASSIC_RAG, TID, ExecutionPolicy.defaults());
+                        "req-1",
+                        PRINCIPAL,
+                        ChatMode.AUTO,
+                        PipelineType.CLASSIC_RAG,
+                        TID,
+                        ExecutionPolicy.defaults());
 
-        java.util.List<ChatStreamEvent> events =
-                pipeline.stream(cmd, ctx).collectList().block();
+        java.util.List<ChatStreamEvent> events = pipeline.stream(cmd, ctx).collectList().block();
 
         assertThat(events).hasSize(1);
         verify(chatService, never()).chat(any(), any(), any());

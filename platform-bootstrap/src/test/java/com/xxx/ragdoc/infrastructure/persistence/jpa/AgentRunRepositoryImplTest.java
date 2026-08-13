@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,14 +39,29 @@ class AgentRunRepositoryImplTest {
 
     private AgentRunRecord newRun(String runId) {
         return new AgentRunRecord(
-                runId, "req-1", "tenant-A", "user-1", "CLASSIC_RAG",
+                runId,
+                "req-1",
+                "tenant-A",
+                "user-1",
+                "CLASSIC_RAG",
                 AgentRunStatus.RECEIVED,
-                "plan-1", "v1", "fake-hash-64-char-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "plan-1",
+                "v1",
+                "fake-hash-64-char-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
                 "{\"planId\":\"plan-1\"}",
-                AgentBudget.pr6Default(), AgentBudgetReservation.zero(), AgentUsage.zero(),
-                List.of(), 0,
-                null, "rule-based-v1", "toolset-v1", "iv-1", "LIVE",
-                Instant.now(), Instant.now(), 0);
+                AgentBudget.pr6Default(),
+                AgentBudgetReservation.zero(),
+                AgentUsage.zero(),
+                List.of(),
+                0,
+                null,
+                "rule-based-v1",
+                "toolset-v1",
+                "iv-1",
+                "LIVE",
+                Instant.now(),
+                Instant.now(),
+                0);
     }
 
     @Nested
@@ -102,14 +116,31 @@ class AgentRunRepositoryImplTest {
         @Test
         @DisplayName("evidence 只保存 IDs 列表, 不含 Evidence 正文字段")
         void evidenceIdsOnly() {
-            AgentRunRecord rec = new AgentRunRecord(
-                    "run-2", "req-1", "tenant-A", "user-1", "CLASSIC_RAG",
-                    AgentRunStatus.READY_TO_ANSWER,
-                    "plan-1", "v1", "fake-hash", "{}",
-                    AgentBudget.pr6Default(), AgentBudgetReservation.zero(), AgentUsage.zero(),
-                    List.of("ev-1", "ev-2"), 2,
-                    null, null, null, "iv-1", "LIVE",
-                    Instant.now(), Instant.now(), 0);
+            AgentRunRecord rec =
+                    new AgentRunRecord(
+                            "run-2",
+                            "req-1",
+                            "tenant-A",
+                            "user-1",
+                            "CLASSIC_RAG",
+                            AgentRunStatus.READY_TO_ANSWER,
+                            "plan-1",
+                            "v1",
+                            "fake-hash",
+                            "{}",
+                            AgentBudget.pr6Default(),
+                            AgentBudgetReservation.zero(),
+                            AgentUsage.zero(),
+                            List.of("ev-1", "ev-2"),
+                            2,
+                            null,
+                            null,
+                            null,
+                            "iv-1",
+                            "LIVE",
+                            Instant.now(),
+                            Instant.now(),
+                            0);
             AgentRunEntity savedEntity = new AgentRunEntity();
             savedEntity.setRunId("run-2");
             savedEntity.setRequestId("req-1");
@@ -173,25 +204,32 @@ class AgentRunRepositoryImplTest {
             when(jpa.transition(any(), eq(0L), any(), eq("ROUTED"), any(), any(), any()))
                     .thenReturn(1);
 
-            boolean ok = repo.transition(
-                    "run-1", 0L,
-                    Set.of(AgentRunStatus.RECEIVED),
-                    AgentRunStatus.ROUTED,
-                    "ROUTED", AgentUsage.zero(), AgentBudgetReservation.zero());
+            boolean ok =
+                    repo.transition(
+                            "run-1",
+                            0L,
+                            Set.of(AgentRunStatus.RECEIVED),
+                            AgentRunStatus.ROUTED,
+                            "ROUTED",
+                            AgentUsage.zero(),
+                            AgentBudgetReservation.zero());
             assertThat(ok).isTrue();
         }
 
         @Test
         @DisplayName("CAS 失败: jpa.transition=0 → false (version/status 或 run 不匹配)")
         void casConflict() {
-            when(jpa.transition(any(), anyLong(), any(), any(), any(), any(), any()))
-                    .thenReturn(0);
+            when(jpa.transition(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(0);
 
-            boolean ok = repo.transition(
-                    "run-missing", 0L,
-                    Set.of(AgentRunStatus.RECEIVED),
-                    AgentRunStatus.ROUTED,
-                    "ROUTED", AgentUsage.zero(), AgentBudgetReservation.zero());
+            boolean ok =
+                    repo.transition(
+                            "run-missing",
+                            0L,
+                            Set.of(AgentRunStatus.RECEIVED),
+                            AgentRunStatus.ROUTED,
+                            "ROUTED",
+                            AgentUsage.zero(),
+                            AgentBudgetReservation.zero());
             assertThat(ok).isFalse();
         }
 
@@ -200,11 +238,13 @@ class AgentRunRepositoryImplTest {
         void updateBudgetCasSuccess() {
             when(jpa.updateBudgetState(any(), anyLong(), any(), any(), any())).thenReturn(1);
 
-            boolean ok = repo.updateBudgetState(
-                    "run-1", 0L,
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentUsage.zero().incStep().incRealToolCall(),
-                    new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO));
+            boolean ok =
+                    repo.updateBudgetState(
+                            "run-1",
+                            0L,
+                            Set.of(AgentRunStatus.EXECUTING),
+                            AgentUsage.zero().incStep().incRealToolCall(),
+                            new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO));
             assertThat(ok).isTrue();
         }
 
@@ -213,10 +253,13 @@ class AgentRunRepositoryImplTest {
         void evidenceSummaryCasSuccess() {
             when(jpa.updateEvidenceSummary(any(), anyLong(), any(), any(), eq(2))).thenReturn(1);
 
-            boolean ok = repo.updateEvidenceSummary(
-                    "run-1", 0L,
-                    Set.of(AgentRunStatus.EXECUTING),
-                    List.of("ev-1", "ev-2"), 2);
+            boolean ok =
+                    repo.updateEvidenceSummary(
+                            "run-1",
+                            0L,
+                            Set.of(AgentRunStatus.EXECUTING),
+                            List.of("ev-1", "ev-2"),
+                            2);
             assertThat(ok).isTrue();
         }
     }
@@ -233,6 +276,10 @@ class AgentRunRepositoryImplTest {
 
     // Actually use a method reference for writeValueAsString
     private Object writeValueAsString(ObjectMapper m, AgentBudget b) {
-        try { return m.writeValueAsString(b); } catch (Exception e) { throw new RuntimeException(e); }
+        try {
+            return m.writeValueAsString(b);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

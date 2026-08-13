@@ -1,11 +1,11 @@
 package com.xxx.ragdoc.application.chat.comparison;
 
+import com.xxx.ragdoc.application.chat.agent.AgentBudgetReservation;
 import com.xxx.ragdoc.application.chat.agent.AgentPersistenceCoordinator;
 import com.xxx.ragdoc.application.chat.agent.AgentRunRecord;
 import com.xxx.ragdoc.application.chat.agent.AgentRunRepository;
 import com.xxx.ragdoc.application.chat.agent.AgentRunStatus;
 import com.xxx.ragdoc.application.chat.agent.AgentUsage;
-import com.xxx.ragdoc.application.chat.agent.AgentBudgetReservation;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +18,8 @@ import org.springframework.stereotype.Component;
  * <p><b>关键 CAS 竞态处理 (§10.4)</b>:
  *
  * <ol>
- *   <li>answer composer 成功完成后, 用 Coordinator.transitionRun CAS
- *       READY_TO_ANSWER → ANSWERED (reasonCode=EVIDENCE_GROUNDED_ANSWER)
+ *   <li>answer composer 成功完成后, 用 Coordinator.transitionRun CAS READY_TO_ANSWER → ANSWERED
+ *       (reasonCode=EVIDENCE_GROUNDED_ANSWER)
  *   <li>CAS 失败需 reload run:
  *       <ul>
  *         <li>已 ANSWERED → 幂等: 不返回成功 answer, 让 caller 决策
@@ -27,7 +27,8 @@ import org.springframework.stereotype.Component;
  *         <li>其它状态 → 返回 FinalizeOutcome.conflict
  *       </ul>
  *   <li>Composer 抛异常 → 转 SYSTEM_FAILED + reasonCode=COMPARISON_ANSWER_COMPOSER_FAILED (不允许伪装成功)
- *   <li>Composer 流式 timeout → TIMED_OUT + reasonCode=COMPARISON_ANSWER_TIMEOUT (上层 Reactor timeout 触发)
+ *   <li>Composer 流式 timeout → TIMED_OUT + reasonCode=COMPARISON_ANSWER_TIMEOUT (上层 Reactor timeout
+ *       触发)
  *   <li>用户取消 → CANCELLED + reasonCode=USER_CANCELLED
  * </ol>
  *
@@ -42,8 +43,12 @@ public class ComparisonRunFinalizer {
     private final AgentPersistenceCoordinator coordinator;
 
     /** 终态判别结果 (对应 ChatResult 装配的不同 stateHint + verification 行为)。 */
-    public sealed interface FinalizeOutcome permits FinalizeOutcome.Answered, FinalizeOutcome.Conflict,
-            FinalizeOutcome.ComposerFailed, FinalizeOutcome.TimedOut, FinalizeOutcome.Cancelled {
+    public sealed interface FinalizeOutcome
+            permits FinalizeOutcome.Answered,
+                    FinalizeOutcome.Conflict,
+                    FinalizeOutcome.ComposerFailed,
+                    FinalizeOutcome.TimedOut,
+                    FinalizeOutcome.Cancelled {
 
         /** ANSWERED CAS 成功。 */
         record Answered(long newVersion) implements FinalizeOutcome {}
@@ -64,17 +69,20 @@ public class ComparisonRunFinalizer {
     /**
      * 在 Comparison Composer 成功后调用 — 用 CAS READY_TO_ANSWER → ANSWERED。
      *
-     * @param runId         AgentRunRecord.runId()
-     * @param readyVersion  READY_TO_ANSWER 状态时 run.version()
+     * @param runId AgentRunRecord.runId()
+     * @param readyVersion READY_TO_ANSWER 状态时 run.version()
      */
     public FinalizeOutcome finalizeAnswered(String runId, long readyVersion) {
-        boolean ok = coordinator.transitionRun(
-                runId, readyVersion,
-                Set.of(AgentRunStatus.READY_TO_ANSWER),
-                AgentRunStatus.ANSWERED, "EVIDENCE_GROUNDED_ANSWER",
-                /* usage/reservation: passed untouched, 仍是最后 settle 后的状态 */
-                currentUsageOrZero(runId, readyVersion),
-                currentReservationOrZero(runId, readyVersion));
+        boolean ok =
+                coordinator.transitionRun(
+                        runId,
+                        readyVersion,
+                        Set.of(AgentRunStatus.READY_TO_ANSWER),
+                        AgentRunStatus.ANSWERED,
+                        "EVIDENCE_GROUNDED_ANSWER",
+                        /* usage/reservation: passed untouched, 仍是最后 settle 后的状态 */
+                        currentUsageOrZero(runId, readyVersion),
+                        currentReservationOrZero(runId, readyVersion));
         if (ok) {
             return new FinalizeOutcome.Answered(readyVersion + 1);
         }
@@ -101,37 +109,47 @@ public class ComparisonRunFinalizer {
     /** composer 抛异常时调用, 返回 SYSTEM_FAILED 转换的成功与否 (调用方据此返回结构化失败)。 */
     public boolean markComposerFailed(String runId, long readyVersion) {
         return coordinator.transitionRun(
-                runId, readyVersion,
+                runId,
+                readyVersion,
                 Set.of(AgentRunStatus.READY_TO_ANSWER),
-                AgentRunStatus.SYSTEM_FAILED, "COMPARISON_ANSWER_COMPOSER_FAILED",
+                AgentRunStatus.SYSTEM_FAILED,
+                "COMPARISON_ANSWER_COMPOSER_FAILED",
                 currentUsageOrZero(runId, readyVersion),
                 currentReservationOrZero(runId, readyVersion));
     }
 
     boolean markTimedOut(String runId, long version, Set<AgentRunStatus> expected) {
         return coordinator.transitionRun(
-                runId, version, expected,
-                AgentRunStatus.TIMED_OUT, "COMPARISON_ANSWER_TIMEOUT",
+                runId,
+                version,
+                expected,
+                AgentRunStatus.TIMED_OUT,
+                "COMPARISON_ANSWER_TIMEOUT",
                 currentUsageOrZero(runId, version),
                 currentReservationOrZero(runId, version));
     }
 
     boolean markCancelled(String runId, long version, Set<AgentRunStatus> expected) {
         return coordinator.transitionRun(
-                runId, version, expected,
-                AgentRunStatus.CANCELLED, "USER_CANCELLED",
+                runId,
+                version,
+                expected,
+                AgentRunStatus.CANCELLED,
+                "USER_CANCELLED",
                 currentUsageOrZero(runId, version),
                 currentReservationOrZero(runId, version));
     }
 
     private AgentUsage currentUsageOrZero(String runId, long version) {
-        return runRepository.findByRunId(runId)
+        return runRepository
+                .findByRunId(runId)
                 .map(AgentRunRecord::usage)
                 .orElse(AgentUsage.zero());
     }
 
     private AgentBudgetReservation currentReservationOrZero(String runId, long version) {
-        return runRepository.findByRunId(runId)
+        return runRepository
+                .findByRunId(runId)
                 .map(AgentRunRecord::reservation)
                 .orElse(AgentBudgetReservation.zero());
     }

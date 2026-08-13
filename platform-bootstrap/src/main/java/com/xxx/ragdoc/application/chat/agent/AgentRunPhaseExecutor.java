@@ -6,10 +6,10 @@ import com.xxx.ragdoc.application.chat.agent.CancellationTokenSource.Cancellatio
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.chat.planner.CompletedStepSummary;
 import com.xxx.ragdoc.application.chat.tool.EvidenceListOutput;
+import com.xxx.ragdoc.application.chat.tool.ToolExecutor;
 import com.xxx.ragdoc.application.chat.tool.ToolOutput;
 import com.xxx.ragdoc.application.chat.tool.ToolResult;
 import com.xxx.ragdoc.application.chat.tool.ToolStatus;
-import com.xxx.ragdoc.application.chat.tool.ToolExecutor;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,18 +28,17 @@ import org.springframework.stereotype.Component;
  *
  * <p>用于 {@code PlannedAgentPipeline} 把 Planner 生成的 Phase 内 Step 跑完, 累积 Evidence + 步进
  * Usage/Reservation, 把历史 Tool Signature 写进 usedToolSignatures — <b>不</b>写 READY_TO_ANSWER /
- * REFUSED_NO_EVIDENCE。Pipeline 在 Sufficiency 判断后通过 {@code ComparisonRunFinalizer} 或等价
- * Run-level CAS 决定终态。
+ * REFUSED_NO_EVIDENCE。Pipeline 在 Sufficiency 判断后通过 {@code ComparisonRunFinalizer} 或等价 Run-level CAS
+ * 决定终态。
  *
- * <p><b>状态机不变量 (Revision §2.1)</b>: Phase 在 {@link AgentRunStatus#EXECUTING} 时执行;
- * 若中途 cancel / deadline / 预算超限 / required Tool 失败 → 立即返回 {@link PhaseExecutionResult#prematureTerminal()}
- * 给的非 null 值, Pipeline 不再 Sufficiency。Phase 本身<b>不</b>把 Run 转终态 CAS — Pipeline 决策。
+ * <p><b>状态机不变量 (Revision §2.1)</b>: Phase 在 {@link AgentRunStatus#EXECUTING} 时执行; 若中途 cancel /
+ * deadline / 预算超限 / required Tool 失败 → 立即返回 {@link PhaseExecutionResult#prematureTerminal()} 给的非
+ * null 值, Pipeline 不再 Sufficiency。Phase 本身<b>不</b>把 Run 转终态 CAS — Pipeline 决策。
  *
- * <p><b>钱包字段不重置</b>: usage/reservation 由 PhaseExecutionContext.prior* 续作;
- * Usage + Reservation += Phase 内增量, 累积后通过 Result 返回。
+ * <p><b>钱包字段不重置</b>: usage/reservation 由 PhaseExecutionContext.prior* 续作; Usage + Reservation +=
+ * Phase 内增量, 累积后通过 Result 返回。
  *
- * <p><b>工具在事务外</b>: ToolExecutor 调用在普通上下文 (跟随 PR-6b.3 同样的契约); Coordinator 方法
- * 已 REQUIRES_NEW 隔离事务边界。
+ * <p><b>工具在事务外</b>: ToolExecutor 调用在普通上下文 (跟随 PR-6b.3 同样的契约); Coordinator 方法 已 REQUIRES_NEW 隔离事务边界。
  */
 @Slf4j
 @Component
@@ -57,19 +56,20 @@ public class AgentRunPhaseExecutor {
     /**
      * 执行 Phase 内一组 Step。
      *
-     * @param handle              {@link AgentRunHandle} (要求 Run 处于 EXECUTING)
-     * @param phasePlanSteps      本 Phase 要执行的所有 Step (sorted, required info 已带)
-     * @param priorCompletedIds   截至本 Phase 已 SUCCEEDED 的 required Step IDs (依赖检查)
-     * @param reqIdToStepId       每个 Requirement 关联的当前 Phase Step ID (Evidence provenance)
-     * @param context             Prior Phase state (优先 Phase 0 用 {@link PhaseExecutionContext#initial})
-     * @param cancellation        取消信号
+     * @param handle {@link AgentRunHandle} (要求 Run 处于 EXECUTING)
+     * @param phasePlanSteps 本 Phase 要执行的所有 Step (sorted, required info 已带)
+     * @param priorCompletedIds 截至本 Phase 已 SUCCEEDED 的 required Step IDs (依赖检查)
+     * @param reqIdToStepId 每个 Requirement 关联的当前 Phase Step ID (Evidence provenance)
+     * @param context Prior Phase state (优先 Phase 0 用 {@link PhaseExecutionContext#initial})
+     * @param cancellation 取消信号
      * @return PhaseExecutionResult (KEEP_EXECUTING semantics, 不写 Run 终态)
      */
     public PhaseExecutionResult executePhase(
             AgentRunHandle handle,
             List<com.xxx.ragdoc.application.chat.agent.AgentToolStep> phasePlanSteps,
             Set<String> priorCompletedIds,
-            Map<String, String> reqIdToStepId /* allows evidence metadata.requirementIds 注入; PR-7c Pipeline 复用 */,
+            Map<String, String>
+                    reqIdToStepId /* allows evidence metadata.requirementIds 注入; PR-7c Pipeline 复用 */,
             PhaseExecutionContext context,
             CancellationToken cancellation) {
         if (handle == null) throw new IllegalArgumentException("handle");
@@ -80,7 +80,8 @@ public class AgentRunPhaseExecutor {
         if (cancellation == null) cancellation = CancellationToken.never();
 
         EvidenceAccumulator accumulator =
-                evidenceFactory.create(handle.tenantId(),
+                evidenceFactory.create(
+                        handle.tenantId(),
                         handle.policy().maxEvidence(),
                         handle.policy().maxEvidenceTokens());
         // restore prior evidence
@@ -110,12 +111,16 @@ public class AgentRunPhaseExecutor {
                 break;
             }
             if (isExpired(clock, handle.policy().deadline())) {
-                log.info("phase.deadline_exceeded step={} run={}", planStep.stepId(), handle.run().runId());
+                log.info(
+                        "phase.deadline_exceeded step={} run={}",
+                        planStep.stepId(),
+                        handle.run().runId());
                 prematureTerminal = AgentRunStatus.TIMED_OUT;
                 failureReasonCode = "DEADLINE_EXCEEDED";
                 break;
             }
-            // 依赖检查 — dependsOn 必须 SUCCEEDED (initial Phase 内无依赖, Replan Phase 跨 Phase 依赖已含在 priorCompletedIds)
+            // 依赖检查 — dependsOn 必须 SUCCEEDED (initial Phase 内无依赖, Replan Phase 跨 Phase 依赖已含在
+            // priorCompletedIds)
             boolean depOk = true;
             String missingDep = null;
             for (String dep : planStep.dependsOn()) {
@@ -126,8 +131,11 @@ public class AgentRunPhaseExecutor {
                 }
             }
             if (!depOk) {
-                log.info("phase.dependency_not_satisfied step={} missing={} run={}",
-                        planStep.stepId(), missingDep, handle.run().runId());
+                log.info(
+                        "phase.dependency_not_satisfied step={} missing={} run={}",
+                        planStep.stepId(),
+                        missingDep,
+                        handle.run().runId());
                 requiredStepFailed = planStep.required();
                 failureReasonCode = "DEPENDENCY_NOT_SATISFIED:" + missingDep;
                 prematureTerminal = planStep.required() ? AgentRunStatus.TOOL_FAILED : null;
@@ -136,17 +144,27 @@ public class AgentRunPhaseExecutor {
             }
 
             // budget
-            BudgetDecision decision = budgetManager.evaluate(
-                    handle.policy().budget(), runtimeUsage, runtimeReservation,
-                    ReservationRequest.forRealToolCall());
+            BudgetDecision decision =
+                    budgetManager.evaluate(
+                            handle.policy().budget(),
+                            runtimeUsage,
+                            runtimeReservation,
+                            ReservationRequest.forRealToolCall());
             if (decision instanceof BudgetDecision.Denied d) {
-                log.info("phase.budget_denied step={} dim={} run={}",
-                        planStep.stepId(), d.dimension(), handle.run().runId());
+                log.info(
+                        "phase.budget_denied step={} dim={} run={}",
+                        planStep.stepId(),
+                        d.dimension(),
+                        handle.run().runId());
                 failureReasonCode = "BUDGET_EXCEEDED_" + d.dimension();
                 prematureTerminal = AgentRunStatus.BUDGET_EXCEEDED;
                 // 当前 Step 标 SKIPPED_BUDGET (调用 Coordinator.transitionStep 不让 Run 终止)
-                AgentStepRecord refreshed = coordinator.reloadStep(handle.run().runId(), planStep.stepId());
-                coordinator.transitionStep(handle.run().runId(), planStep.stepId(), refreshed.version(),
+                AgentStepRecord refreshed =
+                        coordinator.reloadStep(handle.run().runId(), planStep.stepId());
+                coordinator.transitionStep(
+                        handle.run().runId(),
+                        planStep.stepId(),
+                        refreshed.version(),
                         Set.of(AgentStepStatus.PENDING),
                         AgentStepStatus.SKIPPED_BUDGET,
                         AgentStepUpdate.empty());
@@ -155,10 +173,14 @@ public class AgentRunPhaseExecutor {
             BudgetDecision.Allowed allowed = (BudgetDecision.Allowed) decision;
 
             // reserve + markRunning (CAS 重试)
-            AgentStepRecord stepRec = coordinator.reloadStep(handle.run().runId(), planStep.stepId());
+            AgentStepRecord stepRec =
+                    coordinator.reloadStep(handle.run().runId(), planStep.stepId());
             if (stepRec.status() != AgentStepStatus.PENDING) {
-                log.info("phase.step_not_pending skip step={} status={} run={}",
-                        planStep.stepId(), stepRec.status(), handle.run().runId());
+                log.info(
+                        "phase.step_not_pending skip step={} status={} run={}",
+                        planStep.stepId(),
+                        stepRec.status(),
+                        handle.run().runId());
                 if (stepRec.status().isTerminal()) {
                     succeededSteps.add(planStep.stepId());
                     continue;
@@ -173,11 +195,17 @@ public class AgentRunPhaseExecutor {
             try {
                 final AgentUsage usageSnapshot = runtimeUsage;
                 final long runVersionSnapshot = currentRunVersion;
-                reservation = retryCasReservation(() -> coordinator.reserveStep(
-                        handle.run().runId(), runVersionSnapshot,
-                        Set.of(AgentRunStatus.EXECUTING),
-                        usageSnapshot, allowed,
-                        planStep.stepId(), stepRec.version()));
+                reservation =
+                        retryCasReservation(
+                                () ->
+                                        coordinator.reserveStep(
+                                                handle.run().runId(),
+                                                runVersionSnapshot,
+                                                Set.of(AgentRunStatus.EXECUTING),
+                                                usageSnapshot,
+                                                allowed,
+                                                planStep.stepId(),
+                                                stepRec.version()));
             } catch (AgentCasConflictException ex) {
                 failureReasonCode = "CAS_RESERVE_EXHAUSTED";
                 prematureTerminal = AgentRunStatus.SYSTEM_FAILED;
@@ -189,9 +217,12 @@ public class AgentRunPhaseExecutor {
 
             long stepVersionRunning;
             try {
-                stepVersionRunning = coordinator.markStepRunning(
-                        handle.run().runId(), planStep.stepId(), stepVersionReserved,
-                        AgentStepUpdate.empty());
+                stepVersionRunning =
+                        coordinator.markStepRunning(
+                                handle.run().runId(),
+                                planStep.stepId(),
+                                stepVersionReserved,
+                                AgentStepUpdate.empty());
             } catch (AgentCasConflictException ex) {
                 failureReasonCode = "CAS_MARK_RUNNING_FAILED";
                 prematureTerminal = AgentRunStatus.SYSTEM_FAILED;
@@ -199,45 +230,66 @@ public class AgentRunPhaseExecutor {
             }
 
             // 事务外 Tool 调用
-            ToolResult<? extends ToolOutput> toolResult = toolExecutor.execute(
-                    planStep.toolName(), planStep.toolVersion(),
-                    planStep.input(),
-                    new ToolExecutor.ToolCallRequest(
-                            handle.run().requestId(),
-                            handle.run().runId(),
-                            handle.policy().deadline(),
-                            handle.run().indexVersion()));
+            ToolResult<? extends ToolOutput> toolResult =
+                    toolExecutor.execute(
+                            planStep.toolName(),
+                            planStep.toolVersion(),
+                            planStep.input(),
+                            new ToolExecutor.ToolCallRequest(
+                                    handle.run().requestId(),
+                                    handle.run().runId(),
+                                    handle.policy().deadline(),
+                                    handle.run().indexVersion()));
 
             // accumulate evidence + provenance
             List<Evidence> stepEvidence = extractEvidence(toolResult);
             // 注入 metadata.requirementIds 让 EvidenceSufficiencyJudge 可索引
-            String reqId = reqIdToStepId == null ? null :
-                    reqIdToStepId.entrySet().stream()
-                            .filter(e -> e.getValue().equals(planStep.stepId()))
-                            .map(Map.Entry::getKey).findFirst().orElse(null);
+            String reqId =
+                    reqIdToStepId == null
+                            ? null
+                            : reqIdToStepId.entrySet().stream()
+                                    .filter(e -> e.getValue().equals(planStep.stepId()))
+                                    .map(Map.Entry::getKey)
+                                    .findFirst()
+                                    .orElse(null);
             int resultIdx = 0;
             for (Evidence e : stepEvidence) {
-                Map<String, Object> augmented = augmentMetadata(e.metadata(), planStep.stepId(), reqId);
-                Evidence reattrib = Evidence.of(
-                        handle.tenantId(), e.documentId(), e.chunkId(), e.documentVersion(),
-                        e.content(), e.retrievalScore(), e.rerankScore(),
-                        e.sourceTool(), augmented);
+                Map<String, Object> augmented =
+                        augmentMetadata(e.metadata(), planStep.stepId(), reqId);
+                Evidence reattrib =
+                        Evidence.of(
+                                handle.tenantId(),
+                                e.documentId(),
+                                e.chunkId(),
+                                e.documentVersion(),
+                                e.content(),
+                                e.retrievalScore(),
+                                e.rerankScore(),
+                                e.sourceTool(),
+                                augmented);
                 accumulator.accept(sequenceCursor, resultIdx++, reattrib);
             }
             executedStepIds.add(planStep.stepId());
 
             // status mapping
             boolean hasEvidence = !stepEvidence.isEmpty();
-            AgentStepStatus terminal = ToolStatusMapper.toStepStatus(toolResult.status(), hasEvidence);
-            String errorCode = toolResult.error() != null ? toolResult.error().errorCode()
-                    : (toolResult.status() == ToolStatus.SUCCESS ? "" : toolResult.status().name());
+            AgentStepStatus terminal =
+                    ToolStatusMapper.toStepStatus(toolResult.status(), hasEvidence);
+            String errorCode =
+                    toolResult.error() != null
+                            ? toolResult.error().errorCode()
+                            : (toolResult.status() == ToolStatus.SUCCESS
+                                    ? ""
+                                    : toolResult.status().name());
             boolean replayed = isReplayedMetadata(toolResult);
             boolean deduped = isDedupMetadata(toolResult);
-            StepSettlement settlement = replayed
-                    ? StepSettlement.replay(terminal, errorCode)
-                    : (deduped
-                            ? StepSettlement.dedup(terminal, errorCode)
-                            : StepSettlement.realTool(terminal, errorCode, 0, 0, java.math.BigDecimal.ZERO));
+            StepSettlement settlement =
+                    replayed
+                            ? StepSettlement.replay(terminal, errorCode)
+                            : (deduped
+                                    ? StepSettlement.dedup(terminal, errorCode)
+                                    : StepSettlement.realTool(
+                                            terminal, errorCode, 0, 0, java.math.BigDecimal.ZERO));
             AgentBudgetManager.SettleResult settled =
                     budgetManager.settle(runtimeUsage, runtimeReservation, settlement);
             runtimeUsage = settled.newUsage();
@@ -248,32 +300,53 @@ public class AgentRunPhaseExecutor {
             usedSignatures.add(sig);
 
             // build CompletedStepSummary (requirementIds derived from reqIdToStepId)
-            List<String> targetReqIds = reqIdToStepId == null ? List.of() :
-                    reqIdToStepId.entrySet().stream()
-                            .filter(e -> e.getValue().equals(planStep.stepId()))
-                            .map(Map.Entry::getKey).toList();
-            completedSummaries.add(new CompletedStepSummary(
-                    planStep.stepId(), planStep.toolName(), planStep.toolVersion(),
-                    sig, stepEvidence.size(), targetReqIds,
-                    terminal.name(), Map.of()));
+            List<String> targetReqIds =
+                    reqIdToStepId == null
+                            ? List.of()
+                            : reqIdToStepId.entrySet().stream()
+                                    .filter(e -> e.getValue().equals(planStep.stepId()))
+                                    .map(Map.Entry::getKey)
+                                    .toList();
+            completedSummaries.add(
+                    new CompletedStepSummary(
+                            planStep.stepId(),
+                            planStep.toolName(),
+                            planStep.toolVersion(),
+                            sig,
+                            stepEvidence.size(),
+                            targetReqIds,
+                            terminal.name(),
+                            Map.of()));
 
-            AgentStepUpdate stepUpdate = new AgentStepUpdate(
-                    toolResult.callId(), stepEvidence.size(),
-                    accumulator.toIdsWithCount(),
-                    toolResult.latencyMs(),
-                    errorCode, toolResult.retryable(),
-                    replayed, deduped,
-                    Instant.now(clock), Instant.now(clock));
+            AgentStepUpdate stepUpdate =
+                    new AgentStepUpdate(
+                            toolResult.callId(),
+                            stepEvidence.size(),
+                            accumulator.toIdsWithCount(),
+                            toolResult.latencyMs(),
+                            errorCode,
+                            toolResult.retryable(),
+                            replayed,
+                            deduped,
+                            Instant.now(clock),
+                            Instant.now(clock));
 
             try {
                 final long runVBeforeSettle = currentRunVersion;
-                SettlementResult sr = retryCasSettle(() -> coordinator.settleStep(
-                        handle.run().runId(), runVBeforeSettle,
-                        Set.of(AgentRunStatus.EXECUTING),
-                        settled,
-                        accumulator.toIdsWithCount(), accumulator.toIdsWithCount().size(),
-                        planStep.stepId(), stepVersionRunning,
-                        terminal, stepUpdate));
+                SettlementResult sr =
+                        retryCasSettle(
+                                () ->
+                                        coordinator.settleStep(
+                                                handle.run().runId(),
+                                                runVBeforeSettle,
+                                                Set.of(AgentRunStatus.EXECUTING),
+                                                settled,
+                                                accumulator.toIdsWithCount(),
+                                                accumulator.toIdsWithCount().size(),
+                                                planStep.stepId(),
+                                                stepVersionRunning,
+                                                terminal,
+                                                stepUpdate));
                 currentRunVersion = sr.newRunVersion();
             } catch (AgentCasConflictException ex) {
                 failureReasonCode = "CAS_SETTLE_EXHAUSTED";
@@ -304,7 +377,8 @@ public class AgentRunPhaseExecutor {
             }
             if (terminal == AgentStepStatus.SUCCEEDED || terminal == AgentStepStatus.EMPTY) {
                 succeededSteps.add(planStep.stepId());
-                // 简化 discoveredEntities: 从 step input 的 query + entities 提取 (PR-7c.2 ProgressDetector 也用)
+                // 简化 discoveredEntities: 从 step input 的 query + entities 提取 (PR-7c.2
+                // ProgressDetector 也用)
                 // 这里只把 Tool input 参数放进 discoveredEntities (semantic_search query 内 token 太粗, 留空)
             }
             sequenceCursor++;
@@ -356,12 +430,16 @@ public class AgentRunPhaseExecutor {
     }
 
     private static String signatureOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {
-        return s.toolName() + "|" + s.toolVersion() + "|"
+        return s.toolName()
+                + "|"
+                + s.toolVersion()
+                + "|"
                 + (s.input() == null ? "" : s.input().normalizedForDedup());
     }
 
     /** 把 sourceStepId + requirementIds 注入 metadata, 让 SufficiencyJudge 可索引。 */
-    private static Map<String, Object> augmentMetadata(Map<String, Object> base, String stepId, String reqId) {
+    private static Map<String, Object> augmentMetadata(
+            Map<String, Object> base, String stepId, String reqId) {
         Map<String, Object> augmented = base == null ? new HashMap<>() : new HashMap<>(base);
         augmented.put("sourceStepId", stepId);
         if (reqId != null) {

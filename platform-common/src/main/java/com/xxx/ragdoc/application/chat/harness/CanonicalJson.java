@@ -3,9 +3,9 @@ package com.xxx.ragdoc.application.chat.harness;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -34,9 +34,20 @@ public final class CanonicalJson {
     /** 敏感字段名 (小写), canonical 前必须删除/用占位符替换。 */
     public static final java.util.Set<String> BANNED_FIELD_NAMES =
             java.util.Set.of(
-                    "rawtoken", "raw_token", "token", "authorization", "authorizationheader",
-                    "apikey", "api_key", "cookie", "connectionstring", "password", "secret",
-                    "principal", "rawprincipal", "raw_principal");
+                    "rawtoken",
+                    "raw_token",
+                    "token",
+                    "authorization",
+                    "authorizationheader",
+                    "apikey",
+                    "api_key",
+                    "cookie",
+                    "connectionstring",
+                    "password",
+                    "secret",
+                    "principal",
+                    "rawprincipal",
+                    "raw_principal");
 
     private final ObjectMapper mapper;
 
@@ -80,8 +91,8 @@ public final class CanonicalJson {
      * PR-5.1 / EMS-PR6 §2.2: tenantScopeFingerprint = SHA-256(normalizedTenantId + ":" +
      * permissionScopeVersion)。让 Fixture Key 间接绑定租户范围，但不暴露明文 tenantId。
      *
-     * 不同 tenant 即使 permissionScopeVersion 相同（两条 DB 不同的 admin/user），也产出不同 fingerprint，
-     * 杜绝跨租户 Fixture 误命中。
+     * <p>不同 tenant 即使 permissionScopeVersion 相同（两条 DB 不同的 admin/user），也产出不同 fingerprint， 杜绝跨租户
+     * Fixture 误命中。
      */
     public static String tenantScopeFingerprint(String tenantId, String permissionScopeVersion) {
         String normalizedTenant = tenantId == null ? "" : tenantId.trim().toLowerCase();
@@ -90,17 +101,18 @@ public final class CanonicalJson {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             return HexFormat.of()
                     .formatHex(
-                            md.digest((normalizedTenant + ":" + scope).getBytes(StandardCharsets.UTF_8)));
+                            md.digest(
+                                    (normalizedTenant + ":" + scope)
+                                            .getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
     }
 
     /**
-     * PR-5/PR-5.1: ReplayKey = SHA-256 canonical(
-     *   caseId | componentType | componentName | componentVersion | callIndex
-     *   | normalizedRequest | tenantScopeFingerprint(tenantId, permissionScopeVersion) | indexVersion
-     * )
+     * PR-5/PR-5.1: ReplayKey = SHA-256 canonical( caseId | componentType | componentName |
+     * componentVersion | callIndex | normalizedRequest | tenantScopeFingerprint(tenantId,
+     * permissionScopeVersion) | indexVersion )
      *
      * <p>tenantId 不直接进 Hash；用 {@link #tenantScopeFingerprint} 绑定租户范围。
      */
@@ -121,7 +133,8 @@ public final class CanonicalJson {
         root.put("componentVersion", nullSafe(componentVersion));
         root.put("callIndex", callIndex);
         root.set("normalizedRequest", canonicalize(toJsonNode(request)));
-        root.put("tenantScopeFingerprint", tenantScopeFingerprint(tenantId, permissionScopeVersion));
+        root.put(
+                "tenantScopeFingerprint", tenantScopeFingerprint(tenantId, permissionScopeVersion));
         root.put("indexVersion", nullSafe(indexVersion));
         return sha256(canonicalize(root));
     }
@@ -169,7 +182,8 @@ public final class CanonicalJson {
                 sorted.put(e.getKey(), canonicalizeInternal(e.getValue()));
             }
             ObjectNode out = JsonNodeFactory.instance.objectNode();
-            for (Map.Entry<String, JsonNode> e : sorted.entrySet()) out.set(e.getKey(), e.getValue());
+            for (Map.Entry<String, JsonNode> e : sorted.entrySet())
+                out.set(e.getKey(), e.getValue());
             return out;
         }
         if (node.isArray()) {

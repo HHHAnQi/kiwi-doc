@@ -6,9 +6,7 @@ import com.xxx.ragdoc.application.chat.tool.ToolStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/**
- * PR-6b.3: {@link ToolStatusMapper} 映射表单测 (9 ToolStatus 全覆盖 + null fail-closed)。
- */
+/** PR-6b.3: {@link ToolStatusMapper} 映射表单测 (9 ToolStatus 全覆盖 + null fail-closed)。 */
 @DisplayName("ToolStatusMapper - PR-6b.3 ToolStatus → AgentStepStatus 表驱动")
 class ToolStatusMapperTest {
 

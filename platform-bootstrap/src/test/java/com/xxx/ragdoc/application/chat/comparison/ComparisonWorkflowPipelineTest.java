@@ -3,7 +3,6 @@ package com.xxx.ragdoc.application.chat.comparison;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,9 +60,14 @@ class ComparisonWorkflowPipelineTest {
     }
 
     private ChatExecutionContext context() {
-        RouterDecision d = new RouterDecision(
-                TaskIntent.COMPARISON, ExecutionStrategy.FIXED_WORKFLOW,
-                List.of("v1", "v2"), Map.of(), 1.0, "TWO_VERSION_COMPARE");
+        RouterDecision d =
+                new RouterDecision(
+                        TaskIntent.COMPARISON,
+                        ExecutionStrategy.FIXED_WORKFLOW,
+                        List.of("v1", "v2"),
+                        Map.of(),
+                        1.0,
+                        "TWO_VERSION_COMPARE");
         return new ChatExecutionContext(
                 "req-1",
                 new Principal("tA", "u1", java.util.Set.of(), null),
@@ -75,8 +79,7 @@ class ComparisonWorkflowPipelineTest {
     }
 
     private ChatCommand command() {
-        return new ChatCommand("对比 v1 与 v2",
-                null, null, null, null, null, "conv-1");
+        return new ChatCommand("对比 v1 与 v2", null, null, null, null, null, "conv-1");
     }
 
     @Test
@@ -84,9 +87,10 @@ class ComparisonWorkflowPipelineTest {
     void flagFalseLegacyPath() throws Exception {
         properties.setComparisonExecutorEnabled(false);
         // PR-3 旧路径返回非空 citations, 让 mergeAndAssemble 不被单终态 NO_RECALL 拒
-        List<ChatResult.Citation> cits = List.of(
-                new ChatResult.Citation(10L, 1L, 0, "snippet", "ctx", List.of()),
-                new ChatResult.Citation(20L, 2L, 0, "snippet", "ctx", List.of()));
+        List<ChatResult.Citation> cits =
+                List.of(
+                        new ChatResult.Citation(10L, 1L, 0, "snippet", "ctx", List.of()),
+                        new ChatResult.Citation(20L, 2L, 0, "snippet", "ctx", List.of()));
         ChatResult lite = new ChatResult("A:", cits, StateHint.OK, new TraceId("t-1"), null, null);
         when(chatService.chat(any(), any(), anyString())).thenReturn(lite);
 
@@ -101,8 +105,9 @@ class ComparisonWorkflowPipelineTest {
     @DisplayName("Flag=true → 调用 AgentExecutor, 不调 ChatService.chat 一线 A/B")
     void flagTrueAgentPath() throws Exception {
         properties.setComparisonExecutorEnabled(true);
-        ChatResult okResult = new ChatResult("agent answer", List.of(),
-                StateHint.OK, new TraceId("t-1"), null, null);
+        ChatResult okResult =
+                new ChatResult(
+                        "agent answer", List.of(), StateHint.OK, new TraceId("t-1"), null, null);
         when(agentExecutor.execute(any(), any(), any(), anyString(), any(), any()))
                 .thenReturn(okResult);
 
@@ -133,9 +138,11 @@ class ComparisonWorkflowPipelineTest {
         properties.setComparisonExecutorEnabled(true);
         properties.setCompatibilityFallbackEnabled(true);
         when(agentExecutor.execute(any(), any(), any(), anyString(), any(), any()))
-                .thenThrow(new com.xxx.ragdoc.application.chat.agent.AgentRunInitializationException(
-                        "r1", "init failed"));
-        List<ChatResult.Citation> cits = List.of(new ChatResult.Citation(10L, 1L, 0, "s", "c", List.of()));
+                .thenThrow(
+                        new com.xxx.ragdoc.application.chat.agent.AgentRunInitializationException(
+                                "r1", "init failed"));
+        List<ChatResult.Citation> cits =
+                List.of(new ChatResult.Citation(10L, 1L, 0, "s", "c", List.of()));
         ChatResult lite = new ChatResult("L:", cits, StateHint.OK, new TraceId("t-1"), null, null);
         when(chatService.chat(any(), any(), anyString())).thenReturn(lite);
 
@@ -151,8 +158,9 @@ class ComparisonWorkflowPipelineTest {
         properties.setComparisonExecutorEnabled(true);
         properties.setCompatibilityFallbackEnabled(false);
         when(agentExecutor.execute(any(), any(), any(), anyString(), any(), any()))
-                .thenThrow(new com.xxx.ragdoc.application.chat.agent.AgentRunInitializationException(
-                        "r1", "init failed"));
+                .thenThrow(
+                        new com.xxx.ragdoc.application.chat.agent.AgentRunInitializationException(
+                                "r1", "init failed"));
 
         ChatResult r = pipeline.execute(command(), context());
 

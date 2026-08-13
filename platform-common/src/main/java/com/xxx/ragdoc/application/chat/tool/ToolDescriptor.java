@@ -8,14 +8,14 @@ package com.xxx.ragdoc.application.chat.tool;
  * <ul>
  *   <li>{@link #name()} 必须是 [a-z_]+ (与 LLM Tool 名风格一致); Registry 校验
  *   <li>{@link #version()} semver-like (e.g. "v1"); 用于 dedup / trace
- *   <li>{@link #description()} 含适用 + 不适用场景, 让 LLM Agent 上线后能选合理; PR-4 的 Registry 不会
- *       根据 description 文字执行任何逻辑 (避免 prompt-injection 风险)
- *   <li>{@link #inputSchemaVersion()} / {@link #outputSchemaVersion()}: 描述 input/output record 类名 + 字段 hash,
- *       让 fixture replay 不误命中旧 schema 的结果
+ *   <li>{@link #description()} 含适用 + 不适用场景, 让 LLM Agent 上线后能选合理; PR-4 的 Registry 不会 根据 description
+ *       文字执行任何逻辑 (避免 prompt-injection 风险)
+ *   <li>{@link #inputSchemaVersion()} / {@link #outputSchemaVersion()}: 描述 input/output record 类名 +
+ *       字段 hash, 让 fixture replay 不误命中旧 schema 的结果
  *   <li>{@link #timeout()} 必须由服务端 (Tool 自身) 决定; LLM/客户端不能扩大
  *   <li>{@link #maxResults()} 服务端硬上限 (Tool 内部 trim)
- *   <li>{@link #idempotent()}: read-only 工具全为 true (semantic_search / metadata_search / document_fetch /
- *       citation_verify / keyword_search 全是 read, 自然 idempotent)
+ *   <li>{@link #idempotent()}: read-only 工具全为 true (semantic_search / metadata_search /
+ *       document_fetch / citation_verify / keyword_search 全是 read, 自然 idempotent)
  *   <li>{@link #costCategory()} 让 Planner / Sufficiency 估算预算用
  * </ul>
  */

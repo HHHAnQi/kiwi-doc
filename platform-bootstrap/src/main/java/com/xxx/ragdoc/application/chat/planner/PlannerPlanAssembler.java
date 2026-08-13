@@ -13,8 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * PR-7a / EMS-PR7 §4.6: 把 {@link PlannerResponse} 转换为 {@link DeterministicExecutionPlan},
- * 并<b>在 PlanValidator 之前</b>执行 Planner 专属校验 (Revision §4.6)。
+ * PR-7a / EMS-PR7 §4.6: 把 {@link PlannerResponse} 转换为 {@link DeterministicExecutionPlan}, 并<b>在
+ * PlanValidator 之前</b>执行 Planner 专属校验 (Revision §4.6)。
  *
  * <p>额外校验:
  *
@@ -72,11 +72,15 @@ public class PlannerPlanAssembler {
         }
 
         // 校验 step 数 ≤ min(maxPlanSteps, remainingSteps)
-        int cap = Math.min(properties.getMaxPlanSteps(),
-                request.remainingBudget() == null ? properties.getMaxPlanSteps()
-                        : request.remainingBudget().remainingSteps());
+        int cap =
+                Math.min(
+                        properties.getMaxPlanSteps(),
+                        request.remainingBudget() == null
+                                ? properties.getMaxPlanSteps()
+                                : request.remainingBudget().remainingSteps());
         if (response.steps().size() > cap) {
-            return AssemblyResult.invalid("PLAN_TOO_MANY_STEPS: " + response.steps().size() + ">" + cap);
+            return AssemblyResult.invalid(
+                    "PLAN_TOO_MANY_STEPS: " + response.steps().size() + ">" + cap);
         }
 
         List<AgentToolStep> agentSteps = new ArrayList<>();
@@ -91,41 +95,50 @@ public class PlannerPlanAssembler {
             }
             for (String rid : s.requirementIds()) {
                 if (!knownReq.contains(rid)) {
-                    return AssemblyResult.invalid("STEP_REFERENCES_UNKNOWN_REQUIREMENT: "
-                            + s.stepId() + "/" + rid);
+                    return AssemblyResult.invalid(
+                            "STEP_REFERENCES_UNKNOWN_REQUIREMENT: " + s.stepId() + "/" + rid);
                 }
             }
             // AgentToolStep 内置 banned 字段扫描 (覆盖 stepId 敏感词)
             AgentToolStep agentStep;
             try {
-                agentStep = new AgentToolStep(
-                        s.stepId(), s.toolName(), s.toolVersion(),
-                        s.input(), s.dependsOn(), s.expectedEvidence() == null
-                                ? "" : s.expectedEvidence(),
-                        s.required());
+                agentStep =
+                        new AgentToolStep(
+                                s.stepId(),
+                                s.toolName(),
+                                s.toolVersion(),
+                                s.input(),
+                                s.dependsOn(),
+                                s.expectedEvidence() == null ? "" : s.expectedEvidence(),
+                                s.required());
             } catch (IllegalArgumentException ex) {
-                return AssemblyResult.invalid("STEP_VALIDATION_FAILED: "
-                        + s.stepId() + ": " + ex.getMessage());
+                return AssemblyResult.invalid(
+                        "STEP_VALIDATION_FAILED: " + s.stepId() + ": " + ex.getMessage());
             }
             agentSteps.add(agentStep);
         }
 
-        DeterministicExecutionPlan plan = new DeterministicExecutionPlan(
-                response.planId(), response.planVersion(), agentSteps);
+        DeterministicExecutionPlan plan =
+                new DeterministicExecutionPlan(
+                        response.planId(), response.planVersion(), agentSteps);
 
         // 跑现有 PlanValidator (Allowlist / 拓扑 / banned 字段 final check)
         PlanValidationResult validation = planValidator.validate(plan, policy);
         if (!validation.valid()) {
-            return AssemblyResult.invalid("PLAN_VALIDATOR_FAILED: "
-                    + validation.errors().stream()
-                            .map(PlanValidationResult.PlanValidationError::safeMessage)
-                            .toList());
+            return AssemblyResult.invalid(
+                    "PLAN_VALIDATOR_FAILED: "
+                            + validation.errors().stream()
+                                    .map(PlanValidationResult.PlanValidationError::safeMessage)
+                                    .toList());
         }
         return AssemblyResult.ok(plan, response.targetedRequirementIds(), response.reasonCode());
     }
 
     private static String signatureOf(PlannedToolStep s) {
-        return s.toolName() + "|" + s.toolVersion() + "|"
+        return s.toolName()
+                + "|"
+                + s.toolVersion()
+                + "|"
                 + (s.input() == null ? "" : s.input().normalizedForDedup());
     }
 

@@ -17,7 +17,8 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li>(name, version) 重复 → IllegalStateException (日后两个 bean 标 semantic_search:v1 会立即暴露)
- *   <li>{@link ToolDescriptor} 字段非法 (name 命名规则 / timeout≤0 / maxResults 越界 等) → ToolDescriptor 自己构造校验抛
+ *   <li>{@link ToolDescriptor} 字段非法 (name 命名规则 / timeout≤0 / maxResults 越界 等) → ToolDescriptor
+ *       自己构造校验抛
  *   <li>每个 bean 的 inputType/outputType 与 interface generic 参数一致 → 由 JVM generic erasure 难以静态校验,
  *       Registry 把 inputType 必须实现 {@link ToolInput}, outputType 必须实现 {@link ToolOutput} 的契约抛出
  * </ul>
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Component;
  * <h2>运行时校验 (fail-closed)</h2>
  *
  * <ul>
- *   <li>{@link #get(String, String)} 未命中 → {@link ErrorCode#TOOL_NOT_FOUND} (HTTP 404), 不允许回退到任意其它 tool
+ *   <li>{@link #get(String, String)} 未命中 → {@link ErrorCode#TOOL_NOT_FOUND} (HTTP 404), 不允许回退到任意其它
+ *       tool
  *   <li>{@link #list()} 返回按 name 排序的 descriptor snapshot, 让 Planner / 调试 endpoint 可枚举
  * </ul>
  *
@@ -42,7 +44,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ToolRegistry {
 
-    private final Map<String, AgentTool<? extends ToolInput, ? extends ToolOutput>> byKey = new LinkedHashMap<>();
+    private final Map<String, AgentTool<? extends ToolInput, ? extends ToolOutput>> byKey =
+            new LinkedHashMap<>();
 
     public ToolRegistry(List<AgentTool<? extends ToolInput, ? extends ToolOutput>> tools) {
         for (AgentTool<? extends ToolInput, ? extends ToolOutput> t : tools) {
@@ -50,21 +53,32 @@ public class ToolRegistry {
             // descriptor 字段合法性已由 ToolDescriptor 构造校验; 这里再二次确认 inputType/outputType 标记接口
             if (!ToolInput.class.isAssignableFrom(t.inputType())) {
                 throw new IllegalStateException(
-                        "ToolRegistry.invalid_input_type name=" + d.name() + " inputType=" + t.inputType()
+                        "ToolRegistry.invalid_input_type name="
+                                + d.name()
+                                + " inputType="
+                                + t.inputType()
                                 + " 必须实现 ToolInput");
             }
             if (!ToolOutput.class.isAssignableFrom(t.outputType())) {
                 throw new IllegalStateException(
-                        "ToolRegistry.invalid_output_type name=" + d.name() + " outputType=" + t.outputType()
+                        "ToolRegistry.invalid_output_type name="
+                                + d.name()
+                                + " outputType="
+                                + t.outputType()
                                 + " 必须实现 ToolOutput");
             }
             String key = key(d.name(), d.version());
             AgentTool<? extends ToolInput, ? extends ToolOutput> prev = byKey.put(key, t);
             if (prev != null) {
                 throw new IllegalStateException(
-                        "ToolRegistry.duplicate name=" + d.name() + " version=" + d.version()
-                                + " bean1=" + prev.getClass().getName()
-                                + " bean2=" + t.getClass().getName());
+                        "ToolRegistry.duplicate name="
+                                + d.name()
+                                + " version="
+                                + d.version()
+                                + " bean1="
+                                + prev.getClass().getName()
+                                + " bean2="
+                                + t.getClass().getName());
             }
             log.info(
                     "tool.registry registered name={} version={} perm={} cost={} impl={}",
@@ -81,7 +95,8 @@ public class ToolRegistry {
 
     /** 按 (name, version) 精确查找; 缺失 → DomainException TOOL_NOT_FOUND。 */
     @SuppressWarnings("unchecked")
-    public <I extends ToolInput, O extends ToolOutput> AgentTool<I, O> get(String name, String version) {
+    public <I extends ToolInput, O extends ToolOutput> AgentTool<I, O> get(
+            String name, String version) {
         AgentTool<? extends ToolInput, ? extends ToolOutput> t = byKey.get(key(name, version));
         if (t == null) {
             throw new DomainException(
@@ -100,7 +115,11 @@ public class ToolRegistry {
                         () ->
                                 new DomainException(
                                         ErrorCode.TOOL_NOT_FOUND,
-                                        "tool name 未注册: " + name + " (已知: " + byKey.keySet() + ")"));
+                                        "tool name 未注册: "
+                                                + name
+                                                + " (已知: "
+                                                + byKey.keySet()
+                                                + ")"));
     }
 
     /** 调试 / Planner 枚举所有 descriptor, 按 name 排序。返回不可变 snapshot。 */

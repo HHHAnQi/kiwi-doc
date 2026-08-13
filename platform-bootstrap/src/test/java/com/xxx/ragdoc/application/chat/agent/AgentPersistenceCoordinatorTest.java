@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,8 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * AgentRunExecutorToolTxIT 在 PR-6b.3 用 Testcontainers + SpringBootTest 验证)。
  *
  * <p>重点: Reservation 双 CAS / Settlement 双 CAS 任一失败必须抛 {@link AgentCasConflictException};
- * markStepRunning 必须<b>只</b>调 stepRepository.transition (禁止再做 Run CAS); initializeRun 整体回滚
- * 已由 Spring `@Transactional REQUIRES_NEW` (本单测只验证抛出 + 不发生后续 CAS)。
+ * markStepRunning 必须<b>只</b>调 stepRepository.transition (禁止再做 Run CAS); initializeRun 整体回滚 已由
+ * Spring `@Transactional REQUIRES_NEW` (本单测只验证抛出 + 不发生后续 CAS)。
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AgentPersistenceCoordinator - PR-6b 多 CAS 事务协调")
@@ -45,28 +45,60 @@ class AgentPersistenceCoordinatorTest {
 
     @BeforeEach
     void setup() {
-        coord = new AgentPersistenceCoordinator(runRepo, stepRepo);
+        coord = new AgentPersistenceCoordinator(
+                runRepo, stepRepo, mock(AgentCheckpointRepository.class));
     }
 
     private AgentRunRecord runAt(String runId, long version, AgentRunStatus status) {
         return new AgentRunRecord(
-                runId, "req-1", "tenant-A", "user-1", "COMPARISON",
-                status, "plan-1", "v1",
+                runId,
+                "req-1",
+                "tenant-A",
+                "user-1",
+                "COMPARISON",
+                status,
+                "plan-1",
+                "v1",
                 "fakehash64charxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
                 "{\"planId\":\"plan-1\"}",
-                AgentBudget.pr6Default(), AgentBudgetReservation.zero(), AgentUsage.zero(),
-                List.of(), 0, null, "rule-v1", "toolset-v1", "iv-1", "LIVE",
-                null, null, version);
+                AgentBudget.pr6Default(),
+                AgentBudgetReservation.zero(),
+                AgentUsage.zero(),
+                List.of(),
+                0,
+                null,
+                "rule-v1",
+                "toolset-v1",
+                "iv-1",
+                "LIVE",
+                null,
+                null,
+                version);
     }
 
-    private AgentStepRecord stepAt(String runId, String stepId, int seq, AgentStepStatus status, long version) {
+    private AgentStepRecord stepAt(
+            String runId, String stepId, int seq, AgentStepStatus status, long version) {
         return new AgentStepRecord(
-                runId, stepId, seq,
-                "semantic_search", "v1", null,
+                runId,
+                stepId,
+                seq,
+                "semantic_search",
+                "v1",
+                null,
                 "inputhash64charxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                status, 0, List.of(),
-                null, null, false, false, false,
-                null, null, null, null, version);
+                status,
+                0,
+                List.of(),
+                null,
+                null,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null,
+                version);
     }
 
     // ─── initializeRunAndSteps ─────────────────────────
@@ -79,19 +111,18 @@ class AgentPersistenceCoordinatorTest {
         @DisplayName("正常: create run + create 2 steps + 三次 CAS RECEIVED→ROUTED→PLANNED→EXECUTING")
         void happyPath() {
             AgentRunRecord run = runAt("r1", 0, AgentRunStatus.RECEIVED);
-            List<AgentStepRecord> steps = List.of(
-                    stepAt("r1", "s1", 1, AgentStepStatus.PENDING, 0),
-                    stepAt("r1", "s2", 2, AgentStepStatus.PENDING, 0));
+            List<AgentStepRecord> steps =
+                    List.of(
+                            stepAt("r1", "s1", 1, AgentStepStatus.PENDING, 0),
+                            stepAt("r1", "s2", 2, AgentStepStatus.PENDING, 0));
             when(runRepo.create(any())).thenReturn(run);
             when(stepRepo.create(any())).thenAnswer(inv -> inv.getArgument(0));
             when(runRepo.findByRunId("r1"))
                     .thenReturn(Optional.of(runAt("r1", 1, AgentRunStatus.ROUTED)))
                     .thenReturn(Optional.of(runAt("r1", 2, AgentRunStatus.PLANNED)))
                     .thenReturn(Optional.of(runAt("r1", 3, AgentRunStatus.EXECUTING)));
-            when(stepRepo.findByRunIdAndStepId("r1", "s1"))
-                    .thenReturn(Optional.of(steps.get(0)));
-            when(stepRepo.findByRunIdAndStepId("r1", "s2"))
-                    .thenReturn(Optional.of(steps.get(1)));
+            when(stepRepo.findByRunIdAndStepId("r1", "s1")).thenReturn(Optional.of(steps.get(0)));
+            when(stepRepo.findByRunIdAndStepId("r1", "s2")).thenReturn(Optional.of(steps.get(1)));
             when(runRepo.transition(any(), anyLong(), any(), any(), any(), any(), any()))
                     .thenReturn(true);
 
@@ -100,7 +131,8 @@ class AgentPersistenceCoordinatorTest {
             assertThat(ir.run().status()).isEqualTo(AgentRunStatus.EXECUTING);
             assertThat(ir.run().version()).isEqualTo(3);
             // 三次 CAS: RECEIVED→ROUTED / ROUTED→PLANNED / PLANNED→EXECUTING
-            verify(runRepo, times(3)).transition(any(), anyLong(), any(), any(), any(), any(), any());
+            verify(runRepo, times(3))
+                    .transition(any(), anyLong(), any(), any(), any(), any(), any());
         }
 
         @Test
@@ -109,25 +141,36 @@ class AgentPersistenceCoordinatorTest {
             AgentRunRecord run = runAt("r1", 0, AgentRunStatus.RECEIVED);
             when(runRepo.create(any())).thenThrow(new RuntimeException("dup pk"));
 
-            assertThatThrownBy(() -> coord.initializeRunAndSteps(run,
-                    List.of(stepAt("r1", "s1", 1, AgentStepStatus.PENDING, 0))))
+            assertThatThrownBy(
+                            () ->
+                                    coord.initializeRunAndSteps(
+                                            run,
+                                            List.of(
+                                                    stepAt(
+                                                            "r1",
+                                                            "s1",
+                                                            1,
+                                                            AgentStepStatus.PENDING,
+                                                            0))))
                     .isInstanceOf(AgentRunInitializationException.class);
 
             verify(stepRepo, never()).create(any());
-            verify(runRepo, never()).transition(any(), anyLong(), any(), any(), any(), any(), any());
+            verify(runRepo, never())
+                    .transition(any(), anyLong(), any(), any(), any(), any(), any());
         }
 
         @Test
         @DisplayName("第三次 CAS 失败 → AgentRunInitializationException, 不再 reload")
         void firstCasFails() {
             AgentRunRecord run = runAt("r1", 0, AgentRunStatus.RECEIVED);
-            List<AgentStepRecord> steps = List.of(stepAt("r1", "s1", 1, AgentStepStatus.PENDING, 0));
+            List<AgentStepRecord> steps =
+                    List.of(stepAt("r1", "s1", 1, AgentStepStatus.PENDING, 0));
             when(runRepo.create(any())).thenReturn(run);
             when(stepRepo.create(any())).thenAnswer(inv -> inv.getArgument(0));
             when(runRepo.transition(any(), anyLong(), any(), any(), any(), any(), any()))
                     .thenReturn(true)
                     .thenReturn(true)
-                    .thenReturn(false);  // 第三次 PLANNED→EXECUTING CAS 失败
+                    .thenReturn(false); // 第三次 PLANNED→EXECUTING CAS 失败
             when(runRepo.findByRunId("r1"))
                     .thenReturn(Optional.of(runAt("r1", 1, AgentRunStatus.ROUTED)))
                     .thenReturn(Optional.of(runAt("r1", 2, AgentRunStatus.PLANNED)));
@@ -148,12 +191,20 @@ class AgentPersistenceCoordinatorTest {
         @DisplayName("正常: updateBudgetState + step PENDING→RESERVED 都成功")
         void happy() {
             when(runRepo.updateBudgetState(any(), anyLong(), any(), any(), any())).thenReturn(true);
-            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(true);
+            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any()))
+                    .thenReturn(true);
 
-            ReservationResult r = coord.reserveStep(
-                    "r1", 3, Set.of(AgentRunStatus.EXECUTING), AgentUsage.zero(),
-                    new BudgetDecision.Allowed(new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO)),
-                    "s1", 0);
+            ReservationResult r =
+                    coord.reserveStep(
+                            "r1",
+                            3,
+                            Set.of(AgentRunStatus.EXECUTING),
+                            AgentUsage.zero(),
+                            new BudgetDecision.Allowed(
+                                    new AgentBudgetReservation(
+                                            1, 1, 0, 0, 0, java.math.BigDecimal.ZERO)),
+                            "s1",
+                            0);
 
             assertThat(r.newRunVersion()).isEqualTo(4);
             assertThat(r.newStepVersion()).isEqualTo(1);
@@ -163,12 +214,26 @@ class AgentPersistenceCoordinatorTest {
         @Test
         @DisplayName("Run reservation CAS 失败 → 抛 + stepRepository.transition 不被调用 (回滚)")
         void runCasFailsSkipsStepWrite() {
-            when(runRepo.updateBudgetState(any(), anyLong(), any(), any(), any())).thenReturn(false);
+            when(runRepo.updateBudgetState(any(), anyLong(), any(), any(), any()))
+                    .thenReturn(false);
 
-            assertThatThrownBy(() -> coord.reserveStep(
-                    "r1", 3, Set.of(AgentRunStatus.EXECUTING), AgentUsage.zero(),
-                    new BudgetDecision.Allowed(new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO)),
-                    "s1", 0))
+            assertThatThrownBy(
+                            () ->
+                                    coord.reserveStep(
+                                            "r1",
+                                            3,
+                                            Set.of(AgentRunStatus.EXECUTING),
+                                            AgentUsage.zero(),
+                                            new BudgetDecision.Allowed(
+                                                    new AgentBudgetReservation(
+                                                            1,
+                                                            1,
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            java.math.BigDecimal.ZERO)),
+                                            "s1",
+                                            0))
                     .isInstanceOf(AgentCasConflictException.class)
                     .hasMessageContaining("RUN_RESERVATION");
 
@@ -179,12 +244,26 @@ class AgentPersistenceCoordinatorTest {
         @DisplayName("Step PENDING→RESERVED CAS 失败 → 抛 (Revision §2 整体回滚)")
         void stepCasFails() {
             when(runRepo.updateBudgetState(any(), anyLong(), any(), any(), any())).thenReturn(true);
-            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(false);
+            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any()))
+                    .thenReturn(false);
 
-            assertThatThrownBy(() -> coord.reserveStep(
-                    "r1", 3, Set.of(AgentRunStatus.EXECUTING), AgentUsage.zero(),
-                    new BudgetDecision.Allowed(new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO)),
-                    "s1", 0))
+            assertThatThrownBy(
+                            () ->
+                                    coord.reserveStep(
+                                            "r1",
+                                            3,
+                                            Set.of(AgentRunStatus.EXECUTING),
+                                            AgentUsage.zero(),
+                                            new BudgetDecision.Allowed(
+                                                    new AgentBudgetReservation(
+                                                            1,
+                                                            1,
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            java.math.BigDecimal.ZERO)),
+                                            "s1",
+                                            0))
                     .isInstanceOf(AgentCasConflictException.class)
                     .hasMessageContaining("STEP_RESERVE");
         }
@@ -199,21 +278,24 @@ class AgentPersistenceCoordinatorTest {
         @Test
         @DisplayName("正常: step RESERVED→RUNNING CAS 成功, 返回新 version")
         void happy() {
-            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(true);
+            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any()))
+                    .thenReturn(true);
 
-            long newStepVer = coord.markStepRunning(
-                    "r1", "s1", 1, AgentStepUpdate.empty());
+            long newStepVer = coord.markStepRunning("r1", "s1", 1, AgentStepUpdate.empty());
 
             assertThat(newStepVer).isEqualTo(2);
             verify(runRepo, never()).updateBudgetState(any(), anyLong(), any(), any(), any());
-            verify(runRepo, never()).transition(any(), anyLong(), any(), any(), any(), any(), any());
-            verify(runRepo, never()).settleRunStep(any(), anyLong(), any(), any(), any(), any(), anyInt());
+            verify(runRepo, never())
+                    .transition(any(), anyLong(), any(), any(), any(), any(), any());
+            verify(runRepo, never())
+                    .settleRunStep(any(), anyLong(), any(), any(), any(), any(), anyInt());
         }
 
         @Test
         @DisplayName("CAS 失败 → 抛 AgentCasConflictException(STEP_MARK_RUNNING)")
         void casFail() {
-            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(false);
+            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any()))
+                    .thenReturn(false);
 
             assertThatThrownBy(() -> coord.markStepRunning("r1", "s1", 1, AgentStepUpdate.empty()))
                     .isInstanceOf(AgentCasConflictException.class)
@@ -232,15 +314,30 @@ class AgentPersistenceCoordinatorTest {
         void happy() {
             when(runRepo.settleRunStep(any(), anyLong(), any(), any(), any(), any(), anyInt()))
                     .thenReturn(true);
-            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(true);
+            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any()))
+                    .thenReturn(true);
 
-            SettlementResult s = coord.settleStep(
-                    "r1", 3, Set.of(AgentRunStatus.EXECUTING),
-                    budgetMgr.settle(
-                            AgentUsage.zero(), new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO),
-                            StepSettlement.realTool(AgentStepStatus.SUCCEEDED, "", 0, 0, java.math.BigDecimal.ZERO)),
-                    List.of("ev-1"), 1,
-                    "s1", 2, AgentStepStatus.SUCCEEDED, AgentStepUpdate.empty());
+            SettlementResult s =
+                    coord.settleStep(
+                            "r1",
+                            3,
+                            Set.of(AgentRunStatus.EXECUTING),
+                            budgetMgr.settle(
+                                    AgentUsage.zero(),
+                                    new AgentBudgetReservation(
+                                            1, 1, 0, 0, 0, java.math.BigDecimal.ZERO),
+                                    StepSettlement.realTool(
+                                            AgentStepStatus.SUCCEEDED,
+                                            "",
+                                            0,
+                                            0,
+                                            java.math.BigDecimal.ZERO)),
+                            List.of("ev-1"),
+                            1,
+                            "s1",
+                            2,
+                            AgentStepStatus.SUCCEEDED,
+                            AgentStepUpdate.empty());
 
             assertThat(s.newRunVersion()).isEqualTo(4);
             assertThat(s.newStepVersion()).isEqualTo(3);
@@ -252,13 +349,33 @@ class AgentPersistenceCoordinatorTest {
             when(runRepo.settleRunStep(any(), anyLong(), any(), any(), any(), any(), anyInt()))
                     .thenReturn(false);
 
-            assertThatThrownBy(() -> coord.settleStep(
-                    "r1", 3, Set.of(AgentRunStatus.EXECUTING),
-                    budgetMgr.settle(
-                            AgentUsage.zero(), new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO),
-                            StepSettlement.realTool(AgentStepStatus.SUCCEEDED, "", 0, 0, java.math.BigDecimal.ZERO)),
-                    List.of("ev-1"), 1,
-                    "s1", 2, AgentStepStatus.SUCCEEDED, AgentStepUpdate.empty()))
+            assertThatThrownBy(
+                            () ->
+                                    coord.settleStep(
+                                            "r1",
+                                            3,
+                                            Set.of(AgentRunStatus.EXECUTING),
+                                            budgetMgr.settle(
+                                                    AgentUsage.zero(),
+                                                    new AgentBudgetReservation(
+                                                            1,
+                                                            1,
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            java.math.BigDecimal.ZERO),
+                                                    StepSettlement.realTool(
+                                                            AgentStepStatus.SUCCEEDED,
+                                                            "",
+                                                            0,
+                                                            0,
+                                                            java.math.BigDecimal.ZERO)),
+                                            List.of("ev-1"),
+                                            1,
+                                            "s1",
+                                            2,
+                                            AgentStepStatus.SUCCEEDED,
+                                            AgentStepUpdate.empty()))
                     .isInstanceOf(AgentCasConflictException.class)
                     .hasMessageContaining("RUN_SETTLE");
 
@@ -270,15 +387,36 @@ class AgentPersistenceCoordinatorTest {
         void stepCasFail() {
             when(runRepo.settleRunStep(any(), anyLong(), any(), any(), any(), any(), anyInt()))
                     .thenReturn(true);
-            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(false);
+            when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any()))
+                    .thenReturn(false);
 
-            assertThatThrownBy(() -> coord.settleStep(
-                    "r1", 3, Set.of(AgentRunStatus.EXECUTING),
-                    budgetMgr.settle(
-                            AgentUsage.zero(), new AgentBudgetReservation(1, 1, 0, 0, 0, java.math.BigDecimal.ZERO),
-                            StepSettlement.realTool(AgentStepStatus.SUCCEEDED, "", 0, 0, java.math.BigDecimal.ZERO)),
-                    List.of("ev-1"), 1,
-                    "s1", 2, AgentStepStatus.SUCCEEDED, AgentStepUpdate.empty()))
+            assertThatThrownBy(
+                            () ->
+                                    coord.settleStep(
+                                            "r1",
+                                            3,
+                                            Set.of(AgentRunStatus.EXECUTING),
+                                            budgetMgr.settle(
+                                                    AgentUsage.zero(),
+                                                    new AgentBudgetReservation(
+                                                            1,
+                                                            1,
+                                                            0,
+                                                            0,
+                                                            0,
+                                                            java.math.BigDecimal.ZERO),
+                                                    StepSettlement.realTool(
+                                                            AgentStepStatus.SUCCEEDED,
+                                                            "",
+                                                            0,
+                                                            0,
+                                                            java.math.BigDecimal.ZERO)),
+                                            List.of("ev-1"),
+                                            1,
+                                            "s1",
+                                            2,
+                                            AgentStepStatus.SUCCEEDED,
+                                            AgentStepUpdate.empty()))
                     .isInstanceOf(AgentCasConflictException.class)
                     .hasMessageContaining("STEP_TERMINATE");
         }
@@ -289,11 +427,14 @@ class AgentPersistenceCoordinatorTest {
     void transitionStepOnly() {
         when(stepRepo.transition(any(), any(), anyLong(), any(), any(), any())).thenReturn(true);
 
-        boolean ok = coord.transitionStep(
-                "r1", "s2", 0,
-                Set.of(AgentStepStatus.PENDING),
-                AgentStepStatus.CANCELLED,
-                AgentStepUpdate.empty());
+        boolean ok =
+                coord.transitionStep(
+                        "r1",
+                        "s2",
+                        0,
+                        Set.of(AgentStepStatus.PENDING),
+                        AgentStepStatus.CANCELLED,
+                        AgentStepUpdate.empty());
 
         assertThat(ok).isTrue();
         verify(runRepo, never()).transition(any(), anyLong(), any(), any(), any(), any(), any());

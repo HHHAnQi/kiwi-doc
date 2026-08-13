@@ -1,11 +1,7 @@
 package com.xxx.ragdoc.application.chat.planner;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.xxx.ragdoc.application.chat.router.ExecutionStrategy;
-import com.xxx.ragdoc.application.chat.router.RouterDecision;
 import com.xxx.ragdoc.application.chat.router.TaskIntent;
 import com.xxx.ragdoc.application.chat.tool.SearchInput;
 import java.util.List;
@@ -36,13 +32,20 @@ class RuleTemplatePlannerProviderTest {
                 new PlannerToolDescriptor("document_fetch", "v1", "fetch", Map.of()));
     }
 
-    private PlannerRequest initialRequest(List<EvidenceRequirement> reqs, Map<String, Object> filters) {
+    private PlannerRequest initialRequest(
+            List<EvidenceRequirement> reqs, Map<String, Object> filters) {
         return new PlannerRequest(
-                "r-1", "对比 v1 与 v2 的差异", TaskIntent.MULTI_HOP,
-                List.of("v1", "v2"), filters, reqs,
-                EvidenceCoverageSummary.empty(), List.of(),
+                "r-1",
+                "对比 v1 与 v2 的差异",
+                TaskIntent.MULTI_HOP,
+                List.of("v1", "v2"),
+                filters,
+                reqs,
+                EvidenceCoverageSummary.empty(),
+                List.of(),
                 new AgentBudgetView(3, 3, 3, 3, 30000, 1),
-                allowlist(), 0);
+                allowlist(),
+                0);
     }
 
     @Nested
@@ -52,10 +55,12 @@ class RuleTemplatePlannerProviderTest {
         @Test
         @DisplayName("两个 Requirement (FACT + RELATION) → metadata_search + semantic_search 各一 Step")
         void mixedRequirements() {
-            EvidenceRequirement r1 = new EvidenceRequirement("R1", "R1 描述", RequirementType.FACT,
-                    true, List.of("v1"), Map.of());
-            EvidenceRequirement r2 = new EvidenceRequirement("R2", "R2 描述", RequirementType.RELATION,
-                    true, List.of(), Map.of());
+            EvidenceRequirement r1 =
+                    new EvidenceRequirement(
+                            "R1", "R1 描述", RequirementType.FACT, true, List.of("v1"), Map.of());
+            EvidenceRequirement r2 =
+                    new EvidenceRequirement(
+                            "R2", "R2 描述", RequirementType.RELATION, true, List.of(), Map.of());
             PlannerResponse r = planner.plan(initialRequest(List.of(r1, r2), Map.of()));
 
             assertThat(r.steps()).hasSize(2);
@@ -70,10 +75,17 @@ class RuleTemplatePlannerProviderTest {
         @Test
         @DisplayName("FOLLOW_UP_ENTITY 自动依赖前序 Step")
         void followUpHasDependsOn() {
-            EvidenceRequirement r1 = new EvidenceRequirement("R1", "fact", RequirementType.FACT, true,
-                    List.of("x"), Map.of());
-            EvidenceRequirement r2 = new EvidenceRequirement("R2", "follow-up", RequirementType.FOLLOW_UP_ENTITY,
-                    true, List.of(), Map.of());
+            EvidenceRequirement r1 =
+                    new EvidenceRequirement(
+                            "R1", "fact", RequirementType.FACT, true, List.of("x"), Map.of());
+            EvidenceRequirement r2 =
+                    new EvidenceRequirement(
+                            "R2",
+                            "follow-up",
+                            RequirementType.FOLLOW_UP_ENTITY,
+                            true,
+                            List.of(),
+                            Map.of());
             PlannerResponse r = planner.plan(initialRequest(List.of(r1, r2), Map.of()));
             assertThat(r.steps()).hasSize(2);
             assertThat(r.steps().get(1).dependsOn()).containsExactly("plan-step-0");
@@ -83,10 +95,11 @@ class RuleTemplatePlannerProviderTest {
         @DisplayName("Step 数受 maxPlanSteps 上限截断 (props.max=2)")
         void maxPlanStepsCap() {
             props.setMaxPlanSteps(2);
-            List<EvidenceRequirement> reqs = List.of(
-                    EvidenceRequirement.fact("R1", "r1 desc", true),
-                    EvidenceRequirement.fact("R2", "r2 desc", true),
-                    EvidenceRequirement.fact("R3", "r3 desc", true));
+            List<EvidenceRequirement> reqs =
+                    List.of(
+                            EvidenceRequirement.fact("R1", "r1 desc", true),
+                            EvidenceRequirement.fact("R2", "r2 desc", true),
+                            EvidenceRequirement.fact("R3", "r3 desc", true));
             PlannerResponse r = planner.plan(initialRequest(reqs, Map.of()));
             assertThat(r.steps()).hasSize(2);
         }
@@ -96,14 +109,25 @@ class RuleTemplatePlannerProviderTest {
         void replanOnlyUncovered() {
             EvidenceRequirement r1 = EvidenceRequirement.fact("R1", "fact", true);
             EvidenceRequirement r2 = EvidenceRequirement.fact("R2", "still missing", true);
-            PlannerRequest req = new PlannerRequest(
-                    "r-1", "q", TaskIntent.MULTI_HOP, List.of(), Map.of(),
-                    List.of(r1, r2),
-                    new EvidenceCoverageSummary(2, List.of("R1"), List.of(), List.of("R2"),
-                            List.of("ev1"), Map.of()),
-                    List.of(/* completedSteps */),
-                    new AgentBudgetView(2, 2, 3, 3, 30000, 1),
-                    allowlist(), 1 /* replan */);
+            PlannerRequest req =
+                    new PlannerRequest(
+                            "r-1",
+                            "q",
+                            TaskIntent.MULTI_HOP,
+                            List.of(),
+                            Map.of(),
+                            List.of(r1, r2),
+                            new EvidenceCoverageSummary(
+                                    2,
+                                    List.of("R1"),
+                                    List.of(),
+                                    List.of("R2"),
+                                    List.of("ev1"),
+                                    Map.of()),
+                            List.of(/* completedSteps */ ),
+                            new AgentBudgetView(2, 2, 3, 3, 30000, 1),
+                            allowlist(),
+                            1 /* replan */);
             PlannerResponse r = planner.plan(req);
             assertThat(r.steps()).hasSize(1);
             assertThat(r.targetedRequirementIds()).containsExactly("R2");
@@ -124,12 +148,19 @@ class RuleTemplatePlannerProviderTest {
         @Test
         @DisplayName("Budget=0 → 返回零 Step Plan (BUDGET_ZERO)")
         void zeroBudgetYieldsEmptyPlan() {
-            PlannerRequest req = new PlannerRequest(
-                    "r-1", "q", TaskIntent.MULTI_HOP, List.of(), Map.of(),
-                    List.of(EvidenceRequirement.fact("R1", "x", true)),
-                    EvidenceCoverageSummary.empty(), List.of(),
-                    new AgentBudgetView(0, 0, 3, 3, 30000, 1),
-                    allowlist(), 0);
+            PlannerRequest req =
+                    new PlannerRequest(
+                            "r-1",
+                            "q",
+                            TaskIntent.MULTI_HOP,
+                            List.of(),
+                            Map.of(),
+                            List.of(EvidenceRequirement.fact("R1", "x", true)),
+                            EvidenceCoverageSummary.empty(),
+                            List.of(),
+                            new AgentBudgetView(0, 0, 3, 3, 30000, 1),
+                            allowlist(),
+                            0);
             PlannerResponse r = planner.plan(req);
             assertThat(r.steps()).isEmpty();
             assertThat(r.reasonCode()).isEqualTo("BUDGET_ZERO");
@@ -138,14 +169,28 @@ class RuleTemplatePlannerProviderTest {
         @Test
         @DisplayName("Tool 全部不在 allowlist → 该 Req 被 skip (其它允许的进 Plan)")
         void toolNotInAllowlistSkipped() {
-            EvidenceRequirement r1 = new EvidenceRequirement("R1", "v1", RequirementType.FACT,
-                    true, List.of("v1"), Map.of()); // 会选 metadata_search
+            EvidenceRequirement r1 =
+                    new EvidenceRequirement(
+                            "R1",
+                            "v1",
+                            RequirementType.FACT,
+                            true,
+                            List.of("v1"),
+                            Map.of()); // 会选 metadata_search
             EvidenceRequirement r2 = EvidenceRequirement.fact("R2", "concept", true);
-            PlannerRequest req = new PlannerRequest(
-                    "r-1", "q", TaskIntent.MULTI_HOP, List.of(), Map.of(),
-                    List.of(r1, r2), EvidenceCoverageSummary.empty(), List.of(),
-                    new AgentBudgetView(3, 3, 3, 3, 30000, 1),
-                    List.of(/* 空 allowlist */), 0);
+            PlannerRequest req =
+                    new PlannerRequest(
+                            "r-1",
+                            "q",
+                            TaskIntent.MULTI_HOP,
+                            List.of(),
+                            Map.of(),
+                            List.of(r1, r2),
+                            EvidenceCoverageSummary.empty(),
+                            List.of(),
+                            new AgentBudgetView(3, 3, 3, 3, 30000, 1),
+                            List.of(/* 空 allowlist */ ),
+                            0);
             PlannerResponse r = planner.plan(req);
             assertThat(r.steps()).isEmpty();
         }
@@ -156,20 +201,43 @@ class RuleTemplatePlannerProviderTest {
             // R1 + R2 same signature (但 desc 不同 → 不同 query, 这里强行制造相同 sig)
             EvidenceRequirement r1 = EvidenceRequirement.fact("R1", "find x", true);
             EvidenceRequirement r2 = EvidenceRequirement.fact("R2", "still missing", true);
-            String usedSig = signatureOf("semantic_search", "v1",
-                    "q find x " + r1.description() /* == rule-planner 当前 query 模式 */);
+            String usedSig =
+                    signatureOf(
+                            "semantic_search",
+                            "v1",
+                            "q find x " + r1.description() /* == rule-planner 当前 query 模式 */);
             // 让 completedSteps 含 R1 完整 sig
-            PlannerRequest req = new PlannerRequest(
-                    "r-1", "q", TaskIntent.MULTI_HOP, List.of(), Map.of(),
-                    List.of(r1, r2),
-                    new EvidenceCoverageSummary(1, List.of("R1"), List.of(),
-                            List.of("R2"), List.of("ev1"), Map.of()),
-                    List.of(new CompletedStepSummary("plan-step-0", "semantic_search", "v1",
-                            signatureOf("semantic_search", "v1",
-                                    "q find x " + r1.description()),
-                            1, List.of("R1"), "SUCCEEDED", Map.of())),
-                    new AgentBudgetView(2, 2, 3, 3, 30000, 1),
-                    allowlist(), 1);
+            PlannerRequest req =
+                    new PlannerRequest(
+                            "r-1",
+                            "q",
+                            TaskIntent.MULTI_HOP,
+                            List.of(),
+                            Map.of(),
+                            List.of(r1, r2),
+                            new EvidenceCoverageSummary(
+                                    1,
+                                    List.of("R1"),
+                                    List.of(),
+                                    List.of("R2"),
+                                    List.of("ev1"),
+                                    Map.of()),
+                            List.of(
+                                    new CompletedStepSummary(
+                                            "plan-step-0",
+                                            "semantic_search",
+                                            "v1",
+                                            signatureOf(
+                                                    "semantic_search",
+                                                    "v1",
+                                                    "q find x " + r1.description()),
+                                            1,
+                                            List.of("R1"),
+                                            "SUCCEEDED",
+                                            Map.of())),
+                            new AgentBudgetView(2, 2, 3, 3, 30000, 1),
+                            allowlist(),
+                            1);
             PlannerResponse r = planner.plan(req);
             // R2 仍应被 plan (签名不冲突)
             assertThat(r.targetedRequirementIds()).contains("R2");

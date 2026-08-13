@@ -8,7 +8,8 @@ package com.xxx.ragdoc.application.chat.agent;
  * <p>失败转换:
  *
  * <ul>
- *   <li>任意非终态 → REFUSED_PERMISSION / BUDGET_EXCEEDED / TOOL_FAILED / TIMED_OUT / CANCELLED / SYSTEM_FAILED
+ *   <li>任意非终态 → REFUSED_PERMISSION / BUDGET_EXCEEDED / TOOL_FAILED / TIMED_OUT / CANCELLED /
+ *       SYSTEM_FAILED
  *   <li>READY_TO_ANSWER 也可 → REFUSED_NO_EVIDENCE / REFUSED_CONFLICT (本 PR 主要走 NO_EVIDENCE)
  * </ul>
  *

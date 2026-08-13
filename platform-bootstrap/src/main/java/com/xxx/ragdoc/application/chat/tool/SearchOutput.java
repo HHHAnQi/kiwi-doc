@@ -14,7 +14,10 @@ public record SearchOutput(List<Evidence> evidences, TruncationInfo truncationIn
 
     public SearchOutput {
         evidences = evidences == null ? List.of() : List.copyOf(evidences);
-        truncationInfo = truncationInfo == null ? new TruncationInfo(false, evidences.size(), evidences.size()) : truncationInfo;
+        truncationInfo =
+                truncationInfo == null
+                        ? new TruncationInfo(false, evidences.size(), evidences.size())
+                        : truncationInfo;
     }
 
     @Override

@@ -1,8 +1,5 @@
 package com.xxx.ragdoc.application.chat.planner;
 
-import java.util.List;
-import java.util.Map;
-
 /**
  * PR-7a / EMS-PR7 §4.2: Planner/Sufficiency 用的"剩余预算"视图 (Revision §5.2 数据最小化)。
  *

@@ -13,15 +13,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * PR-3.2 退出门禁: 在 100 条标注集 {@code eval/router/router_cases.jsonl} 上评估
- * {@link RuleBasedTaskRouter} 的 Intent Accuracy / Strategy Accuracy /
- * 低置信回退是否正确生效 / 不产生非法 strategy。
+ * PR-3.2 退出门禁: 在 100 条标注集 {@code eval/router/router_cases.jsonl} 上评估 {@link RuleBasedTaskRouter} 的
+ * Intent Accuracy / Strategy Accuracy / 低置信回退是否正确生效 / 不产生非法 strategy。
  *
- * <p>本测试在编译 platform-common 时即可跑(只读 classpath 资源), 不依赖 backend / LLM / Docker,
- * 适合 CI 作为 PR-3 退出门禁。失败即认为 PR-3 未达标。
+ * <p>本测试在编译 platform-common 时即可跑(只读 classpath 资源), 不依赖 backend / LLM / Docker, 适合 CI 作为 PR-3
+ * 退出门禁。失败即认为 PR-3 未达标。
  *
- * <p>当前规则版预期: high strategy accuracy on FACT/NUMERIC/UNANSWERABLE/COMPARISON;
- * MULTI_HOP / ENTITY_LOOKUP 在边角 case 可能误判 → 通过断言阈值而非 100%, 真实记录当前限制。
+ * <p>当前规则版预期: high strategy accuracy on FACT/NUMERIC/UNANSWERABLE/COMPARISON; MULTI_HOP /
+ * ENTITY_LOOKUP 在边角 case 可能误判 → 通过断言阈值而非 100%, 真实记录当前限制。
  */
 @DisplayName("Router Eval on 100-case dataset (PR-3 退出门禁)")
 class RuleBasedTaskRouterDatasetTest {
@@ -45,7 +44,8 @@ class RuleBasedTaskRouterDatasetTest {
             RouterDecision d = router.route(row.question);
             assertThat(d.strategy()).isNotNull();
             // 非法 strategy 防御: 必须是枚举内的合法值
-            assertThat(d.strategy().name()).matches("CLASSIC_RAG|TARGETED_RAG|FIXED_WORKFLOW|REFUSE");
+            assertThat(d.strategy().name())
+                    .matches("CLASSIC_RAG|TARGETED_RAG|FIXED_WORKFLOW|REFUSE");
             if (d.intent().name().equals(row.intent)) intentHit++;
             if (d.strategy().name().equals(row.expectedStrategy)) {
                 strategyHit++;
@@ -68,7 +68,9 @@ class RuleBasedTaskRouterDatasetTest {
         mismatches.stream().limit(25).forEach(s -> System.out.println("  MISMATCH " + s));
 
         assertThat(strategyAcc)
-                .as("Strategy Accuracy (%.3f) < threshold %.2f", strategyAcc, STRATEGY_ACCURACY_THRESHOLD)
+                .as(
+                        "Strategy Accuracy (%.3f) < threshold %.2f",
+                        strategyAcc, STRATEGY_ACCURACY_THRESHOLD)
                 .isGreaterThanOrEqualTo(STRATEGY_ACCURACY_THRESHOLD);
         assertThat(intentAcc)
                 .as("Intent Accuracy (%.3f) < threshold %.2f", intentAcc, INTENT_ACCURACY_THRESHOLD)

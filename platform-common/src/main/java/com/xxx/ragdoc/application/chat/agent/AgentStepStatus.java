@@ -1,8 +1,6 @@
 package com.xxx.ragdoc.application.chat.agent;
 
-/**
- * PR-6 / EMS-PR6 §4.2: 单 Step 状态。Step 在 AgentRunExecutor 内串行执行时维护;OSS = Step पेंड loser-state。
- */
+/** PR-6 / EMS-PR6 §4.2: 单 Step 状态。Step 在 AgentRunExecutor 内串行执行时维护;OSS = Step पेंड loser-state。 */
 public enum AgentStepStatus {
     PENDING,
     RESERVED,

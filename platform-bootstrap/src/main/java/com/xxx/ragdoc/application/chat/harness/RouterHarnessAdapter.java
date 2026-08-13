@@ -7,8 +7,8 @@ import com.xxx.ragdoc.common.exception.DomainException;
 import lombok.RequiredArgsConstructor;
 
 /**
- * PR-5: Router 的 {@link ObjectResultMapper}。让 Router 既能被 HarnessProvider 记录/回放,
- * 又不强依赖 Harness 的 record/replay 语义。
+ * PR-5: Router 的 {@link ObjectResultMapper}。让 Router 既能被 HarnessProvider 记录/回放, 又不强依赖 Harness 的
+ * record/replay 语义。
  *
  * <p>序列化对象 = {@link RouterDecision}; 异常 (理论上 RuleBasedTaskRouter 不抛, 模型 Router 未来可能抛
  * DomainException)。
@@ -48,10 +48,15 @@ public class RouterHarnessAdapter implements ObjectResultMapper {
     public FixtureOutcome.OutcomeResult toOutcome(Object liveResult, Throwable thrown) {
         if (thrown != null) {
             FixtureError.Category cat = mapCategory(thrown);
-            String code = thrown instanceof DomainException de
-                    ? de.errorCode().code() : "ROUTER_FAILED";
-            FixtureError err = new FixtureError(code, safeMsg(thrown.getMessage()), false,
-                    thrown.getClass().getSimpleName(), cat);
+            String code =
+                    thrown instanceof DomainException de ? de.errorCode().code() : "ROUTER_FAILED";
+            FixtureError err =
+                    new FixtureError(
+                            code,
+                            safeMsg(thrown.getMessage()),
+                            false,
+                            thrown.getClass().getSimpleName(),
+                            cat);
             return FixtureOutcome.OutcomeResult.error(err);
         }
         JsonNode node = canonical.canonicalize(canonical.toJsonNode(liveResult));
@@ -59,8 +64,10 @@ public class RouterHarnessAdapter implements ObjectResultMapper {
     }
 
     private static FixtureError.Category mapCategory(Throwable t) {
-        if (t instanceof java.util.concurrent.TimeoutException) return FixtureError.Category.TIMEOUT;
-        if (t instanceof com.xxx.ragdoc.common.exception.NotFoundException) return FixtureError.Category.PERMISSION;
+        if (t instanceof java.util.concurrent.TimeoutException)
+            return FixtureError.Category.TIMEOUT;
+        if (t instanceof com.xxx.ragdoc.common.exception.NotFoundException)
+            return FixtureError.Category.PERMISSION;
         return FixtureError.Category.GENERIC;
     }
 

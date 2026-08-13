@@ -3,9 +3,8 @@ package com.xxx.ragdoc.application.chat.comparison;
 /**
  * PR-6c / EMS-PR6c §5.3: ComparisonStep 选定的 Tool + 它的输入描述。
  *
- * <p>将 planStep 的高层意图 (semantic_search vs metadata_search) 映射到具体 Tool 名 + version +
- * 规范化 input 提示。ComparisonPlanFactory 内部消费, AgentRunFactory 调 PlanValidator 之前转成
- * {@code AgentToolStep}。
+ * <p>将 planStep 的高层意图 (semantic_search vs metadata_search) 映射到具体 Tool 名 + version + 规范化 input
+ * 提示。ComparisonPlanFactory 内部消费, AgentRunFactory 调 PlanValidator 之前转成 {@code AgentToolStep}。
  */
 public record ComparisonToolChoice(
         String toolName,

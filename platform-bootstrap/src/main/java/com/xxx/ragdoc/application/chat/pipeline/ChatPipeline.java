@@ -9,16 +9,16 @@ import reactor.core.publisher.Flux;
 /**
  * PR-2 / EMS-PR2: 可插拔 chat pipeline 契约。
  *
- * <p>实现方 (PR-2 只 {@code ClassicRagPipeline}) 通过 {@link #type()} 自我标识, 注册到
- * {@code ChatPipelineRegistry}; Orchestrator 按 type 查找。
+ * <p>实现方 (PR-2 只 {@code ClassicRagPipeline}) 通过 {@link #type()} 自我标识, 注册到 {@code
+ * ChatPipelineRegistry}; Orchestrator 按 type 查找。
  *
  * <h2>同步与流式拆两个显式方法的原因</h2>
  *
  * <ul>
  *   <li>同步路径要把整段答案 + Evidence + 状态一起返回 ({@link ChatResult}), 必须等 LLM 结束
  *   <li>流式路径必须以 Reactor {@code Flux} 增量产出 token, 并严格保证单终态 (PR-0 不变量)
- *   <li>当前 {@code ChatService} 本就用两套代码维护 (chat / chatStream 不同的 LLM 调用与 trace 节奏),
- *       抽 2 个方法是对现状的等价表达, 而非凭空制造复杂度
+ *   <li>当前 {@code ChatService} 本就用两套代码维护 (chat / chatStream 不同的 LLM 调用与 trace 节奏), 抽 2
+ *       个方法是对现状的等价表达, 而非凭空制造复杂度
  * </ul>
  *
  * <p>不变量 (跨 PR):
@@ -43,8 +43,6 @@ public interface ChatPipeline {
      */
     ChatResult execute(ChatCommand command, ChatExecutionContext context);
 
-    /**
-     * 流式执行: 返回 Reactor Flux, 由 Controller 转 SSE。必须保证 PR-0 单终态不变量。
-     */
+    /** 流式执行: 返回 Reactor Flux, 由 Controller 转 SSE。必须保证 PR-0 单终态不变量。 */
     Flux<ChatStreamEvent> stream(ChatCommand command, ChatExecutionContext context);
 }

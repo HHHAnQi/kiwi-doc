@@ -26,8 +26,7 @@ public class RecordHarnessProvider implements HarnessProvider {
     private final ObjectMapper mapper;
     private final String sourceMode; // 写入 fixture metadata 标识来源 (e.g. "test" / "ci")
 
-    public RecordHarnessProvider(
-            FixtureStore store, ObjectMapper mapper, String sourceMode) {
+    public RecordHarnessProvider(FixtureStore store, ObjectMapper mapper, String sourceMode) {
         this.store = store;
         this.mapper = mapper;
         this.canonical = new CanonicalJson(mapper);
@@ -48,8 +47,7 @@ public class RecordHarnessProvider implements HarnessProvider {
             ObjectResultMapper resultMapper) {
         // 1. pre-compute request hash + canonical node (失败马上抛, 不调 liveCall)
         String requestHash = resultMapper.requestHash(request);
-        JsonNode canonicalRequest =
-                canonical.canonicalize(canonical.toJsonNode(request));
+        JsonNode canonicalRequest = canonical.canonicalize(canonical.toJsonNode(request));
 
         // 2. 执行 + 捕获异常类型
         RES liveResult = null;
@@ -63,7 +61,8 @@ public class RecordHarnessProvider implements HarnessProvider {
         // 3. 计算结果 outcome
         FixtureOutcome.OutcomeResult outcome = resultMapper.toOutcome(liveResult, thrown);
         JsonNode responseNode = outcome.structuredResponse(); // mapper 已负责脱敏; canonical 再走一遭
-        JsonNode canonicalResponse = responseNode == null ? null : canonical.canonicalize(responseNode);
+        JsonNode canonicalResponse =
+                responseNode == null ? null : canonical.canonicalize(responseNode);
 
         // 4. 构造 fixture record + 原子写
         String replayKey =
@@ -109,8 +108,10 @@ public class RecordHarnessProvider implements HarnessProvider {
             throw conflict;
         } catch (RuntimeException e) {
             // 写文件失败不阻塞 — 仍然返回 liveCall 结果; 但 log+metrics (这里简化为 log)
-            log.warn("harness.record_save_failed key={} err={}",
-                    replayKey == null ? "" : replayKey.substring(0, 12), e.toString());
+            log.warn(
+                    "harness.record_save_failed key={} err={}",
+                    replayKey == null ? "" : replayKey.substring(0, 12),
+                    e.toString());
         }
 
         // 5. 异常需重新抛 (让 caller 看到真实业务失败)

@@ -68,14 +68,29 @@ class AgentRunJpaRepositoryIT {
 
     private AgentRunRecord newRun(String runId) {
         return new AgentRunRecord(
-                runId, "req-1", "tA", "u1", "COMPARISON",
+                runId,
+                "req-1",
+                "tA",
+                "u1",
+                "COMPARISON",
                 AgentRunStatus.RECEIVED,
-                "p1", "v1",
+                "p1",
+                "v1",
                 "fakehash64charxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
                 "{\"planId\":\"p1\"}",
-                AgentBudget.pr6Default(), AgentBudgetReservation.zero(), AgentUsage.zero(),
-                List.of(), 0, null, "rv", "tsv", "iv1", "LIVE",
-                null, null, 0);
+                AgentBudget.pr6Default(),
+                AgentBudgetReservation.zero(),
+                AgentUsage.zero(),
+                List.of(),
+                0,
+                null,
+                "rv",
+                "tsv",
+                "iv1",
+                "LIVE",
+                null,
+                null,
+                0);
     }
 
     @Test
@@ -95,7 +110,8 @@ class AgentRunJpaRepositoryIT {
     @DisplayName("JSON round-trip: budget/reservation/usage 完整恢复")
     void jsonColumnsRoundTrip() {
         repo.create(newRun("r-it-2"));
-        em.flush(); em.clear();
+        em.flush();
+        em.clear();
         AgentRunRecord r = repo.findByRunId("r-it-2").orElseThrow();
         assertThat(r.budget().maxSteps()).isEqualTo(3);
         assertThat(r.usage().usedSteps()).isZero();
@@ -108,22 +124,29 @@ class AgentRunJpaRepositoryIT {
     void uniqueRunIdConstraint() {
         repo.create(newRun("r-it-dup"));
         em.flush();
-        assertThatThrownBy(() -> {
-            repo.create(newRun("r-it-dup"));
-            em.flush();
-        }).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(
+                        () -> {
+                            repo.create(newRun("r-it-dup"));
+                            em.flush();
+                        })
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     @DisplayName("transition CAS: RECEIVED→ROUTED 成功 (affected=1)")
     void transitionCas() {
         repo.create(newRun("r-it-3"));
-        em.flush(); em.clear();
-        boolean ok = repo.transition(
-                "r-it-3", 0L,
-                Set.of(AgentRunStatus.RECEIVED),
-                AgentRunStatus.ROUTED, "ROUTED",
-                AgentUsage.zero(), AgentBudgetReservation.zero());
+        em.flush();
+        em.clear();
+        boolean ok =
+                repo.transition(
+                        "r-it-3",
+                        0L,
+                        Set.of(AgentRunStatus.RECEIVED),
+                        AgentRunStatus.ROUTED,
+                        "ROUTED",
+                        AgentUsage.zero(),
+                        AgentBudgetReservation.zero());
         assertThat(ok).isTrue();
         em.clear();
         AgentRunRecord refreshed = repo.findByRunId("r-it-3").orElseThrow();
@@ -135,12 +158,17 @@ class AgentRunJpaRepositoryIT {
     @DisplayName("transition CAS 冲突: expectedVersion 错 → affected=0")
     void transitionCasConflict() {
         repo.create(newRun("r-it-4"));
-        em.flush(); em.clear();
-        boolean ok = repo.transition(
-                "r-it-4", 999L, // 错版本
-                Set.of(AgentRunStatus.RECEIVED),
-                AgentRunStatus.ROUTED, "ROUTED",
-                AgentUsage.zero(), AgentBudgetReservation.zero());
+        em.flush();
+        em.clear();
+        boolean ok =
+                repo.transition(
+                        "r-it-4",
+                        999L, // 错版本
+                        Set.of(AgentRunStatus.RECEIVED),
+                        AgentRunStatus.ROUTED,
+                        "ROUTED",
+                        AgentUsage.zero(),
+                        AgentBudgetReservation.zero());
         assertThat(ok).isFalse();
     }
 
@@ -148,13 +176,17 @@ class AgentRunJpaRepositoryIT {
     @DisplayName("settleRunStep 合并 CAS: usage+reservation+evidenceIds 一次推进")
     void settleRunStepCas() {
         repo.create(newRun("r-it-5"));
-        em.flush(); em.clear();
-        boolean ok = repo.settleRunStep(
-                "r-it-5", 0L,
-                Set.of(AgentRunStatus.RECEIVED),
-                AgentUsage.zero().incStep().incRealToolCall(),
-                new AgentBudgetReservation(0, 0, 0, 0, 0, java.math.BigDecimal.ZERO),
-                List.of("ev-1", "ev-2"), 2);
+        em.flush();
+        em.clear();
+        boolean ok =
+                repo.settleRunStep(
+                        "r-it-5",
+                        0L,
+                        Set.of(AgentRunStatus.RECEIVED),
+                        AgentUsage.zero().incStep().incRealToolCall(),
+                        new AgentBudgetReservation(0, 0, 0, 0, 0, java.math.BigDecimal.ZERO),
+                        List.of("ev-1", "ev-2"),
+                        2);
         assertThat(ok).isTrue();
         em.clear();
         AgentRunRecord r = repo.findByRunId("r-it-5").orElseThrow();
@@ -169,8 +201,11 @@ class AgentRunJpaRepositoryIT {
         AgentRunRecord a = newRun("r-a");
         Thread.sleep(20);
         AgentRunRecord b = newRun("r-b");
-        repo.create(a); em.flush();
-        repo.create(b); em.flush(); em.clear();
+        repo.create(a);
+        em.flush();
+        repo.create(b);
+        em.flush();
+        em.clear();
         List<AgentRunRecord> list = repo.findByTenantId("tA", 10);
         assertThat(list).hasSize(2);
         // 最新 (r-b) 应排在前
@@ -181,11 +216,11 @@ class AgentRunJpaRepositoryIT {
     @DisplayName("updateEvidenceSummary: 空列表 → evidence_ids_json NULL (不写空数组)")
     void evidenceSummaryEmptyList() {
         repo.create(newRun("r-it-7"));
-        em.flush(); em.clear();
-        boolean ok = repo.updateEvidenceSummary(
-                "r-it-7", 0L,
-                Set.of(AgentRunStatus.RECEIVED),
-                List.of(), 0);
+        em.flush();
+        em.clear();
+        boolean ok =
+                repo.updateEvidenceSummary(
+                        "r-it-7", 0L, Set.of(AgentRunStatus.RECEIVED), List.of(), 0);
         assertThat(ok).isTrue();
         em.clear();
         AgentRunEntity ent = jpa.findById("r-it-7").orElseThrow();

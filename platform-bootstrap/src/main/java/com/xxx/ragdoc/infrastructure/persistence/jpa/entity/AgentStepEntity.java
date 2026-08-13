@@ -39,6 +39,12 @@ public class AgentStepEntity {
     @Column(name = "input_hash", nullable = false, length = 64)
     private String inputHash;
 
+    @Column(name = "idempotency_key", length = 64, unique = true)
+    private String idempotencyKey;
+
+    @Column(name = "recoverable", nullable = false)
+    private Boolean recoverable = false;
+
     @Column(name = "status", nullable = false, length = 32)
     private String status = "PENDING";
 
@@ -47,6 +53,9 @@ public class AgentStepEntity {
 
     @Column(name = "evidence_ids_json", columnDefinition = "JSON")
     private String evidenceIdsJson;
+
+    @Column(name = "output_snapshot", columnDefinition = "JSON")
+    private String outputSnapshot;
 
     @Column(name = "latency_ms")
     private Long latencyMs;
@@ -80,66 +89,178 @@ public class AgentStepEntity {
 
     // --- getters/setters --- //
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getRunId() { return runId; }
-    public void setRunId(String runId) { this.runId = runId; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getStepId() { return stepId; }
-    public void setStepId(String stepId) { this.stepId = stepId; }
+    public String getRunId() {
+        return runId;
+    }
 
-    public Integer getStepSequence() { return stepSequence; }
-    public void setStepSequence(Integer stepSequence) { this.stepSequence = stepSequence; }
+    public void setRunId(String runId) {
+        this.runId = runId;
+    }
 
-    public String getToolName() { return toolName; }
-    public void setToolName(String toolName) { this.toolName = toolName; }
+    public String getStepId() {
+        return stepId;
+    }
 
-    public String getToolVersion() { return toolVersion; }
-    public void setToolVersion(String toolVersion) { this.toolVersion = toolVersion; }
+    public void setStepId(String stepId) {
+        this.stepId = stepId;
+    }
 
-    public String getCallId() { return callId; }
-    public void setCallId(String callId) { this.callId = callId; }
+    public Integer getStepSequence() {
+        return stepSequence;
+    }
 
-    public String getInputHash() { return inputHash; }
-    public void setInputHash(String inputHash) { this.inputHash = inputHash; }
+    public void setStepSequence(Integer stepSequence) {
+        this.stepSequence = stepSequence;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getToolName() {
+        return toolName;
+    }
 
-    public Integer getResultCount() { return resultCount; }
-    public void setResultCount(Integer resultCount) { this.resultCount = resultCount; }
+    public void setToolName(String toolName) {
+        this.toolName = toolName;
+    }
 
-    public String getEvidenceIdsJson() { return evidenceIdsJson; }
-    public void setEvidenceIdsJson(String evidenceIdsJson) { this.evidenceIdsJson = evidenceIdsJson; }
+    public String getToolVersion() {
+        return toolVersion;
+    }
 
-    public Long getLatencyMs() { return latencyMs; }
-    public void setLatencyMs(Long latencyMs) { this.latencyMs = latencyMs; }
+    public void setToolVersion(String toolVersion) {
+        this.toolVersion = toolVersion;
+    }
 
-    public String getErrorCode() { return errorCode; }
-    public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
+    public String getCallId() {
+        return callId;
+    }
 
-    public Boolean getRetryable() { return retryable; }
-    public void setRetryable(Boolean retryable) { this.retryable = retryable; }
+    public void setCallId(String callId) {
+        this.callId = callId;
+    }
 
-    public Boolean getReplayed() { return replayed; }
-    public void setReplayed(Boolean replayed) { this.replayed = replayed; }
+    public String getInputHash() {
+        return inputHash;
+    }
 
-    public Boolean getDeduplicated() { return deduplicated; }
-    public void setDeduplicated(Boolean deduplicated) { this.deduplicated = deduplicated; }
+    public void setInputHash(String inputHash) {
+        this.inputHash = inputHash;
+    }
 
-    public Instant getStartedAt() { return startedAt; }
-    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
+    public Boolean getRecoverable() { return recoverable; }
+    public void setRecoverable(Boolean recoverable) { this.recoverable = recoverable; }
+    public String getOutputSnapshot() { return outputSnapshot; }
+    public void setOutputSnapshot(String outputSnapshot) { this.outputSnapshot = outputSnapshot; }
 
-    public Instant getCompletedAt() { return completedAt; }
-    public void setCompletedAt(Instant completedAt) { this.completedAt = completedAt; }
+    public String getStatus() {
+        return status;
+    }
 
-    public Instant getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-    public Instant getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public Integer getResultCount() {
+        return resultCount;
+    }
 
-    public Long getVersion() { return version; }
-    public void setVersion(Long version) { this.version = version; }
+    public void setResultCount(Integer resultCount) {
+        this.resultCount = resultCount;
+    }
+
+    public String getEvidenceIdsJson() {
+        return evidenceIdsJson;
+    }
+
+    public void setEvidenceIdsJson(String evidenceIdsJson) {
+        this.evidenceIdsJson = evidenceIdsJson;
+    }
+
+    public Long getLatencyMs() {
+        return latencyMs;
+    }
+
+    public void setLatencyMs(Long latencyMs) {
+        this.latencyMs = latencyMs;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public Boolean getRetryable() {
+        return retryable;
+    }
+
+    public void setRetryable(Boolean retryable) {
+        this.retryable = retryable;
+    }
+
+    public Boolean getReplayed() {
+        return replayed;
+    }
+
+    public void setReplayed(Boolean replayed) {
+        this.replayed = replayed;
+    }
+
+    public Boolean getDeduplicated() {
+        return deduplicated;
+    }
+
+    public void setDeduplicated(Boolean deduplicated) {
+        this.deduplicated = deduplicated;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(Instant startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Instant updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
 }

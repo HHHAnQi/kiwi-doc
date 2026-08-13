@@ -54,10 +54,7 @@ public final class QueryNormalizer {
     /** 2025 Q1 / Q3 / 第一季度等 — 季度。 */
     static final Pattern QUARTER_PATTERN = Pattern.compile("\\bQ([1-4])\\b|[第第]([1-4])季度");
 
-    /**
-     * 知识库常见产品名白名单 (用于 entity whitelist 抽取); 命中即归一化为大写键。
-     * 加新条目需在数据集里有评测依据, 不允许凭直觉扩。
-     */
+    /** 知识库常见产品名白名单 (用于 entity whitelist 抽取); 命中即归一化为大写键。 加新条目需在数据集里有评测依据, 不允许凭直觉扩。 */
     static final List<String> PRODUCT_WHITELIST =
             List.of(
                     "Spring Boot",
@@ -104,7 +101,8 @@ public final class QueryNormalizer {
 
     public static NormalizedQuery normalize(String raw) {
         if (raw == null) {
-            return new NormalizedQuery("", "", List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
+            return new NormalizedQuery(
+                    "", "", List.of(), List.of(), List.of(), List.of(), List.of(), Map.of());
         }
         String normalized = normalizeWhitespaces(raw);
 
@@ -139,14 +137,7 @@ public final class QueryNormalizer {
         if (!products.isEmpty()) filters.put("products", products);
 
         return new NormalizedQuery(
-                raw,
-                normalized,
-                versions,
-                errorCodes,
-                years,
-                quarters,
-                products,
-                filters);
+                raw, normalized, versions, errorCodes, years, quarters, products, filters);
     }
 
     // ── 辅助 ─────────────────────────────────────────────

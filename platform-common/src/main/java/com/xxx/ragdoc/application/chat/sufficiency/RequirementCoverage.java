@@ -7,16 +7,14 @@ import java.util.List;
  *
  * <p>由 Rule Judge / Model Judge 输出; Pipeline 与评测都引用此结构。
  *
- * @param requirementId 关联 {@link com.xxx.ragdoc.application.chat.planner.EvidenceRequirement#requirementId()}
+ * @param requirementId 关联 {@link
+ *     com.xxx.ragdoc.application.chat.planner.EvidenceRequirement#requirementId()}
  * @param status 覆盖状态 (不允许 null)
  * @param evidenceIds 命中的 Evidence IDs (空 = 未覆盖)
  * @param reasonCode 短代码便于 Trace / Metrics
  */
 public record RequirementCoverage(
-        String requirementId,
-        CoverageStatus status,
-        List<String> evidenceIds,
-        String reasonCode) {
+        String requirementId, CoverageStatus status, List<String> evidenceIds, String reasonCode) {
 
     public RequirementCoverage {
         if (requirementId == null || requirementId.isBlank()) {

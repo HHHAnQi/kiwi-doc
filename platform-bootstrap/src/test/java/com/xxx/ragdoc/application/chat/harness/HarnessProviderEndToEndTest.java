@@ -46,18 +46,21 @@ class HarnessProviderEndToEndTest {
                     @Override
                     public Object fromFixtureResponse(JsonNode responseNode, FixtureError error) {
                         if (error != null) {
-                            throw new RuntimeException(error.errorCode() + ": " + error.safeMessage());
+                            throw new RuntimeException(
+                                    error.errorCode() + ": " + error.safeMessage());
                         }
-                        return responseNode == null
-                                ? null
-                                : responseNode.asText();
+                        return responseNode == null ? null : responseNode.asText();
                     }
 
                     @Override
-                    public FixtureOutcome.OutcomeResult toOutcome(Object liveResult, Throwable thrown) {
+                    public FixtureOutcome.OutcomeResult toOutcome(
+                            Object liveResult, Throwable thrown) {
                         if (thrown != null) {
-                            FixtureError err = FixtureError.of(
-                                    "X_ERR", thrown.getMessage(), FixtureError.Category.GENERIC);
+                            FixtureError err =
+                                    FixtureError.of(
+                                            "X_ERR",
+                                            thrown.getMessage(),
+                                            FixtureError.Category.GENERIC);
                             return FixtureOutcome.OutcomeResult.error(err);
                         }
                         return FixtureOutcome.OutcomeResult.success(
@@ -88,8 +91,14 @@ class HarnessProviderEndToEndTest {
     @DisplayName("LIVE: 调真实 supplier, 不读不写 fixture, 原结果透传")
     void liveCallsRealSupplier() throws Exception {
         LiveHarnessProvider live = new LiveHarnessProvider();
-        String result = live.invoke(
-                invocation("c1", 0), "request", () -> "result-x", String.class, passthroughMapper).result();
+        String result =
+                live.invoke(
+                                invocation("c1", 0),
+                                "request",
+                                () -> "result-x",
+                                String.class,
+                                passthroughMapper)
+                        .result();
         assertThat(result).isEqualTo("result-x");
         // 没写任何 fixture 文件
         assertThat(Files.exists(tmp)).isTrue();
@@ -123,7 +132,13 @@ class HarnessProviderEndToEndTest {
         // 注意: CanonicalJson.banned 字段集中作 hash, 但 "q1" vs "q2" 实际产生不同 hash → 不同 replayKey
         // 我们让两个 request 字符串相同但 liveCall 返回不同, 这样 ReplayKey 一样但 normalizedResponse 不同
         assertThatThrownBy(
-                        () -> record.invoke(invocation("c1", 0), "q1", () -> "different-ans", String.class, passthroughMapper))
+                        () ->
+                                record.invoke(
+                                        invocation("c1", 0),
+                                        "q1",
+                                        () -> "different-ans",
+                                        String.class,
+                                        passthroughMapper))
                 .isInstanceOf(FixtureStore.FixtureConflictException.class);
     }
 
@@ -138,10 +153,16 @@ class HarnessProviderEndToEndTest {
 
         // REPLAY 用空 supplier (不应该被调)
         ReplayHarnessProvider replay = new ReplayHarnessProvider(store, mapper, true);
-        String result = replay.invoke(
-                invocation("c1", 0), "q",
-                () -> { throw new AssertionError("REPLAY 不应调 liveCall"); },
-                String.class, passthroughMapper).result();
+        String result =
+                replay.invoke(
+                                invocation("c1", 0),
+                                "q",
+                                () -> {
+                                    throw new AssertionError("REPLAY 不应调 liveCall");
+                                },
+                                String.class,
+                                passthroughMapper)
+                        .result();
         assertThat(result).isEqualTo("ans");
     }
 
@@ -150,16 +171,25 @@ class HarnessProviderEndToEndTest {
     void replayMissingFails() {
         ReplayHarnessProvider replay = new ReplayHarnessProvider(store, mapper, true);
         assertThatThrownBy(
-                        () -> replay.invoke(
-                                invocation("never-recorded", 0), "q",
-                                () -> { throw new AssertionError("missing 不应回退 liveCall"); },
-                                String.class, passthroughMapper))
+                        () ->
+                                replay.invoke(
+                                        invocation("never-recorded", 0),
+                                        "q",
+                                        () -> {
+                                            throw new AssertionError("missing 不应回退 liveCall");
+                                        },
+                                        String.class,
+                                        passthroughMapper))
                 .isInstanceOf(FixtureStore.FixtureUnavailableException.class)
-                .satisfies(ex -> {
-                    FixtureStore.FixtureUnavailableException fue = (FixtureStore.FixtureUnavailableException) ex;
-                    assertThat(fue.reason)
-                            .isEqualTo(FixtureStore.FixtureUnavailableException.Reason.NOT_FOUND);
-                });
+                .satisfies(
+                        ex -> {
+                            FixtureStore.FixtureUnavailableException fue =
+                                    (FixtureStore.FixtureUnavailableException) ex;
+                            assertThat(fue.reason)
+                                    .isEqualTo(
+                                            FixtureStore.FixtureUnavailableException.Reason
+                                                    .NOT_FOUND);
+                        });
     }
 
     @Test
@@ -171,13 +201,22 @@ class HarnessProviderEndToEndTest {
         ReplayHarnessProvider replay = new ReplayHarnessProvider(store, mapper, true);
         // q2 与 q1 不同 → canonical 不同 → replayKey 不同 → NOT_FOUND (而非 REQUEST_MISMATCH)
         assertThatThrownBy(
-                        () -> replay.invoke(
-                                invocation("c1", 0), "q2",
-                                () -> { throw new AssertionError(); },
-                                String.class, passthroughMapper))
+                        () ->
+                                replay.invoke(
+                                        invocation("c1", 0),
+                                        "q2",
+                                        () -> {
+                                            throw new AssertionError();
+                                        },
+                                        String.class,
+                                        passthroughMapper))
                 .isInstanceOf(FixtureStore.FixtureUnavailableException.class)
-                .satisfies(ex -> assertThat(((FixtureStore.FixtureUnavailableException) ex).reason)
-                        .isEqualTo(FixtureStore.FixtureUnavailableException.Reason.NOT_FOUND));
+                .satisfies(
+                        ex ->
+                                assertThat(((FixtureStore.FixtureUnavailableException) ex).reason)
+                                        .isEqualTo(
+                                                FixtureStore.FixtureUnavailableException.Reason
+                                                        .NOT_FOUND));
     }
 
     @Test
@@ -185,18 +224,38 @@ class HarnessProviderEndToEndTest {
     void replayDifferentScope() {
         RecordHarnessProvider record = new RecordHarnessProvider(store, mapper, "test");
         // ps-1 record
-        ComponentInvocation inv1 = new ComponentInvocation(
-                "c1", "run1", HarnessComponentType.TOOL, "fake_tool", "v1", 0,
-                new InvocationContext("req", "tenant-A", "ps-1", "iv-1", "t", ""));
+        ComponentInvocation inv1 =
+                new ComponentInvocation(
+                        "c1",
+                        "run1",
+                        HarnessComponentType.TOOL,
+                        "fake_tool",
+                        "v1",
+                        0,
+                        new InvocationContext("req", "tenant-A", "ps-1", "iv-1", "t", ""));
         record.invoke(inv1, "q", () -> "ans", String.class, passthroughMapper);
 
         // REPLAY with ps-2 → replayKey 不同 (canonical 内 scope 变) → NOT_FOUND
-        ComponentInvocation inv2 = new ComponentInvocation(
-                "c1", "run1", HarnessComponentType.TOOL, "fake_tool", "v1", 0,
-                new InvocationContext("req", "tenant-A", "ps-2", "iv-1", "t", ""));
+        ComponentInvocation inv2 =
+                new ComponentInvocation(
+                        "c1",
+                        "run1",
+                        HarnessComponentType.TOOL,
+                        "fake_tool",
+                        "v1",
+                        0,
+                        new InvocationContext("req", "tenant-A", "ps-2", "iv-1", "t", ""));
         ReplayHarnessProvider replay = new ReplayHarnessProvider(store, mapper, true);
-        assertThatThrownBy(() -> replay.invoke(inv2, "q",
-                        () -> { throw new AssertionError(); }, String.class, passthroughMapper))
+        assertThatThrownBy(
+                        () ->
+                                replay.invoke(
+                                        inv2,
+                                        "q",
+                                        () -> {
+                                            throw new AssertionError();
+                                        },
+                                        String.class,
+                                        passthroughMapper))
                 .isInstanceOf(FixtureStore.FixtureUnavailableException.class);
     }
 
@@ -213,11 +272,23 @@ class HarnessProviderEndToEndTest {
         Files.writeString(any.get(), "INVALID-CORRUPTED");
 
         ReplayHarnessProvider replay = new ReplayHarnessProvider(store, mapper, true);
-        assertThatThrownBy(() -> replay.invoke(invocation("c1", 0), "q",
-                        () -> { throw new AssertionError(); }, String.class, passthroughMapper))
+        assertThatThrownBy(
+                        () ->
+                                replay.invoke(
+                                        invocation("c1", 0),
+                                        "q",
+                                        () -> {
+                                            throw new AssertionError();
+                                        },
+                                        String.class,
+                                        passthroughMapper))
                 .isInstanceOf(FixtureStore.FixtureUnavailableException.class)
-                .satisfies(ex -> assertThat(((FixtureStore.FixtureUnavailableException) ex).reason)
-                        .isEqualTo(FixtureStore.FixtureUnavailableException.Reason.CORRUPTED));
+                .satisfies(
+                        ex ->
+                                assertThat(((FixtureStore.FixtureUnavailableException) ex).reason)
+                                        .isEqualTo(
+                                                FixtureStore.FixtureUnavailableException.Reason
+                                                        .CORRUPTED));
     }
 
     @Test
@@ -226,14 +297,30 @@ class HarnessProviderEndToEndTest {
         RecordHarnessProvider record = new RecordHarnessProvider(store, mapper, "test");
         // liveCall 抛 IllegalStateException → RecordHarnessProvider 抓但要 rethrow (业务异常不吞)
         // 但在 rethrow 前已写 fixture. 我们用 try-catch 容忍 record 阶段的业务 rethrow; 然后用同样参数 replay
-        assertThatThrownBy(() -> record.invoke(invocation("c1", 0), "q", () -> {
-            throw new IllegalStateException("boom");
-        }, String.class, passthroughMapper)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(
+                        () ->
+                                record.invoke(
+                                        invocation("c1", 0),
+                                        "q",
+                                        () -> {
+                                            throw new IllegalStateException("boom");
+                                        },
+                                        String.class,
+                                        passthroughMapper))
+                .isInstanceOf(IllegalStateException.class);
 
         // REPLAY: fixture 已写 error outcome → fromFixtureResponse 看 error 抛 RuntimeException
         ReplayHarnessProvider replay = new ReplayHarnessProvider(store, mapper, true);
-        assertThatThrownBy(() -> replay.invoke(invocation("c1", 0), "q",
-                        () -> { throw new AssertionError(); }, String.class, passthroughMapper))
+        assertThatThrownBy(
+                        () ->
+                                replay.invoke(
+                                        invocation("c1", 0),
+                                        "q",
+                                        () -> {
+                                            throw new AssertionError();
+                                        },
+                                        String.class,
+                                        passthroughMapper))
                 .isInstanceOf(RuntimeException.class);
     }
 }

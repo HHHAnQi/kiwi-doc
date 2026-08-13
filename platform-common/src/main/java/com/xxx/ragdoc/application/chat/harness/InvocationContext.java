@@ -3,8 +3,8 @@ package com.xxx.ragdoc.application.chat.harness;
 /**
  * PR-5: 单调用上下文 (不可变)。从更高层 ComponentInvocation 派生, 不直接持有完整 Principal。
  *
- * <p>持久化 Fixture 时只用 {@link #tenantId}/{@link #permissionScopeVersion}/{@link #indexVersion} 作 replay key
- * 的一部分, 不写 Principal / Token / userId (即使 userId 进去也只是脱敏 hash)。
+ * <p>持久化 Fixture 时只用 {@link #tenantId}/{@link #permissionScopeVersion}/{@link #indexVersion} 作
+ * replay key 的一部分, 不写 Principal / Token / userId (即使 userId 进去也只是脱敏 hash)。
  */
 public record InvocationContext(
         String requestId,

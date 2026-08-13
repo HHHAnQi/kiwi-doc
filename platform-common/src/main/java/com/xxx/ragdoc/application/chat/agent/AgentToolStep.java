@@ -6,7 +6,8 @@ import java.util.List;
 /**
  * PR-6 / EMS-PR6 §4.6: 单个 Tool 步骤。Executor 按依赖顺序串行执行;required Step 失败 → Run 终态。
  *
- * <p>禁止字段集: stepId 含 banned 名 (不接收 tenantId/userId/rawToken 等)；input 禁带 tenantId 字段 (ToolExecutor 守门)。
+ * <p>禁止字段集: stepId 含 banned 名 (不接收 tenantId/userId/rawToken 等)；input 禁带 tenantId 字段 (ToolExecutor
+ * 守门)。
  */
 public record AgentToolStep(
         String stepId,

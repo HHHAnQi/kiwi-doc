@@ -61,7 +61,8 @@ public interface AgentStepRepository {
         }
 
         public static AgentStepUpdate empty() {
-            return new AgentStepUpdate(null, 0, List.of(), null, null, false, false, false, null, null);
+            return new AgentStepUpdate(
+                    null, 0, List.of(), null, null, false, false, false, null, null);
         }
     }
 }

@@ -13,8 +13,10 @@ import org.springframework.context.annotation.Configuration;
  * ToolHarnessAdapter 注入接口即 LIVE 行为, 无运行时开销 (ComponentInvocation 也不构造)。
  *
  * <p>enabled=true & mode=RECORD → RecordHarnessProvider
+ *
  * <p>enabled=true & mode=REPLAY → ReplayHarnessProvider
- * <p>enabled=true & mode=LIVE  → LiveHarnessProvider (与 disabled 完全行为一致; 仅 metrics 区分)
+ *
+ * <p>enabled=true & mode=LIVE → LiveHarnessProvider (与 disabled 完全行为一致; 仅 metrics 区分)
  */
 @Slf4j
 @Configuration
@@ -22,7 +24,9 @@ public class HarnessAutoConfiguration {
 
     @Bean
     public HarnessProvider harnessProvider(
-            HarnessProperties props, @Autowired(required = false) FixtureStore store, ObjectMapper mapper) {
+            HarnessProperties props,
+            @Autowired(required = false) FixtureStore store,
+            ObjectMapper mapper) {
         if (!props.isEnabled()) {
             return new LiveHarnessProvider();
         }
@@ -32,14 +36,28 @@ public class HarnessAutoConfiguration {
                 yield new LiveHarnessProvider();
             }
             case RECORD -> {
-                log.info("harness.enabled RECORD root={} tag={}", props.getFixtureRoot(), props.getSourceModeTag());
-                yield new RecordHarnessProvider(store != null ? store : new FileFixtureStore(props.getFixtureRoot(), mapper),
-                        mapper, props.getSourceModeTag());
+                log.info(
+                        "harness.enabled RECORD root={} tag={}",
+                        props.getFixtureRoot(),
+                        props.getSourceModeTag());
+                yield new RecordHarnessProvider(
+                        store != null
+                                ? store
+                                : new FileFixtureStore(props.getFixtureRoot(), mapper),
+                        mapper,
+                        props.getSourceModeTag());
             }
             case REPLAY -> {
-                log.info("harness.enabled REPLAY root={} strict={}", props.getFixtureRoot(), props.isStrictReplay());
-                yield new ReplayHarnessProvider(store != null ? store : new FileFixtureStore(props.getFixtureRoot(), mapper),
-                        mapper, props.isStrictReplay());
+                log.info(
+                        "harness.enabled REPLAY root={} strict={}",
+                        props.getFixtureRoot(),
+                        props.isStrictReplay());
+                yield new ReplayHarnessProvider(
+                        store != null
+                                ? store
+                                : new FileFixtureStore(props.getFixtureRoot(), mapper),
+                        mapper,
+                        props.isStrictReplay());
             }
         };
     }
@@ -47,7 +65,9 @@ public class HarnessAutoConfiguration {
     /** enabled=true 时配置 FileFixtureStore bean; 无 enabled 时 store=null (LiveHarnessProvider 用不到)。 */
     @Bean
     @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
-            prefix = "rag.agent.harness", name = "enabled", havingValue = "true")
+            prefix = "rag.agent.harness",
+            name = "enabled",
+            havingValue = "true")
     public FixtureStore fixtureStore(HarnessProperties props, ObjectMapper mapper) {
         return new FileFixtureStore(props.getFixtureRoot(), mapper);
     }

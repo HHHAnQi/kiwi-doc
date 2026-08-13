@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
  *   <li>{@code model-fallback-enabled} 默认 false — Rule 无法判定时是否调 LLM Judge
  *   <li>{@code model-timeout-millis} 默认 5000
  *   <li>{@code model-max-output-tokens} 默认 512 (Judge 输出短 JSON)
- *   <li>{@code model-false-sufficient-guard} 默认 true — 即使 Model 输出 SUFFICIENT, 仍用 Rule
- *       再确认 COVERED-by-≥1-evidence (Revision §6.6 False Sufficient 防护, 由 RequirementCoverage ctor 兜底)
+ *   <li>{@code model-false-sufficient-guard} 默认 true — 即使 Model 输出 SUFFICIENT, 仍用 Rule 再确认
+ *       COVERED-by-≥1-evidence (Revision §6.6 False Sufficient 防护, 由 RequirementCoverage ctor 兜底)
  * </ul>
  *
  * <p>所有 Flag 默认 false; PR-7c PlannedAgentPipeline 接通前 Sufficiency 不执行。
@@ -29,18 +29,43 @@ public class SufficiencyProperties {
     private int modelMaxOutputTokens = 512;
     private boolean modelFalseSufficientGuard = true;
 
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean v) { this.enabled = v; }
+    public boolean isEnabled() {
+        return enabled;
+    }
 
-    public boolean isModelFallbackEnabled() { return modelFallbackEnabled; }
-    public void setModelFallbackEnabled(boolean v) { this.modelFallbackEnabled = v; }
+    public void setEnabled(boolean v) {
+        this.enabled = v;
+    }
 
-    public long getModelTimeoutMillis() { return modelTimeoutMillis; }
-    public void setModelTimeoutMillis(long v) { this.modelTimeoutMillis = v; }
+    public boolean isModelFallbackEnabled() {
+        return modelFallbackEnabled;
+    }
 
-    public int getModelMaxOutputTokens() { return modelMaxOutputTokens; }
-    public void setModelMaxOutputTokens(int v) { this.modelMaxOutputTokens = v; }
+    public void setModelFallbackEnabled(boolean v) {
+        this.modelFallbackEnabled = v;
+    }
 
-    public boolean isModelFalseSufficientGuard() { return modelFalseSufficientGuard; }
-    public void setModelFalseSufficientGuard(boolean v) { this.modelFalseSufficientGuard = v; }
+    public long getModelTimeoutMillis() {
+        return modelTimeoutMillis;
+    }
+
+    public void setModelTimeoutMillis(long v) {
+        this.modelTimeoutMillis = v;
+    }
+
+    public int getModelMaxOutputTokens() {
+        return modelMaxOutputTokens;
+    }
+
+    public void setModelMaxOutputTokens(int v) {
+        this.modelMaxOutputTokens = v;
+    }
+
+    public boolean isModelFalseSufficientGuard() {
+        return modelFalseSufficientGuard;
+    }
+
+    public void setModelFalseSufficientGuard(boolean v) {
+        this.modelFalseSufficientGuard = v;
+    }
 }

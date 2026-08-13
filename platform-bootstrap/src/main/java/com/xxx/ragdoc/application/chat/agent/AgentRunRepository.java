@@ -3,11 +3,13 @@ package com.xxx.ragdoc.application.chat.agent;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.time.Instant;
 
 /**
  * PR-6a.2: agent_run 持久化 Port。
  *
- * <p>实现: {@code AgentRunRepositoryImpl} (infrastructure/persistence/jpa) 用 JPA Entity + @Modifying CAS。
+ * <p>实现: {@code AgentRunRepositoryImpl} (infrastructure/persistence/jpa) 用 JPA Entity + @Modifying
+ * CAS。
  *
  * <p>关键不变量:
  *
@@ -27,6 +29,15 @@ public interface AgentRunRepository {
 
     /** 按 tenantId 审计查询 (按 created_at 倒序, 限量)。 */
     List<AgentRunRecord> findByTenantId(String tenantId, int limit);
+
+    /** 扫描长时间未更新的非终态 Run，供重启恢复守护使用。 */
+    List<AgentRunRecord> findStaleNonTerminal(Instant updatedBefore, int limit);
+
+    boolean claimLease(String runId, String ownerId, Instant now, Instant leaseUntil);
+
+    boolean heartbeat(String runId, String ownerId, Instant now, Instant leaseUntil);
+
+    void releaseLease(String runId, String ownerId);
 
     /**
      * CAS 状态转换。
@@ -54,9 +65,7 @@ public interface AgentRunRepository {
             AgentUsage usage,
             AgentBudgetReservation reservation);
 
-    /**
-     * CAS 更新 evidence 摘要 (只存 evidenceIds + count, 不存正文)。
-     */
+    /** CAS 更新 evidence 摘要 (只存 evidenceIds + count, 不存正文)。 */
     boolean updateEvidenceSummary(
             String runId,
             long expectedVersion,
@@ -68,8 +77,7 @@ public interface AgentRunRepository {
      * PR-6b.1: 结算合并 CAS — 一次 CAS 同时推进 usage + reservation + evidenceIds + count。
      *
      * <p>Revision §4 要求: settleStep 内 Run CAS 不得用 updateBudgetState + updateEvidenceSummary 两次串行,
-     * 因为第二次 CAS 必须用第一次成功后的新版本, 易写错且产生版本双推进。这里以<b>一次</b> CAS 同时改四组字段,
-     * version+1。
+     * 因为第二次 CAS 必须用第一次成功后的新版本, 易写错且产生版本双推进。这里以<b>一次</b> CAS 同时改四组字段, version+1。
      *
      * @return true=成功 / false=version冲突 / status不匹配 / run不存在
      */

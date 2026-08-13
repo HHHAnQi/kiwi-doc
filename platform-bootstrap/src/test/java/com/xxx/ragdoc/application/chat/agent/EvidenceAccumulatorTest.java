@@ -9,14 +9,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * PR-6b.2: {@link EvidenceAccumulator} 单测 (重点 — per-Run 隔离不在此处直接测, 由 Factory 单测。
- * 这里测 dedup / ACL / 限制 / 稳定顺序 / flush only IDs)。
+ * PR-6b.2: {@link EvidenceAccumulator} 单测 (重点 — per-Run 隔离不在此处直接测, 由 Factory 单测。 这里测 dedup / ACL /
+ * 限制 / 稳定顺序 / flush only IDs)。
  */
 @DisplayName("EvidenceAccumulator - PR-6b.2 三级去重 + ACL + 限制 + 稳定序")
 class EvidenceAccumulatorTest {
 
     private Evidence ev(String tenant, long docId, long chunkId, String content, double score) {
-        return Evidence.of(tenant, docId, chunkId, "v1", content, score, null, "semantic_search", Map.of());
+        return Evidence.of(
+                tenant, docId, chunkId, "v1", content, score, null, "semantic_search", Map.of());
     }
 
     @Test
@@ -99,9 +100,9 @@ class EvidenceAccumulatorTest {
         acc.accept(0, 0, ev("tA", 3L, 30L, "mid", 0.5));
         List<Evidence> snap = acc.snapshot();
         // 期望: step0 result0 score0.5 / step0 result0 score0.3 / step0 result1 score0.9
-        assertThat(snap.get(0).content()).isEqualTo("mid");    // result=0, score 0.5 > 0.3
-        assertThat(snap.get(1).content()).isEqualTo("low");    // result=0, score 0.3 last
-        assertThat(snap.get(2).content()).isEqualTo("high");  // result=1
+        assertThat(snap.get(0).content()).isEqualTo("mid"); // result=0, score 0.5 > 0.3
+        assertThat(snap.get(1).content()).isEqualTo("low"); // result=0, score 0.3 last
+        assertThat(snap.get(2).content()).isEqualTo("high"); // result=1
     }
 
     @Test
@@ -123,7 +124,7 @@ class EvidenceAccumulatorTest {
         acc.accept(0, 0, ev("tA", 1L, 10L, "secret content", 0.9));
         List<String> ids = acc.toIdsWithCount();
         assertThat(ids).hasSize(1);
-        assertThat(ids.get(0)).matches("[0-9a-f]{64}");  // sha256 hex
+        assertThat(ids.get(0)).matches("[0-9a-f]{64}"); // sha256 hex
         // verify 字符串不含'content' /docId /chunkId
         assertThat(ids.get(0)).doesNotContain("secret content");
     }

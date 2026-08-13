@@ -19,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * PR-6c / EMS-PR6c §5: 把 Router 抽取的 <b>比较对象</b> 转为服务端确定性
- * {@link DeterministicExecutionPlan} + {@link AgentExecutionPolicy}。
+ * PR-6c / EMS-PR6c §5: 把 Router 抽取的 <b>比较对象</b> 转为服务端确定性 {@link DeterministicExecutionPlan} +
+ * {@link AgentExecutionPolicy}。
  *
  * <p>第一版只支持两个比较对象 (left + right); 多于两个 / 不足两个 → {@code valid=false} (不强行扩展为 N 路)。
  *
@@ -90,14 +90,26 @@ public class ComparisonPlanFactory {
         ToolInput rightInput = buildToolInput(originalQuery, right, rightTool);
 
         // 3. 构造两个 required AgentToolStep, 无相互依赖, 顺序 left → right
-        AgentToolStep leftStep = new AgentToolStep(
-                LEFT_STEP_ID, leftTool.toolName(), leftTool.toolVersion(), leftInput,
-                List.of(), "Evidence about " + left.label(), true);
-        AgentToolStep rightStep = new AgentToolStep(
-                RIGHT_STEP_ID, rightTool.toolName(), rightTool.toolVersion(), rightInput,
-                List.of(), "Evidence about " + right.label(), true);
-        DeterministicExecutionPlan plan = new DeterministicExecutionPlan(
-                PLAN_ID, PLAN_VERSION, List.of(leftStep, rightStep));
+        AgentToolStep leftStep =
+                new AgentToolStep(
+                        LEFT_STEP_ID,
+                        leftTool.toolName(),
+                        leftTool.toolVersion(),
+                        leftInput,
+                        List.of(),
+                        "Evidence about " + left.label(),
+                        true);
+        AgentToolStep rightStep =
+                new AgentToolStep(
+                        RIGHT_STEP_ID,
+                        rightTool.toolName(),
+                        rightTool.toolVersion(),
+                        rightInput,
+                        List.of(),
+                        "Evidence about " + right.label(),
+                        true);
+        DeterministicExecutionPlan plan =
+                new DeterministicExecutionPlan(PLAN_ID, PLAN_VERSION, List.of(leftStep, rightStep));
 
         // 4. 服务端固定 ExecutionPolicy
         AgentExecutionPolicy policy = buildPolicy(leftTool.toolName(), rightTool.toolName());
@@ -106,7 +118,8 @@ public class ComparisonPlanFactory {
     }
 
     /** 从 RouterDecision 抽 left/right comparison targets。 */
-    static List<ComparisonTarget> extractTargets(RouterDecision d, Map<String, Object> requestedFilters) {
+    static List<ComparisonTarget> extractTargets(
+            RouterDecision d, Map<String, Object> requestedFilters) {
         Map<String, Object> rf = requestedFilters == null ? Map.of() : requestedFilters;
         // entities 优先: PR-6c v1 只接受<b>正好</b> 2 个 entity (任何超出数都返回原始数量, 让 build() 拒绝)
         if (d != null && d.entities() != null && !d.entities().isEmpty()) {
@@ -134,10 +147,16 @@ public class ComparisonPlanFactory {
         if (products.isEmpty()) products = readStringList(rf, "product");
         if (products.isEmpty()) products = readStringList(rf, "products");
         if (products.size() >= 2) {
-            out.add(new ComparisonTarget(products.get(0), normalize(products.get(0)),
-                    Map.of("source", products.get(0))));
-            out.add(new ComparisonTarget(products.get(1), normalize(products.get(1)),
-                    Map.of("source", products.get(1))));
+            out.add(
+                    new ComparisonTarget(
+                            products.get(0),
+                            normalize(products.get(0)),
+                            Map.of("source", products.get(0))));
+            out.add(
+                    new ComparisonTarget(
+                            products.get(1),
+                            normalize(products.get(1)),
+                            Map.of("source", products.get(1))));
             return out;
         }
         return out;
@@ -147,13 +166,14 @@ public class ComparisonPlanFactory {
         if (t.normalizedValue() != null && !t.normalizedValue().isBlank()) out.add(t);
     }
 
-    /**
-     * 决定每个 target 用哪个 Tool (§5.3, 不调 LLM; 确定性规则)。
-     */
+    /** 决定每个 target 用哪个 Tool (§5.3, 不调 LLM; 确定性规则)。 */
     static ComparisonToolChoice pickTool(ComparisonTarget t) {
         Map<String, Object> f = t.filters();
-        if (f != null && (f.containsKey("version") || f.containsKey("product")
-                || f.containsKey("source") || f.containsKey("documentId"))) {
+        if (f != null
+                && (f.containsKey("version")
+                        || f.containsKey("product")
+                        || f.containsKey("source")
+                        || f.containsKey("documentId"))) {
             return ComparisonToolChoice.metadataSearchV1(
                     "metadata_search filter=" + describeFilters(f) + " for " + t.label());
         }
@@ -162,11 +182,14 @@ public class ComparisonPlanFactory {
     }
 
     /**
-     * 构造 Tool 的 typed input; SearchInput 是 metadata_search / semantic_search / keyword_search 共用 schema。
+     * 构造 Tool 的 typed input; SearchInput 是 metadata_search / semantic_search / keyword_search 共用
+     * schema。
      */
-    static ToolInput buildToolInput(String originalQuery, ComparisonTarget target, ComparisonToolChoice choice) {
+    static ToolInput buildToolInput(
+            String originalQuery, ComparisonTarget target, ComparisonToolChoice choice) {
         Integer topK = 5;
-        if (choice.toolName().equals("metadata_search") || choice.toolName().equals("semantic_search")) {
+        if (choice.toolName().equals("metadata_search")
+                || choice.toolName().equals("semantic_search")) {
             String version = (String) target.filters().get("version");
             String source = (String) target.filters().get("source");
             SearchInput.SearchFilters filters =
@@ -175,19 +198,25 @@ public class ComparisonPlanFactory {
             return new SearchInput(query, topK, filters);
         }
         // keyword_search 第一版默认 fallback 到 search input without filters
-        return new SearchInput(originalQuery + " " + target.label(), topK, SearchInput.SearchFilters.empty());
+        return new SearchInput(
+                originalQuery + " " + target.label(), topK, SearchInput.SearchFilters.empty());
     }
 
-    /**
-     * 服务端固定 ExecutionPolicy。allowlist 仅含本 Plan 实际需要的 Tool 子集 (§6)。
-     */
+    /** 服务端固定 ExecutionPolicy。allowlist 仅含本 Plan 实际需要的 Tool 子集 (§6)。 */
     AgentExecutionPolicy buildPolicy(String leftTool, String rightTool) {
         Set<String> allowlist = new java.util.LinkedHashSet<>(List.of(leftTool, rightTool));
         // Citation 校验单独调用 (在 AgentRun 之外), 不进 allowlist
-        AgentBudget budget = new AgentBudget(
-                props.getMaxSteps(), props.getMaxToolCalls(),
-                0, 0, props.getMaxExecutionMillis(),
-                0, 0, 0, java.math.BigDecimal.ZERO);
+        AgentBudget budget =
+                new AgentBudget(
+                        props.getMaxSteps(),
+                        props.getMaxToolCalls(),
+                        0,
+                        0,
+                        props.getMaxExecutionMillis(),
+                        0,
+                        0,
+                        0,
+                        java.math.BigDecimal.ZERO);
         return new AgentExecutionPolicy(
                 budget,
                 Instant.now().plusMillis(props.getMaxExecutionMillis()),

@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.application.chat.agent;
 
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
-import com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary;
 import java.util.HashSet;
 import java.util.Set;
 import org.springframework.stereotype.Component;
@@ -18,11 +17,9 @@ import org.springframework.stereotype.Component;
  *   且 missingRequirementIds 未减少
  * </pre>
  *
- * <p>结果 NO_PROGRESS → 不调 Replan Planner, 直接 REFUSED_NO_EVIDENCE,
- * reasonCode = AGENT_NO_PROGRESS。
+ * <p>结果 NO_PROGRESS → 不调 Replan Planner, 直接 REFUSED_NO_EVIDENCE, reasonCode = AGENT_NO_PROGRESS。
  *
- * <p>不能仅以 Tool 返回 SUCCESS 判定有进展 (Revision §11 末段; CACHE 命中
- * 也算成功但不算新进展)。
+ * <p>不能仅以 Tool 返回 SUCCESS 判定有进展 (Revision §11 末段; CACHE 命中 也算成功但不算新进展)。
  */
 @Component
 public class AgentProgressDetector {
@@ -36,9 +33,9 @@ public class AgentProgressDetector {
     /**
      * 比较 Phase 之前 / 之后的指标。
      *
-     * @param priorAccumulatedEvidenceIds  累积到 prior 的 evidence ids
-     * @param phaseNewEvidence             本 Phase 新增 Evidence
-     * @param phaseDiscoveredEntities      本 Phase 新发现的 entities
+     * @param priorAccumulatedEvidenceIds 累积到 prior 的 evidence ids
+     * @param phaseNewEvidence 本 Phase 新增 Evidence
+     * @param phaseDiscoveredEntities 本 Phase 新发现的 entities
      * @param priorUncoveredRequirementIds Phase 之前未覆盖的 required req ids
      * @param currentUncoveredRequirementIds Phase 之后未覆盖的 required req ids
      */

@@ -26,16 +26,16 @@ class ExecutionStrategyResolverTest {
     }
 
     private RouterDecision decision(TaskIntent intent, double confidence) {
-        return new RouterDecision(intent, ExecutionStrategy.FIXED_WORKFLOW,
-                List.of(), Map.of(), confidence, "TEST");
+        return new RouterDecision(
+                intent, ExecutionStrategy.FIXED_WORKFLOW, List.of(), Map.of(), confidence, "TEST");
     }
 
     @Test
     @DisplayName("MULTI_HOP + 高置信 + Flags=true → PLANNED_AGENT")
     void multiHopHighConfidenceBecomesPlanned() {
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, true);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.MULTI_HOP, 0.9),
-                ExecutionStrategy.FIXED_WORKFLOW);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.MULTI_HOP, 0.9), ExecutionStrategy.FIXED_WORKFLOW);
         assertThat(s).isEqualTo(ExecutionStrategy.PLANNED_AGENT);
     }
 
@@ -44,8 +44,8 @@ class ExecutionStrategyResolverTest {
     void plannerDisabledKeepsStrategy() {
         props.setEnabled(false);
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, true);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
-                ExecutionStrategy.FIXED_WORKFLOW);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.MULTI_HOP, 0.95), ExecutionStrategy.FIXED_WORKFLOW);
         assertThat(s).isEqualTo(ExecutionStrategy.FIXED_WORKFLOW);
     }
 
@@ -53,8 +53,8 @@ class ExecutionStrategyResolverTest {
     @DisplayName("plannedPipeline.enabled=false → 原 strategy 保留")
     void pipelineDisabledKeepsStrategy() {
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, false);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
-                ExecutionStrategy.CLASSIC_RAG);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.MULTI_HOP, 0.95), ExecutionStrategy.CLASSIC_RAG);
         assertThat(s).isEqualTo(ExecutionStrategy.CLASSIC_RAG);
     }
 
@@ -62,8 +62,8 @@ class ExecutionStrategyResolverTest {
     @DisplayName("confidence 低于阈值 (0.6 < 0.80) → 原路径")
     void lowConfidenceKeepsStrategy() {
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, true);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.MULTI_HOP, 0.6),
-                ExecutionStrategy.CLASSIC_RAG);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.MULTI_HOP, 0.6), ExecutionStrategy.CLASSIC_RAG);
         assertThat(s).isEqualTo(ExecutionStrategy.CLASSIC_RAG);
     }
 
@@ -71,8 +71,8 @@ class ExecutionStrategyResolverTest {
     @DisplayName("COMPARISON intent 即使高置信也不进 PLANNED_AGENT (PR-4.3 + 6c 偏好固定工作流)")
     void comparisonStaysFixedWorkflow() {
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, true);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.COMPARISON, 0.95),
-                ExecutionStrategy.FIXED_WORKFLOW);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.COMPARISON, 0.95), ExecutionStrategy.FIXED_WORKFLOW);
         assertThat(s).isEqualTo(ExecutionStrategy.FIXED_WORKFLOW);
     }
 
@@ -80,8 +80,8 @@ class ExecutionStrategyResolverTest {
     @DisplayName("FACT intent 不进 Planner")
     void factStaysClassic() {
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, true);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.FACT, 0.95),
-                ExecutionStrategy.CLASSIC_RAG);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.FACT, 0.95), ExecutionStrategy.CLASSIC_RAG);
         assertThat(s).isEqualTo(ExecutionStrategy.CLASSIC_RAG);
     }
 
@@ -89,8 +89,8 @@ class ExecutionStrategyResolverTest {
     @DisplayName("ENTITY_LOOKUP 不进 Planner (TARGETED_RAG)")
     void entityLookupStaysTargeted() {
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(props, true);
-        ExecutionStrategy s = r.resolve(decision(TaskIntent.ENTITY_LOOKUP, 0.95),
-                ExecutionStrategy.TARGETED_RAG);
+        ExecutionStrategy s =
+                r.resolve(decision(TaskIntent.ENTITY_LOOKUP, 0.95), ExecutionStrategy.TARGETED_RAG);
         assertThat(s).isEqualTo(ExecutionStrategy.TARGETED_RAG);
     }
 
@@ -105,8 +105,10 @@ class ExecutionStrategyResolverTest {
         p.setPlannedPipelineEnabled(true);
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(p); // 生产构造器
         assertThat(r.isPlannedPipelineEnabled()).isTrue();
-        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
-                ExecutionStrategy.FIXED_WORKFLOW))
+        assertThat(
+                        r.resolve(
+                                decision(TaskIntent.MULTI_HOP, 0.95),
+                                ExecutionStrategy.FIXED_WORKFLOW))
                 .isEqualTo(ExecutionStrategy.PLANNED_AGENT);
     }
 
@@ -117,8 +119,7 @@ class ExecutionStrategyResolverTest {
         p.setEnabled(true);
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(p);
         assertThat(r.isPlannedPipelineEnabled()).isFalse();
-        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
-                ExecutionStrategy.CLASSIC_RAG))
+        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95), ExecutionStrategy.CLASSIC_RAG))
                 .isEqualTo(ExecutionStrategy.CLASSIC_RAG); // 原策略不变 — zero-diff
     }
 
@@ -130,8 +131,10 @@ class ExecutionStrategyResolverTest {
         p.setPlannedPipelineEnabled(false); // 字段关
         ExecutionStrategyResolver r = new ExecutionStrategyResolver(p, true); // override 开
         assertThat(r.isPlannedPipelineEnabled()).isTrue(); // override 胜出
-        assertThat(r.resolve(decision(TaskIntent.MULTI_HOP, 0.95),
-                ExecutionStrategy.FIXED_WORKFLOW))
+        assertThat(
+                        r.resolve(
+                                decision(TaskIntent.MULTI_HOP, 0.95),
+                                ExecutionStrategy.FIXED_WORKFLOW))
                 .isEqualTo(ExecutionStrategy.PLANNED_AGENT);
     }
 }

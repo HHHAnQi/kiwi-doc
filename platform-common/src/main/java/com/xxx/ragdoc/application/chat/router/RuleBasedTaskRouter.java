@@ -8,8 +8,8 @@ import java.util.regex.Pattern;
 /**
  * PR-3.2 / EMS-PR3: 规则优先生成的可解释 TaskRouter。
  *
- * <p><b>不调用任何 LLM</b>; 所有判定基于 QueryNormalizer 抽出的实体 + 关键词词表。可解释性优先于召回,
- * 用于让 Broker 评测中能产出 reasonCode / 混淆矩阵, 而不是黑盒。
+ * <p><b>不调用任何 LLM</b>; 所有判定基于 QueryNormalizer 抽出的实体 + 关键词词表。可解释性优先于召回, 用于让 Broker 评测中能产出 reasonCode
+ * / 混淆矩阵, 而不是黑盒。
  *
  * <h2>规则优先级 (PR-3 设计文档 §2, 严格顺序)</h2>
  *
@@ -23,14 +23,14 @@ import java.util.regex.Pattern;
  *   7. FACT             → CLASSIC_RAG       (默认 / 兜底普通事实问题)
  * </pre>
  *
- * <p>如果两条规则都命中 (例如"比较 v1 与 v2 的差异"), 严格按优先级走 (COMPARISON 压 NUMERIC —
- * 任务要求:"比较问题即使含版本号也应走 FIXED_WORKFLOW, 因为目标是 A/B 证据合并, 不是单一版本文档检索")。
+ * <p>如果两条规则都命中 (例如"比较 v1 与 v2 的差异"), 严格按优先级走 (COMPARISON 压 NUMERIC — 任务要求:"比较问题即使含版本号也应走
+ * FIXED_WORKFLOW, 因为目标是 A/B 证据合并, 不是单一版本文档检索")。
  *
  * <h2>低置信度回退</h2>
  *
- * <p>当某条规则的判定条件"较弱"(例如 FACT 兜底 / SUMMARY 仅命中一个词 / 边界模糊) 时, 置信度会
- * &lt; {@link #LOW_CONFIDENCE_THRESHOLD}。此时不会丢回去让 Agent 处理, 而是强制把 strategy 转回
- * {@link ExecutionStrategy#CLASSIC_RAG} + reasonCode 追加 {@code _LOW_CONFIDENCE_FALLBACK}, intent 保留原判断。
+ * <p>当某条规则的判定条件"较弱"(例如 FACT 兜底 / SUMMARY 仅命中一个词 / 边界模糊) 时, 置信度会 &lt; {@link
+ * #LOW_CONFIDENCE_THRESHOLD}。此时不会丢回去让 Agent 处理, 而是强制把 strategy 转回 {@link
+ * ExecutionStrategy#CLASSIC_RAG} + reasonCode 追加 {@code _LOW_CONFIDENCE_FALLBACK}, intent 保留原判断。
  *
  * <p>注意: REFUSE 路径不参与低置信回退(UNANSWERABLE 一旦判定, 直接 REFUSE, 因为回退 Classic 也无意义)。
  */
@@ -41,8 +41,8 @@ public class RuleBasedTaskRouter implements TaskRouter {
 
     // ── 关键词词表 ───────────────────────────────────────
     private static final Pattern COMPARISON_PHRASE =
-            Pattern.compile(
-                    "比较|对比|的区别|的差异|哪个更好|哪一种|vs\\s|versus|哪个性能|相比");
+            Pattern.compile("比较|对比|的区别|的差异|哪个更好|哪一种|vs\\s|versus|哪个性能|相比");
+
     /** 比较类必须看得到至少两个比较对象; 仅含 "对比" 词是不够的。 */
     private static final Pattern COMPARISON_CONNECTOR =
             Pattern.compile(
@@ -53,10 +53,8 @@ public class RuleBasedTaskRouter implements TaskRouter {
             Pattern.compile("为什么.*之后|为什么.*升级.*后|为什么.*切换.*后|为什么.*引入.*后|为什么.*上线.*后");
     private static final Pattern WHY_PREFIX = Pattern.compile("^为什么|^为啥|^为何");
 
-    private static final Pattern SUMMARY_PHRASE =
-            Pattern.compile("总结|概括|概论|综述|概述|简述|概览|一览");
-    private static final Pattern SUMMARY_VERB =
-            Pattern.compile("(请|帮我)?\\s*(总结|概括|概述)\\s*(一下|下)?");
+    private static final Pattern SUMMARY_PHRASE = Pattern.compile("总结|概括|概论|综述|概述|简述|概览|一览");
+    private static final Pattern SUMMARY_VERB = Pattern.compile("(请|帮我)?\\s*(总结|概括|概述)\\s*(一下|下)?");
 
     private static final Pattern SECTION_LOOKUP_PHRASE =
             Pattern.compile("哪一节|哪个章节|哪份文档|在哪里|在哪个|哪一章|哪个文档|在第几|关于[^?？]{0,12}的(部分|章节|内容)");
@@ -67,9 +65,11 @@ public class RuleBasedTaskRouter implements TaskRouter {
             Pattern.compile("^你是谁|^你叫什么|训练数据|你的模型|你是什么模型|^你多少钱");
     private static final List<String> OUT_OF_DOMAIN =
             List.of("天气", "股票", "彩票", "今天星期", "写一首诗", "作诗", "讲个笑话");
+
     /** Prompt injection 启发式: "忽略之前所有指令" / "无视系统提示" 等。 */
     private static final Pattern INJECTION_PHRASE =
-            Pattern.compile("忽略.{0,8}指令|无视.{0,8}(指令|提示)|ignore.{0,8}previous", Pattern.CASE_INSENSITIVE);
+            Pattern.compile(
+                    "忽略.{0,8}指令|无视.{0,8}(指令|提示)|ignore.{0,8}previous", Pattern.CASE_INSENSITIVE);
 
     // ── 实现 ─────────────────────────────────────────────
 
@@ -210,7 +210,8 @@ public class RuleBasedTaskRouter implements TaskRouter {
         return WHY_PREFIX.matcher(text).find() && (text.contains("后") || text.contains("之后"));
     }
 
-    private static List<String> extractComparisonEntities(String text, QueryNormalizer.NormalizedQuery q) {
+    private static List<String> extractComparisonEntities(
+            String text, QueryNormalizer.NormalizedQuery q) {
         List<String> out = new ArrayList<>();
         // 优先两个版本号 (如 "v1 与 v2"), 没有就取两个产品, 再没有就取 comparator 两边 token
         out.addAll(q.versions());
@@ -233,7 +234,8 @@ public class RuleBasedTaskRouter implements TaskRouter {
         return "NUMERIC_LOOKUP";
     }
 
-    private static double confidenceForNumeric(QueryNormalizer.NormalizedQuery q, String reasonCode) {
+    private static double confidenceForNumeric(
+            QueryNormalizer.NormalizedQuery q, String reasonCode) {
         // 版本号/错误码: 高置信 (这是 TARGETED_RAG 最强的场景)
         // 单独年份: 中等置信 (可能只是提及)
         if (!q.versions().isEmpty() || !q.errorCodes().isEmpty()) return 0.9;

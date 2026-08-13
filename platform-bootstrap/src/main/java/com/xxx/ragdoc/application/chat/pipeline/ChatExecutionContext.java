@@ -1,6 +1,5 @@
 package com.xxx.ragdoc.application.chat.pipeline;
 
-import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.chat.router.ExecutionStrategy;
 import com.xxx.ragdoc.application.chat.router.RouterDecision;
 import com.xxx.ragdoc.application.chat.router.TaskIntent;
@@ -19,18 +18,18 @@ import java.util.Map;
  *   <li>{@link Principal} 来自已鉴权 {@code AuthContext}, 不接受客户端传入。tenantId 只能从 Principal 派生。
  *   <li>单请求内不可变; 并发请求之间不串 requestId / Principal / mode / Trace。
  *   <li>不使用全局可变字段保存当前请求状态 — 必须经过本 context 传递。
- *   <li>{@link #requestedMode()} 是用户请求里的原始 mode; {@link #effectivePipeline()} 是 Orchestrator 实际派发
- *       的 pipeline type; 两者都进 Trace。
+ *   <li>{@link #requestedMode()} 是用户请求里的原始 mode; {@link #effectivePipeline()} 是 Orchestrator 实际派发 的
+ *       pipeline type; 两者都进 Trace。
  * </ul>
  *
- * <p>{@link #executionPolicy()} 在 PR-2 只承载现有 timeout / 流式开关 / cancel signal 等,
- * 不引入任何 Agent Budget 字段 (留给后续 PR)。
+ * <p>{@link #executionPolicy()} 在 PR-2 只承载现有 timeout / 流式开关 / cancel signal 等, 不引入任何 Agent Budget
+ * 字段 (留给后续 PR)。
  *
  * <p>PR-3: {@link #routerDecision()} 携带 Router 的完整决策 (intent/strategy/entities/filters/confidence/
- * reasonCode)。Pipeline 通过它读 Router 抽取的版本/产品/错误码/时间 等 entities 与 filters (例如
- * {@code TargetedRagPipeline} 把 versions[0] 映射到 ChatCommand.version())。当 mode=RAG / Router disabled
- * 时, routerDecision 可以是占位 (intent=FACT/strategy=CLASSIC_RAG/reasonCode=ROUTER_DISABLED),
- * Pipeline 不应该命中此字段做差异化处理。
+ * reasonCode)。Pipeline 通过它读 Router 抽取的版本/产品/错误码/时间 等 entities 与 filters (例如 {@code
+ * TargetedRagPipeline} 把 versions[0] 映射到 ChatCommand.version())。当 mode=RAG / Router disabled 时,
+ * routerDecision 可以是占位 (intent=FACT/strategy=CLASSIC_RAG/reasonCode=ROUTER_DISABLED), Pipeline
+ * 不应该命中此字段做差异化处理。
  */
 public record ChatExecutionContext(
         String requestId,
@@ -49,7 +48,14 @@ public record ChatExecutionContext(
             PipelineType effectivePipeline,
             TraceId traceId,
             ExecutionPolicy executionPolicy) {
-        this(requestId, principal, requestedMode, effectivePipeline, traceId, executionPolicy, null);
+        this(
+                requestId,
+                principal,
+                requestedMode,
+                effectivePipeline,
+                traceId,
+                executionPolicy,
+                null);
     }
 
     public ChatExecutionContext {
@@ -86,6 +92,12 @@ public record ChatExecutionContext(
     /** 测试 / 路由无关场景: 显式构造 RouterDecision 已存在时使用。 */
     public ChatExecutionContext withRouterDecision(RouterDecision decision) {
         return new ChatExecutionContext(
-                requestId, principal, requestedMode, effectivePipeline, traceId, executionPolicy, decision);
+                requestId,
+                principal,
+                requestedMode,
+                effectivePipeline,
+                traceId,
+                executionPolicy,
+                decision);
     }
 }

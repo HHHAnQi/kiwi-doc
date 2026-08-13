@@ -13,9 +13,7 @@ import java.util.List;
  * </ul>
  */
 public record DeterministicExecutionPlan(
-        String planId,
-        String planVersion,
-        List<AgentToolStep> steps) {
+        String planId, String planVersion, List<AgentToolStep> steps) {
 
     public DeterministicExecutionPlan {
         if (planId == null || planId.isBlank()) {

@@ -16,18 +16,18 @@ import reactor.core.publisher.Flux;
  * <p><b>提取策略</b> (满足"不一次性重写 ChatService"):
  *
  * <ol>
- *   <li>本类不搬运业务逻辑, 只做最小委托 — {@link #execute}/{@link #stream} 直接调
- *       {@link ChatService#chat(ChatCommand, com.xxx.ragdoc.domain.shared.TraceId, String)}
- *       与 {@link ChatService#chatStream(ChatCommand, com.xxx.ragdoc.domain.shared.TraceId)}。
- *   <li>所有 Retrieve / Rerank / Context / LLM / Citation / Trace / Evidence Snapshot / SSE 单终态
- *       全部由 ChatService 既有实现提供, PR-0 / PR-1 行为零变化。
- *   <li>{@link ChatService} 的公共方法保留 — 既有单测 (ChatServiceTest, RetrieveServiceTest) 与
- *       其他调用方继续工作, 不在本 PR 触及。
+ *   <li>本类不搬运业务逻辑, 只做最小委托 — {@link #execute}/{@link #stream} 直接调 {@link
+ *       ChatService#chat(ChatCommand, com.xxx.ragdoc.domain.shared.TraceId, String)} 与 {@link
+ *       ChatService#chatStream(ChatCommand, com.xxx.ragdoc.domain.shared.TraceId)}。
+ *   <li>所有 Retrieve / Rerank / Context / LLM / Citation / Trace / Evidence Snapshot / SSE 单终态 全部由
+ *       ChatService 既有实现提供, PR-0 / PR-1 行为零变化。
+ *   <li>{@link ChatService} 的公共方法保留 — 既有单测 (ChatServiceTest, RetrieveServiceTest) 与 其他调用方继续工作, 不在本
+ *       PR 触及。
  * </ol>
  *
- * <p>{@link ChatExecutionContext} 在 PR-2 中只被记录到 Trace / 日志, 业务字段
- * (query / topK / source 等) 仍走 {@link ChatCommand}。principal equality 与 tenantId 一致性
- * 由 AuthFilter → AuthContext → ChatService 既有访问链路保证, 本 pipeline 不重新解析。
+ * <p>{@link ChatExecutionContext} 在 PR-2 中只被记录到 Trace / 日志, 业务字段 (query / topK / source 等) 仍走
+ * {@link ChatCommand}。principal equality 与 tenantId 一致性 由 AuthFilter → AuthContext → ChatService
+ * 既有访问链路保证, 本 pipeline 不重新解析。
  */
 @Slf4j
 @Component

@@ -17,14 +17,15 @@ import org.springframework.stereotype.Component;
 /**
  * PR-4 / EMS-PR4: semantic_search Tool — 用 Dense 向量召回 + 已有 ACL / Rerank 走通道。
  *
- * <p>底层委托 {@link RetrieveService#retrieve(ChatCommand, Retriever.Mode, Boolean)} 强制 mode=DENSE / enhance=false。
- * 复用既有 AccessScope sentinel / MetadataFilter / Milvus 调用 / Reranker fallback; 不重造检索.Layout。
+ * <p>底层委托 {@link RetrieveService#retrieve(ChatCommand, Retriever.Mode, Boolean)} 强制 mode=DENSE /
+ * enhance=false。 复用既有 AccessScope sentinel / MetadataFilter / Milvus 调用 / Reranker fallback;
+ * 不重造检索.Layout。
  *
- * <p>输出: 把 {@link EvidenceSnapshot#finalContext()} 转成 {@link SearchOutput}。finalContext 与 citations 同序同长,
- * 适合作为 Agent 引用证据 (而不是 raw 初召 — 避免引入未经 context 包装的内容)。
+ * <p>输出: 把 {@link EvidenceSnapshot#finalContext()} 转成 {@link SearchOutput}。finalContext 与 citations
+ * 同序同长, 适合作为 Agent 引用证据 (而不是 raw 初召 — 避免引入未经 context 包装的内容)。
  *
- * <p>ACL 由 RetrieveService 内部完成; 本 Tool 不持有 Principal / tenantId / docIds 字段。
- * ToolExecutor 还会做 evidence post-check 二次校验 tenantId 一致。
+ * <p>ACL 由 RetrieveService 内部完成; 本 Tool 不持有 Principal / tenantId / docIds 字段。 ToolExecutor 还会做
+ * evidence post-check 二次校验 tenantId 一致。
  */
 @Slf4j
 @Component
@@ -124,7 +125,9 @@ public class SemanticSearchTool implements AgentTool<SearchInput, SearchOutput> 
         trimmed = new ArrayList<>(trimmed);
         boolean truncated = trimmed.size() < originalCount;
         SearchOutput out =
-                new SearchOutput(trimmed, new SearchOutput.TruncationInfo(truncated, originalCount, trimmed.size()));
+                new SearchOutput(
+                        trimmed,
+                        new SearchOutput.TruncationInfo(truncated, originalCount, trimmed.size()));
         return ToolResult.success(
                 context.requestId() + "-sem",
                 NAME,

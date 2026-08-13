@@ -20,11 +20,13 @@ class RuleBasedTaskRouterTest {
         @Test
         @DisplayName("空 query → REFUSE EMPTY_QUERY")
         void emptyQueryRefuses() {
-            assertThat(router.route("")).satisfies(d -> {
-                assertThat(d.intent()).isEqualTo(TaskIntent.UNANSWERABLE);
-                assertThat(d.strategy()).isEqualTo(ExecutionStrategy.REFUSE);
-                assertThat(d.reasonCode()).isEqualTo("EMPTY_QUERY");
-            });
+            assertThat(router.route(""))
+                    .satisfies(
+                            d -> {
+                                assertThat(d.intent()).isEqualTo(TaskIntent.UNANSWERABLE);
+                                assertThat(d.strategy()).isEqualTo(ExecutionStrategy.REFUSE);
+                                assertThat(d.reasonCode()).isEqualTo("EMPTY_QUERY");
+                            });
             assertThat(router.route(null).strategy()).isEqualTo(ExecutionStrategy.REFUSE);
             assertThat(router.route("   ").reasonCode()).isEqualTo("EMPTY_QUERY");
         }

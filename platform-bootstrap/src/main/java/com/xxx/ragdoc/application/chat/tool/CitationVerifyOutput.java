@@ -6,8 +6,8 @@ import java.util.List;
 /**
  * PR-4 / EMS-PR4: citation_verify Tool 的结构化输出。
  *
- * <p>透传 {@link VerificationResult} 的关键维度, 但把 {@code errorMessage} 等可能含 LLM 内部信息的字段做安全清洗;
- * Agent / Planner 拿到的是 outcome / score / verdict (与 ChatResult.verification 同型)。
+ * <p>透传 {@link VerificationResult} 的关键维度, 但把 {@code errorMessage} 等可能含 LLM 内部信息的字段做安全清洗; Agent /
+ * Planner 拿到的是 outcome / score / verdict (与 ChatResult.verification 同型)。
  */
 public record CitationVerifyOutput(
         String outcome, // PASS / FAIL / SKIPPED / ERROR
@@ -32,7 +32,9 @@ public record CitationVerifyOutput(
                                         cs ->
                                                 new CitationScore(
                                                         cs.chunkId(),
-                                                        cs.verdict() == null ? null : cs.verdict().name(),
+                                                        cs.verdict() == null
+                                                                ? null
+                                                                : cs.verdict().name(),
                                                         cs.score()))
                                 .toList();
         return new CitationVerifyOutput(

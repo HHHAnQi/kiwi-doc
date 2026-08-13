@@ -12,6 +12,8 @@ public record AgentStepRecord(
         String toolVersion,
         String callId,
         String inputHash,
+        String idempotencyKey,
+        boolean recoverable,
         AgentStepStatus status,
         int resultCount,
         List<String> evidenceIds,
@@ -25,6 +27,17 @@ public record AgentStepRecord(
         Instant createdAt,
         Instant updatedAt,
         long version) {
+
+    public AgentStepRecord(
+            String runId, String stepId, int stepSequence, String toolName, String toolVersion,
+            String callId, String inputHash, AgentStepStatus status, int resultCount,
+            List<String> evidenceIds, Long latencyMs, String errorCode, boolean retryable,
+            boolean replayed, boolean deduplicated, Instant startedAt, Instant completedAt,
+            Instant createdAt, Instant updatedAt, long version) {
+        this(runId, stepId, stepSequence, toolName, toolVersion, callId, inputHash,
+                null, false, status, resultCount, evidenceIds, latencyMs, errorCode, retryable,
+                replayed, deduplicated, startedAt, completedAt, createdAt, updatedAt, version);
+    }
 
     public AgentStepRecord {
         if (runId == null || runId.isBlank()) throw new IllegalArgumentException("runId");

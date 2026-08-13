@@ -37,6 +37,7 @@ class ToolRegistryTest {
     }
 
     record StubInput(String q) implements ToolInput {}
+
     record StubOutput() implements ToolOutput {}
 
     @Test
@@ -125,11 +126,7 @@ class ToolRegistryTest {
     @Test
     @DisplayName("list 返回排序后 descriptor snapshot, 不可变")
     void listImmutableSnapshot() {
-        ToolRegistry r =
-                new ToolRegistry(
-                        List.of(
-                                stub("z_tool", "v1"),
-                                stub("a_tool", "v1")));
+        ToolRegistry r = new ToolRegistry(List.of(stub("z_tool", "v1"), stub("a_tool", "v1")));
         List<ToolDescriptor> ds = r.list();
         assertThat(ds).extracting(ToolDescriptor::name).containsExactly("a_tool", "z_tool");
         assertThatThrownBy(() -> ((List<ToolDescriptor>) ds).add(ds.get(0)))

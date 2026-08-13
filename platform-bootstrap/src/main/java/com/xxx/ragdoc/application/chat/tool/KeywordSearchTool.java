@@ -20,11 +20,10 @@ import org.springframework.stereotype.Component;
 /**
  * PR-4 / EMS-PR4: keyword_search Tool — 独立 BM25 关键词检索 (区别于 semantic_search 的向量召回)。
  *
- * <p>底层委托 {@link SparseSearchPort} → Milvus BM25 sparse_vector; ACL 由本 Tool 显式传 allowedDocIds 给 adapter,
- * adapter 翻译成 Milvus expr (复用 MilvusFilterExprBuilder)。
+ * <p>底层委托 {@link SparseSearchPort} → Milvus BM25 sparse_vector; ACL 由本 Tool 显式传 allowedDocIds 给
+ * adapter, adapter 翻译成 Milvus expr (复用 MilvusFilterExprBuilder)。
  *
- * <p>适用: 错误码 (AUTH_EXPIRED / 5002)、产品名精确匹配、API 名引用等"非语义、强字面"场景。
- * 不适用: 概念性问题 (用 semantic_search)。
+ * <p>适用: 错误码 (AUTH_EXPIRED / 5002)、产品名精确匹配、API 名引用等"非语义、强字面"场景。 不适用: 概念性问题 (用 semantic_search)。
  */
 @Slf4j
 @Component
@@ -69,11 +68,13 @@ public class KeywordSearchTool implements AgentTool<SearchInput, SearchOutput> {
     public ToolResult<SearchOutput> execute(SearchInput input, ToolExecutionContext context) {
         long t0 = System.currentTimeMillis();
         int userTopK = input.topK() == null ? 5 : input.topK();
-        int fetchK = Math.min(MAX_HITS_BEHIND_FILTER, Math.max(userTopK, descriptor().maxResults()));
+        int fetchK =
+                Math.min(MAX_HITS_BEHIND_FILTER, Math.max(userTopK, descriptor().maxResults()));
 
         // 从 ACL scope 派生 allowedDocIds (与 RetrieveService 走同一 PermissionResolverPort)
         Principal principal = AuthContext.currentPrincipal();
-        com.xxx.ragdoc.application.auth.AccessScope scope = permissionResolver.resolveAccessScope(principal);
+        com.xxx.ragdoc.application.auth.AccessScope scope =
+                permissionResolver.resolveAccessScope(principal);
         java.util.Collection<Long> allowed =
                 scope.isUnrestrictedWithinTenant() ? null : scope.allowedDocumentIds();
         if (!scope.isUnrestrictedWithinTenant() && allowed != null && allowed.isEmpty()) {
@@ -166,7 +167,8 @@ public class KeywordSearchTool implements AgentTool<SearchInput, SearchOutput> {
                 context.requestId() + "-kw",
                 NAME,
                 VERSION,
-                new SearchOutput(out, new SearchOutput.TruncationInfo(false, hits.size(), out.size())),
+                new SearchOutput(
+                        out, new SearchOutput.TruncationInfo(false, hits.size(), out.size())),
                 System.currentTimeMillis() - t0,
                 Map.of());
     }

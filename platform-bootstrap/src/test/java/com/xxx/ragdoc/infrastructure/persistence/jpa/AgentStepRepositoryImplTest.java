@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,15 +46,30 @@ class AgentStepRepositoryImplTest {
 
     private AgentStepRecord newPendingStep(String runId, String stepId, int seq) {
         return new AgentStepRecord(
-                runId, stepId, seq,
-                "semantic_search", "v1", null,
+                runId,
+                stepId,
+                seq,
+                "semantic_search",
+                "v1",
+                null,
                 "input-hash-64char-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                AgentStepStatus.PENDING, 0, List.of(),
-                null, null, false, false, false,
-                null, null, Instant.now(), Instant.now(), 0);
+                AgentStepStatus.PENDING,
+                0,
+                List.of(),
+                null,
+                null,
+                false,
+                false,
+                false,
+                null,
+                null,
+                Instant.now(),
+                Instant.now(),
+                0);
     }
 
-    private AgentStepEntity savedEntity(String runId, String stepId, int seq, String status, long version) {
+    private AgentStepEntity savedEntity(
+            String runId, String stepId, int seq, String status, long version) {
         AgentStepEntity e = new AgentStepEntity();
         e.setId(1L);
         e.setRunId(runId);
@@ -91,12 +105,28 @@ class AgentStepRepositoryImplTest {
         @Test
         @DisplayName("create(非 PENDING) → IllegalArgumentException (新建 Step 必须从 PENDING 开始)")
         void createNonPendingRejected() {
-            AgentStepRecord running = new AgentStepRecord(
-                    "run-1", "step-1", 1,
-                    "semantic_search", "v1", null, "hash",
-                    AgentStepStatus.RUNNING, 0, List.of(),
-                    null, null, false, false, false,
-                    null, null, Instant.now(), Instant.now(), 0);
+            AgentStepRecord running =
+                    new AgentStepRecord(
+                            "run-1",
+                            "step-1",
+                            1,
+                            "semantic_search",
+                            "v1",
+                            null,
+                            "hash",
+                            AgentStepStatus.RUNNING,
+                            0,
+                            List.of(),
+                            null,
+                            null,
+                            false,
+                            false,
+                            false,
+                            null,
+                            null,
+                            Instant.now(),
+                            Instant.now(),
+                            0);
 
             assertThatThrownBy(() -> repo.create(running))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -133,9 +163,11 @@ class AgentStepRepositoryImplTest {
         @Test
         @DisplayName("findByRunId: 按 step_sequence ASC 排序 (调用 JPA 层 derived query)")
         void findByRunIdOrdered() {
-            when(jpa.findByRunIdOrderByStepSequenceAsc("run-1")).thenReturn(List.of(
-                    savedEntity("run-1", "a", 1, "SUCCEEDED", 2L),
-                    savedEntity("run-1", "b", 2, "RUNNING", 1L)));
+            when(jpa.findByRunIdOrderByStepSequenceAsc("run-1"))
+                    .thenReturn(
+                            List.of(
+                                    savedEntity("run-1", "a", 1, "SUCCEEDED", 2L),
+                                    savedEntity("run-1", "b", 2, "RUNNING", 1L)));
 
             List<AgentStepRecord> out = repo.findByRunId("run-1");
 
@@ -183,16 +215,43 @@ class AgentStepRepositoryImplTest {
             // 15 个 JPA 参数: anyLong() 匹配原始 long, 其余 any() 匹配对象 (含 null)
             stubTransitionReturn(1);
 
-            AgentStepUpdate running = new AgentStepUpdate(
-                    "call-1", 0, List.of(), 100L, null, false, false, false,
-                    Instant.now(), Instant.now());
+            AgentStepUpdate running =
+                    new AgentStepUpdate(
+                            "call-1",
+                            0,
+                            List.of(),
+                            100L,
+                            null,
+                            false,
+                            false,
+                            false,
+                            Instant.now(),
+                            Instant.now());
 
-            boolean ok1 = repo.transition("run-1", "step-1", 0L,
-                    Set.of(AgentStepStatus.PENDING), AgentStepStatus.RESERVED, AgentStepUpdate.empty());
-            boolean ok2 = repo.transition("run-1", "step-1", 1L,
-                    Set.of(AgentStepStatus.RESERVED), AgentStepStatus.RUNNING, running);
-            boolean ok3 = repo.transition("run-1", "step-1", 2L,
-                    Set.of(AgentStepStatus.RUNNING), AgentStepStatus.SUCCEEDED, running);
+            boolean ok1 =
+                    repo.transition(
+                            "run-1",
+                            "step-1",
+                            0L,
+                            Set.of(AgentStepStatus.PENDING),
+                            AgentStepStatus.RESERVED,
+                            AgentStepUpdate.empty());
+            boolean ok2 =
+                    repo.transition(
+                            "run-1",
+                            "step-1",
+                            1L,
+                            Set.of(AgentStepStatus.RESERVED),
+                            AgentStepStatus.RUNNING,
+                            running);
+            boolean ok3 =
+                    repo.transition(
+                            "run-1",
+                            "step-1",
+                            2L,
+                            Set.of(AgentStepStatus.RUNNING),
+                            AgentStepStatus.SUCCEEDED,
+                            running);
 
             assertThat(ok1).isTrue();
             assertThat(ok2).isTrue();
@@ -204,8 +263,14 @@ class AgentStepRepositoryImplTest {
         void casConflict() {
             stubTransitionReturn(0);
 
-            boolean ok = repo.transition("run-1", "step-1", 999L,
-                    Set.of(AgentStepStatus.PENDING), AgentStepStatus.RESERVED, AgentStepUpdate.empty());
+            boolean ok =
+                    repo.transition(
+                            "run-1",
+                            "step-1",
+                            999L,
+                            Set.of(AgentStepStatus.PENDING),
+                            AgentStepStatus.RESERVED,
+                            AgentStepUpdate.empty());
 
             assertThat(ok).isFalse();
         }
@@ -215,14 +280,32 @@ class AgentStepRepositoryImplTest {
         void casEmptyEvidenceNulled() {
             stubTransitionReturn(1);
 
-            repo.transition("run-1", "step-1", 0L,
-                    Set.of(AgentStepStatus.PENDING), AgentStepStatus.RESERVED,
+            repo.transition(
+                    "run-1",
+                    "step-1",
+                    0L,
+                    Set.of(AgentStepStatus.PENDING),
+                    AgentStepStatus.RESERVED,
                     AgentStepUpdate.empty());
 
             // 第 8 个参数 (evidenceIdsJson) 空 list 被映射为 null; 用 nullable 兼容
-            verify(jpa).transition(
-                    any(), any(), anyLong(), any(), any(), any(), any(),
-                    nullable(String.class), any(), any(), any(), any(), any(), any(), any());
+            verify(jpa)
+                    .transition(
+                            any(),
+                            any(),
+                            anyLong(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            nullable(String.class),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any());
         }
 
         @Test
@@ -230,19 +313,47 @@ class AgentStepRepositoryImplTest {
         void casNonEmptyEvidenceJson() {
             stubTransitionReturn(1);
 
-            AgentStepUpdate upd = new AgentStepUpdate(
-                    "call-1", 2, List.of("ev-1", "ev-2"), 150L, null, false, false, false,
-                    Instant.now(), Instant.now());
+            AgentStepUpdate upd =
+                    new AgentStepUpdate(
+                            "call-1",
+                            2,
+                            List.of("ev-1", "ev-2"),
+                            150L,
+                            null,
+                            false,
+                            false,
+                            false,
+                            Instant.now(),
+                            Instant.now());
 
-            repo.transition("run-1", "step-1", 0L,
-                    Set.of(AgentStepStatus.RUNNING), AgentStepStatus.SUCCEEDED, upd);
+            repo.transition(
+                    "run-1",
+                    "step-1",
+                    0L,
+                    Set.of(AgentStepStatus.RUNNING),
+                    AgentStepStatus.SUCCEEDED,
+                    upd);
 
             // JSON 字符串必须包含两个 evidence IDs
             org.mockito.ArgumentCaptor<String> evCap =
                     org.mockito.ArgumentCaptor.forClass(String.class);
-            verify(jpa).transition(
-                    any(), any(), anyLong(), any(), any(), any(), any(),
-                    evCap.capture(), any(), any(), any(), any(), any(), any(), any());
+            verify(jpa)
+                    .transition(
+                            any(),
+                            any(),
+                            anyLong(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            evCap.capture(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any(),
+                            any());
             assertThat(evCap.getValue()).contains("ev-1").contains("ev-2");
         }
     }
@@ -251,10 +362,21 @@ class AgentStepRepositoryImplTest {
     @SuppressWarnings("unchecked")
     private void stubTransitionReturn(int affected) {
         when(jpa.transition(
-                any(), any(), anyLong(),
-                any(java.util.Collection.class),
-                any(), any(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any()))
+                        any(),
+                        any(),
+                        anyLong(),
+                        any(java.util.Collection.class),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any()))
                 .thenReturn(affected);
     }
 }

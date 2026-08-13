@@ -16,8 +16,8 @@ import org.springframework.stereotype.Component;
 /**
  * PR-4 / EMS-PR4: metadata_search Tool — 强制 metadata filter 的检索 (与 semantic_search 的"概念查询"区别)。
  *
- * <p>关键守门: <b>必须</b>带至少一个 source/version/language filter; 不带 filter 时返 INVALID_ARGUMENT。
- * 适合: "Nacos 章节"、"v2.3 版本文档"、"zh 语言"。不适合: 概念查询 (用 semantic_search)。
+ * <p>关键守门: <b>必须</b>带至少一个 source/version/language filter; 不带 filter 时返 INVALID_ARGUMENT。 适合: "Nacos
+ * 章节"、"v2.3 版本文档"、"zh 语言"。不适合: 概念查询 (用 semantic_search)。
  *
  * <p>底层委托 RetrieveService.retrieve(cmd, HYBRID); HYBRID = Dense + BM25 RRF, 让 metadata 限定 + 字面量加分。
  */
@@ -75,7 +75,8 @@ public class MetadataSearchTool implements AgentTool<SearchInput, SearchOutput> 
         }
         int userTopK = input.topK() == null ? 5 : input.topK();
         ChatCommand cmd =
-                new ChatCommand(input.query(), null, userTopK, f.source(), f.version(), f.language(), null);
+                new ChatCommand(
+                        input.query(), null, userTopK, f.source(), f.version(), f.language(), null);
 
         RetrieveService.RetrieveResult result;
         try {
@@ -109,12 +110,16 @@ public class MetadataSearchTool implements AgentTool<SearchInput, SearchOutput> 
         }
         int max = descriptor().maxResults();
         int original = ctx.size();
-        List<Evidence> trimmed = original > max ? new ArrayList<>(ctx.subList(0, max)) : new ArrayList<>(ctx);
+        List<Evidence> trimmed =
+                original > max ? new ArrayList<>(ctx.subList(0, max)) : new ArrayList<>(ctx);
         return ToolResult.success(
                 context.requestId() + "-meta",
                 NAME,
                 VERSION,
-                new SearchOutput(trimmed, new SearchOutput.TruncationInfo(trimmed.size() < original, original, trimmed.size())),
+                new SearchOutput(
+                        trimmed,
+                        new SearchOutput.TruncationInfo(
+                                trimmed.size() < original, original, trimmed.size())),
                 System.currentTimeMillis() - t0,
                 java.util.Map.of());
     }

@@ -5,8 +5,7 @@ import java.util.List;
 /**
  * PR-7b / EMS-PR7 §6.x: 证据冲突项 (两条以上 Evidence 对同一 Requirement 提供互相矛盾的事实)。
  *
- * <p>{@link ConflictType#VERSION_VALUE_MISMATCH} 是最常见的确定性冲突 (例: 同字段在两版本返回不同值;
- * Rule Judge 显式检测)。
+ * <p>{@link ConflictType#VERSION_VALUE_MISMATCH} 是最常见的确定性冲突 (例: 同字段在两版本返回不同值; Rule Judge 显式检测)。
  *
  * <p>Sufficiency={@link SufficiencyStatus#CONFLICTED} 时必须列出至少一条 EvidenceConflict。
  */

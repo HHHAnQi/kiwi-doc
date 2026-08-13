@@ -2,7 +2,6 @@ package com.xxx.ragdoc.application.chat.comparison;
 
 import com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy;
 import com.xxx.ragdoc.application.chat.agent.DeterministicExecutionPlan;
-import java.util.List;
 
 /**
  * PR-6c / EMS-PR6c §5.1: ComparisonPlanFactory 输出。
@@ -39,6 +38,7 @@ public record ComparisonPlanBuildResult(
             ComparisonTarget right,
             ComparisonToolChoice leftTool,
             ComparisonToolChoice rightTool) {
-        return new ComparisonPlanBuildResult(true, null, plan, policy, left, right, leftTool, rightTool);
+        return new ComparisonPlanBuildResult(
+                true, null, plan, policy, left, right, leftTool, rightTool);
     }
 }

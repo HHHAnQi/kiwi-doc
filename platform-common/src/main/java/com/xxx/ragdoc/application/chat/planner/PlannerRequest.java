@@ -40,7 +40,8 @@ public record PlannerRequest(
         entities = entities == null ? List.of() : List.copyOf(entities);
         filters = filters == null ? Map.of() : Map.copyOf(filters);
         requirements = requirements == null ? List.of() : List.copyOf(requirements);
-        currentCoverage = currentCoverage == null ? EvidenceCoverageSummary.empty() : currentCoverage;
+        currentCoverage =
+                currentCoverage == null ? EvidenceCoverageSummary.empty() : currentCoverage;
         completedSteps = completedSteps == null ? List.of() : List.copyOf(completedSteps);
         if (remainingBudget == null) {
             throw new IllegalArgumentException("remainingBudget");

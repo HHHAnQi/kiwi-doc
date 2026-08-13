@@ -14,11 +14,11 @@ import org.springframework.stereotype.Component;
 /**
  * PR-7a / EMS-PR7 §4.5 + §10: Planner LIVE/RECORD/REPLAY 包装。
  *
- * <p>委托真实 Planner (RuleTemplate / Model — 由 PlannedAgentPipeline 依 {@link PlannerProperties#isModelEnabled()}
- * 注入); 本 Provider 不感知委托。
+ * <p>委托真实 Planner (RuleTemplate / Model — 由 PlannedAgentPipeline 依 {@link
+ * PlannerProperties#isModelEnabled()} 注入); 本 Provider 不感知委托。
  *
- * <p>{@code invoke} 走通用 {@link HarnessProvider} — key/canonical/serialization 已由项目既有
- * {@code CanonicalJson.replayKeyFor(...)} 统一处理。Fixture 缺失 → {@code FixtureUnavailableException} 由
+ * <p>{@code invoke} 走通用 {@link HarnessProvider} — key/canonical/serialization 已由项目既有 {@code
+ * CanonicalJson.replayKeyFor(...)} 统一处理。Fixture 缺失 → {@code FixtureUnavailableException} 由
  * HarnessProvider 统一抛; 这里转 {@link PlannerException.Reason#FIXTURE_UNAVAILABLE}。
  *
  * <p>PR-7a 第一版 callIndex = {@code request.replanIndex()} (=0 initial, =1 唯一允许的 replan)。
@@ -60,34 +60,40 @@ public class HarnessAwarePlannerProvider implements PlannerProvider {
 
         String runId = request.runId();
         int callIndex = request.replanIndex();
-        ComponentInvocation invocation = new ComponentInvocation(
-                runId,
-                runId,
-                HarnessComponentType.PLANNER,
-                "planner",
-                PLANNER_VERSION_TAG,
-                callIndex,
-                new InvocationContext(
+        ComponentInvocation invocation =
+                new ComponentInvocation(
                         runId,
-                        MASKED_TENANT,
-                        "" /* scopeVersion */,
-                        DEFAULT_INDEX_VERSION,
                         runId,
-                        ""));
+                        HarnessComponentType.PLANNER,
+                        "planner",
+                        PLANNER_VERSION_TAG,
+                        callIndex,
+                        new InvocationContext(
+                                runId,
+                                MASKED_TENANT,
+                                "" /* scopeVersion */,
+                                DEFAULT_INDEX_VERSION,
+                                runId,
+                                ""));
 
         try {
-            InvocationResult<PlannerResponse> result = harnessProvider.invoke(
-                    invocation,
-                    request,
-                    () -> delegate.plan(request),
-                    PlannerResponse.class,
-                    null /* mapper: 让 HarnessProvider 用默认 record mapper */);
+            InvocationResult<PlannerResponse> result =
+                    harnessProvider.invoke(
+                            invocation,
+                            request,
+                            () -> delegate.plan(request),
+                            PlannerResponse.class,
+                            null /* mapper: 让 HarnessProvider 用默认 record mapper */);
             if (result.error() != null) {
                 // HarnessProvider 标记失败 (Fixture 缺失等)
                 throw new PlannerException(
                         PlannerException.Reason.FIXTURE_UNAVAILABLE,
-                        "planner harness failure: " + result.error()
-                                + " run=" + runId + " mode=" + mode);
+                        "planner harness failure: "
+                                + result.error()
+                                + " run="
+                                + runId
+                                + " mode="
+                                + mode);
             }
             PlannerResponse body = result.result();
             if (body == null) {
@@ -96,24 +102,36 @@ public class HarnessAwarePlannerProvider implements PlannerProvider {
                         "planner harness returned null run=" + runId + " mode=" + mode);
             }
             return body;
-        } catch (com.xxx.ragdoc.application.chat.harness.FixtureStore.FixtureUnavailableException fue) {
-            log.warn("planner.harness.fixture_unavailable run={} mode={} reason={}",
-                    runId, mode, fue.reason);
+        } catch (
+                com.xxx.ragdoc.application.chat.harness.FixtureStore.FixtureUnavailableException
+                        fue) {
+            log.warn(
+                    "planner.harness.fixture_unavailable run={} mode={} reason={}",
+                    runId,
+                    mode,
+                    fue.reason);
             throw new PlannerException(
                     PlannerException.Reason.FIXTURE_UNAVAILABLE,
-                    "planner fixture 不可用 run=" + runId + ": " + fue.getMessage(), fue);
-        } catch (com.xxx.ragdoc.application.chat.harness.FixtureStore.FixtureConflictException fce) {
-            log.warn("planner.harness.fixture_conflict run={} mode={} err={}",
-                    runId, mode, fce.getMessage());
+                    "planner fixture 不可用 run=" + runId + ": " + fue.getMessage(),
+                    fue);
+        } catch (
+                com.xxx.ragdoc.application.chat.harness.FixtureStore.FixtureConflictException fce) {
+            log.warn(
+                    "planner.harness.fixture_conflict run={} mode={} err={}",
+                    runId,
+                    mode,
+                    fce.getMessage());
             throw new PlannerException(
                     PlannerException.Reason.FIXTURE_CONFLICT,
-                    "planner record 冲突 run=" + runId + ": " + fce.getMessage(), fce);
+                    "planner record 冲突 run=" + runId + ": " + fce.getMessage(),
+                    fce);
         } catch (PlannerException pe) {
             throw pe;
         } catch (RuntimeException re) {
             throw new PlannerException(
                     PlannerException.Reason.PROVIDER_ERROR,
-                    "planner harness 异常 run=" + runId + ": " + re.getMessage(), re);
+                    "planner harness 异常 run=" + runId + ": " + re.getMessage(),
+                    re);
         }
     }
 }

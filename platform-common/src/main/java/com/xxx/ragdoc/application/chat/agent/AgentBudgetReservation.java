@@ -13,8 +13,8 @@ import java.math.BigDecimal;
  *   <li>{@link AgentUsage} = 已真实发生、已结算的量 (Tool 执行完成后结算)
  * </ul>
  *
- * <p>并发安全不靠 record 自身: PR-6b BudgetManager 用 CAS UPDATE agent_run
- * (version + status 双条件) 保证只有一个 writer 成功 reserve。
+ * <p>并发安全不靠 record 自身: PR-6b BudgetManager 用 CAS UPDATE agent_run (version + status 双条件) 保证只有一个
+ * writer 成功 reserve。
  */
 public record AgentBudgetReservation(
         int reservedSteps,
@@ -30,7 +30,8 @@ public record AgentBudgetReservation(
         if (reservedPlannerCalls < 0) reservedPlannerCalls = 0;
         if (reservedInputTokens < 0) reservedInputTokens = 0;
         if (reservedOutputTokens < 0) reservedOutputTokens = 0;
-        reservedEstimatedCost = reservedEstimatedCost == null ? BigDecimal.ZERO : reservedEstimatedCost;
+        reservedEstimatedCost =
+                reservedEstimatedCost == null ? BigDecimal.ZERO : reservedEstimatedCost;
     }
 
     public static AgentBudgetReservation zero() {

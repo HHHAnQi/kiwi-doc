@@ -32,9 +32,7 @@ public class ComparisonEvidencePartitioner {
     }
 
     public record PartitionResult(
-            boolean valid,
-            PartitionFailure failure,
-            ComparisonEvidenceSet evidenceSet) {
+            boolean valid, PartitionFailure failure, ComparisonEvidenceSet evidenceSet) {
 
         public static PartitionResult fail(PartitionFailure f) {
             return new PartitionResult(false, f, null);
@@ -57,13 +55,16 @@ public class ComparisonEvidencePartitioner {
             String expectedTenantId,
             Map<String, ComparisonTarget> stepIdToTargets) {
         if (runResult == null || runResult.evidence() == null || runResult.evidence().isEmpty()) {
-            return PartitionResult.ok(new ComparisonEvidenceSet(
-                    stepIdToTargets.getOrDefault(ComparisonPlanFactory.LEFT_STEP_ID,
-                            ComparisonTarget.of("left", "left")),
-                    List.of(),
-                    stepIdToTargets.getOrDefault(ComparisonPlanFactory.RIGHT_STEP_ID,
-                            ComparisonTarget.of("right", "right")),
-                    List.of()));
+            return PartitionResult.ok(
+                    new ComparisonEvidenceSet(
+                            stepIdToTargets.getOrDefault(
+                                    ComparisonPlanFactory.LEFT_STEP_ID,
+                                    ComparisonTarget.of("left", "left")),
+                            List.of(),
+                            stepIdToTargets.getOrDefault(
+                                    ComparisonPlanFactory.RIGHT_STEP_ID,
+                                    ComparisonTarget.of("right", "right")),
+                            List.of()));
         }
 
         Map<String, List<Evidence>> byStep = new HashMap<>();
@@ -77,7 +78,8 @@ public class ComparisonEvidencePartitioner {
             String stepId;
             if (side instanceof String s) {
                 stepId = sideToStepId(s);
-            } else if (e.metadata() != null && e.metadata().get("sourceStepId") instanceof String si) {
+            } else if (e.metadata() != null
+                    && e.metadata().get("sourceStepId") instanceof String si) {
                 stepId = si;
             } else {
                 return PartitionResult.fail(PartitionFailure.NO_SOURCE_STEP_ON_SOME_EVIDENCE);
@@ -92,10 +94,12 @@ public class ComparisonEvidencePartitioner {
 
         List<Evidence> l = sortByScore(byStep.get(ComparisonPlanFactory.LEFT_STEP_ID));
         List<Evidence> r = sortByScore(byStep.get(ComparisonPlanFactory.RIGHT_STEP_ID));
-        ComparisonTarget leftT = stepIdToTargets.getOrDefault(ComparisonPlanFactory.LEFT_STEP_ID,
-                ComparisonTarget.of("left", "left"));
-        ComparisonTarget rightT = stepIdToTargets.getOrDefault(ComparisonPlanFactory.RIGHT_STEP_ID,
-                ComparisonTarget.of("right", "right"));
+        ComparisonTarget leftT =
+                stepIdToTargets.getOrDefault(
+                        ComparisonPlanFactory.LEFT_STEP_ID, ComparisonTarget.of("left", "left"));
+        ComparisonTarget rightT =
+                stepIdToTargets.getOrDefault(
+                        ComparisonPlanFactory.RIGHT_STEP_ID, ComparisonTarget.of("right", "right"));
         return PartitionResult.ok(new ComparisonEvidenceSet(leftT, l, rightT, r));
     }
 
@@ -104,7 +108,8 @@ public class ComparisonEvidencePartitioner {
         try {
             ComparisonSide cs = ComparisonSide.valueOf(side.toUpperCase(java.util.Locale.ROOT));
             return cs == ComparisonSide.LEFT
-                    ? ComparisonPlanFactory.LEFT_STEP_ID : ComparisonPlanFactory.RIGHT_STEP_ID;
+                    ? ComparisonPlanFactory.LEFT_STEP_ID
+                    : ComparisonPlanFactory.RIGHT_STEP_ID;
         } catch (IllegalArgumentException ex) {
             return null;
         }
@@ -113,10 +118,12 @@ public class ComparisonEvidencePartitioner {
     private static List<Evidence> sortByScore(List<Evidence> in) {
         if (in == null || in.isEmpty()) return List.of();
         List<Evidence> copy = new ArrayList<>(in);
-        copy.sort(java.util.Comparator
-                .comparing((Evidence e) -> e.retrievalScore() == null ? 0.0 : e.retrievalScore(),
-                        java.util.Comparator.reverseOrder())
-                .thenComparing(Evidence::evidenceId));
+        copy.sort(
+                java.util.Comparator.comparing(
+                                (Evidence e) ->
+                                        e.retrievalScore() == null ? 0.0 : e.retrievalScore(),
+                                java.util.Comparator.reverseOrder())
+                        .thenComparing(Evidence::evidenceId));
         return List.copyOf(copy);
     }
 

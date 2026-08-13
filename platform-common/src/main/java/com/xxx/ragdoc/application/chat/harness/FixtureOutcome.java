@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 /**
  * PR-5 / EMS-PR5: Harness 内部对组件调用结果的统一分类 Outcome。
  *
- * <p>用 {@link Outcome} 而非 PR-4 的 ToolStatus, 让 Harness 与 ToolStatus 解耦
- * (未来 PLANNER / SUFFICIENCY_JUDGE 没有 ToolStatus 概念)。
+ * <p>用 {@link Outcome} 而非 PR-4 的 ToolStatus, 让 Harness 与 ToolStatus 解耦 (未来 PLANNER /
+ * SUFFICIENCY_JUDGE 没有 ToolStatus 概念)。
  *
  * <p>映射 ToolStatus → Outcome 由 ToolHarnessAdapter 处理 (不是本契约层职责)。
  */

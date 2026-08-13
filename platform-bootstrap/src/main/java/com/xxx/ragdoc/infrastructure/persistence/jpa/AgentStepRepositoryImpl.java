@@ -37,6 +37,8 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
         e.setToolVersion(step.toolVersion());
         e.setCallId(step.callId());
         e.setInputHash(step.inputHash());
+        e.setIdempotencyKey(step.idempotencyKey());
+        e.setRecoverable(step.recoverable());
         e.setStatus(step.status().name());
         e.setResultCount(step.resultCount());
         e.setEvidenceIdsJson(
@@ -52,11 +54,13 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
         for (AgentStepRecord step : steps) {
             if (step.status() != AgentStepStatus.PENDING) {
                 throw new IllegalArgumentException(
-                        "appendAll 只接受 PENDING, stepId=" + step.stepId() + " status=" + step.status());
+                        "appendAll 只接受 PENDING, stepId="
+                                + step.stepId()
+                                + " status="
+                                + step.status());
             }
             if (!step.runId().equals(runId)) {
-                throw new IllegalArgumentException(
-                        "appendAll runId 不匹配, step=" + step.stepId());
+                throw new IllegalArgumentException("appendAll runId 不匹配, step=" + step.stepId());
             }
             AgentStepEntity e = new AgentStepEntity();
             e.setRunId(step.runId());
@@ -66,10 +70,14 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
             e.setToolVersion(step.toolVersion());
             e.setCallId(step.callId());
             e.setInputHash(step.inputHash());
+            e.setIdempotencyKey(step.idempotencyKey());
+            e.setRecoverable(step.recoverable());
             e.setStatus(step.status().name());
             e.setResultCount(step.resultCount());
             e.setEvidenceIdsJson(
-                    step.evidenceIds().isEmpty() ? null : toJson(step.evidenceIds(), "evidenceIds"));
+                    step.evidenceIds().isEmpty()
+                            ? null
+                            : toJson(step.evidenceIds(), "evidenceIds"));
             e.setVersion(0L);
             jpa.save(e);
         }
@@ -102,7 +110,9 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
                         runId,
                         stepId,
                         expectedVersion,
-                        expectedStatuses.stream().map(AgentStepStatus::name).collect(Collectors.toSet()),
+                        expectedStatuses.stream()
+                                .map(AgentStepStatus::name)
+                                .collect(Collectors.toSet()),
                         targetStatus.name(),
                         update.callId(),
                         update.resultCount(),
@@ -116,7 +126,12 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
                         update.deduplicated(),
                         update.startedAt(),
                         update.completedAt());
-        log.debug("agent_step.transition run_id={} step_id={} affected={} target={}", runId, stepId, affected, targetStatus);
+        log.debug(
+                "agent_step.transition run_id={} step_id={} affected={} target={}",
+                runId,
+                stepId,
+                affected,
+                targetStatus);
         return affected == 1;
     }
 
@@ -128,8 +143,13 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
             status = AgentStepStatus.valueOf(e.getStatus());
         } catch (IllegalArgumentException ex) {
             throw new IllegalStateException(
-                    "agent_step 未知状态 (fail-closed): " + e.getStatus() + " run_id=" + e.getRunId()
-                            + " step_id=" + e.getStepId(), ex);
+                    "agent_step 未知状态 (fail-closed): "
+                            + e.getStatus()
+                            + " run_id="
+                            + e.getRunId()
+                            + " step_id="
+                            + e.getStepId(),
+                    ex);
         }
         return new AgentStepRecord(
                 e.getRunId(),
@@ -139,6 +159,8 @@ public class AgentStepRepositoryImpl implements AgentStepRepository {
                 e.getToolVersion(),
                 e.getCallId(),
                 e.getInputHash(),
+                e.getIdempotencyKey(),
+                Boolean.TRUE.equals(e.getRecoverable()),
                 status,
                 e.getResultCount() == null ? 0 : e.getResultCount(),
                 e.getEvidenceIdsJson() == null ? List.of() : fromJsonList(e.getEvidenceIdsJson()),

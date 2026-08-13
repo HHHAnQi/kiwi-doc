@@ -10,11 +10,12 @@ import java.util.List;
  *
  * <ul>
  *   <li>Planner Step 携带 {@link #requirementIds} (Planner 显式声明本 Step 服务的 Requirement)
- *   <li>Planner 不构造最终 Plan; PlannerResponse → DeterministicExecutionPlan 由 {@code PlannerPlanAssembler} 完成
+ *   <li>Planner 不构造最终 Plan; PlannerResponse → DeterministicExecutionPlan 由 {@code
+ *       PlannerPlanAssembler} 完成
  * </ul>
  *
- * <p>Planner <b>不能</b>设置 {@code toolName} 之外的元数据 (tenant/version override), 一切由 PlanValidator
- * 与 Assembler 在服务端补齐。
+ * <p>Planner <b>不能</b>设置 {@code toolName} 之外的元数据 (tenant/version override), 一切由 PlanValidator 与
+ * Assembler 在服务端补齐。
  */
 public record PlannedToolStep(
         String stepId,

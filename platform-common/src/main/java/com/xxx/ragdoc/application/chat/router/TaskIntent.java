@@ -15,8 +15,8 @@ package com.xxx.ragdoc.application.chat.router;
  *   <li>{@link #UNANSWERABLE} → REFUSE
  * </ul>
  *
- * <p>该枚举仅描述意图, 不绑定 ExecutionStrategy — 后者由 {@link RouterDecision#strategy()} 表达,
- * 让"低置信度回退 Hybrid RAG"等场景可保留 intent 不变但 strategy 回退为 CLASSIC_RAG。
+ * <p>该枚举仅描述意图, 不绑定 ExecutionStrategy — 后者由 {@link RouterDecision#strategy()} 表达, 让"低置信度回退 Hybrid
+ * RAG"等场景可保留 intent 不变但 strategy 回退为 CLASSIC_RAG。
  */
 public enum TaskIntent {
     FACT,

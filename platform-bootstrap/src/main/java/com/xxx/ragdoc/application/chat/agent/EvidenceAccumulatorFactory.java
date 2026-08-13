@@ -5,9 +5,8 @@ import org.springframework.stereotype.Component;
 /**
  * PR-6b.2 / EMS-PR6 §8: {@link EvidenceAccumulator} 工厂 (Revision §1 — per-Run 实例)。
  *
- * <p>关键设计: <b>不</b>用单例 EvidenceAccumulator Bean, 否则并发 Run 共享状态导致跨租户污染。
- * 本 Factory 是 Spring Bean, 但每次 {@link #create} 返回<b>全新的、非 Bean</b> 实例,
- * AgentRunExecutor 每 Run 创建一次, 局部持有。
+ * <p>关键设计: <b>不</b>用单例 EvidenceAccumulator Bean, 否则并发 Run 共享状态导致跨租户污染。 本 Factory 是 Spring Bean, 但每次
+ * {@link #create} 返回<b>全新的、非 Bean</b> 实例, AgentRunExecutor 每 Run 创建一次, 局部持有。
  */
 @Component
 public class EvidenceAccumulatorFactory {

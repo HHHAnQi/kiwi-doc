@@ -3,11 +3,10 @@ package com.xxx.ragdoc.application.chat.sufficiency;
 /**
  * PR-7b / EMS-PR7 §6.3: 单 Requirement 的覆盖等级。
  *
- * <p>由 {@code EvidenceSufficiencyJudge} 计算每个 Requirement 的 CoverageStatus, 汇总为
- * {@link SufficiencyStatus}。
+ * <p>由 {@code EvidenceSufficiencyJudge} 计算每个 Requirement 的 CoverageStatus, 汇总为 {@link
+ * SufficiencyStatus}。
  *
- * <p>{@code COVERED} 必须有至少一条已授权 Evidence 关联; {@code CONFLICTED} 表示两条以上 Evidence
- * but 版本/事实互相矛盾。
+ * <p>{@code COVERED} 必须有至少一条已授权 Evidence 关联; {@code CONFLICTED} 表示两条以上 Evidence but 版本/事实互相矛盾。
  */
 public enum CoverageStatus {
     /** 明确由至少一条 Evidence 满足。 */

@@ -1,6 +1,5 @@
 package com.xxx.ragdoc.application.chat.tool;
 
-import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.chat.verification.VerificationResult;
 import com.xxx.ragdoc.application.chat.verification.port.CitationVerifierPort;
 import com.xxx.ragdoc.common.exception.ErrorCode;
@@ -16,10 +15,10 @@ import org.springframework.stereotype.Component;
  * <h2>关键守门</h2>
  *
  * <ul>
- *   <li><b>不扩大检索</b>: 只验证 input.evidences 已授权集 (调用方必须自己先 semantic_search+ACL 过滤);
- *       Tool 不调 RetrieveService
- *   <li><b>SKIPPED 安全</b>: 当 {@code rag.citation-verifier.enabled=false} (默认) 时返回
- *       {@link ToolStatus#SUCCESS} + {@code outcome=SKIPPED}, 让 Planner 知道结果可信度低
+ *   <li><b>不扩大检索</b>: 只验证 input.evidences 已授权集 (调用方必须自己先 semantic_search+ACL 过滤); Tool 不调
+ *       RetrieveService
+ *   <li><b>SKIPPED 安全</b>: 当 {@code rag.citation-verifier.enabled=false} (默认) 时返回 {@link
+ *       ToolStatus#SUCCESS} + {@code outcome=SKIPPED}, 让 Planner 知道结果可信度低
  *   <li><b>不覆盖最终答案</b>: Tool 只返评分, Executor / Orchestrator 决定是否据此拒绝生成
  * </ul>
  */
@@ -65,7 +64,8 @@ public class CitationVerifyTool implements AgentTool<CitationVerifyInput, Citati
     }
 
     @Override
-    public ToolResult<CitationVerifyOutput> execute(CitationVerifyInput input, ToolExecutionContext context) {
+    public ToolResult<CitationVerifyOutput> execute(
+            CitationVerifyInput input, ToolExecutionContext context) {
         long t0 = System.currentTimeMillis();
         CitationVerifierPort verifier = verifierProvider.getIfAvailable();
         if (verifier == null) {
@@ -91,7 +91,10 @@ public class CitationVerifyTool implements AgentTool<CitationVerifyInput, Citati
         try {
             vr = verifier.verify(input.claim(), portEvidences);
         } catch (RuntimeException ex) {
-            log.warn("tool.citation_verify.failed claim_len={} err={}", input.claim().length(), ex.toString());
+            log.warn(
+                    "tool.citation_verify.failed claim_len={} err={}",
+                    input.claim().length(),
+                    ex.toString());
             return ToolResult.failure(
                     context.requestId() + "-cv",
                     NAME,
@@ -119,7 +122,9 @@ public class CitationVerifyTool implements AgentTool<CitationVerifyInput, Citati
                     ToolStatus.DEPENDENCY_UNAVAILABLE,
                     ToolError.dependencyError(
                             ErrorCode.TOOL_DEPENDENCY_UNAVAILABLE.code(),
-                            vr.errorMessage() == null ? "verifier internal error" : vr.errorMessage(),
+                            vr.errorMessage() == null
+                                    ? "verifier internal error"
+                                    : vr.errorMessage(),
                             "verification-llm",
                             true),
                     System.currentTimeMillis() - t0,

@@ -3,7 +3,6 @@ package com.xxx.ragdoc.application.chat.pipeline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -15,8 +14,8 @@ import com.xxx.ragdoc.application.chat.command.ChatCommand;
 import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
-import com.xxx.ragdoc.application.chat.router.RuleBasedTaskRouter;
 import com.xxx.ragdoc.application.chat.router.RouterProperties;
+import com.xxx.ragdoc.application.chat.router.RuleBasedTaskRouter;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.shared.ChatMode;
@@ -35,8 +34,8 @@ import org.junit.jupiter.api.Test;
 /**
  * PR-2 / EMS-PR2: {@link ChatOrchestrator} 路由 + 上下文不变量 + 失败关闭。
  *
- * <p>所有断言仅依赖 mocked {@link ChatPipelineRegistry} + 已 set 的 {@link AuthContext} Principal,
- * 不启动 Spring 容器。
+ * <p>所有断言仅依赖 mocked {@link ChatPipelineRegistry} + 已 set 的 {@link AuthContext} Principal, 不启动
+ * Spring 容器。
  */
 @DisplayName("ChatOrchestrator - PR-2 路由与 Context 不变量")
 class ChatOrchestratorTest {
@@ -64,9 +63,15 @@ class ChatOrchestratorTest {
         com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProps =
                 new com.xxx.ragdoc.application.chat.planner.PlannerProperties();
         com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver strategyResolver =
-                new com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver(plannerProps, false);
-        orchestrator = new ChatOrchestrator(registry, traceObserver, routerProperties,
-                new RuleBasedTaskRouter(), strategyResolver);
+                new com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver(
+                        plannerProps, false);
+        orchestrator =
+                new ChatOrchestrator(
+                        registry,
+                        traceObserver,
+                        routerProperties,
+                        new RuleBasedTaskRouter(),
+                        strategyResolver);
     }
 
     @AfterEach
@@ -224,7 +229,9 @@ class ChatOrchestratorTest {
                                                 new TraceId("trace-" + idx),
                                                 ChatMode.AUTO);
                                         // 抓 startTrace capture 不到, 改用 MDC 内的 request_id 累加
-                                        String rid = org.slf4j.MDC.get(ChatOrchestrator.ORCH_MDC_REQUEST_ID);
+                                        String rid =
+                                                org.slf4j.MDC.get(
+                                                        ChatOrchestrator.ORCH_MDC_REQUEST_ID);
                                         if (rid != null) requestIds.add(rid);
                                     } catch (Throwable e) {
                                         err.set(e);
@@ -249,7 +256,8 @@ class ChatOrchestratorTest {
         @DisplayName("AUTO SSE: 转发经典流的 Flux")
         void sseAutoDelegatesToClassicStream() {
             ChatStreamEvent head = new ChatStreamEvent.DoneEvent(TID.value(), StateHint.OK.name());
-            when(classicPipeline.stream(any(), any())).thenReturn(reactor.core.publisher.Flux.just(head));
+            when(classicPipeline.stream(any(), any()))
+                    .thenReturn(reactor.core.publisher.Flux.just(head));
 
             java.util.List<ChatStreamEvent> events =
                     orchestrator.stream(cmd(), TID, ChatMode.AUTO).collectList().block();
@@ -341,7 +349,9 @@ class ChatOrchestratorTest {
             assertThatThrownBy(
                             () ->
                                     orchestrator.execute(
-                                            new ChatCommand("v2.3 新增接口", null, 5), TID, ChatMode.AUTO))
+                                            new ChatCommand("v2.3 新增接口", null, 5),
+                                            TID,
+                                            ChatMode.AUTO))
                     .isInstanceOf(DomainException.class)
                     .satisfies(
                             ex ->

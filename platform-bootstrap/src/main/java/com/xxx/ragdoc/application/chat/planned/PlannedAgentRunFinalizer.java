@@ -42,8 +42,15 @@ public class PlannedAgentRunFinalizer {
             String reasonCode,
             AgentUsage usage,
             AgentBudgetReservation reservation) {
-        boolean ok = coordinator.transitionRun(
-                runId, expectedVersion, expectedStatuses, target, reasonCode, usage, reservation);
+        boolean ok =
+                coordinator.transitionRun(
+                        runId,
+                        expectedVersion,
+                        expectedStatuses,
+                        target,
+                        reasonCode,
+                        usage,
+                        reservation);
         if (ok) {
             return FinalizeOutcome.written(runId, expectedVersion + 1, target);
         }
@@ -63,9 +70,12 @@ public class PlannedAgentRunFinalizer {
         return FinalizeOutcome.conflict(current);
     }
 
-    private Optional<com.xxx.ragdoc.application.chat.agent.AgentRunRecord> runRepositoryReload(String runId) {
-        // Use coordinator.transitionRun signature; reload via wrapper on AgentRunRepository exposed by coordinator
-        // PR-7c.3b: delegate to coordinator (already has findByRunId indirectly via PersistenceCoordinator)
+    private Optional<com.xxx.ragdoc.application.chat.agent.AgentRunRecord> runRepositoryReload(
+            String runId) {
+        // Use coordinator.transitionRun signature; reload via wrapper on AgentRunRepository exposed
+        // by coordinator
+        // PR-7c.3b: delegate to coordinator (already has findByRunId indirectly via
+        // PersistenceCoordinator)
         try {
             return coordinator.reloadRun(runId);
         } catch (Exception e) {
@@ -91,7 +101,8 @@ public class PlannedAgentRunFinalizer {
             return new FinalizeOutcome(runId, version, false, true, AgentRunStatus.ANSWERED, null);
         }
 
-        static FinalizeOutcome alreadyTerminalWinner(String runId, long version, AgentRunStatus winner) {
+        static FinalizeOutcome alreadyTerminalWinner(
+                String runId, long version, AgentRunStatus winner) {
             return new FinalizeOutcome(runId, version, false, false, winner, null);
         }
 

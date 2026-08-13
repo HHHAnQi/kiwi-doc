@@ -7,13 +7,14 @@ import com.xxx.ragdoc.application.chat.agent.AgentBudgetReservation;
 import com.xxx.ragdoc.application.chat.agent.AgentRunRecord;
 import com.xxx.ragdoc.application.chat.agent.AgentRunRepository;
 import com.xxx.ragdoc.application.chat.agent.AgentRunStatus;
-import com.xxx.ragdoc.application.chat.agent.AgentUsage;
 import com.xxx.ragdoc.application.chat.agent.AgentStateMachine;
+import com.xxx.ragdoc.application.chat.agent.AgentUsage;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.AgentRunEntity;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.AgentRunJpaRepository;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.time.Instant;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,11 +23,11 @@ import org.springframework.stereotype.Component;
 /**
  * PR-6a.2: {@link AgentRunRepository} 的 JPA 实现。
  *
- * <p>JSON 字段 (budget/usage/reservation/evidence_ids/plan) 由 ObjectMapper 序列化为 String;
- * Entity 不持有 typed domain record, 只持有 String。
+ * <p>JSON 字段 (budget/usage/reservation/evidence_ids/plan) 由 ObjectMapper 序列化为 String; Entity 不持有
+ * typed domain record, 只持有 String。
  *
- * <p>CAS transition 在调 JPA 之前先调 {@link AgentStateMachine#checkLegal} 防御层保护
- * (DB CAS 是最终唯一终态保证, state machine 是快速失败层)。
+ * <p>CAS transition 在调 JPA 之前先调 {@link AgentStateMachine#checkLegal} 防御层保护 (DB CAS 是最终唯一终态保证, state
+ * machine 是快速失败层)。
  */
 @Slf4j
 @Component
@@ -52,7 +53,8 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
         e.setBudgetJson(toJson(run.budget(), "budget"));
         e.setReservationJson(toJson(run.reservation(), "reservation"));
         e.setUsageJson(toJson(run.usage(), "usage"));
-        e.setEvidenceIdsJson(run.evidenceIds().isEmpty() ? null : toJson(run.evidenceIds(), "evidenceIds"));
+        e.setEvidenceIdsJson(
+                run.evidenceIds().isEmpty() ? null : toJson(run.evidenceIds(), "evidenceIds"));
         e.setEvidenceCount(run.evidenceCount());
         e.setTerminalReasonCode(run.terminalReasonCode());
         e.setRouterVersion(run.routerVersion());
@@ -78,6 +80,42 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
     }
 
     @Override
+    public List<AgentRunRecord> findStaleNonTerminal(Instant updatedBefore, int limit) {
+        Set<String> statuses = java.util.Arrays.stream(AgentRunStatus.values())
+                .filter(s -> !s.isTerminal())
+                .map(AgentRunStatus::name)
+                .collect(Collectors.toSet());
+        return jpa.findStaleNonTerminal(
+                        updatedBefore,
+                        statuses,
+                        org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
+                .stream().map(this::toRecord).toList();
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public boolean claimLease(String runId, String ownerId, Instant now, Instant leaseUntil) {
+        return jpa.claimLease(runId, ownerId, leaseUntil, now, nonTerminalStatusNames()) == 1;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public boolean heartbeat(String runId, String ownerId, Instant now, Instant leaseUntil) {
+        return jpa.heartbeat(runId, ownerId, leaseUntil, now, nonTerminalStatusNames()) == 1;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void releaseLease(String runId, String ownerId) {
+        jpa.releaseLease(runId, ownerId);
+    }
+
+    private static Set<String> nonTerminalStatusNames() {
+        return java.util.Arrays.stream(AgentRunStatus.values()).filter(s -> !s.isTerminal())
+                .map(AgentRunStatus::name).collect(Collectors.toSet());
+    }
+
+    @Override
     public boolean transition(
             String runId,
             long expectedVersion,
@@ -99,7 +137,10 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
                         toJson(usage, "usage"),
                         toJson(reservation, "reservation"));
         log.debug(
-                "agent_run.transition run_id={} affected={} target={}", runId, affected, targetStatus);
+                "agent_run.transition run_id={} affected={} target={}",
+                runId,
+                affected,
+                targetStatus);
         return affected == 1;
     }
 
@@ -171,7 +212,8 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
             status = AgentRunStatus.valueOf(e.getStatus());
         } catch (IllegalArgumentException ex) {
             throw new IllegalStateException(
-                    "agent_run 未知状态 (fail-closed): " + e.getStatus() + " run_id=" + e.getRunId(), ex);
+                    "agent_run 未知状态 (fail-closed): " + e.getStatus() + " run_id=" + e.getRunId(),
+                    ex);
         }
         return new AgentRunRecord(
                 e.getRunId(),

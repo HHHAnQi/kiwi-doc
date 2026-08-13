@@ -12,18 +12,18 @@ import java.util.Optional;
 /**
  * PR-6b.2 / EMS-PR6 §8: <b>每个 Run 独立</b>的 Evidence 累加器 (Revision §1)。
  *
- * <p>极重要 — <b>不是</b> Spring 单例; 由 {@link EvidenceAccumulatorFactory} 每次创建新实例。
- * 否则并发 Run 会跨用户/跨租户共享 Evidence 严重数据污染。
+ * <p>极重要 — <b>不是</b> Spring 单例; 由 {@link EvidenceAccumulatorFactory} 每次创建新实例。 否则并发 Run 会跨用户/跨租户共享
+ * Evidence 严重数据污染。
  *
  * <p>职责:
  *
  * <ul>
  *   <li>三阶段去重 (Revision §8.2):
- *     <ol>
- *       <li>相同 evidenceId → 直接丢
- *       <li>相同 (tenantId, documentId, documentVersion, chunkId, contentHash) → 丢
- *       <li>相同正文 contentHash 但不同 documentId → 保留多来源 + provenance merge
- *     </ol>
+ *       <ol>
+ *         <li>相同 evidenceId → 直接丢
+ *         <li>相同 (tenantId, documentId, documentVersion, chunkId, contentHash) → 丢
+ *         <li>相同正文 contentHash 但不同 documentId → 保留多来源 + provenance merge
+ *       </ol>
  *   <li>ACL 终检 (Revision §8.1): tenantId != ctxTenantId 直接丢弃; 本类由 ToolExecutor 已 ACL 过一层
  *       (EvidenceListOutput post-check), 这里再做一次 final safety (双保险)
  *   <li>token / 数量限制 (Revision §8.4): maxEvidence / maxEvidenceTokens 截断
@@ -49,10 +49,14 @@ public final class EvidenceAccumulator {
 
         /** Provenance key: (tenantId, documentId, documentVersion, chunkId, contentHash)。 */
         String provenanceKey() {
-            return evidence.tenantId() + "|"
-                    + evidence.documentId() + "|"
-                    + evidence.documentVersion() + "|"
-                    + evidence.chunkId() + "|"
+            return evidence.tenantId()
+                    + "|"
+                    + evidence.documentId()
+                    + "|"
+                    + evidence.documentVersion()
+                    + "|"
+                    + evidence.chunkId()
+                    + "|"
                     + evidence.contentHash();
         }
     }
@@ -94,18 +98,24 @@ public final class EvidenceAccumulator {
             }
         }
         // 2) provenance key 去重 (同 tenant/doc/version/chunk/contentHash)
-        String pk = evidence.tenantId() + "|"
-                + evidence.documentId() + "|"
-                + evidence.documentVersion() + "|"
-                + evidence.chunkId() + "|"
-                + evidence.contentHash();
+        String pk =
+                evidence.tenantId()
+                        + "|"
+                        + evidence.documentId()
+                        + "|"
+                        + evidence.documentVersion()
+                        + "|"
+                        + evidence.chunkId()
+                        + "|"
+                        + evidence.contentHash();
         for (AccumulatedEvidence ae : items) {
             if (ae.provenanceKey().equals(pk)) {
                 return false;
             }
         }
         // 3) 同正文不同 document → 合并 provenance (merge sourceStepIds metadata), 不丢
-        AccumulatedEvidence toAdd = maybeMergeSameContentDifferentDoc(stepSequence, resultIndex, evidence);
+        AccumulatedEvidence toAdd =
+                maybeMergeSameContentDifferentDoc(stepSequence, resultIndex, evidence);
         if (toAdd == null) {
             return false;
         }
@@ -147,12 +157,13 @@ public final class EvidenceAccumulator {
 
     /** 稳定排序: stepSequence → resultIndex → retrievalScore desc → evidenceId asc。 */
     private void sortByStableOrder() {
-        items.sort(Comparator
-                .comparingInt((AccumulatedEvidence a) -> a.stepSequence)
-                .thenComparingInt(a -> a.resultIndex)
-                .thenComparing(a -> Optional.ofNullable(a.evidence.retrievalScore()).orElse(0.0),
-                        Comparator.reverseOrder())
-                .thenComparing(a -> a.evidence.evidenceId()));
+        items.sort(
+                Comparator.comparingInt((AccumulatedEvidence a) -> a.stepSequence)
+                        .thenComparingInt(a -> a.resultIndex)
+                        .thenComparing(
+                                a -> Optional.ofNullable(a.evidence.retrievalScore()).orElse(0.0),
+                                Comparator.reverseOrder())
+                        .thenComparing(a -> a.evidence.evidenceId()));
     }
 
     /** 当前累加器中的 Evidence 快照 (按稳定顺序)。 */

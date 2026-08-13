@@ -6,8 +6,8 @@ import java.util.Map;
 /**
  * PR-7a / EMS-PR7 §4.3: 单条 EvidenceRequirement。
  *
- * <p>由 {@code RequirementExtractor} (PR-7c 引入) 在 Planner 之前生成; 给 Planner 提供"要证明什么"的
- * <b>稳定真值</b>, 同时给 {@code EvidenceSufficiencyJudge} (PR-7b) 提供 coverage 评估锚点。
+ * <p>由 {@code RequirementExtractor} (PR-7c 引入) 在 Planner 之前生成; 给 Planner 提供"要证明什么"的 <b>稳定真值</b>,
+ * 同时给 {@code EvidenceSufficiencyJudge} (PR-7b) 提供 coverage 评估锚点。
  *
  * <p><b>不变量</b>:
  *
@@ -43,6 +43,7 @@ public record EvidenceRequirement(
 
     /** 简化构造: 无 entity/filter 的 global fact。 */
     public static EvidenceRequirement fact(String id, String desc, boolean required) {
-        return new EvidenceRequirement(id, desc, RequirementType.FACT, required, List.of(), Map.of());
+        return new EvidenceRequirement(
+                id, desc, RequirementType.FACT, required, List.of(), Map.of());
     }
 }

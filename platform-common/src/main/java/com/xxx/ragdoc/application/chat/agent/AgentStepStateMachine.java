@@ -9,6 +9,7 @@ import java.util.Set;
  * PR-6b / EMS-PR6 §5: 单 Step 状态机 (显式合法转换表 + 终态保护)。
  *
  * <p>与 {@link AgentStateMachine} (Run 级) 刻意分两套 ——
+ *
  * <ul>
  *   <li>Step 主线: PENDING → RESERVED → RUNNING → SUCCEEDED / EMPTY
  *   <li>Step 失败收敛: RUNNING → FAILED_RETRYABLE → FAILED_TERMINAL (PR-6b 不自动重试)
@@ -28,18 +29,21 @@ public final class AgentStepStateMachine {
     private static final Map<AgentStepStatus, Set<AgentStepStatus>> TRANSITIONS = new HashMap<>();
 
     static {
-        register(AgentStepStatus.PENDING,
+        register(
+                AgentStepStatus.PENDING,
                 AgentStepStatus.RESERVED,
                 AgentStepStatus.SKIPPED_BUDGET,
                 AgentStepStatus.SKIPPED_DUPLICATE,
                 AgentStepStatus.CANCELLED);
-        register(AgentStepStatus.RESERVED,
+        register(
+                AgentStepStatus.RESERVED,
                 AgentStepStatus.RUNNING,
                 AgentStepStatus.SKIPPED_DUPLICATE,
                 AgentStepStatus.CANCELLED,
                 AgentStepStatus.TIMED_OUT,
                 AgentStepStatus.FAILED_TERMINAL);
-        register(AgentStepStatus.RUNNING,
+        register(
+                AgentStepStatus.RUNNING,
                 AgentStepStatus.SUCCEEDED,
                 AgentStepStatus.EMPTY,
                 AgentStepStatus.FAILED_RETRYABLE,
@@ -47,7 +51,8 @@ public final class AgentStepStateMachine {
                 AgentStepStatus.PERMISSION_DENIED,
                 AgentStepStatus.TIMED_OUT,
                 AgentStepStatus.CANCELLED);
-        register(AgentStepStatus.FAILED_RETRYABLE,
+        register(
+                AgentStepStatus.FAILED_RETRYABLE,
                 AgentStepStatus.FAILED_TERMINAL,
                 AgentStepStatus.CANCELLED);
     }
@@ -76,7 +81,8 @@ public final class AgentStepStateMachine {
         public final AgentStepStatus from;
         public final AgentStepStatus to;
 
-        public IllegalStepTransitionException(AgentStepStatus from, AgentStepStatus to, String reason) {
+        public IllegalStepTransitionException(
+                AgentStepStatus from, AgentStepStatus to, String reason) {
             super(from + " → " + to + " 非法: " + reason);
             this.from = from;
             this.to = to;

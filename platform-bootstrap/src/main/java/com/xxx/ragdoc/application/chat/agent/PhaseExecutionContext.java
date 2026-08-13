@@ -8,8 +8,8 @@ import java.util.Set;
 /**
  * PR-7c / EMS-PR7 §2.3: 阶段执行的可变上下文。
  *
- * <p>同一 Run 跨 Phase 共享 usage / reservation / deadline / accumulator;
- * 每个 Phase 只追加新 Step (Replan 不重置任何 Run 字段)。
+ * <p>同一 Run 跨 Phase 共享 usage / reservation / deadline / accumulator; 每个 Phase 只追加新 Step (Replan
+ * 不重置任何 Run 字段)。
  *
  * <p><b>不变量</b> (Revision §10.x):
  *
@@ -58,8 +58,16 @@ public record PhaseExecutionContext(
     public static PhaseExecutionContext initial(long runVersion, java.time.Instant runStartedAt) {
         return new PhaseExecutionContext(
                 0,
-                AgentUsage.zero(), AgentBudgetReservation.zero(),
-                List.of(), List.of(), List.of(), Set.of(),
-                0, runVersion, runStartedAt, "", "");
+                AgentUsage.zero(),
+                AgentBudgetReservation.zero(),
+                List.of(),
+                List.of(),
+                List.of(),
+                Set.of(),
+                0,
+                runVersion,
+                runStartedAt,
+                "",
+                "");
     }
 }

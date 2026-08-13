@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.application.chat.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -9,16 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.xxx.ragdoc.application.auth.AccessScope;
 import com.xxx.ragdoc.application.auth.AuthContext;
 import com.xxx.ragdoc.application.auth.PermissionResolverPort;
-import com.xxx.ragdoc.application.auth.AccessScope;
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.chat.harness.FileFixtureStore;
+import com.xxx.ragdoc.application.chat.harness.FixtureStore;
 import com.xxx.ragdoc.application.chat.harness.HarnessProperties;
 import com.xxx.ragdoc.application.chat.harness.LiveHarnessProvider;
 import com.xxx.ragdoc.application.chat.harness.RecordHarnessProvider;
 import com.xxx.ragdoc.application.chat.harness.ReplayHarnessProvider;
-import com.xxx.ragdoc.application.chat.harness.FixtureStore;
 import com.xxx.ragdoc.application.chat.port.TraceObserver;
 import com.xxx.ragdoc.application.metrics.MetricsPort;
 import com.xxx.ragdoc.domain.auth.Principal;
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.io.TempDir;
  * <p>用 stub Tool 让 Tool.execute 是可观察 side-effect; Record/Replay 走 FileFixtureStore 临时目录。
  *
  * <p>覆盖 EMS-PR6 §15.1 关键不变量:
+ *
  * <ul>
  *   <li>semantic_search metadata_search document_fetch 等"任意 Tool"通过 Executor 的 Record/Replay
  *   <li>REPLAY 不调 real Tool
@@ -52,8 +52,7 @@ import org.junit.jupiter.api.io.TempDir;
 @DisplayName("ToolExecutor Harness 接入 (PR-5.1 收口)")
 class ToolExecutorHarnessIntegrationTest {
 
-    @TempDir
-    java.nio.file.Path tmp;
+    @TempDir java.nio.file.Path tmp;
 
     private static final Principal PRINCIPAL_A =
             new Principal("tenant-A", "user-A", Set.of("role:admin"), "tok");
@@ -77,9 +76,18 @@ class ToolExecutorHarnessIntegrationTest {
 
         stubTool = mock(AgentTool.class);
         when(stubTool.descriptor())
-                .thenReturn(new ToolDescriptor("stub_search", "v1", "stub",
-                        "v1", "v1", ToolPermission.READ_RETRIEVE,
-                        Duration.ofSeconds(5), 5, true, ToolCostCategory.INDEX_READ));
+                .thenReturn(
+                        new ToolDescriptor(
+                                "stub_search",
+                                "v1",
+                                "stub",
+                                "v1",
+                                "v1",
+                                ToolPermission.READ_RETRIEVE,
+                                Duration.ofSeconds(5),
+                                5,
+                                true,
+                                ToolCostCategory.INDEX_READ));
         when(stubTool.inputType()).thenReturn(StubIn.class);
         when(stubTool.outputType()).thenReturn(SearchOutput.class);
         registry = new ToolRegistry(List.of(stubTool));
@@ -109,10 +117,21 @@ class ToolExecutorHarnessIntegrationTest {
     private static SearchOutput evidenceFor(String tenant, Long... chunkIds) {
         List<Evidence> evs =
                 java.util.Arrays.stream(chunkIds)
-                        .map(id -> Evidence.of(tenant, 100L, id, null, "ev " + id,
-                                0.5, null, "stub_search", Map.of()))
+                        .map(
+                                id ->
+                                        Evidence.of(
+                                                tenant,
+                                                100L,
+                                                id,
+                                                null,
+                                                "ev " + id,
+                                                0.5,
+                                                null,
+                                                "stub_search",
+                                                Map.of()))
                         .toList();
-        return new SearchOutput(evs, new SearchOutput.TruncationInfo(false, evs.size(), evs.size()));
+        return new SearchOutput(
+                evs, new SearchOutput.TruncationInfo(false, evs.size(), evs.size()));
     }
 
     private ToolExecutor.ToolCallRequest req() {
@@ -122,11 +141,17 @@ class ToolExecutorHarnessIntegrationTest {
 
     private ToolExecutor newExecutor(HarnessProperties props, FixtureStore store) {
         return new ToolExecutor(
-                registry, permissionResolver, metrics, traceObserver, mapper,
+                registry,
+                permissionResolver,
+                metrics,
+                traceObserver,
+                mapper,
                 props.getMode().equals(com.xxx.ragdoc.application.chat.harness.HarnessMode.LIVE)
                         ? new LiveHarnessProvider()
                         : (props.getMode()
-                                        .equals(com.xxx.ragdoc.application.chat.harness.HarnessMode.RECORD)
+                                        .equals(
+                                                com.xxx.ragdoc.application.chat.harness.HarnessMode
+                                                        .RECORD)
                                 ? new RecordHarnessProvider(store, mapper, "test")
                                 : new ReplayHarnessProvider(store, mapper, true)),
                 props);
@@ -138,8 +163,14 @@ class ToolExecutorHarnessIntegrationTest {
         HarnessProperties props = new HarnessProperties(); // 默认 enabled=false
         ToolExecutor ex = newExecutor(props, null);
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1",
-                        evidenceFor("tenant-A", 1L, 2L), 5, Map.of()));
+                .thenReturn(
+                        ToolResult.success(
+                                "id",
+                                "stub_search",
+                                "v1",
+                                evidenceFor("tenant-A", 1L, 2L),
+                                5,
+                                Map.of()));
 
         ToolResult<?> r = ex.execute("stub_search", "v1", new StubIn("q"), req());
 
@@ -156,15 +187,22 @@ class ToolExecutorHarnessIntegrationTest {
         FixtureStore store = new FileFixtureStore(tmp.toString(), mapper);
         ToolExecutor ex = newExecutor(props, store);
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1",
-                        evidenceFor("tenant-A", 1L), 5, Map.of()));
+                .thenReturn(
+                        ToolResult.success(
+                                "id",
+                                "stub_search",
+                                "v1",
+                                evidenceFor("tenant-A", 1L),
+                                5,
+                                Map.of()));
 
         ToolResult<?> r = ex.execute("stub_search", "v1", new StubIn("q"), req());
 
         assertThat(r.status()).isEqualTo(ToolStatus.SUCCESS);
         verify(stubTool, times(1)).execute(any(), any());
         // 有 fixture 文件写入
-        long files = java.nio.file.Files.walk(tmp).filter(java.nio.file.Files::isRegularFile).count();
+        long files =
+                java.nio.file.Files.walk(tmp).filter(java.nio.file.Files::isRegularFile).count();
         assertThat(files).isOne();
     }
 
@@ -178,8 +216,14 @@ class ToolExecutorHarnessIntegrationTest {
         FixtureStore store = new FileFixtureStore(tmp.toString(), mapper);
         ToolExecutor recordEx = newExecutor(recordProps, store);
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1",
-                        evidenceFor("tenant-A", 1L, 2L), 5, Map.of()));
+                .thenReturn(
+                        ToolResult.success(
+                                "id",
+                                "stub_search",
+                                "v1",
+                                evidenceFor("tenant-A", 1L, 2L),
+                                5,
+                                Map.of()));
         recordEx.execute("stub_search", "v1", new StubIn("q"), req());
 
         // 再 replay
@@ -190,9 +234,18 @@ class ToolExecutorHarnessIntegrationTest {
         // counter 要 reset, 让 callIndex 一致 → 同 replayKey
         org.mockito.Mockito.reset(stubTool);
         when(stubTool.descriptor())
-                .thenReturn(new ToolDescriptor("stub_search", "v1", "stub",
-                        "v1", "v1", ToolPermission.READ_RETRIEVE,
-                        Duration.ofSeconds(5), 5, true, ToolCostCategory.INDEX_READ));
+                .thenReturn(
+                        new ToolDescriptor(
+                                "stub_search",
+                                "v1",
+                                "stub",
+                                "v1",
+                                "v1",
+                                ToolPermission.READ_RETRIEVE,
+                                Duration.ofSeconds(5),
+                                5,
+                                true,
+                                ToolCostCategory.INDEX_READ));
         when(stubTool.inputType()).thenReturn(StubIn.class);
         when(stubTool.outputType()).thenReturn(SearchOutput.class);
 
@@ -228,8 +281,14 @@ class ToolExecutorHarnessIntegrationTest {
         FixtureStore store = new FileFixtureStore(tmp.toString(), mapper);
         ToolExecutor recordEx = newExecutor(recordProps, store);
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1",
-                        evidenceFor("tenant-A", 1L), 5, Map.of()));
+                .thenReturn(
+                        ToolResult.success(
+                                "id",
+                                "stub_search",
+                                "v1",
+                                evidenceFor("tenant-A", 1L),
+                                5,
+                                Map.of()));
         recordEx.execute("stub_search", "v1", new StubIn("q"), req());
 
         // 切到 tenant-B
@@ -240,9 +299,18 @@ class ToolExecutorHarnessIntegrationTest {
                 .thenReturn(AccessScope.tenantAdmin("tenant-B"));
         org.mockito.Mockito.reset(stubTool);
         when(stubTool.descriptor())
-                .thenReturn(new ToolDescriptor("stub_search", "v1", "stub",
-                        "v1", "v1", ToolPermission.READ_RETRIEVE,
-                        Duration.ofSeconds(5), 5, true, ToolCostCategory.INDEX_READ));
+                .thenReturn(
+                        new ToolDescriptor(
+                                "stub_search",
+                                "v1",
+                                "stub",
+                                "v1",
+                                "v1",
+                                ToolPermission.READ_RETRIEVE,
+                                Duration.ofSeconds(5),
+                                5,
+                                true,
+                                ToolCostCategory.INDEX_READ));
         when(stubTool.inputType()).thenReturn(StubIn.class);
         when(stubTool.outputType()).thenReturn(SearchOutput.class);
 
@@ -268,8 +336,14 @@ class ToolExecutorHarnessIntegrationTest {
         FixtureStore store = new FileFixtureStore(tmp.toString(), mapper);
         ToolExecutor recordEx = newExecutor(recordProps, store);
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1",
-                        evidenceFor("tenant-B", 1L), 5, Map.of())); // 跨租户
+                .thenReturn(
+                        ToolResult.success(
+                                "id",
+                                "stub_search",
+                                "v1",
+                                evidenceFor("tenant-B", 1L),
+                                5,
+                                Map.of())); // 跨租户
         ToolResult<?> recordR = recordEx.execute("stub_search", "v1", new StubIn("q"), req());
 
         // PR-5.1 record 阶段 evidence post-check 应已过滤 (ToolExecutor.ACL post-check 不受 mode 影响)

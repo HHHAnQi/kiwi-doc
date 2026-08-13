@@ -28,19 +28,37 @@ public record AgentUsage(
 
     public AgentUsage incStep() {
         return new AgentUsage(
-                usedSteps + 1, usedToolCalls, usedPlannerCalls,
-                usedInputTokens, usedOutputTokens, usedTotalTokens, elapsedMillis, estimatedCost);
+                usedSteps + 1,
+                usedToolCalls,
+                usedPlannerCalls,
+                usedInputTokens,
+                usedOutputTokens,
+                usedTotalTokens,
+                elapsedMillis,
+                estimatedCost);
     }
 
     public AgentUsage incRealToolCall() {
         return new AgentUsage(
-                usedSteps, usedToolCalls + 1, usedPlannerCalls,
-                usedInputTokens, usedOutputTokens, usedTotalTokens, elapsedMillis, estimatedCost);
+                usedSteps,
+                usedToolCalls + 1,
+                usedPlannerCalls,
+                usedInputTokens,
+                usedOutputTokens,
+                usedTotalTokens,
+                elapsedMillis,
+                estimatedCost);
     }
 
     public AgentUsage withElapsed(long elapsed) {
         return new AgentUsage(
-                usedSteps, usedToolCalls, usedPlannerCalls,
-                usedInputTokens, usedOutputTokens, usedTotalTokens, elapsed, estimatedCost);
+                usedSteps,
+                usedToolCalls,
+                usedPlannerCalls,
+                usedInputTokens,
+                usedOutputTokens,
+                usedTotalTokens,
+                elapsed,
+                estimatedCost);
     }
 }

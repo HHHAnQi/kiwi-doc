@@ -40,8 +40,7 @@ import reactor.core.publisher.Flux;
 class ComparisonWorkflowPipelineTest {
 
     private static final TraceId TID = new TraceId("workflow-trace");
-    private static final Principal PRINCIPAL =
-            new Principal("tenant-A", "user-1", Set.of(), "tok");
+    private static final Principal PRINCIPAL = new Principal("tenant-A", "user-1", Set.of(), "tok");
 
     private ChatService chatService;
     private ComparisonWorkflowPipeline pipeline;
@@ -119,7 +118,8 @@ class ComparisonWorkflowPipelineTest {
         void entitiesBased() {
             ChatCommand cmd = new ChatCommand("比较 Sentinel 和 Hystrix", null, 5);
             ComparisonWorkflowPipeline.Pair p =
-                    ComparisonWorkflowPipeline.extractComparisonPair(cmd, ctxWithEntities(List.of("Sentinel", "Hystrix")));
+                    ComparisonWorkflowPipeline.extractComparisonPair(
+                            cmd, ctxWithEntities(List.of("Sentinel", "Hystrix")));
             assertThat(p.a()).isEqualTo("Sentinel");
             assertThat(p.b()).isEqualTo("Hystrix");
         }
@@ -143,7 +143,8 @@ class ComparisonWorkflowPipelineTest {
                                     0.92,
                                     "COMPARISON_TWO_OBJECTS"));
             ComparisonWorkflowPipeline.Pair p =
-                    ComparisonWorkflowPipeline.extractComparisonPair(new ChatCommand("比较 v1.0 和 v2.0", null, 5), ctx);
+                    ComparisonWorkflowPipeline.extractComparisonPair(
+                            new ChatCommand("比较 v1.0 和 v2.0", null, 5), ctx);
             assertThat(p.a()).isEqualTo("v1.0");
             assertThat(p.b()).isEqualTo("v2.0");
         }

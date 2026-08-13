@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * PR-2 / EMS-PR2: ChatPipeline 按 {@link PipelineType} 索引。
  *
- * <p>启动时把所有 {@link ChatPipeline} bean 收集进来; <b>同一 type 重复注册 → 应用启动 fail-fast</b>
- * (防止两个 bean 都标 CLASSIC_RAG 时静默选错)。
+ * <p>启动时把所有 {@link ChatPipeline} bean 收集进来; <b>同一 type 重复注册 → 应用启动 fail-fast</b> (防止两个 bean 都标
+ * CLASSIC_RAG 时静默选错)。
  *
  * <p>{@link #get(PipelineType)} 在 type 未注册时抛 {@code PIPELINE_NOT_FOUND} (HTTP 500, fail-closed) —
  * 不允许 Orchestrator 自动回退到任意第一个 pipeline, 不允许把缺失当作成功执行。

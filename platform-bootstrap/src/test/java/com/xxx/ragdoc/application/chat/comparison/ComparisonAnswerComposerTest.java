@@ -1,7 +1,6 @@
 package com.xxx.ragdoc.application.chat.comparison;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -40,10 +39,28 @@ class ComparisonAnswerComposerTest {
     }
 
     private ComparisonEvidenceSet setWithBothSides() {
-        Evidence l = Evidence.of("tA", 1L, 10L, "v1", "left content", 0.9, null,
-                "metadata_search", Map.of("comparisonSide", "LEFT"));
-        Evidence r = Evidence.of("tA", 2L, 20L, "v1", "right content", 0.9, null,
-                "metadata_search", Map.of("comparisonSide", "RIGHT"));
+        Evidence l =
+                Evidence.of(
+                        "tA",
+                        1L,
+                        10L,
+                        "v1",
+                        "left content",
+                        0.9,
+                        null,
+                        "metadata_search",
+                        Map.of("comparisonSide", "LEFT"));
+        Evidence r =
+                Evidence.of(
+                        "tA",
+                        2L,
+                        20L,
+                        "v1",
+                        "right content",
+                        0.9,
+                        null,
+                        "metadata_search",
+                        Map.of("comparisonSide", "RIGHT"));
         return new ComparisonEvidenceSet(
                 ComparisonTarget.of("L", "l"), List.of(l),
                 ComparisonTarget.of("R", "r"), List.of(r));
@@ -79,10 +96,11 @@ class ComparisonAnswerComposerTest {
     @Test
     @DisplayName("stream: 流式输出 DeltaEvent, 不调用 chat()")
     void streamEmitsDeltaEvents() throws Exception {
-        when(chatClient.chatStream(anyString(), anyList()))
-                .thenReturn(Flux.just("a", "b", "c"));
+        when(chatClient.chatStream(anyString(), anyList())).thenReturn(Flux.just("a", "b", "c"));
         Flux<ChatStreamEvent> flux = composer.stream("query", setWithBothSides());
-        StepVerifier.create(flux.map(ev -> ev instanceof ChatStreamEvent.DeltaEvent d ? d.delta() : "?"))
+        StepVerifier.create(
+                        flux.map(
+                                ev -> ev instanceof ChatStreamEvent.DeltaEvent d ? d.delta() : "?"))
                 .expectNext("a")
                 .expectNext("b")
                 .expectNext("c")

@@ -12,8 +12,7 @@ import java.util.List;
  * @param fetchedChunkIds 工具实际拿到的 chunkId (含 neighbor), 便于 trace / 调试
  * @param mode 描述本次取到的模式 (SELF / NEIGHBOR / PARENT), 用于 trace
  */
-public record DocumentFetchOutput(
-        List<Evidence> evidences, List<Long> fetchedChunkIds, String mode)
+public record DocumentFetchOutput(List<Evidence> evidences, List<Long> fetchedChunkIds, String mode)
         implements EvidenceListOutput {
 
     public DocumentFetchOutput {

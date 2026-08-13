@@ -45,7 +45,8 @@ public record SufficiencyRequest(
                 completedRequiredStepIds == null ? Set.of() : Set.copyOf(completedRequiredStepIds);
         usedToolSignatures = usedToolSignatures == null ? Set.of() : Set.copyOf(usedToolSignatures);
         if (precomputedCoverage == null) {
-            precomputedCoverage = com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary.empty();
+            precomputedCoverage =
+                    com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary.empty();
         }
         if (replanIndex < 0) replanIndex = 0;
         safeMeta = safeMeta == null ? Map.of() : Map.copyOf(safeMeta);

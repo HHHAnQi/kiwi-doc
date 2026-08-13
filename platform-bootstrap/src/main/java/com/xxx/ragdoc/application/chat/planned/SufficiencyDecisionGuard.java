@@ -15,17 +15,17 @@ import org.springframework.stereotype.Component;
 /**
  * PR-7c.3a / EMS-PR7 §3: 回答前<b>第三层</b> Sufficiency 硬门禁。
  *
- * <p>RequirementCoverage ctor 已经守住"COVERED 必含 ≥1 evidenceId"; ModelSufficiencyJudge 已经守
- * "模型虚假 COVERED 降 NOT_COVERED"; 但 Pipeline 进入 Answer Composer 前<b>不可</b>信任单一 Judge
- * 决策, 必须本 Guard 再校验全部维度 (False Sufficient 防护, Revision §6.6 + §8.3)。
+ * <p>RequirementCoverage ctor 已经守住"COVERED 必含 ≥1 evidenceId"; ModelSufficiencyJudge 已经守 "模型虚假
+ * COVERED 降 NOT_COVERED"; 但 Pipeline 进入 Answer Composer 前<b>不可</b>信任单一 Judge 决策, 必须本 Guard 再校验全部维度
+ * (False Sufficient 防护, Revision §6.6 + §8.3)。
  *
  * <p>允许回答必须同时满足:
  *
  * <ol>
  *   <li>status == SUFFICIENT
  *   <li>action == ANSWER
- *   <li>!isFalsifiableFlag (即非 Model 直接判 Sufficient 但可以用, PR-7c.3a 选择保守 flag=false 视通过;
- *       Guard 独立再检查 coverage, 不依赖 flag 本身)
+ *   <li>!isFalsifiableFlag (即非 Model 直接判 Sufficient 但可以用, PR-7c.3a 选择保守 flag=false 视通过; Guard 独立再检查
+ *       coverage, 不依赖 flag 本身)
  *   <li>missingRequirementIds 为空
  *   <li>conflicts 为空
  *   <li>required Requirement 全部存在 coverage, 且 coverage.status == COVERED
@@ -35,8 +35,8 @@ import org.springframework.stereotype.Component;
  *   <li>不能有同一 requirement 重复 coverage (fuse/duplicate)
  * </ol>
  *
- * <p>任一不满足 → REJECTED, 不允许 Answer, Pipeline 应转 REFUSED_NO_EVIDENCE
- * reasonCode = FALSE_SUFFICIENT_GUARD_REJECTED。
+ * <p>任一不满足 → REJECTED, 不允许 Answer, Pipeline 应转 REFUSED_NO_EVIDENCE reasonCode =
+ * FALSE_SUFFICIENT_GUARD_REJECTED。
  */
 @Component
 public class SufficiencyDecisionGuard {
@@ -48,7 +48,8 @@ public class SufficiencyDecisionGuard {
         }
 
         public static GuardResult reject(String reason) {
-            return new GuardResult(false, reason == null ? "FALSE_SUFFICIENT_GUARD_REJECTED" : reason);
+            return new GuardResult(
+                    false, reason == null ? "FALSE_SUFFICIENT_GUARD_REJECTED" : reason);
         }
     }
 
@@ -101,7 +102,8 @@ public class SufficiencyDecisionGuard {
                 }
                 for (String eid : cov.evidenceIds()) {
                     if (!evidenceIds.contains(eid)) {
-                        return GuardResult.reject("EVIDENCE_NOT_AUTHORIZED:" + cov.requirementId() + "/" + eid);
+                        return GuardResult.reject(
+                                "EVIDENCE_NOT_AUTHORIZED:" + cov.requirementId() + "/" + eid);
                     }
                 }
             }
@@ -109,9 +111,11 @@ public class SufficiencyDecisionGuard {
 
         // 每个 required Requirement 必须有 COVERED coverage
         for (String reqId : requiredReqIds) {
-            RequirementCoverage cov = decision.coverage().stream()
-                    .filter(c -> reqId.equals(c.requirementId()))
-                    .findFirst().orElse(null);
+            RequirementCoverage cov =
+                    decision.coverage().stream()
+                            .filter(c -> reqId.equals(c.requirementId()))
+                            .findFirst()
+                            .orElse(null);
             if (cov == null) {
                 return GuardResult.reject("REQUIRED_HAS_NO_COVERAGE:" + reqId);
             }

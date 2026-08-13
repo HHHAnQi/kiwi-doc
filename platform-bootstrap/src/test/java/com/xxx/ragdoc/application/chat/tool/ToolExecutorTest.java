@@ -74,11 +74,15 @@ class ToolExecutorTest {
         // PR-5.1: ToolExecutor 现需 HarnessProvider + HarnessProperties (默认 LIVE → 与 PR-4 行为等价)
         com.xxx.ragdoc.application.chat.harness.HarnessProperties hp =
                 new com.xxx.ragdoc.application.chat.harness.HarnessProperties();
-        executor = new ToolExecutor(
-                registry, permissionResolver, metrics, traceObserver,
-                new ObjectMapper(),
-                new com.xxx.ragdoc.application.chat.harness.LiveHarnessProvider(),
-                hp);
+        executor =
+                new ToolExecutor(
+                        registry,
+                        permissionResolver,
+                        metrics,
+                        traceObserver,
+                        new ObjectMapper(),
+                        new com.xxx.ragdoc.application.chat.harness.LiveHarnessProvider(),
+                        hp);
     }
 
     @AfterEach
@@ -118,7 +122,8 @@ class ToolExecutorTest {
                                                 "stub_search",
                                                 java.util.Map.of()))
                         .toList();
-        return new SearchOutput(evs, new SearchOutput.TruncationInfo(false, evs.size(), evs.size()));
+        return new SearchOutput(
+                evs, new SearchOutput.TruncationInfo(false, evs.size(), evs.size()));
     }
 
     @Nested
@@ -140,7 +145,8 @@ class ToolExecutorTest {
 
             StubIn in = new StubIn("hello");
             executor.execute("stub_search", "v1", in, req(Duration.ofSeconds(5)));
-            ToolResult<?> r2 = executor.execute("stub_search", "v1", in, req(Duration.ofSeconds(5)));
+            ToolResult<?> r2 =
+                    executor.execute("stub_search", "v1", in, req(Duration.ofSeconds(5)));
 
             verify(stubTool, times(1)).execute(any(), any());
             assertThat(r2.metadata()).containsEntry("deduplicated", true);
@@ -151,7 +157,13 @@ class ToolExecutorTest {
         void dedupCaseInsensitiveHit() {
             when(stubTool.execute(any(), any()))
                     .thenReturn(
-                            ToolResult.success("id", "stub_search", "v1", outputWith(1L), 5, java.util.Map.of()));
+                            ToolResult.success(
+                                    "id",
+                                    "stub_search",
+                                    "v1",
+                                    outputWith(1L),
+                                    5,
+                                    java.util.Map.of()));
             executor.execute("stub_search", "v1", new StubIn("hello"), req(Duration.ofSeconds(5)));
             // normalize 后 "q=hello" 大小写不敏感
             executor.execute("stub_search", "v1", new StubIn("HELLO"), req(Duration.ofSeconds(5)));
@@ -163,7 +175,13 @@ class ToolExecutorTest {
         void differentRunNoCache() {
             when(stubTool.execute(any(), any()))
                     .thenReturn(
-                            ToolResult.success("id", "stub_search", "v1", outputWith(1L), 5, java.util.Map.of()));
+                            ToolResult.success(
+                                    "id",
+                                    "stub_search",
+                                    "v1",
+                                    outputWith(1L),
+                                    5,
+                                    java.util.Map.of()));
             executor.execute("stub_search", "v1", new StubIn("q"), req(Duration.ofSeconds(5)));
             // 不同 runId (req-2 / run-2)
             executor.execute(
@@ -262,7 +280,11 @@ class ToolExecutorTest {
                             new com.xxx.ragdoc.application.chat.harness.HarnessProperties());
 
             ToolResult<?> r =
-                    ex.execute("banned_test", "v1", new BannedIn("q", "tenant-A"), req(Duration.ofSeconds(5)));
+                    ex.execute(
+                            "banned_test",
+                            "v1",
+                            new BannedIn("q", "tenant-A"),
+                            req(Duration.ofSeconds(5)));
 
             assertThat(r.status()).isEqualTo(ToolStatus.INVALID_ARGUMENT);
             verify(t, times(0)).execute(any(), any());
@@ -290,7 +312,8 @@ class ToolExecutorTest {
         @DisplayName("未注册 Tool → TERMINAL_ERROR (ToolResult failure)")
         void unregisteredToolTerminal() {
             ToolResult<?> r =
-                    executor.execute("nonexistent", "v1", new StubIn("q"), req(Duration.ofSeconds(5)));
+                    executor.execute(
+                            "nonexistent", "v1", new StubIn("q"), req(Duration.ofSeconds(5)));
             assertThat(r.status()).isEqualTo(ToolStatus.TERMINAL_ERROR);
         }
     }
@@ -302,11 +325,31 @@ class ToolExecutorTest {
         SearchOutput cross =
                 new SearchOutput(
                         List.of(
-                                Evidence.of("tenant-B", 1L, 1L, null, "secret", 0.5, null, "x", java.util.Map.of()),
-                                Evidence.of("tenant-A", 1L, 2L, null, "ok", 0.5, null, "x", java.util.Map.of())),
+                                Evidence.of(
+                                        "tenant-B",
+                                        1L,
+                                        1L,
+                                        null,
+                                        "secret",
+                                        0.5,
+                                        null,
+                                        "x",
+                                        java.util.Map.of()),
+                                Evidence.of(
+                                        "tenant-A",
+                                        1L,
+                                        2L,
+                                        null,
+                                        "ok",
+                                        0.5,
+                                        null,
+                                        "x",
+                                        java.util.Map.of())),
                         new SearchOutput.TruncationInfo(false, 2, 2));
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1", cross, 5, java.util.Map.of()));
+                .thenReturn(
+                        ToolResult.success(
+                                "id", "stub_search", "v1", cross, 5, java.util.Map.of()));
 
         ToolResult<SearchOutput> r =
                 executor.execute("stub_search", "v1", new StubIn("q"), req(Duration.ofSeconds(5)));
@@ -325,12 +368,24 @@ class ToolExecutorTest {
         SearchOutput cross =
                 new SearchOutput(
                         List.of(
-                                Evidence.of("tenant-B", 1L, 1L, null, "secret", 0.5, null, "x", java.util.Map.of())),
+                                Evidence.of(
+                                        "tenant-B",
+                                        1L,
+                                        1L,
+                                        null,
+                                        "secret",
+                                        0.5,
+                                        null,
+                                        "x",
+                                        java.util.Map.of())),
                         new SearchOutput.TruncationInfo(false, 1, 1));
         when(stubTool.execute(any(), any()))
-                .thenReturn(ToolResult.success("id", "stub_search", "v1", cross, 5, java.util.Map.of()));
+                .thenReturn(
+                        ToolResult.success(
+                                "id", "stub_search", "v1", cross, 5, java.util.Map.of()));
 
-        ToolResult<?> r = executor.execute("stub_search", "v1", new StubIn("q"), req(Duration.ofSeconds(5)));
+        ToolResult<?> r =
+                executor.execute("stub_search", "v1", new StubIn("q"), req(Duration.ofSeconds(5)));
 
         assertThat(r.status()).isEqualTo(ToolStatus.EMPTY_RESULT);
         assertThat(r.output()).isNull();

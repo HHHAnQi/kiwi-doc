@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
-import com.xxx.ragdoc.application.chat.planner.EvidenceRequirement;
 import com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary;
+import com.xxx.ragdoc.application.chat.planner.EvidenceRequirement;
 import com.xxx.ragdoc.application.chat.planner.RequirementType;
 import java.util.List;
 import java.util.Map;
@@ -26,21 +26,35 @@ class RuleSufficiencyJudgeTest {
         judge = new RuleSufficiencyJudge();
     }
 
-    private Evidence ev(String tenant, String reqId, String content, String version, String source) {
+    private Evidence ev(
+            String tenant, String reqId, String content, String version, String source) {
         Map<String, Object> md = new java.util.HashMap<>();
         if (reqId != null) md.put("requirementIds", List.of(reqId));
         if (source != null) md.put("source", source);
         return Evidence.of(tenant, 1L, 10L, version, content, 0.9, null, "metadata_search", md);
     }
 
-    private EvidenceRequirement req(String id, RequirementType type, boolean required,
-                                    List<String> entities, Map<String, Object> filters) {
+    private EvidenceRequirement req(
+            String id,
+            RequirementType type,
+            boolean required,
+            List<String> entities,
+            Map<String, Object> filters) {
         return new EvidenceRequirement(id, "desc-" + id, type, required, entities, filters);
     }
 
     private SufficiencyRequest request(List<EvidenceRequirement> reqs, List<Evidence> evs) {
-        return new SufficiencyRequest("r1", "q", reqs, evs, Set.of(),
-                Set.of(), EvidenceCoverageSummary.empty(), 0, false, Map.of());
+        return new SufficiencyRequest(
+                "r1",
+                "q",
+                reqs,
+                evs,
+                Set.of(),
+                Set.of(),
+                EvidenceCoverageSummary.empty(),
+                0,
+                false,
+                Map.of());
     }
 
     @Nested
@@ -82,8 +96,7 @@ class RuleSufficiencyJudgeTest {
         @Test
         @DisplayName("Evidence entity 不匹配 → NOT_COVERED + INSUFFICIENT")
         void entityMismatch() {
-            EvidenceRequirement r1 = req("R1", RequirementType.FACT, true,
-                    List.of("v2"), Map.of());
+            EvidenceRequirement r1 = req("R1", RequirementType.FACT, true, List.of("v2"), Map.of());
             Evidence ev = ev("tA", "R1", "完全无关的内容", "v2", null);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(ev)));
             assertThat(d.status()).isEqualTo(SufficiencyStatus.INSUFFICIENT);
@@ -93,8 +106,8 @@ class RuleSufficiencyJudgeTest {
         @Test
         @DisplayName("Evidence version 不匹配 expectedFilters.version → NOT_COVERED")
         void versionMismatch() {
-            EvidenceRequirement r1 = req("R1", RequirementType.FACT, true,
-                    List.of(), Map.of("version", "v2"));
+            EvidenceRequirement r1 =
+                    req("R1", RequirementType.FACT, true, List.of(), Map.of("version", "v2"));
             Evidence ev = ev("tA", "R1", "v2 some", "v1", null); // evidence 是 v1 但期望 v2
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(ev)));
             assertThat(d.coverage().get(0).status()).isEqualTo(CoverageStatus.NOT_COVERED);

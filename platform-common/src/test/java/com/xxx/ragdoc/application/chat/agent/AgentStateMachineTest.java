@@ -1,15 +1,12 @@
 package com.xxx.ragdoc.application.chat.agent;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-/**
- * PR-6a.1: AgentStateMachine 合法转换 + 终态保护 + 不可逆 invariant 单测。
- */
+/** PR-6a.1: AgentStateMachine 合法转换 + 终态保护 + 不可逆 invariant 单测。 */
 @DisplayName("AgentStateMachine - PR-6a.1")
 class AgentStateMachineTest {
 
@@ -50,7 +47,8 @@ class AgentStateMachineTest {
         @Test
         @DisplayName("READY_TO_ANSWER → REFUSED_NO_EVIDENCE 合法")
         void readyToNoEvidence() {
-            AgentStateMachine.checkLegal(AgentRunStatus.READY_TO_ANSWER, AgentRunStatus.REFUSED_NO_EVIDENCE);
+            AgentStateMachine.checkLegal(
+                    AgentRunStatus.READY_TO_ANSWER, AgentRunStatus.REFUSED_NO_EVIDENCE);
         }
     }
 
@@ -85,7 +83,8 @@ class AgentStateMachineTest {
         @Test
         @DisplayName("EXECUTING → REFUSED_PERMISSION 合法")
         void executingToPermissionDenied() {
-            AgentStateMachine.checkLegal(AgentRunStatus.EXECUTING, AgentRunStatus.REFUSED_PERMISSION);
+            AgentStateMachine.checkLegal(
+                    AgentRunStatus.EXECUTING, AgentRunStatus.REFUSED_PERMISSION);
         }
     }
 
@@ -96,16 +95,20 @@ class AgentStateMachineTest {
         @Test
         @DisplayName("RECEIVED → EXECUTING 非法 (跳过 ROUTED/PLANNED)")
         void skipPhase() {
-            assertThatThrownBy(() ->
-                    AgentStateMachine.checkLegal(AgentRunStatus.RECEIVED, AgentRunStatus.EXECUTING))
+            assertThatThrownBy(
+                            () ->
+                                    AgentStateMachine.checkLegal(
+                                            AgentRunStatus.RECEIVED, AgentRunStatus.EXECUTING))
                     .isInstanceOf(AgentStateMachine.IllegalTransitionException.class);
         }
 
         @Test
         @DisplayName("EXECUTING → ROUTED 非法 (反向不可逆)")
         void reverse() {
-            assertThatThrownBy(() ->
-                    AgentStateMachine.checkLegal(AgentRunStatus.EXECUTING, AgentRunStatus.ROUTED))
+            assertThatThrownBy(
+                            () ->
+                                    AgentStateMachine.checkLegal(
+                                            AgentRunStatus.EXECUTING, AgentRunStatus.ROUTED))
                     .isInstanceOf(AgentStateMachine.IllegalTransitionException.class);
         }
     }
@@ -119,7 +122,8 @@ class AgentStateMachineTest {
         void answeredImmutable() {
             for (AgentRunStatus target : AgentRunStatus.values()) {
                 if (target == AgentRunStatus.ANSWERED) continue;
-                assertThatThrownBy(() -> AgentStateMachine.checkLegal(AgentRunStatus.ANSWERED, target))
+                assertThatThrownBy(
+                                () -> AgentStateMachine.checkLegal(AgentRunStatus.ANSWERED, target))
                         .isInstanceOf(AgentStateMachine.IllegalTransitionException.class);
             }
         }
@@ -127,24 +131,31 @@ class AgentStateMachineTest {
         @Test
         @DisplayName("CANCELLED 终态不能再转 ANSWERED (终态竞争保护)")
         void cancelledNoAnswer() {
-            assertThatThrownBy(() ->
-                    AgentStateMachine.checkLegal(AgentRunStatus.CANCELLED, AgentRunStatus.ANSWERED))
+            assertThatThrownBy(
+                            () ->
+                                    AgentStateMachine.checkLegal(
+                                            AgentRunStatus.CANCELLED, AgentRunStatus.ANSWERED))
                     .isInstanceOf(AgentStateMachine.IllegalTransitionException.class);
         }
 
         @Test
         @DisplayName("TIMED_OUT 终态不能再转 ANSWERED")
         void timedOutNoAnswer() {
-            assertThatThrownBy(() ->
-                    AgentStateMachine.checkLegal(AgentRunStatus.TIMED_OUT, AgentRunStatus.ANSWERED))
+            assertThatThrownBy(
+                            () ->
+                                    AgentStateMachine.checkLegal(
+                                            AgentRunStatus.TIMED_OUT, AgentRunStatus.ANSWERED))
                     .isInstanceOf(AgentStateMachine.IllegalTransitionException.class);
         }
 
         @Test
         @DisplayName("REFUSED_PERMISSION 终态不能再转 EXECUTING")
         void permissionNoExecute() {
-            assertThatThrownBy(() ->
-                    AgentStateMachine.checkLegal(AgentRunStatus.REFUSED_PERMISSION, AgentRunStatus.EXECUTING))
+            assertThatThrownBy(
+                            () ->
+                                    AgentStateMachine.checkLegal(
+                                            AgentRunStatus.REFUSED_PERMISSION,
+                                            AgentRunStatus.EXECUTING))
                     .isInstanceOf(AgentStateMachine.IllegalTransitionException.class);
         }
     }

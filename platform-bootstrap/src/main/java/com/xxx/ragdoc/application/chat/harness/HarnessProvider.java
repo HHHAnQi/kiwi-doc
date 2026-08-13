@@ -8,9 +8,10 @@ import java.util.function.Supplier;
  * <p>调用约定:
  *
  * <ul>
- *   <li>LIVE  — 直接执行 {@code liveCall.get()}, 不读不写 Fixture
+ *   <li>LIVE — 直接执行 {@code liveCall.get()}, 不读不写 Fixture
  *   <li>RECORD — 执行 {@code liveCall.get()}, 把请求/响应序列化脱敏后写到 FixtureStore; 返回原结果
- *   <li>REPLAY — <b>不</b> 调 {@code liveCall}; 直接读 FixtureStore; 缺失/不匹配/损坏 → FixtureUnavailableException
+ *   <li>REPLAY — <b>不</b> 调 {@code liveCall}; 直接读 FixtureStore; 缺失/不匹配/损坏 →
+ *       FixtureUnavailableException
  * </ul>
  *
  * <p>类型支持: {@link ObjectResultMapper} 让调用方按 resultClass 反序列化 — 对 ToolResult / RouterDecision /

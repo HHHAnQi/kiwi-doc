@@ -27,8 +27,7 @@ import reactor.core.publisher.Flux;
  * <p>回答规约 (§8.2):
  *
  * <ul>
- *   <li>系统指令: 只能使用提供的 Evidence; 左右必须分别描述; 不允许跨侧推断;
- *       未覆盖维度标 "文档未提供"; 不可虚构共同点或差异; 关键结论附 Evidence 引用
+ *   <li>系统指令: 只能使用提供的 Evidence; 左右必须分别描述; 不允许跨侧推断; 未覆盖维度标 "文档未提供"; 不可虚构共同点或差异; 关键结论附 Evidence 引用
  * </ul>
  */
 @Slf4j
@@ -48,8 +47,8 @@ public class ComparisonAnswerComposer {
 
     /** 同步生成。 */
     public ComparisonAnswer compose(
-            String originalQuery,
-            ComparisonEvidencePartitioner.ComparisonEvidenceSet evidenceSet) throws Exception {
+            String originalQuery, ComparisonEvidencePartitioner.ComparisonEvidenceSet evidenceSet)
+            throws Exception {
         if (evidenceSet == null) {
             throw new IllegalArgumentException("evidenceSet 必填");
         }
@@ -61,8 +60,7 @@ public class ComparisonAnswerComposer {
 
     /** 流式生成。 */
     public Flux<ChatStreamEvent> stream(
-            String originalQuery,
-            ComparisonEvidencePartitioner.ComparisonEvidenceSet evidenceSet) {
+            String originalQuery, ComparisonEvidencePartitioner.ComparisonEvidenceSet evidenceSet) {
         if (evidenceSet == null) {
             return Flux.error(new IllegalArgumentException("evidenceSet 必填"));
         }
@@ -76,12 +74,11 @@ public class ComparisonAnswerComposer {
     /**
      * 结构化的 Context entries, 不包含 Agent Transcript / 预算 / 错误。
      *
-     * <p>每条 entry: 文本片段 (LLM context list)。Evidence ID 显式 chunk-prefix 让模型可
-     * 在 answer 中以 "[Evidence:ID]" 引用, 供后续 Citation 校验。
+     * <p>每条 entry: 文本片段 (LLM context list)。Evidence ID 显式 chunk-prefix 让模型可 在 answer 中以
+     * "[Evidence:ID]" 引用, 供后续 Citation 校验。
      */
     static List<String> buildPromptContext(
-            String originalQuery,
-            ComparisonEvidencePartitioner.ComparisonEvidenceSet set) {
+            String originalQuery, ComparisonEvidencePartitioner.ComparisonEvidenceSet set) {
         List<String> out = new ArrayList<>();
         out.add("====== LEFT TARGET: " + set.leftTarget().label() + " ======");
         int i = 0;

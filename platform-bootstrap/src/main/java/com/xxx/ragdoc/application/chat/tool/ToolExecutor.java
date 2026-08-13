@@ -28,7 +28,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.extern.slf4j.Slf4j;import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * PR-4 / EMS-PR4: Tool 执行的统一包装层。围绕每个 {@link AgentTool#execute} 做以下横切:
@@ -38,11 +39,13 @@ import lombok.extern.slf4j.Slf4j;import org.springframework.stereotype.Service;
  *   <li><b>Deadline/Timeout</b>: 调用前比对 {@link ToolExecutionContext#deadline()}; 不依赖长 DB 事务
  *   <li><b>调用去重</b>: 单 runId+tool+normalizedInput+permissionScopeVersion+indexVersion 同结果只执行一次
  *       (SUCCESS/EMPTY/PERMISSION_DENIED 缓存; TIMEOUT/RETRYABLE 不缓存 — EMS-PR4 §10)
- *   <li><b>ACL pre-check</b>: 从 Principal + PermissionResolverPort 派生 PermissionScope; 拒绝 NO_RECALL sentinel
+ *   <li><b>ACL pre-check</b>: 从 Principal + PermissionResolverPort 派生 PermissionScope; 拒绝 NO_RECALL
+ *       sentinel
  *   <li><b>调用 Tool</b> 主体, 不让 RuntimeException 直接冒到上层 (转为 TERMINAL_ERROR / DEPENDENCY_UNAVAILABLE)
  *   <li><b>ACL evidence post-check</b>: 把无权 Evidence 从 output 过滤掉 (双保险)
  *   <li><b>Metrics</b>: tool call count / latency / status / dedup hit (扩展 MetricsPort)
- *   <li><b>Trace</b>: observation `tool.<name>` (扩展 TraceObserver.ObservationType.TOOL — 当前 PR 复用 DECISION)
+ *   <li><b>Trace</b>: observation `tool.<name>` (扩展 TraceObserver.ObservationType.TOOL — 当前 PR 复用
+ *       DECISION)
  * </ol>
  *
  * <p>所有异常都转成 {@link ToolResult#failure}; 只有 Executor 自身 bug 才让 RuntimeException 冒到调用方。
@@ -58,9 +61,12 @@ public class ToolExecutor {
     private final MetricsPort metrics;
     private final TraceObserver traceObserver;
     private final ObjectMapper objectMapper;
+
     /** PR-5.1: 让 ToolExecutor 可以把 AgentTool.execute 包装到 HarnessProvider 下。 */
     private final HarnessProvider harnessProvider;
+
     private final HarnessProperties harnessProperties;
+
     /** PR-5.1: 每 Tool 的 ObjectResultMapper; 当前固定 ToolHarnessAdapter (typed bridge)。 */
     private final ToolHarnessAdapter toolHarnessAdapter;
 
@@ -83,11 +89,12 @@ public class ToolExecutor {
     }
 
     /** 单 runId 的 dedup 缓存; PR-4 不做分布式 cache, 进程内 + run 结束自然 GC。 */
-    private final Map<String, ToolResult<? extends ToolOutput>> dedupCache = new ConcurrentHashMap<>();
+    private final Map<String, ToolResult<? extends ToolOutput>> dedupCache =
+            new ConcurrentHashMap<>();
 
     /**
-     * PR-5.1: Tool callIndex counter, (runId, toolName) → Atomic。让单 Run 内同 Tool 多次调用稳定排序，
-     * 让 Harness record/replay callIndex 在多调用时不撞键。
+     * PR-5.1: Tool callIndex counter, (runId, toolName) → Atomic。让单 Run 内同 Tool 多次调用稳定排序， 让 Harness
+     * record/replay callIndex 在多调用时不撞键。
      */
     private final Map<String, java.util.concurrent.atomic.AtomicInteger> callIndexByRun =
             new ConcurrentHashMap<>();
@@ -118,15 +125,35 @@ public class ToolExecutor {
         try {
             tool = (AgentTool<I, O>) registry.get(toolName, toolVersion);
         } catch (DomainException de) {
-            return finishFailure(callId, toolName, toolVersion, ToolStatus.TERMINAL_ERROR, de.errorCode().code(),
-                    "tool not found: " + toolName + ":" + toolVersion, "", t0, ctx, null, false);
+            return finishFailure(
+                    callId,
+                    toolName,
+                    toolVersion,
+                    ToolStatus.TERMINAL_ERROR,
+                    de.errorCode().code(),
+                    "tool not found: " + toolName + ":" + toolVersion,
+                    "",
+                    t0,
+                    ctx,
+                    null,
+                    false);
         }
 
         // 1. 安全: 检测 banned 字段 (LLM 不能偷传身份字段)
         ToolError banned = detectBannedFields(input);
         if (banned != null) {
-            return finishFailure(callId, toolName, toolVersion, ToolStatus.INVALID_ARGUMENT,
-                    banned.errorCode(), banned.safeMessage(), "", t0, ctx, null, false);
+            return finishFailure(
+                    callId,
+                    toolName,
+                    toolVersion,
+                    ToolStatus.INVALID_ARGUMENT,
+                    banned.errorCode(),
+                    banned.safeMessage(),
+                    "",
+                    t0,
+                    ctx,
+                    null,
+                    false);
         }
 
         // 2. dedup check (必须在 ACL resolved 之后, 用 scope.version + indexVersion 一起作 key)
@@ -134,23 +161,47 @@ public class ToolExecutor {
         ToolResult<? extends ToolOutput> cached = dedupCache.get(dedupKey);
         if (cached != null && cached.status().cacheable()) {
             metrics.incrementToolDedupHit(toolName);
-            log.info("tool.dedup_hit name={} call_id={} cached_status={}", toolName, callId, cached.status());
+            log.info(
+                    "tool.dedup_hit name={} call_id={} cached_status={}",
+                    toolName,
+                    callId,
+                    cached.status());
             // 直接返回新 callId 的 copy (原 callId 不同, 重新塑形)
             return rebuildWithCallId((ToolResult<O>) cached, callId, true);
         }
 
         // 3. ACL pre-check: NO_RECALL sentinel 直接 PERMISSION_DENIED (与 RetrieveService 一致, 不调下游)
-        if (!scope.tenantAdmin() && scope.allowedDocumentIds() != null && scope.allowedDocumentIds().isEmpty()) {
+        if (!scope.tenantAdmin()
+                && scope.allowedDocumentIds() != null
+                && scope.allowedDocumentIds().isEmpty()) {
             return finishFailure(
-                    callId, toolName, toolVersion, ToolStatus.PERMISSION_DENIED,
+                    callId,
+                    toolName,
+                    toolVersion,
+                    ToolStatus.PERMISSION_DENIED,
                     ErrorCode.TOOL_PERMISSION_DENIED.code(),
-                    "用户在当前 tenant 无任何可读文档", "", t0, ctx, dedupKey, false);
+                    "用户在当前 tenant 无任何可读文档",
+                    "",
+                    t0,
+                    ctx,
+                    dedupKey,
+                    false);
         }
 
         // 4. deadline check (在 tool 执行前; 让 Tool 也自带 remainingMillis 自检)
         if (ctx.isExpired()) {
-            return finishFailure(callId, toolName, toolVersion, ToolStatus.TIMEOUT, ErrorCode.TOOL_TIMEOUT.code(),
-                    "已达 deadline, 未执行 tool", "", t0, ctx, dedupKey, false);
+            return finishFailure(
+                    callId,
+                    toolName,
+                    toolVersion,
+                    ToolStatus.TIMEOUT,
+                    ErrorCode.TOOL_TIMEOUT.code(),
+                    "已达 deadline, 未执行 tool",
+                    "",
+                    t0,
+                    ctx,
+                    dedupKey,
+                    false);
         }
 
         // 5. 实际调用 Tool — 经 HarnessProvider 包装 (PR-5.1)
@@ -160,12 +211,16 @@ public class ToolExecutor {
         ToolResult<O> result;
         try {
             result = invokeViaHarness(tool, input, ctx, req.runId());
-        } catch (com.xxx.ragdoc.application.chat.harness.FixtureStore
-                .FixtureUnavailableException fue) {
+        } catch (
+                com.xxx.ragdoc.application.chat.harness.FixtureStore.FixtureUnavailableException
+                        fue) {
             // REPLAY 严格失败 → 转 TERMINAL_ERROR, 不回退 LIVE
             log.warn(
                     "tool.replay_failed name={} call_id={} reason={} msg={}",
-                    toolName, callId, fue.reason, fue.getMessage());
+                    toolName,
+                    callId,
+                    fue.reason,
+                    fue.getMessage());
             return ToolResult.failure(
                     callId,
                     toolName,
@@ -174,10 +229,14 @@ public class ToolExecutor {
                     ToolError.of(fue.reason.name(), "tool replay fixture 不可用: " + fue.getMessage()),
                     System.currentTimeMillis() - t0,
                     baseMeta(ctx, false));
-        } catch (com.xxx.ragdoc.application.chat.harness.FixtureStore
-                .FixtureConflictException fce) {
+        } catch (
+                com.xxx.ragdoc.application.chat.harness.FixtureStore.FixtureConflictException fce) {
             // RECORD 同 key 不同内容 (代码改动后旧 fixture 不一致) → 失败关闭
-            log.warn("tool.record_conflict name={} call_id={} msg={}", toolName, callId, fce.getMessage());
+            log.warn(
+                    "tool.record_conflict name={} call_id={} msg={}",
+                    toolName,
+                    callId,
+                    fce.getMessage());
             return ToolResult.failure(
                     callId,
                     toolName,
@@ -187,15 +246,34 @@ public class ToolExecutor {
                     System.currentTimeMillis() - t0,
                     baseMeta(ctx, false));
         } catch (DomainException de) {
-            result = ToolResult.failure(callId, toolName, toolVersion, ToolStatus.TERMINAL_ERROR,
-                    ToolError.of(de.errorCode().code(), safeMsg(de.getMessage())),
-                    System.currentTimeMillis() - t0, baseMeta(ctx, false));
+            result =
+                    ToolResult.failure(
+                            callId,
+                            toolName,
+                            toolVersion,
+                            ToolStatus.TERMINAL_ERROR,
+                            ToolError.of(de.errorCode().code(), safeMsg(de.getMessage())),
+                            System.currentTimeMillis() - t0,
+                            baseMeta(ctx, false));
         } catch (RuntimeException ex) {
-            log.warn("tool.uncaught_exception name={} call_id={} err={}", toolName, callId, ex.toString());
-            result = ToolResult.failure(callId, toolName, toolVersion, ToolStatus.TERMINAL_ERROR,
-                    ToolError.dependencyError(ErrorCode.TOOL_EXECUTION_FAILED.code(),
-                            "tool 执行发生未预期错误", toolName, false),
-                    System.currentTimeMillis() - t0, baseMeta(ctx, false));
+            log.warn(
+                    "tool.uncaught_exception name={} call_id={} err={}",
+                    toolName,
+                    callId,
+                    ex.toString());
+            result =
+                    ToolResult.failure(
+                            callId,
+                            toolName,
+                            toolVersion,
+                            ToolStatus.TERMINAL_ERROR,
+                            ToolError.dependencyError(
+                                    ErrorCode.TOOL_EXECUTION_FAILED.code(),
+                                    "tool 执行发生未预期错误",
+                                    toolName,
+                                    false),
+                            System.currentTimeMillis() - t0,
+                            baseMeta(ctx, false));
         }
 
         // 6. ACL evidence post-check (双保险): 把无权 Evidence 过滤掉
@@ -214,9 +292,9 @@ public class ToolExecutor {
     /**
      * PR-5.1: 包装 AgentTool.execute 到 Harness 下。
      *
-     * <p>当 {@code rag.agent.harness.enabled=false} 或 mode=LIVE 时, 直接调真实 Tool (零开销)。
-     * RECORD / REPLAY 时通过 {@link HarnessProvider#invoke} 走 canonical/recording/replay 边界;
-     * 但 REPLAY 仍受 ToolExecutor 的 {@link #filterUnauthorizedEvidence} 终检保护 (双层 ACL)。
+     * <p>当 {@code rag.agent.harness.enabled=false} 或 mode=LIVE 时, 直接调真实 Tool (零开销)。 RECORD / REPLAY
+     * 时通过 {@link HarnessProvider#invoke} 走 canonical/recording/replay 边界; 但 REPLAY 仍受 ToolExecutor
+     * 的 {@link #filterUnauthorizedEvidence} 终检保护 (双层 ACL)。
      *
      * <p>每个 (runId, toolName) 维护独立 callIndex counter, 让 record/replay 在多调用下不撞键。
      */
@@ -232,7 +310,8 @@ public class ToolExecutor {
         String callIdxKey = runId + "|" + d.name();
         int callIndex =
                 callIndexByRun
-                        .computeIfAbsent(callIdxKey, k -> new java.util.concurrent.atomic.AtomicInteger(0))
+                        .computeIfAbsent(
+                                callIdxKey, k -> new java.util.concurrent.atomic.AtomicInteger(0))
                         .getAndIncrement();
         ComponentInvocation invocation =
                 new ComponentInvocation(
@@ -250,10 +329,8 @@ public class ToolExecutor {
                                 ctx.requestId() /* traceId 第二版可加, Tool 第一版用 requestId */,
                                 ""));
         HarnessProvider provider = harnessProvider;
-        java.util.function.Supplier<ToolResult<O>> live =
-                () -> tool.execute(input, ctx);
-        Class<ToolResult<O>> resultClass =
-                (Class<ToolResult<O>>) (Class<?>) tool.outputType();
+        java.util.function.Supplier<ToolResult<O>> live = () -> tool.execute(input, ctx);
+        Class<ToolResult<O>> resultClass = (Class<ToolResult<O>>) (Class<?>) tool.outputType();
         // 注: ToolHarnessAdapter 在 fromFixtureResponse 返回的是 responseNode 不是 ToolResult;
         // 因此 REPLAY 路径下 caller 拿到的 result 可能是 JsonNode (除非 Adapter 重写支持 typed ToolResult).
         // PR-5.1 v1: 不强求 REPLAY 返回 typed ToolResult; Executor 检测 JsonNode 时转 empty SUCCESS stub.
@@ -278,8 +355,8 @@ public class ToolExecutor {
     }
 
     /**
-     * 同步清理某 runId 的 dedup cache。Pipeline / Agent run 结束时由 Orchestrator 调用。
-     * PR-4 当前不在 chat 链路自动调 (没有 Agent run), 留给 PR-5/6。
+     * 同步清理某 runId 的 dedup cache。Pipeline / Agent run 结束时由 Orchestrator 调用。 PR-4 当前不在 chat 链路自动调 (没有
+     * Agent run), 留给 PR-5/6。
      */
     public void evictRun(String runId) {
         dedupCache.keySet().stream()
@@ -303,7 +380,8 @@ public class ToolExecutor {
     }
 
     private PermissionScope derivePermissionScope(Principal principal) {
-        com.xxx.ragdoc.application.auth.AccessScope scope = permissionResolver.resolveAccessScope(principal);
+        com.xxx.ragdoc.application.auth.AccessScope scope =
+                permissionResolver.resolveAccessScope(principal);
         Set<Long> allowed = scope.allowedDocumentIds();
         String version = derivePermissionVersion(principal, allowed);
         if (scope.isUnrestrictedWithinTenant()) {
@@ -313,8 +391,8 @@ public class ToolExecutor {
     }
 
     /**
-     * ACL 表无显式 version 列 (审计结论), PR-4 用 tenantId + allowed.size() + 模型 fingerprint 派生稳定版本。
-     * ACL 行数 grant/revoke → allowed.size() 变化 → 版本变化 → 旧缓存失效 (EMS-PR4 §10 要求)。
+     * ACL 表无显式 version 列 (审计结论), PR-4 用 tenantId + allowed.size() + 模型 fingerprint 派生稳定版本。 ACL 行数
+     * grant/revoke → allowed.size() 变化 → 版本变化 → 旧缓存失效 (EMS-PR4 §10 要求)。
      */
     private static String derivePermissionVersion(Principal principal, Set<Long> allowed) {
         int n = allowed == null ? -1 : allowed.size();
@@ -322,28 +400,42 @@ public class ToolExecutor {
         return sha256(identity).substring(0, 12);
     }
 
-    /** EMS-PR4 §10 dedup key = sha256(runId|toolName|toolVersion|normalizedInput|scopeVersion|indexVersion)。 */
+    /**
+     * EMS-PR4 §10 dedup key =
+     * sha256(runId|toolName|toolVersion|normalizedInput|scopeVersion|indexVersion)。
+     */
     static String dedupKey(
             String runId, ToolDescriptor d, ToolInput input, ToolExecutionContext ctx) {
         String norm = input == null ? "" : input.normalizedForDedup();
         String raw =
-                "r=" + runId
-                        + "|t=" + d.name() + ":" + d.version()
-                        + "|in=" + sha256(norm)
-                        + "|scope=" + ctx.permissionScope().permissionScopeVersion()
-                        + "|idx=" + ctx.indexVersion();
+                "r="
+                        + runId
+                        + "|t="
+                        + d.name()
+                        + ":"
+                        + d.version()
+                        + "|in="
+                        + sha256(norm)
+                        + "|scope="
+                        + ctx.permissionScope().permissionScopeVersion()
+                        + "|idx="
+                        + ctx.indexVersion();
         return raw; // key 不必再 hash, 内含 hash 已足够避让原文
     }
 
     /**
-     * 检测 input 里的 banned 字段名 (反序列化 record 时如果含 tenantId/userId/role/adminOverride/token)。
-     * PR-4 用 toString 简单匹配 (record 默认 toString 是 `Xxx[tenantId=..., userId=...]`)。
+     * 检测 input 里的 banned 字段名 (反序列化 record 时如果含 tenantId/userId/role/adminOverride/token)。 PR-4 用
+     * toString 简单匹配 (record 默认 toString 是 `Xxx[tenantId=..., userId=...]`)。
      */
     private static ToolError detectBannedFields(ToolInput input) {
         if (input == null) return null;
         String s = input.toString().toLowerCase();
-        if (s.contains("tenantid=") || s.contains("userid=") || s.contains("tenantoverride=")
-                || s.contains("adminoverride=") || s.contains("rawtoken=") || s.contains("acloverride=")) {
+        if (s.contains("tenantid=")
+                || s.contains("userid=")
+                || s.contains("tenantoverride=")
+                || s.contains("adminoverride=")
+                || s.contains("rawtoken=")
+                || s.contains("acloverride=")) {
             return ToolError.of(
                     ErrorCode.TOOL_INVALID_ARGUMENT.code(),
                     "input 含身份字段, tenantId/userId/role 等只能由服务端注入");
@@ -378,7 +470,9 @@ public class ToolExecutor {
             Map<String, Object> meta = new LinkedHashMap<>(result.metadata());
             meta.put("acl_dropped_unauthorized", dropped);
             return new ToolResult(
-                    result.callId(), result.toolName(), result.toolVersion(),
+                    result.callId(),
+                    result.toolName(),
+                    result.toolVersion(),
                     kept.isEmpty() && result.status() == ToolStatus.SUCCESS
                             ? ToolStatus.EMPTY_RESULT
                             : result.status(),
@@ -386,14 +480,21 @@ public class ToolExecutor {
                     kept.isEmpty() && result.status() == ToolStatus.SUCCESS
                             ? ToolError.of("EMPTY_FILTERED", "ACL 过滤后 Evidence 为空")
                             : result.error(),
-                    result.latencyMs(), result.retryable(), meta);
+                    result.latencyMs(),
+                    result.retryable(),
+                    meta);
         }
         return result;
     }
 
     private void recordToolCall(
-            String name, String version, String callId, ToolResult<?> r,
-            ToolInput input, ToolExecutionContext ctx, boolean dedup) {
+            String name,
+            String version,
+            String callId,
+            ToolResult<?> r,
+            ToolInput input,
+            ToolExecutionContext ctx,
+            boolean dedup) {
         try {
             metrics.recordToolCall(name, r.status().name(), r.latencyMs());
             if (r.output() instanceof EvidenceListOutput elo) {
@@ -411,7 +512,9 @@ public class ToolExecutor {
             meta.put("tool_version", version);
             meta.put("status", r.status().name());
             meta.put("latency_ms", r.latencyMs());
-            meta.put("input_hash", sha256(input == null ? "" : input.normalizedForDedup()).substring(0, 12));
+            meta.put(
+                    "input_hash",
+                    sha256(input == null ? "" : input.normalizedForDedup()).substring(0, 12));
             meta.put("tenant_id", ctx.tenantId());
             meta.put("index_version", ctx.indexVersion());
             meta.put("permission_scope_version", ctx.permissionScope().permissionScopeVersion());
@@ -421,7 +524,8 @@ public class ToolExecutor {
             meta.put("deduplicated", dedup);
             traceObserver.observe(
                     ctx.requestId(),
-                    TraceObserver.ObservationType.DECISION, // PR-4 暂复用 DECISION (TraceObserver 枚举未扩 TOOL)
+                    TraceObserver.ObservationType
+                            .DECISION, // PR-4 暂复用 DECISION (TraceObserver 枚举未扩 TOOL)
                     "tool." + name,
                     null,
                     null,
@@ -433,16 +537,25 @@ public class ToolExecutor {
     }
 
     private <O extends ToolOutput> ToolResult<O> finishFailure(
-            String callId, String toolName, String toolVersion, ToolStatus status,
-            String errorCode, String safeMessage, String dependency,
-            long t0, ToolExecutionContext ctx, String dedupKey, boolean dedup) {
+            String callId,
+            String toolName,
+            String toolVersion,
+            ToolStatus status,
+            String errorCode,
+            String safeMessage,
+            String dependency,
+            long t0,
+            ToolExecutionContext ctx,
+            String dedupKey,
+            boolean dedup) {
         ToolResult<O> r =
                 ToolResult.failure(
                         callId,
                         toolName,
                         toolVersion,
                         status,
-                        ToolError.dependencyError(errorCode, safeMessage, dependency, status.retryable()),
+                        ToolError.dependencyError(
+                                errorCode, safeMessage, dependency, status.retryable()),
                         System.currentTimeMillis() - t0,
                         baseMeta(ctx, dedup));
         recordToolCall(toolName, toolVersion, callId, r, null, ctx, dedup);
@@ -462,12 +575,20 @@ public class ToolExecutor {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static <O extends ToolOutput> ToolResult<O> rebuildWithCallId(ToolResult<O> cached, String newCallId, boolean dedup) {
+    private static <O extends ToolOutput> ToolResult<O> rebuildWithCallId(
+            ToolResult<O> cached, String newCallId, boolean dedup) {
         Map<String, Object> meta = new LinkedHashMap<>(cached.metadata());
         meta.put("deduplicated", dedup);
         return new ToolResult(
-                newCallId, cached.toolName(), cached.toolVersion(), cached.status(),
-                cached.output(), cached.error(), cached.latencyMs(), cached.retryable(), meta);
+                newCallId,
+                cached.toolName(),
+                cached.toolVersion(),
+                cached.status(),
+                cached.output(),
+                cached.error(),
+                cached.latencyMs(),
+                cached.retryable(),
+                meta);
     }
 
     private static String safeMsg(String msg) {
@@ -480,8 +601,7 @@ public class ToolExecutor {
     static String sha256(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of()
-                    .formatHex(md.digest(input.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of().formatHex(md.digest(input.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
