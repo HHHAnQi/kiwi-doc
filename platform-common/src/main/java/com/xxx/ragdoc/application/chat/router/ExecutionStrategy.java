@@ -16,9 +16,11 @@ package com.xxx.ragdoc.application.chat.router;
  * 接入); 已带好枚举值便于 PR-3.3/3.4 扩展。
  */
 public enum ExecutionStrategy {
+    DIRECT_CHAT,
     CLASSIC_RAG,
     TARGETED_RAG,
     FIXED_WORKFLOW,
     PLANNED_AGENT,
+    TOOL_EXECUTION,
     REFUSE
 }

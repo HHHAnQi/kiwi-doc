@@ -135,6 +135,13 @@ public class ChatService {
     @org.springframework.beans.factory.annotation.Autowired
     private com.xxx.ragdoc.application.chat.CitationVerifierProperties citationVerifierProperties;
 
+    /** 在线主链统一 Token Budget；同步和 SSE 必须调用同一个 builder。 */
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder tokenBudgetContextBuilder;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.xxx.ragdoc.application.chat.pipeline.OnlineExecutionProperties onlineExecutionProperties;
+
     /** 多轮对话是否启用 (3 件 Bean 全注入才表 enabled, 防 Redis 没起但 flag ON 的不一致)。 */
     private boolean isMultiTurnEnabled() {
         return conversationStore != null && queryContextualizer != null && promptAssembler != null;
@@ -390,6 +397,7 @@ public class ChatService {
                 if (chatMessages != null && chatMessages.isLitmReorder()) {
                     context = applyLostInTheMiddleReorder(context);
                 }
+                context = applyContextBudget(context, traceId.value(), lfTrace);
                 String llmAnswer;
                 long t1 = System.currentTimeMillis();
                 try {
@@ -589,6 +597,8 @@ public class ChatService {
                 java.util.Map.of(
                         "state_hint",
                         hint.name(),
+                        "reason_code",
+                        reasonCodeFor(hint),
                         "chat_latency_ms",
                         System.currentTimeMillis() - t0Chat));
         return finishAndRecord(
@@ -724,6 +734,7 @@ public class ChatService {
         if (chatMessages != null && chatMessages.isLitmReorder()) {
             context = applyLostInTheMiddleReorder(new ArrayList<>(context));
         }
+        context = applyContextBudget(context, traceId.value(), lfTrace);
 
         // 5. 异步调 LLM 流式; CitationsEvent 先发 → mergeWith LLM delta flux → DoneEvent
         // 注意: chat_traces 不在此处写(写要等 LLM 完整答案长度才知道; 在 chatStream 完成时
@@ -859,6 +870,8 @@ public class ChatService {
                                             Map.of(
                                                     "state_hint",
                                                     finalHint.name(),
+                                                    "reason_code",
+                                                    reasonCodeFor(finalHint),
                                                     "chat_latency_ms",
                                                     System.currentTimeMillis() - sseChatT0));
                                     // Phase 3.A: SSE chat_total_latency。stream_done=ok /
@@ -910,6 +923,57 @@ public class ChatService {
                     traceId.value(),
                     e.getMessage());
         }
+    }
+
+    private List<String> applyContextBudget(List<String> context, String traceId, String lfTrace) {
+        int budget = onlineExecutionProperties == null
+                ? 3000
+                : onlineExecutionProperties.getContextTokenBudget();
+        com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder builder =
+                tokenBudgetContextBuilder == null
+                        ? new com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder()
+                        : tokenBudgetContextBuilder;
+        com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder.BuildResult built =
+                builder.build(context, budget);
+        traceObserver.observe(
+                lfTrace,
+                TraceObserver.ObservationType.DECISION,
+                "context.token_budget",
+                null,
+                Map.of(
+                        "estimated_tokens", built.estimatedTokens(),
+                        "token_budget", built.tokenBudget(),
+                        "truncated", built.truncated(),
+                        "reason_code",
+                        built.truncated()
+                                ? com.xxx.ragdoc.application.chat.router.OnlineReasonCode.CONTEXT_TOKEN_BUDGET_APPLIED.name()
+                                : "CONTEXT_WITHIN_BUDGET"),
+                0,
+                null);
+        if (built.truncated()) {
+            log.info(
+                    "chat.context_truncated trace_id={}, estimated_tokens={}, budget={}",
+                    traceId,
+                    built.estimatedTokens(),
+                    built.tokenBudget());
+        }
+        return built.context();
+    }
+
+    private static String reasonCodeFor(StateHint hint) {
+        return switch (hint) {
+            case OK -> "ANSWER_OK";
+            case REFUSED ->
+                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.REFUSE_POLICY.name();
+            case EMPTY_KB ->
+                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.EMPTY_KB.name();
+            case NO_RECALL ->
+                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.NO_RECALL.name();
+            case LLM_DEGRADED ->
+                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.LLM_UNAVAILABLE.name();
+            case VERIFY_FAILED ->
+                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.VERIFICATION_FAILED.name();
+        };
     }
 
     /** 共用收尾: 写 chat_traces + 拼 ChatResult.citations, 同事务保证 feedback 软引用合法性根基。 */
@@ -1015,6 +1079,7 @@ public class ChatService {
                 switch (hint) {
                     case OK -> "ok";
                     case NO_RECALL, EMPTY_KB -> "skipped";
+                    case REFUSED -> "refused";
                     case LLM_DEGRADED, VERIFY_FAILED -> "degraded";
                 };
         metrics.recordChatTotal(System.currentTimeMillis() - t0Chat, outcome);

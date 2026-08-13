@@ -49,6 +49,11 @@ app:
     admin-token: ${APP_ADMIN_TOKEN:admin-token-change-me}
 
 rag:
+  router:
+    enabled: ${RAG_ROUTER_ENABLED:true}
+  online-execution:
+    context-token-budget: ${RAG_CONTEXT_TOKEN_BUDGET:3000}
+    timeout-ms: ${RAG_ONLINE_TIMEOUT_MS:60000}
   agent:
     lease:
       ttl-seconds: ${RAG_AGENT_LEASE_TTL_SECONDS:30}

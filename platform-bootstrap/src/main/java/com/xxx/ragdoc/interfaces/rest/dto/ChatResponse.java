@@ -26,7 +26,8 @@ public record ChatResponse(
                         description =
                                 "PR-7f.2c-pre: 本次命中的 PipelineType (CLASSIC_RAG/TARGETED_RAG/..."
                                         + "/PLANNED_AGENT); null=未填充, Jackson NON_NULL 下不序列化")
-                String pipelineType) {
+                String pipelineType,
+        @Schema(description = "路由、拒答或降级的稳定原因码") String reasonCode) {
     /** 默认转换: 不带 evidence, 与历史客户端 4 字段响应兼容。 */
     public static ChatResponse from(ChatResult r) {
         return from(r, false);
@@ -57,7 +58,8 @@ public record ChatResponse(
                 r.stateHint().name(),
                 r.traceId().value(),
                 evidenceToExpose,
-                pipelineType);
+                pipelineType,
+                r.reasonCode());
     }
 
     /**

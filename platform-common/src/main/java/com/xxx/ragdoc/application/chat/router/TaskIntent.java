@@ -19,6 +19,8 @@ package com.xxx.ragdoc.application.chat.router;
  * RAG"等场景可保留 intent 不变但 strategy 回退为 CLASSIC_RAG。
  */
 public enum TaskIntent {
+    CHAT,
+    TOOL,
     FACT,
     ENTITY_LOOKUP,
     NUMERIC_OR_VERSION,

@@ -7,6 +7,8 @@ package com.xxx.ragdoc.domain.shared;
  * fallback 到任意 pipeline。
  */
 public enum PipelineType {
+    /** 无知识检索的直接闲聊。 */
+    DIRECT_CHAT,
     /** 现有 Classic RAG 链路: 检索 → Rerank → Context → LLM → 引用核验。 */
     CLASSIC_RAG,
     /** 目标 RAG (keyword + metadata + 版本/时间过滤); 计划 PR-3 实现。 */
@@ -15,6 +17,8 @@ public enum PipelineType {
     FIXED_WORKFLOW,
     /** PR-7c 受控 Planner Agent RAG (MULTI_HOP 单次 Plan + 最多一次 Replan)。 */
     PLANNED_AGENT,
+    /** 显式受控工具调用，由 ToolExecutor 统一执行 ACL、超时、审计和去重。 */
+    TOOL_EXECUTION,
     /** 受控 Planner Agent RAG; 计划 PR-6/PR-7 实现, 仅供参考。 */
     AGENTIC_RAG
 }

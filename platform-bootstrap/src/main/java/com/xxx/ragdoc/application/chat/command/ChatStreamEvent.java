@@ -50,7 +50,11 @@ public sealed interface ChatStreamEvent
     }
 
     /** 流正常终止。含 traceId 供前端做反馈入口 + 最终 stateHint(EMPTY_KB/NO_RECALL/LLM_DEGRADED/OK)。 */
-    record DoneEvent(String traceId, String stateHint) implements ChatStreamEvent {
+    record DoneEvent(String traceId, String stateHint, String reasonCode) implements ChatStreamEvent {
+        public DoneEvent(String traceId, String stateHint) {
+            this(traceId, stateHint, null);
+        }
+
         @Override
         public String type() {
             return "done";

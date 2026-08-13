@@ -45,7 +45,8 @@ class RuleBasedTaskRouterDatasetTest {
             assertThat(d.strategy()).isNotNull();
             // 非法 strategy 防御: 必须是枚举内的合法值
             assertThat(d.strategy().name())
-                    .matches("CLASSIC_RAG|TARGETED_RAG|FIXED_WORKFLOW|REFUSE");
+                    .matches(
+                            "DIRECT_CHAT|CLASSIC_RAG|TARGETED_RAG|FIXED_WORKFLOW|PLANNED_AGENT|TOOL_EXECUTION|REFUSE");
             if (d.intent().name().equals(row.intent)) intentHit++;
             if (d.strategy().name().equals(row.expectedStrategy)) {
                 strategyHit++;

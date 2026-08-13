@@ -21,6 +21,7 @@ package com.xxx.ragdoc.domain.shared;
  */
 public enum StateHint {
     OK("正常问答"),
+    REFUSED("安全策略或能力边界拒答"),
     EMPTY_KB("知识库为空"),
     NO_RECALL("召回为空或全低于阈值"),
     LLM_DEGRADED("LLM 调用失败,降级返回"),

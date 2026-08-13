@@ -64,7 +64,13 @@ public class RuleBasedTaskRouter implements TaskRouter {
     private static final Pattern IDENTITY_QUESTION =
             Pattern.compile("^你是谁|^你叫什么|训练数据|你的模型|你是什么模型|^你多少钱");
     private static final List<String> OUT_OF_DOMAIN =
-            List.of("天气", "股票", "彩票", "今天星期", "写一首诗", "作诗", "讲个笑话");
+            List.of("天气", "股票", "彩票", "今天星期", "写一首诗", "作诗");
+
+    private static final Pattern CHAT_PHRASE =
+            Pattern.compile("^(你好|您好|hi|hello|早上好|下午好|晚上好|谢谢|感谢|再见)[!！,.，。 ]*$", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern TOOL_PHRASE =
+            Pattern.compile("(帮我|请)?(查找|搜索|检索|定位)(一下)?(文档|知识库|章节|资料)|调用.{0,12}(工具|搜索)");
 
     /** Prompt injection 启发式: "忽略之前所有指令" / "无视系统提示" 等。 */
     private static final Pattern INJECTION_PHRASE =
@@ -87,7 +93,29 @@ public class RuleBasedTaskRouter implements TaskRouter {
             return RouterDecision.refuse(una.reasonCode, una.confidence);
         }
 
-        // 2. COMPARISON (双对象/双版本 + 比较词)
+        // 2. 无需知识库的普通寒暄，直接生成，不允许浪费检索资源。
+        if (CHAT_PHRASE.matcher(text).find() || "讲个笑话".equals(text)) {
+            return decision(
+                    TaskIntent.CHAT,
+                    ExecutionStrategy.DIRECT_CHAT,
+                    List.of(),
+                    Map.of(),
+                    0.95,
+                    "SMALL_TALK");
+        }
+
+        // 3. 用户明确要求搜索/定位资料时进入受控 ToolExecutor，不由模型自由选择任意工具。
+        if (TOOL_PHRASE.matcher(text).find()) {
+            return decision(
+                    TaskIntent.TOOL,
+                    ExecutionStrategy.TOOL_EXECUTION,
+                    collectEntities(q),
+                    q.asRouterFilters(),
+                    0.9,
+                    "EXPLICIT_KB_SEARCH_TOOL");
+        }
+
+        // 4. COMPARISON (双对象/双版本 + 比较词)
         if (isComparison(text, q)) {
             List<String> entitiesAB = extractComparisonEntities(text, q);
             RouterDecision d =

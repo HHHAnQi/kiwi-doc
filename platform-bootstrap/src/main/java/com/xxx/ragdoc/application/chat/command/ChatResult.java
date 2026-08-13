@@ -29,7 +29,9 @@ public record ChatResult(
          * PR-7f.2c-pre: 本次 chat 实际命中的 PipelineType (由 Orchestrator 在出参处附加)。 null = 未填充 (兼容旧
          * pipeline 直接 new ChatResult 的路径)。 评测 Runner Adapter 据此判断 PLANNED_AGENT 是否真实生效。
          */
-        PipelineType pipelineType) {
+        PipelineType pipelineType,
+        /** 在线主链稳定原因码；旧调用方未设置时由 OnlineExecutionKernel 在出口补齐。 */
+        String reasonCode) {
 
     /**
      * Citation 元素(简化版, 与 api-contracts.md §D1 对齐)。 V1 chat 永远 citations=空, 因不调召回。
@@ -66,12 +68,12 @@ public record ChatResult(
     /** Task 7 前 4 字段兼容构造 (verification=null)。 */
     public static ChatResult of(
             String answer, List<Citation> citations, StateHint hint, TraceId traceId) {
-        return new ChatResult(answer, citations, hint, traceId, null, null, null);
+        return new ChatResult(answer, citations, hint, traceId, null, null, null, null);
     }
 
     /** V1 短命令: 空 citations + 无 verification。 */
     public static ChatResult of(StateHint hint, String answer, TraceId traceId) {
-        return new ChatResult(answer, List.of(), hint, traceId, null, null, null);
+        return new ChatResult(answer, List.of(), hint, traceId, null, null, null, null);
     }
 
     /** PR-1: Task7 前 5 字段兼容 (evidenceSnapshot=null, 不破坏既有 callers)。 */
@@ -81,7 +83,7 @@ public record ChatResult(
             StateHint stateHint,
             TraceId traceId,
             VerificationResult verification) {
-        this(answer, citations, stateHint, traceId, verification, null, null);
+        this(answer, citations, stateHint, traceId, verification, null, null, null);
     }
 
     /** PR-1: EvidenceSnapshot 接线后 6 字段兼容 (pipelineType=null)。 */
@@ -92,7 +94,19 @@ public record ChatResult(
             TraceId traceId,
             VerificationResult verification,
             EvidenceSnapshot evidenceSnapshot) {
-        this(answer, citations, stateHint, traceId, verification, evidenceSnapshot, null);
+        this(answer, citations, stateHint, traceId, verification, evidenceSnapshot, null, null);
+    }
+
+    /** reasonCode 接线前的七字段兼容构造。 */
+    public ChatResult(
+            String answer,
+            List<Citation> citations,
+            StateHint stateHint,
+            TraceId traceId,
+            VerificationResult verification,
+            EvidenceSnapshot evidenceSnapshot,
+            PipelineType pipelineType) {
+        this(answer, citations, stateHint, traceId, verification, evidenceSnapshot, pipelineType, null);
     }
 
     /**
@@ -109,6 +123,20 @@ public record ChatResult(
                 this.traceId,
                 this.verification,
                 this.evidenceSnapshot,
-                pipelineType);
+                pipelineType,
+                this.reasonCode);
+    }
+
+    public ChatResult withReasonCode(String reasonCode) {
+        if (reasonCode == null || reasonCode.isBlank() || reasonCode.equals(this.reasonCode)) return this;
+        return new ChatResult(
+                answer,
+                citations,
+                stateHint,
+                traceId,
+                verification,
+                evidenceSnapshot,
+                pipelineType,
+                reasonCode);
     }
 }
