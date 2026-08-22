@@ -68,9 +68,6 @@ rag:
   auth:
     dev-default-principal-enabled: ${RAG_AUTH_DEV_DEFAULT_PRINCIPAL_ENABLED:false}
     dev-default-token: ${RAG_AUTH_DEV_DEFAULT_TOKEN:dev-default-token}
-    # 兼容 FeedbackController 老 dev/admin token 路径
-    dev-token: ${APP_DEV_TOKEN:dev-token-change-me}
-    admin-token: ${APP_ADMIN_TOKEN:admin-token-change-me}
     allowlist-paths:
       - /actuator/health
       - /actuator/readiness
@@ -84,9 +81,15 @@ rag:
   #   async (生产): DocumentUploadService 写 parse_tasks PENDING + 发 RocketMQ, 由 parser-service 消费
   # 切 async 前需先起 RocketMQ broker(docker-compose) + parser-service 进程。
   parser:
-    mode: ${RAG_PARSER_MODE:sync}
+    # P0 修复: sync 模式把 MinIO下载→Tika→embed→入库 整条链路压在 HTTP 请求线程(大文档可达
+    # 5-10min), nginx 60s 即 504, 并发上传几个慢文档就耗尽 Tomcat 线程。async 链路(outbox+租约
+    # +visibility timeout)已完整并通过 kill -9 演练, 改为默认; 调试单进程可 RAG_PARSER_MODE=sync。
+    # 前置依赖: RocketMQ broker(docker-compose) + parser-service 进程。
+    mode: ${RAG_PARSER_MODE:async}
   retrieve:
-    mode: ${RAG_RETRIEVE_MODE:dense}
+    # P0 修复(评测-线上漂移): 评测矩阵验证的是 hybrid+rerank, 默认 dense-only 让线上
+    # 实际生效配置与评测结论脱节。hybrid = dense + Milvus BM25 → RRF。
+    mode: ${RAG_RETRIEVE_MODE:hybrid}
     # Task 5 / V11 Hybrid Retrieval ablation 参数
     #   candidate-pool: 单路 fetchN=topK*pool 给 RRF 留排序空间 (默认 4, 与既有 hybrid 等价)
     #   rrf.k: RRF 平滑常数 (默认 60, 与 chat/spec.md 公式一致; ablation 可改 30/100 灵敏度对比)

@@ -2,6 +2,10 @@
 # 公共配置(所有 profile 共享)
 # ============================================================
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+
   application:
     name: rag-doc-platform
   servlet:
@@ -27,6 +31,9 @@ spring:
 
 server:
   port: 8080
+  # P0 修复: 优雅停机 — in-flight 解析/SSE 流在重启时被硬掐;
+  # graceful: 先停止收新请求, 等存量请求完成(上限见 spring.lifecycle)再关容器。
+  shutdown: graceful
 
 # OpenAPI(springdoc)
 springdoc:
@@ -45,8 +52,6 @@ app:
   trace:
     enabled: true
   auth:
-    dev-token: ${APP_DEV_TOKEN:dev-token-change-me}
-    admin-token: ${APP_ADMIN_TOKEN:admin-token-change-me}
 
 rag:
   router:
