@@ -18,6 +18,7 @@ export function ChatWindow({ selectedDocId }: Props) {
   const sending = useChatStore((s) => s.sending);
   const send = useChatStore((s) => s.send);
   const abort = useChatStore((s) => s.abort);
+  const newConversation = useChatStore((s) => s.newConversation);
   const markFeedbackSubmitted = useChatStore((s) => s.markFeedbackSubmitted);
 
   const docs = useDocStore((s) => s.docs);
@@ -63,8 +64,8 @@ export function ChatWindow({ selectedDocId }: Props) {
 
   return (
     <section className="flex h-full flex-1 flex-col">
-      {/* 顶栏(限定文档提示) */}
-      <div className="border-b border-slate-200 bg-white px-6 py-3 text-xs text-slate-500">
+      {/* 顶栏(限定文档提示 + 新会话) */}
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 text-xs text-slate-500">
         {selectedDocId ? (
           <span>
             📌 限定到文档 #{selectedDocId} ·{' '}
@@ -75,6 +76,14 @@ export function ChatWindow({ selectedDocId }: Props) {
             🔍 跨全库检索({readyCount} 个文档就绪)
           </span>
         )}
+        <button
+          onClick={newConversation}
+          disabled={messages.length === 0}
+          className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+          title="开启新会话(新的多轮上下文)"
+        >
+          ＋ 新会话
+        </button>
       </div>
 
       {/* 消息流 */}

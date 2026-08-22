@@ -150,18 +150,55 @@ public class QueryContextualizer implements QueryContextualizerPort {
     /**
      * 鹦鹉学舌检测 — LLM 偶尔直接复读原 query, 此时 rewrite 无意义, retrieve 跑偏。
      *
-     * <p>规则: 去空格小写后相等, 或一个含另一个 → 视为鹦鹉。
+     * <p>P0 修复: 原实现的双向 {@code contains} 会把一切合法的指代消解改写误判为鹦鹉 —
+     * condense 式改写天然以原问为子串("那它支持哪些？"→"Dubbo 支持哪些序列化？"含原问全部字符),
+     * 实测多轮 G2 gate 仅 2/20 通过。现收紧为:
+     *
+     * <ul>
+     *   <li>完全相等(去空白/大小写) → 鹦鹉
+     *   <li>改写只比原问多/少标点或前后缀语气词(编辑相似度 ≥ 0.9) → 鹦鹉
+     *   <li>其余(含原问子串但新增了实质内容) → 有效改写
+     * </ul>
      */
     private static boolean isParroted(String original, String rewritten) {
         if (rewritten == null) return true;
         String o = normalized(original);
         String r = normalized(rewritten);
         if (o.isEmpty() || r.isEmpty()) return true;
-        return o.equals(r) || o.contains(r) || r.contains(o);
+        if (o.equals(r)) return true;
+        // 改写长度与原问相差悬殊 → 一定增/删了实质内容, 不是复读
+        double lenRatio = Math.min(o.length(), r.length()) / (double) Math.max(o.length(), r.length());
+        if (lenRatio < 0.9) return false;
+        // 长度接近时用 Levenshtein 相似度: ≥0.9 视为只动了标点/语气词的复读
+        return similarity(o, r) >= 0.9;
+    }
+
+    /** 归一化编辑相似度 1 - lev(a,b)/max(len)。 */
+    private static double similarity(String a, String b) {
+        int n = a.length(), m = b.length();
+        if (n == 0 && m == 0) return 1.0;
+        int[] prev = new int[m + 1];
+        int[] curr = new int[m + 1];
+        for (int j = 0; j <= m; j++) prev[j] = j;
+        for (int i = 1; i <= n; i++) {
+            curr[0] = i;
+            for (int j = 1; j <= m; j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            int[] tmp = prev;
+            prev = curr;
+            curr = tmp;
+        }
+        return 1.0 - prev[m] / (double) Math.max(n, m);
     }
 
     private static String normalized(String s) {
-        return s == null ? "" : s.replaceAll("\\s+", "").toLowerCase();
+        // 鹦鹉判定用归一化: 去空白 + 去标点(中英文) + 小写 — 只差标点的复读不算改写
+        return s == null
+                ? ""
+                : s.replaceAll("[\\s\\p{Punct}\\u3000-\\u303F\\uFF00-\\uFFEF]+", "")
+                        .toLowerCase();
     }
 
     private static String trimmed(String s) {

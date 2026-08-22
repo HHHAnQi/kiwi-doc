@@ -63,6 +63,9 @@ export interface ChatRequest {
   source?: string | null;
   version?: string | null;
   language?: string | null;
+  // P0 修复(多轮贯通): 后端 SSE 链路已支持 conversationId → query 改写/history;
+  // 不传则走 stateless 单轮路径
+  conversation_id?: string | null;
 }
 
 // ===== SSE event 客户端类型 (sealed record ChatStreamEvent 对应)=====

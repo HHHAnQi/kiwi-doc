@@ -170,22 +170,73 @@ public class HistoryCompressor implements HistoryCompressorPort {
         }
 
         // 保存: ctx replaced by withCompression (保留 totalTurnCount 审计用)
+        // P0 修复(lost-update): load → LLM(数十秒) → save 期间, 用户新 turn 的 appendTurn+save
+        // 会被本处的旧快照整体覆盖, 丢掉最新对话。save 前重新 load 一次做合并:
+        //   - 期间追加了新 turn → 在压缩结果之上保留追加部分(append-only 语义, 按位置切)
+        //   - 期间无变化 → 存压缩结果
+        //   - 期间 recentTurns 变少 → 另一并发压缩已生效, 放弃本次(下个 turn 会再触发)
+        // 残余竞态窗口仅剩 re-load→save 的毫秒级; 彻底消除需 store 层 CAS(Redis WATCH/version),
+        // 属 ConversationStore port 扩展, 见 ADR-0011 后续。
         try {
             ConversationContext updated =
                     ctx.withCompression(newSummary.trim(), keepTurns, Instant.now());
-            store.save(updated);
+            ConversationContext toSave = mergeWithLatest(conversationId, ctx, updated, keepTurns, newSummary.trim());
+            if (toSave == null) {
+                metrics.incrementCompression("superseded");
+                log.info("compress.superseded id={} — 并发压缩已生效, 跳过", conversationId);
+                return;
+            }
+            store.save(toSave);
             metrics.incrementCompression("ok");
             log.info(
                     "compress.done id={}, compressed={}, kept={}, summary_len={}, took={}ms",
                     conversationId,
                     toCompress,
-                    keepN,
+                    toSave.recentTurns() == null ? keepN : toSave.recentTurns().size(),
                     newSummary.length(),
                     System.currentTimeMillis() - t0);
         } catch (Exception e) {
             metrics.incrementCompression("save_failed");
             log.warn("compress.save_failed id={}, reason={}", conversationId, e.getMessage());
         }
+    }
+
+    /**
+     * 把压缩结果与 save 前的最新 ctx 合并; 返 null 表示本次压缩已被并发任务取代应放弃。
+     *
+     * <p>{@code baseTurns} 是压缩发起时的 recentTurns 快照 — latest 以它为前缀追加的 append-only
+     * 假设由 ChatService.appendTurn 保证(只在尾部追加)。
+     */
+    private ConversationContext mergeWithLatest(
+            String conversationId,
+            ConversationContext snapshot,
+            ConversationContext compressed,
+            List<Turn> keepTurns,
+            String summary) {
+        ConversationContext latest;
+        try {
+            latest = store.findById(conversationId).orElse(null);
+        } catch (Exception e) {
+            // re-load 失败: 退回直接存压缩结果(旧快照), 不比直接放弃好但也不更坏
+            log.warn("compress.recheck_load_failed id={}, reason={}", conversationId, e.getMessage());
+            return compressed;
+        }
+        if (latest == null || latest.recentTurns() == null) {
+            return compressed; // 期间被 clear/过期 — 压缩结果作全新 ctx 存回
+        }
+        List<Turn> base = snapshot.recentTurns() == null ? List.of() : snapshot.recentTurns();
+        List<Turn> latestTurns = latest.recentTurns();
+        if (latestTurns.size() < base.size()) {
+            return null; // 被并发压缩处理过 — 放弃
+        }
+        if (latestTurns.size() == base.size()) {
+            return compressed; // 无新增, 直接存
+        }
+        // 有新 turn 追加: 压缩产物 + 保留追加部分
+        List<Turn> appended = latestTurns.subList(base.size(), latestTurns.size());
+        List<Turn> merged = new java.util.ArrayList<>(keepTurns);
+        merged.addAll(appended);
+        return snapshot.withCompression(summary, merged, Instant.now());
     }
 
     private static String formatTurns(List<Turn> turns) {

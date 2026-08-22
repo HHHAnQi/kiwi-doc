@@ -21,11 +21,15 @@ export interface ChatMessage {
 interface ChatState {
   messages: ChatMessage[];
   sending: boolean;
+  // P0 修复(多轮贯通): 会话 id, 后端据此做 query 改写/history 写回; 持久化到 localStorage,
+  // 刷新后同一会话的多轮上下文仍在(服务端 Redis TTL 内)
+  conversationId: string;
   // AbortController 不可序列化, 仅运行时存在
   abortController: AbortController | null;
 
   send: (req: ChatRequest) => void;
   abort: () => void;
+  newConversation: () => void;
   markFeedbackSubmitted: (msgId: string) => void;
 }
 
@@ -34,27 +38,34 @@ export const useChatStore = create<ChatState>()(
     (set, get) => ({
       messages: [],
       sending: false,
+      conversationId: uid('conv'),
       abortController: null,
 
       send: (req: ChatRequest) => {
-    if (get().sending) return;
-    const userMsg: ChatMessage = {
-      id: uid('u'),
-      role: 'user',
-      content: req.query,
-    };
-    // assistant 占位消息, 流过程中 content 累加
-    const assistantMsg: ChatMessage = {
-      id: uid('a'),
-      role: 'assistant',
-      content: '',
-      streaming: true,
-    };
+        if (get().sending) return;
+        const userMsg: ChatMessage = {
+          id: uid('u'),
+          role: 'user',
+          content: req.query,
+        };
+        // assistant 占位消息, 流过程中 content 累加
+        const assistantMsg: ChatMessage = {
+          id: uid('a'),
+          role: 'assistant',
+          content: '',
+          streaming: true,
+        };
 
-    set((s) => ({
-      messages: [...s.messages, userMsg, assistantMsg],
-      sending: true,
-    }));
+        set((s) => ({
+          messages: [...s.messages, userMsg, assistantMsg],
+          sending: true,
+        }));
+
+        // P0 修复(多轮贯通): 每次请求带 conversation_id, 服务端 rewrite/history 生效
+        const requestWithConv: ChatRequest = {
+          ...req,
+          conversation_id: req.conversation_id ?? get().conversationId,
+        };
 
     const updateLast = (patch: Partial<ChatMessage>) =>
       set((s) => {
@@ -63,7 +74,7 @@ export const useChatStore = create<ChatState>()(
         return { messages: msgs };
       });
 
-    const controller = chatSSE(req, {
+    const controller = chatSSE(requestWithConv, {
       onEvent: (ev) => {
         switch (ev.type) {
           case 'citations':
@@ -101,21 +112,28 @@ export const useChatStore = create<ChatState>()(
     set({ abortController: controller });
   },
 
-  abort: () => {
-    get().abortController?.abort();
-    set((s) => {
-      const msgs = [...s.messages];
-      const last = msgs.at(-1);
-      if (last && last.streaming) {
-        msgs[msgs.length - 1] = {
-          ...last,
-          streaming: false,
-          content: last.content + (last.content ? '\n\n_(已中断)_' : '_(已中断)_'),
-        };
-      }
-      return { messages: msgs, sending: false, abortController: null };
-    });
-  },
+      abort: () => {
+        get().abortController?.abort();
+        set((s) => {
+          const msgs = [...s.messages];
+          const last = msgs.at(-1);
+          if (last && last.streaming) {
+            msgs[msgs.length - 1] = {
+              ...last,
+              streaming: false,
+              content: last.content + (last.content ? '\n\n_(已中断)_' : '_(已中断)_'),
+            };
+          }
+          return { messages: msgs, sending: false, abortController: null };
+        });
+      },
+
+      // P0 修复(多轮贯通)配套: 开新会话 = 新 conversationId + 清空本地消息。
+      // 旧会话服务端仍保留(Redis TTL), 但前端不再续接。
+      newConversation: () => {
+        if (get().sending) get().abort();
+        set({ messages: [], conversationId: uid('conv'), sending: false });
+      },
 
   markFeedbackSubmitted: (msgId: string) =>
     set((s) => ({
@@ -126,9 +144,9 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: 'ragdoc.chat', // localStorage key
-      version: 1,
-      // 只持久化 messages; sending/abortController 是运行时状态, 不可序列化也不该恢复
-      partialize: (s) => ({ messages: s.messages }),
+      version: 2,
+      // 持久化 messages + conversationId; sending/abortController 是运行时状态, 不可序列化也不该恢复
+      partialize: (s) => ({ messages: s.messages, conversationId: s.conversationId }),
       // 再水合时: 刷新瞬即"挂掉", 任何遗留 streaming:true 的消息必须收尾,
       // 否则永久卡住(stale streaming=true)。给个通用完成标记 + 灰字提示。
       onRehydrateStorage: () => (state) => {

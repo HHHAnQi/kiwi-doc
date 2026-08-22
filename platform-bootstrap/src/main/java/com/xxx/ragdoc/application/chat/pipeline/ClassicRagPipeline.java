@@ -58,11 +58,14 @@ public class ClassicRagPipeline implements ChatPipeline {
     @Override
     public Flux<ChatStreamEvent> stream(ChatCommand command, ChatExecutionContext context) {
         log.info(
-                "pipeline.classic.stream request_id={}, trace_id={}, mode={}",
+                "pipeline.classic.stream request_id={}, trace_id={}, mode={}, conversation_id={}",
                 context.requestId(),
                 context.traceId().value(),
-                context.requestedMode());
-        return chatService.chatStream(command, context.traceId());
+                context.requestedMode(),
+                safeConvId(command));
+        // P0 修复(SSE 多轮贯通): 此前丢掉 conversationId → 整套多轮体系在 SSE(产品唯一入口)
+        // 上是死代码。与 execute() 对齐传递。
+        return chatService.chatStream(command, context.traceId(), command.conversationId());
     }
 
     private static String safeConvId(ChatCommand command) {

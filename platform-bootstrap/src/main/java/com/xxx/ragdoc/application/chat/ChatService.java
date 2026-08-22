@@ -376,28 +376,14 @@ public class ChatService {
                                                         c.llmContext(),
                                                         c.sectionPath()))
                                 .toList();
-                // 喂 LLM 用 chunk 全文(llmContext), 不是给前端的 200 字 snippet。
-                // 早期两者共用 snippet 致双重截断 maxContextChars 才是真正该用的总闸。
-                List<String> context = new ArrayList<>();
-                // Phase 1 / C4 (ADR-0011 §7): 多轮 prompt ordering — history block 作为 context 第 1
-                // entry
-                // 让 LLM 把它当 context 读, 主 LLM 不感知多轮 (OpenAiCompatibleLlmClient 完全不动)
-                if (ctx != null && ctx.isEnabled()) {
-                    String historyBlock = promptAssembler.buildHistoryBlock(ctx, topicShift);
-                    if (!historyBlock.isBlank()) {
-                        context.add(historyBlock);
-                    }
-                }
-                for (var c : retrieve.items()) {
-                    context.add(c.llmContext());
-                }
-                // Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (flag-driven, 默认 OFF=baseline 行为)
-                // 论文 Liu et al. 2023: LLM 在长 context 中对 [中间位置] 信息提取能力下降。
-                // 单独贡献未验证(Phase 2.A 与 A1 同跑 trade-off), 待 Phase 2.B 单独 A/B。
-                if (chatMessages != null && chatMessages.isLitmReorder()) {
-                    context = applyLostInTheMiddleReorder(context);
-                }
-                context = applyContextBudget(context, traceId.value(), lfTrace);
+                // P0 修复(citations 错位): history block / LITM 重排 / token+char 预算 / citations
+                // 对齐统一收敛到 assembleContextWithHistory — 预算截断掉的 evidence 同步从 citations
+                // 移除, 保证 LLM 的 [n] 与前端引用卡片一一对应。
+                AssembledContext assembled =
+                        assembleContextWithHistory(
+                                ctx, topicShift, citations, traceId.value(), lfTrace);
+                List<String> context = assembled.context();
+                citations = assembled.citations();
                 String llmAnswer;
                 long t1 = System.currentTimeMillis();
                 try {
@@ -624,10 +610,26 @@ public class ChatService {
      */
     public reactor.core.publisher.Flux<ChatStreamEvent> chatStream(
             ChatCommand cmd, TraceId traceId) {
+        // 老调用方 (无 conversationId) → stateless 老路径
+        return chatStream(cmd, traceId, null);
+    }
+
+    /**
+     * P0 修复(SSE 多轮贯通): 多轮流式 chat 入口。
+     *
+     * <p>此前 SSE 是产品唯一入口但 conversationId 在 ClassicRagPipeline 被丢弃 — load ctx / rewrite /
+     * history block / OK turn 写回整套多轮体系在流式路径上是死代码。本重载与同步 {@link #chat(ChatCommand,
+     * TraceId, String)} 对齐: conversationId 非空且多轮启用时 load ctx → topic shift → rewrite → 用改写后
+     * query 检索 → history block 进 context(不占 [n] 编号) → 流正常结束且非拒答时写回 history。
+     */
+    public reactor.core.publisher.Flux<ChatStreamEvent> chatStream(
+            ChatCommand cmd, TraceId traceId, String conversationId) {
         log.info(
-                "chat.stream_start trace_id={}, query_len={}",
+                "chat.stream_start trace_id={}, query_len={}, conv_enabled={}, conv_id={}",
                 traceId.value(),
-                cmd.query().length());
+                cmd.query().length(),
+                isMultiTurnEnabled(),
+                conversationId == null ? "(none)" : conversationId);
 
         // 1. docId 校验(同 chat 复用 4xx 路径)
         if (cmd.docId() != null) {
@@ -646,13 +648,39 @@ public class ChatService {
             }
         }
 
+        // 1b. P0 修复(SSE 多轮贯通): load ctx + topic shift + query rewrite (与 chat() 对齐)。
+        // stateless 老调用方 (conversationId=null) 完全不进此分支。
+        ConversationContext ctx = null;
+        boolean topicShift = false;
+        String retrieveQuery = cmd.query();
+        if (isMultiTurnEnabled() && conversationId != null && !conversationId.isBlank()) {
+            ctx =
+                    conversationStore
+                            .findById(conversationId)
+                            .orElseGet(() -> ConversationContext.empty(conversationId));
+            if (topicShiftDetector != null) {
+                topicShift = topicShiftDetector.isTopicShift(cmd.query(), ctx);
+            }
+            if (ctx.isEnabled() && !topicShift) {
+                ContextualizeResult rewriteResult =
+                        queryContextualizer.contextualize(cmd.query(), ctx.recentTurns());
+                retrieveQuery = rewriteResult.retrieveQuery();
+            }
+        }
+        final String finalStreamRetrieveQuery = retrieveQuery;
+
         // Phase 1.E (2026-08-03): SSE 路径 Langfuse trace 入口
         // Phase 3.A: sseChatT0 = SSE 端到端 latency 基准(EMPTY_KB/NO_RECALL/OK/DEGRADED 全覆盖 via
         // doFinally)
         long sseChatT0 = System.currentTimeMillis();
-        String lfTrace =
-                traceObserver.startTrace(
-                        traceId.value(), null, Map.of("query", cmd.query(), "path", "sse"));
+        java.util.Map<String, Object> sseTraceMeta = new java.util.HashMap<>();
+        sseTraceMeta.put("query", cmd.query());
+        sseTraceMeta.put("path", "sse");
+        sseTraceMeta.put(
+                "conversation_id", conversationId == null ? "(none)" : conversationId);
+        sseTraceMeta.put(
+                "user_id", com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId());
+        String lfTrace = traceObserver.startTrace(traceId.value(), null, sseTraceMeta);
 
         // 2. EMPTY_KB 同步降级: Flux.just(DoneEvent state=EMPTY_KB)
         if (documentRepository.countByStatus(DocumentStatus.INDEXED) == 0) {
@@ -677,14 +705,19 @@ public class ChatService {
         }
 
         // 3. 召回(同步, retrieve 本身快, p99 < 1s ADR-0004 L1 SLA)
+        // P0 修复(SSE 多轮贯通): 多轮场景用 rewrite 后的 standalone query 检索(与 chat() 一致)
         long sseT0 = System.currentTimeMillis(); // retrieve 内部子段(已含 startTrace 后)
-        RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(cmd);
+        ChatCommand retrieveCmd =
+                finalStreamRetrieveQuery.equals(cmd.query())
+                        ? cmd
+                        : cmd.withQuery(finalStreamRetrieveQuery);
+        RetrieveService.RetrieveResult retrieve = retrieveService.retrieve(retrieveCmd);
         long sseRetrieveMs = System.currentTimeMillis() - sseT0;
         traceObserver.observe(
                 lfTrace,
                 TraceObserver.ObservationType.RETRIEVE,
                 "retrieve",
-                cmd.query(),
+                retrieveCmd.query(),
                 Map.of(
                         "hits", retrieve.items().size(),
                         "rerank_state", retrieve.rerankState(),
@@ -716,6 +749,9 @@ public class ChatService {
         }
 
         // 4. 有召回: 拼 citations + context
+        // P0 修复(SSE 多轮贯通 + citations 错位): 与 chat() 同一 assembleContextWithHistory —
+        // history block 进 context、LITM/budget 对齐 citations。SSE 发给前端的 CitationsEvent
+        // 用对齐后的列表, 保证 [n] 与引用卡片一致。
         List<ChatResult.Citation> citations =
                 retrieve.items().stream()
                         .map(
@@ -728,13 +764,12 @@ public class ChatService {
                                                 c.llmContext(),
                                                 c.sectionPath()))
                         .toList();
-        List<String> context =
-                retrieve.items().stream().map(RetrieveService.Citation::llmContext).toList();
-        // Phase 2.A Upgrade A2: SSE 路径 LITM (flag-driven, 默认 OFF)
-        if (chatMessages != null && chatMessages.isLitmReorder()) {
-            context = applyLostInTheMiddleReorder(new ArrayList<>(context));
-        }
-        context = applyContextBudget(context, traceId.value(), lfTrace);
+        AssembledContext assembled =
+                assembleContextWithHistory(ctx, topicShift, citations, traceId.value(), lfTrace);
+        List<String> context = assembled.context();
+        citations = assembled.citations();
+        final List<ChatResult.Citation> alignedCitations = citations;
+        final ConversationContext streamCtx = ctx;
 
         // 5. 异步调 LLM 流式; CitationsEvent 先发 → mergeWith LLM delta flux → DoneEvent
         // 注意: chat_traces 不在此处写(写要等 LLM 完整答案长度才知道; 在 chatStream 完成时
@@ -785,10 +820,22 @@ public class ChatService {
                                 reactor.core.publisher.Flux.defer(
                                         () -> {
                                             long llmTotalMs = System.currentTimeMillis() - sseLlmT0;
+                                            // P1 修复: SSE 路径此前只要流走完就发 OK — LLM 拒答文案
+                                            // (isLlmRefusal) / 空答案会以 OK 终态流给用户且污染多轮
+                                            // history。与 chat() 的 OK 判定对齐。
+                                            String finalAnswer = acc.toString();
+                                            boolean streamRefusal =
+                                                    finalAnswer.isBlank() || isLlmRefusal(finalAnswer);
+                                            StateHint doneState =
+                                                    streamRefusal
+                                                            ? StateHint.LLM_DEGRADED
+                                                            : StateHint.OK;
                                             traceObserver.observe(
                                                     lfTrace,
                                                     TraceObserver.ObservationType.LLM,
-                                                    "llm.stream_done",
+                                                    streamRefusal
+                                                            ? "llm.stream_refusal"
+                                                            : "llm.stream_done",
                                                     null,
                                                     Map.of("answer_len", acc.length()),
                                                     llmTotalMs,
@@ -796,23 +843,68 @@ public class ChatService {
                                             traceObserver.observe(
                                                     lfTrace,
                                                     TraceObserver.ObservationType.DECISION,
-                                                    "decision.ok",
+                                                    streamRefusal
+                                                            ? "decision.llm_blank"
+                                                            : "decision.ok",
                                                     null,
                                                     null,
                                                     llmTotalMs,
                                                     null);
-                                            // Phase 3.A: SSE outcome 设 ok 供 doFinally record total
-                                            sseOutcome.set("ok");
-                                            // 流正常结束 → 落 trace + 发 DoneEvent
+                                            // Phase 3.A: SSE outcome 设 ok/degraded 供 doFinally record
+                                            sseOutcome.set(
+                                                    streamRefusal ? "degraded" : "ok");
                                             persistTrace(
                                                     cmd,
                                                     traceId,
-                                                    acc.toString(),
-                                                    StateHint.OK,
+                                                    finalAnswer,
+                                                    doneState,
                                                     retrieve.evidenceSnapshot());
+                                            // P0 修复(SSE 多轮贯通): OK turn 写回 history (硬 gate:
+                                            // 仅 OK 且非拒答才写, 防污染 rewrite) + 触发异步压缩。
+                                            if (!streamRefusal
+                                                    && streamCtx != null
+                                                    && isMultiTurnEnabled()
+                                                    && conversationId != null
+                                                    && !conversationId.isBlank()) {
+                                                try {
+                                                    List<Long> citedChunkIds =
+                                                            alignedCitations.stream()
+                                                                    .map(
+                                                                            ChatResult.Citation
+                                                                                    ::chunkId)
+                                                                    .toList();
+                                                    ConversationContext updatedCtx =
+                                                            streamCtx.appendTurn(
+                                                                    new Turn(
+                                                                            cmd.query(),
+                                                                            finalAnswer,
+                                                                            citedChunkIds,
+                                                                            StateHint.OK,
+                                                                            Instant.now()));
+                                                    conversationStore.save(updatedCtx);
+                                                    int threshold =
+                                                            conversationProperties != null
+                                                                    ? conversationProperties
+                                                                            .getCompressThreshold()
+                                                                    : 6;
+                                                    if (historyCompressor != null
+                                                            && updatedCtx.recentTurns() != null
+                                                            && updatedCtx.recentTurns().size()
+                                                                    >= threshold) {
+                                                        historyCompressor.compress(conversationId);
+                                                    }
+                                                } catch (Exception e) {
+                                                    log.warn(
+                                                            "chat.stream_history_write_failed"
+                                                                    + " conv_id={}, reason={}",
+                                                            conversationId,
+                                                            e.getMessage());
+                                                }
+                                            }
+                                            // 流正常结束 → 发 DoneEvent(拒答时 LLM_DEGRADED)
                                             return reactor.core.publisher.Flux.just(
                                                     new ChatStreamEvent.DoneEvent(
-                                                            traceId.value(), StateHint.OK.name()));
+                                                            traceId.value(), doneState.name()));
                                         }))
                         .onErrorResume(
                                 e -> {
@@ -925,6 +1017,92 @@ public class ChatService {
         }
     }
 
+    /**
+     * P0 修复(citations 错位)统一组装: history block + LITM 重排 + token/char 双闸预算 + citations 对齐。
+     *
+     * <p>chat() 与 chatStream() 必须共用本方法, 保证两条主路径的 [n] 编号语义一致:
+     *
+     * <ul>
+     *   <li>history block (带 {@code <<CONVERSATION_HISTORY>>} marker) 作为 context 第 1 entry,
+     *       LLM client 渲染为不占 [n] 编号的独立段
+     *   <li>LITM 重排只作用于 evidence (history 不参与重排), 且 citations 同步重排保持配对
+     *   <li>预算截断后 kept 之外的 evidence 从返回的 citations 中移除 — LLM 只能给可见 evidence 标 [n],
+     *       前端卡片与 [n] 严格一一对应
+     * </ul>
+     */
+    private AssembledContext assembleContextWithHistory(
+            ConversationContext ctx,
+            boolean topicShift,
+            List<ChatResult.Citation> retrievedCitations,
+            String traceId,
+            String lfTrace) {
+        String historyBlock = "";
+        if (ctx != null && ctx.isEnabled() && promptAssembler != null) {
+            historyBlock = promptAssembler.buildHistoryBlock(ctx, topicShift);
+        }
+        final boolean hasHistory = historyBlock != null && !historyBlock.isBlank();
+
+        List<ChatResult.Citation> working = new ArrayList<>(retrievedCitations);
+        // Phase 2.A Upgrade A2: Lost-in-the-Middle 重排 (flag-driven, 默认 OFF=baseline 行为)
+        // 论文 Liu et al. 2023: LLM 在长 context 中对 [中间位置] 信息提取能力下降。
+        // citations 与 context 必须同步重排, 否则开启 LITM 时 [n] 与前端卡片错位。
+        if (chatMessages != null && chatMessages.isLitmReorder() && working.size() > 2) {
+            working = applyLitmReorderCitations(working);
+        }
+
+        List<String> context = new ArrayList<>();
+        if (hasHistory) {
+            context.add(historyBlock.trim());
+        }
+        for (var c : working) {
+            context.add(c.llmContext());
+        }
+        context = applyContextBudget(context, traceId, lfTrace);
+
+        int keptEntries = context.size();
+        int keptEvidence = hasHistory ? Math.max(0, keptEntries - 1) : keptEntries;
+        List<ChatResult.Citation> aligned =
+                List.copyOf(working.subList(0, Math.min(keptEvidence, working.size())));
+        if (aligned.size() < working.size()) {
+            log.info(
+                    "chat.citations_aligned_to_budget trace_id={}, kept={}/{}",
+                    traceId,
+                    aligned.size(),
+                    working.size());
+        }
+        return new AssembledContext(List.copyOf(context), aligned);
+    }
+
+    /** {@link #assembleContextWithHistory} 的结果: 对齐后的 context 与 citations。 */
+    private record AssembledContext(List<String> context, List<ChatResult.Citation> citations) {}
+
+    /**
+     * Phase 2.A Upgrade A2: Lost-in-the-Middle 重排的 citations 配对版本。
+     *
+     * <p>与 {@link #applyLostInTheMiddleReorder(List)} 同一排列算法, 但作用于 citation 列表 —
+     * llmContext 与 citation 同源同序, 排 citation 即排 context。
+     */
+    static List<ChatResult.Citation> applyLitmReorderCitations(
+            List<ChatResult.Citation> sortedDesc) {
+        if (sortedDesc == null || sortedDesc.size() <= 2) {
+            return sortedDesc;
+        }
+        int n = sortedDesc.size();
+        List<ChatResult.Citation> out = new ArrayList<>(n);
+        out.add(sortedDesc.get(0)); // 头: 最高分
+        java.util.ArrayDeque<ChatResult.Citation> mid = new java.util.ArrayDeque<>();
+        for (int i = 2; i < n; i++) {
+            if ((i & 1) == 0) {
+                mid.addFirst(sortedDesc.get(i)); // i=2,4,...靠头侧
+            } else {
+                mid.addLast(sortedDesc.get(i)); // i=3,5,...靠尾侧
+            }
+        }
+        out.addAll(mid);
+        out.add(sortedDesc.get(1)); // 尾: 次高分
+        return out;
+    }
+
     private List<String> applyContextBudget(List<String> context, String traceId, String lfTrace) {
         int budget = onlineExecutionProperties == null
                 ? 3000
@@ -934,7 +1112,12 @@ public class ChatService {
                         ? new com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder()
                         : tokenBudgetContextBuilder;
         com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder.BuildResult built =
-                builder.build(context, budget);
+                builder.build(
+                        context,
+                        budget,
+                        onlineExecutionProperties == null
+                                ? 3800
+                                : onlineExecutionProperties.getContextMaxChars());
         traceObserver.observe(
                 lfTrace,
                 TraceObserver.ObservationType.DECISION,

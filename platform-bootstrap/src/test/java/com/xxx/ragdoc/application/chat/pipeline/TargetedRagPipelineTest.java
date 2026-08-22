@@ -183,7 +183,7 @@ class TargetedRagPipelineTest {
         void streamPassesTargetedCommand() {
             ChatCommand orig = new ChatCommand("Nacos 健康检查哪一节", null, 5);
             ChatStreamEvent head = new ChatStreamEvent.DoneEvent(TID.value(), StateHint.OK.name());
-            when(chatService.chatStream(any(), eq(TID)))
+            when(chatService.chatStream(any(), eq(TID), any()))
                     .thenReturn(reactor.core.publisher.Flux.just(head));
 
             pipeline.stream(orig, ctxWithFilters(Map.of("products", List.of("Nacos"))))
@@ -192,7 +192,7 @@ class TargetedRagPipelineTest {
 
             org.mockito.ArgumentCaptor<ChatCommand> captor =
                     org.mockito.ArgumentCaptor.forClass(ChatCommand.class);
-            verify(chatService, times(1)).chatStream(captor.capture(), eq(TID));
+            verify(chatService, times(1)).chatStream(captor.capture(), eq(TID), any());
             assertThat(captor.getValue().source()).isEqualTo("Nacos");
         }
     }

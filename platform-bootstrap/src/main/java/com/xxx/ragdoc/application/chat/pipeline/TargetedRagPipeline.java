@@ -87,7 +87,7 @@ public class TargetedRagPipeline implements ChatPipeline {
                 context.traceId().value(),
                 targeted.source(),
                 targeted.version());
-        return chatService.chatStream(targeted, context.traceId());
+        return chatService.chatStream(targeted, context.traceId(), targeted.conversationId());
     }
 
     /**

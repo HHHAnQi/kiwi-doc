@@ -3,6 +3,7 @@ package com.xxx.ragdoc.application.chat.pipeline;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -104,7 +105,7 @@ class ClassicRagPipelineTest {
     void streamDelegates() {
         ChatCommand cmd = new ChatCommand("测试", null, 5);
         ChatStreamEvent head = new ChatStreamEvent.DoneEvent(TID.value(), StateHint.OK.name());
-        when(chatService.chatStream(eq(cmd), eq(TID)))
+        when(chatService.chatStream(eq(cmd), eq(TID), isNull()))
                 .thenReturn(reactor.core.publisher.Flux.just(head));
 
         ChatExecutionContext ctx =
@@ -120,6 +121,6 @@ class ClassicRagPipelineTest {
 
         assertThat(events).hasSize(1);
         verify(chatService, never()).chat(any(), any(), any());
-        verify(chatService, times(1)).chatStream(eq(cmd), eq(TID));
+        verify(chatService, times(1)).chatStream(eq(cmd), eq(TID), isNull());
     }
 }

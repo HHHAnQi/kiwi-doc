@@ -63,11 +63,12 @@ public class PromptAssembler implements PromptAssemblerPort {
     public String buildHistoryBlock(ConversationContext ctx, boolean topicShift) {
         if (ctx == null || !ctx.isEnabled()) return "";
 
-        StringBuilder sb = new StringBuilder();
+        // 内容先攒 body, 非空才加 marker 头 — 防 "marker-only" 空块被当有效 history 塞进 context
+        StringBuilder body = new StringBuilder();
 
         // 1) Rolling Summary (Tier S, 概念级), 即使 topic shift 也保留 (作为弱远期背景)
         if (ctx.rollingSummary() != null && !ctx.rollingSummary().isBlank()) {
-            sb.append("[对话摘要] (历史背景)\n").append(ctx.rollingSummary()).append("\n\n");
+            body.append("[对话摘要] (历史背景)\n").append(ctx.rollingSummary()).append("\n\n");
         }
 
         // 2) Recent turns (Tier B, 指代还原用), topic shift 时跳过
@@ -83,16 +84,24 @@ public class PromptAssembler implements PromptAssemblerPort {
                 turns = turns.subList(overflow, turns.size()); // 保留最近 N
             }
 
-            sb.append("[最近对话]\n");
+            body.append("[最近对话]\n");
             for (Turn t : turns) {
-                sb.append("Q: ").append(t.userQuery()).append("\n");
-                sb.append("A: ")
+                body.append("Q: ").append(t.userQuery()).append("\n");
+                body.append("A: ")
                         .append(truncate(t.botAnswer(), ANSWER_TRUNCATE_CHARS))
                         .append("\n");
             }
         }
 
-        return sb.toString().trim();
+        String trimmed = body.toString().trim();
+        if (trimmed.isEmpty()) return "";
+
+        // P0 修复(引用编号错位): 以 marker 开头, OpenAiCompatibleLlmClient 据此把整块渲染为
+        // 不参与 [n] 编号的独立 history 段 (此前它占用 [1], 挤掉第一条 evidence 的编号)。
+        return com.xxx.ragdoc.application.chat.conversation.port.PromptAssemblerPort
+                        .HISTORY_BLOCK_MARKER
+                + "\n"
+                + trimmed;
     }
 
     private static String truncate(String s, int max) {

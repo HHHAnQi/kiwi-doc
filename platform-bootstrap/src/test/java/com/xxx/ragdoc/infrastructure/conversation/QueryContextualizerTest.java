@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
  *
  * <ul>
  *   <li>skip: history 空 (第 1 turn) → 不调 LLM
- *   <li>skip 鹦鹉: LLM 返回等于 / 包含原 query → skip
+ *   <li>skip 鹦鹉: LLM 复读原 query / 仅增删标点语气词(编辑相似度 ≥0.9) → skip
  *   <li>ok: LLM 正常 rewrite
  *   <li>failed: LLM 异常 → fallback 原 query
  * </ul>
@@ -91,8 +91,31 @@ class QueryContextualizerTest {
     }
 
     @Test
-    void LLM含原query子串_也算鹦鹉_skip() throws Exception {
+    void LLM含原query子串_但是实质改写_应ok采纳() throws Exception {
+        // P0 修复: 原双向 contains 会把 "那 Hystrix 呢"→"那 Hystrix 呢 详细说说" 误判为鹦鹉
+        // (condense 改写天然以原问为子串), 指代消解形同虚设 → 多轮 G2 gate 2/20。
+        // 现在只有 复读/仅加标点语气词 才判 skip。
         when(routeClient.chat(anyString(), anyList())).thenReturn("那 Hystrix 呢 详细说说");
+
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
+
+        assertThat(r.outcome()).isEqualTo("ok");
+        assertThat(r.retrieveQuery()).isEqualTo("那 Hystrix 呢 详细说说");
+    }
+
+    @Test
+    void LLM只复读原query_应鹦鹉_skip() throws Exception {
+        when(routeClient.chat(anyString(), anyList())).thenReturn("那 Hystrix 呢？");
+
+        ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
+
+        assertThat(r.outcome()).isEqualTo("skip");
+        assertThat(r.retrieveQuery()).isEqualTo("那 Hystrix 呢");
+    }
+
+    @Test
+    void LLM仅加标点_应鹦鹉_skip() throws Exception {
+        when(routeClient.chat(anyString(), anyList())).thenReturn("那 Hystrix 呢 !!!");
 
         ContextualizeResult r = ctx.contextualize("那 Hystrix 呢", List.of(turn("Q", "A")));
 

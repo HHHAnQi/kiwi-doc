@@ -169,7 +169,7 @@ public class ComparisonWorkflowPipeline implements ChatPipeline {
         // PR-6c: SSE 在 Agent 路径下仍走 Legacy 经典 stream (chat_flow = chatService.chatStream),
         // 单终态契约由 ChatService 内 concatWith + onErrorResume 保证 (PR-0 不变量)。
         // 完整 Agent-driven streaming 留 PR-8。
-        return chatService.chatStream(command, context.traceId());
+        return chatService.chatStream(command, context.traceId(), command.conversationId());
     }
 
     // ─── 内部 ────────────────────────────────────────────────

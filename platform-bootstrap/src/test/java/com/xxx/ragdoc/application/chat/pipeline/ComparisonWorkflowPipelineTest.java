@@ -229,7 +229,7 @@ class ComparisonWorkflowPipelineTest {
         void streamDelegatesToClassic() {
             ChatCommand cmd = new ChatCommand("比较 v1.0 和 v2.0 权限差异", null, 5);
             ChatStreamEvent head = new ChatStreamEvent.DoneEvent(TID.value(), StateHint.OK.name());
-            when(chatService.chatStream(any(), eq(TID))).thenReturn(Flux.just(head));
+            when(chatService.chatStream(any(), eq(TID), any())).thenReturn(Flux.just(head));
 
             List<ChatStreamEvent> events =
                     pipeline.stream(cmd, ctxWithEntities(List.of("v1.0", "v2.0")))
@@ -239,7 +239,7 @@ class ComparisonWorkflowPipelineTest {
             assertThat(events).hasSize(1);
             // 流式不调 chat(同步路径), 单终态契约由 Classic 的 chatStream 保
             verify(chatService, times(0)).chat(any(), eq(TID), any());
-            verify(chatService, times(1)).chatStream(any(), eq(TID));
+            verify(chatService, times(1)).chatStream(any(), eq(TID), any());
         }
     }
 }
