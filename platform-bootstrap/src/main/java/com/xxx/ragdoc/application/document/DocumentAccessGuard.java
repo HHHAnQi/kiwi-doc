@@ -109,16 +109,23 @@ public class DocumentAccessGuard {
     }
 
     /** doc visibility ∈ {TENANT, PUBLIC} → 本租户内任一成员自动 READ。 */
-    private static boolean isTenantVisible(Document doc) {
+    private boolean isTenantVisible(Document doc) {
         String v = visibilityOf(doc);
         return "TENANT".equalsIgnoreCase(v) || "PUBLIC".equalsIgnoreCase(v);
     }
 
-    /** Principal doc 当前 visibility; doc 实体暂无显式字段, 走 default TENANT。 */
-    private static String visibilityOf(Document doc) {
-        // Document domain 暂未暴露 visibility accessor (V9 SQL 有列); 这里保守返 default "TENANT"
-        // 后续若 doc 加 visibility() 显式 accessor, 替换此行
-        return "TENANT";
+    /**
+     * Principal doc 当前 visibility。
+     *
+     * <p>V9 起 documents 表有 visibility 列(VARCHAR NOT NULL DEFAULT 'TENANT'), 但 Document 聚合
+     * 未暴露该字段, 故经 port 回查。查询失败时保守返 "PRIVATE" (fail closed: PRIVATE 需要显式 ACL
+     * 才放行, 不会因为读不到列而扩大可见面)。
+     */
+    private String visibilityOf(Document doc) {
+        return documentRepository
+                .findVisibilityById(doc.id().value())
+                .filter(v -> !v.isBlank())
+                .orElse("PRIVATE");
     }
 
     /** USER/ROLE/TENANT 三档 ACL 任一命中 requiredPerms 即 true。 */

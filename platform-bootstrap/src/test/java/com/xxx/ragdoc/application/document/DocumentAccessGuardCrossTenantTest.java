@@ -109,6 +109,7 @@ class DocumentAccessGuardCrossTenantTest {
         loginAs("tenantA", "userA2", false);
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.findVisibilityById(100L)).thenReturn(Optional.of("TENANT"));
 
         assertThat(guard.requireRead(100L).id().value()).isEqualTo(100L);
     }
@@ -153,6 +154,7 @@ class DocumentAccessGuardCrossTenantTest {
         loginAs("tenantA", "userA2", false);
         Document doc = makeDoc(100, "tenantA");
         when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.findVisibilityById(100L)).thenReturn(Optional.of("TENANT"));
 
         assertThat(guard.requireRead(100L).id().value()).isEqualTo(100L);
         // 没调 ACL (TENANT visibility 自带 READ)
@@ -181,6 +183,30 @@ class DocumentAccessGuardCrossTenantTest {
         when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("OWNER"))).thenReturn(true);
 
         assertThat(guard.requireOwner(100L).id().value()).isEqualTo(100L);
+    }
+
+    @Test
+    @DisplayName("同租户 visibility=PRIVATE 且无 ACL → 404 (P0 修复: 原硬编码 TENANT 使 PRIVATE 失效)")
+    void privateDocBlockedWithoutAcl() {
+        loginAs("tenantA", "userA2", false);
+        Document doc = makeDoc(100, "tenantA");
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.findVisibilityById(100L)).thenReturn(Optional.of("PRIVATE"));
+        when(permissionResolver.hasExplicitAcl(eq(100L), any(), anyString())).thenReturn(false);
+
+        assertThatThrownBy(() -> guard.requireRead(100L)).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("同租户 visibility=PRIVATE + READ ACL → 通过 (显式授权仍有效)")
+    void privateDocReadableWithAcl() {
+        loginAs("tenantA", "userA2", false);
+        Document doc = makeDoc(100, "tenantA");
+        when(documentRepository.findById(100L)).thenReturn(Optional.of(doc));
+        when(documentRepository.findVisibilityById(100L)).thenReturn(Optional.of("PRIVATE"));
+        when(permissionResolver.hasExplicitAcl(eq(100L), any(), eq("READ"))).thenReturn(true);
+
+        assertThat(guard.requireRead(100L).id().value()).isEqualTo(100L);
     }
 
     @Test

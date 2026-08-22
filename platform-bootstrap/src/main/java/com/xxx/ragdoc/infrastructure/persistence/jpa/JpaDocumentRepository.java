@@ -75,6 +75,11 @@ public class JpaDocumentRepository implements DocumentRepository {
     }
 
     @Override
+    public Optional<String> findVisibilityById(Long id) {
+        return jpa.findById(id).map(DocumentEntity::getVisibility);
+    }
+
+    @Override
     public java.util.List<Document> findByIdIn(java.util.Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) return java.util.List.of();
         return jpa.findAllById(ids).stream().map(DocumentMapper::toDomain).toList();

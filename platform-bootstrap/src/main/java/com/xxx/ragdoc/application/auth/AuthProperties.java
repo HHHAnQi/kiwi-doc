@@ -31,12 +31,12 @@ public class AuthProperties {
     /** 触发 dev-default-principal 的 magic token。 */
     private String devDefaultToken = "dev-default-token";
 
-    /** 兼容老 FeedbackController 用的 dev token (DEV_TOKEN)。 */
-    private String devToken = System.getenv().getOrDefault("APP_DEV_TOKEN", "dev-token-change-me");
-
-    /** 兼容老 FeedbackController 用的 admin token (ADMIN_TOKEN)。 */
-    private String adminToken =
-            System.getenv().getOrDefault("APP_ADMIN_TOKEN", "admin-token-change-me");
+    /**
+     * P0 修复: 原此处有 devToken/adminToken (APP_DEV_TOKEN/APP_ADMIN_TOKEN 静态比对),
+     * 与 AuthFilter 的 DB principal 体系形成双轨凭据通道, 已随 FeedbackController 改走
+     * AuthContext 一并删除。默认 dev/admin principal 由 DefaultPrincipalSeeder (@Profile
+     * dev/local/test) 幂等种入。
+     */
 
     /** allowlist 路径前缀 (无 token 可访问), 默认 health/readiness。 */
     private java.util.List<String> allowlistPaths =

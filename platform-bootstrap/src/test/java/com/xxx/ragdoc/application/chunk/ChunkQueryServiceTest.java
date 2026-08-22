@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.xxx.ragdoc.application.chunk.query.ChunkDetail;
 import com.xxx.ragdoc.application.chunk.query.ChunkNeighbors;
 import com.xxx.ragdoc.application.chunk.query.PageChunks;
+import com.xxx.ragdoc.application.document.DocumentAccessGuard;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
 import com.xxx.ragdoc.application.document.query.DocumentDetail;
@@ -46,6 +47,8 @@ class ChunkQueryServiceTest {
 
     @Mock private ChunkRepository chunkRepository;
     @Mock private DocumentRepository documentRepository;
+    // P0 修复(chunk 越权) 后 ChunkQueryService 走 DocumentAccessGuard 守门, 单测 mock 放行
+    @Mock private DocumentAccessGuard documentAccessGuard;
 
     @InjectMocks private ChunkQueryService service;
 
@@ -78,6 +81,11 @@ class ChunkQueryServiceTest {
                 false);
     }
 
+    /** 守门放行: requireRead(docId) 返回对应 doc。 */
+    private void allowRead(Long docId) {
+        when(documentAccessGuard.requireRead(docId)).thenReturn(sampleDoc(docId));
+    }
+
     private void mockDocDetail(Long docId) {
         DocumentDetail detail =
                 new DocumentDetail(
@@ -108,6 +116,7 @@ class ChunkQueryServiceTest {
         void existingReturnsDetail() {
             Chunk c = sampleChunk(10L, 1L, 5);
             when(chunkRepository.findById(10L)).thenReturn(Optional.of(c));
+            allowRead(1L);
             mockDocDetail(1L);
 
             ChunkDetail d = service.getChunk(10L);
@@ -145,6 +154,7 @@ class ChunkQueryServiceTest {
                     .thenReturn(Optional.of(prev));
             when(chunkRepository.findByDocumentIdAndSeq(1L, 6, ChunkType.TEXT))
                     .thenReturn(Optional.of(next));
+            allowRead(1L);
             mockDocDetail(1L);
 
             ChunkNeighbors n = service.getNeighbors(5L, ChunkQueryService.Direction.BOTH);
@@ -160,6 +170,7 @@ class ChunkQueryServiceTest {
             when(chunkRepository.findById(1L)).thenReturn(Optional.of(cur));
             when(chunkRepository.findByDocumentIdAndSeq(1L, -1, ChunkType.TEXT))
                     .thenReturn(Optional.empty());
+            allowRead(1L);
             mockDocDetail(1L);
 
             ChunkNeighbors n = service.getNeighbors(1L, ChunkQueryService.Direction.BOTH);
@@ -174,6 +185,7 @@ class ChunkQueryServiceTest {
             when(chunkRepository.findById(5L)).thenReturn(Optional.of(cur));
             when(chunkRepository.findByDocumentIdAndSeq(1L, 4, ChunkType.TEXT))
                     .thenReturn(Optional.empty());
+            allowRead(1L);
             mockDocDetail(1L);
 
             ChunkNeighbors n = service.getNeighbors(5L, ChunkQueryService.Direction.PREV);
@@ -203,7 +215,10 @@ class ChunkQueryServiceTest {
         @Test
         @DisplayName("doc 不存在 → DOC_NOT_FOUND")
         void docMissing() {
-            when(documentRepository.findById(99L)).thenReturn(Optional.empty());
+            // 守门现在承担存在性+权限校验(与文档详情同语义, 防枚举)
+            when(documentAccessGuard.requireRead(99L))
+                    .thenThrow(
+                            new NotFoundException(ErrorCode.DOC_NOT_FOUND, "文档不存在: 99"));
 
             assertThatThrownBy(() -> service.listByPage(99L, 1))
                     .isInstanceOf(NotFoundException.class)
@@ -216,7 +231,7 @@ class ChunkQueryServiceTest {
         @Test
         @DisplayName("doc 存在但该页无 chunks → 返回空数组")
         void docExistsButNoChunks() {
-            when(documentRepository.findById(1L)).thenReturn(Optional.of(sampleDoc(1L)));
+            allowRead(1L);
             when(chunkRepository.findByDocumentIdAndPageOrderBySeq(1L, 3)).thenReturn(List.of());
 
             PageChunks p = service.listByPage(1L, 3);
@@ -228,7 +243,7 @@ class ChunkQueryServiceTest {
         @Test
         @DisplayName("有 chunks → 按 seq 升序, 含 totalPagesInDoc")
         void withChunks() {
-            when(documentRepository.findById(1L)).thenReturn(Optional.of(sampleDoc(1L)));
+            allowRead(1L);
             Chunk c1 = sampleChunk(1L, 1L, 0);
             Chunk c2 = sampleChunk(2L, 1L, 1);
             when(chunkRepository.findByDocumentIdAndPageOrderBySeq(1L, 1))
@@ -242,4 +257,32 @@ class ChunkQueryServiceTest {
             assertThat(p.totalPagesInDoc()).isEqualTo(10);
         }
     }
+
+    @Nested
+    @DisplayName("P0 越权修复回归: 守门必须被调用")
+    class AccessGuardRegression {
+        @Test
+        @DisplayName("getChunk 必须经 DocumentAccessGuard.requireRead(chunk.documentId) 守门")
+        void getChunkInvokesGuard() {
+            Chunk c = sampleChunk(10L, 7L, 5);
+            when(chunkRepository.findById(10L)).thenReturn(Optional.of(c));
+            allowRead(7L);
+            mockDocDetail(7L);
+
+            service.getChunk(10L);
+
+            verify(documentAccessGuard, times(1)).requireRead(7L);
+        }
+
+        @Test
+        @DisplayName("listByPage 对无权文档 → 守门抛 404 (原实现仅校验存在性, 跨租户可读任意 chunk)")
+        void listByPageDeniedByGuard() {
+            when(documentAccessGuard.requireRead(99L))
+                    .thenThrow(new NotFoundException(ErrorCode.DOC_NOT_FOUND, "文档不存在: 99"));
+
+            assertThatThrownBy(() -> service.listByPage(99L, 1))
+                    .isInstanceOf(NotFoundException.class);
+        }
+    }
+
 }

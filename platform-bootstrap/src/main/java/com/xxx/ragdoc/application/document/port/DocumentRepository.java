@@ -27,6 +27,14 @@ public interface DocumentRepository {
     /** 按 id 查(默认仅查未软删,V4 多租户化后强制带 tenantId)。 */
     Optional<Document> findById(Long id);
 
+    /**
+     * 按 id 查 visibility(TENANT/PUBLIC/PRIVATE)。V9 加列但 Document 聚合未携带,
+     * 供 DocumentAccessGuard 做 PRIVATE 判定; 不存在返 empty, 调用方按保守默认处理。
+     */
+    default Optional<String> findVisibilityById(Long id) {
+        return Optional.empty();
+    }
+
     /** 批量按 id 回查文档，用于检索命中后的状态、租户和真实版本二次校验。 */
     java.util.List<Document> findByIdIn(java.util.Collection<Long> ids);
 
