@@ -127,8 +127,11 @@ resilience4j:
       llm-fallback:
         base-config: default
       # Phase 3.A 扩展用:
+      # P1 修复: Rosetta amd64 模拟的 BGE-M3 单次 60-240s 属正常, default 的 30s 慢调用阈值
+      # 会把所有调用判慢 → CB 常开 → 任务重排风暴。单独放宽。
       embedding:
         base-config: default
+        slow-call-duration-threshold: 300s
       rerank:
         base-config: default
       milvus:

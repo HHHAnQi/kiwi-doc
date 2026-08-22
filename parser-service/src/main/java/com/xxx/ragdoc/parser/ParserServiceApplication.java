@@ -52,6 +52,23 @@ import org.springframework.scheduling.annotation.EnableScheduling;
                     // 但保留 application.chunking.* (切片层 ParseWorker 真正依赖的 ChunkingService)
                     pattern =
                             "com\\.xxx\\.ragdoc\\.(interfaces|application\\.chat|application\\.feedback|application\\.chunk\\..*|application\\.auth|event).*"),
+            // P1 修复(parser-service 无法启动): infrastructure.* 通配扫描会把 LlmRouter 拖进来,
+            // 其构造依赖 application.chat.ChatMessages(已被上方 filter 排除) → NoBean 启动失败。
+            // parser 解析链不需要 LLM 与多轮会话基础设施, 一并排除 llm / conversation 两包。
+            @ComponentScan.Filter(
+                    type = FilterType.REGEX,
+                    pattern = "com\\.xxx\\.ragdoc\\.infrastructure\\.(llm|conversation|queryenhance|verification|trace)\\..*"),
+            // chat-app 专属能力自检 Runner: 依赖一堆 chat 侧 properties/router(已排除),
+            // parser 不需要; ASSIGNABLE_TYPE 精确到类。
+            @ComponentScan.Filter(
+                    type = FilterType.ASSIGNABLE_TYPE,
+                    classes = {
+                        com.xxx.ragdoc.infrastructure.config.RagCapabilityRegistry.class,
+                        // 依赖 application.document.DocumentManageService(不在 parser 扫描范围),
+                        // 属 chat-app 文档生命周期调度; parser 有自己的 VisibilityTimeoutScheduler。
+                        com.xxx.ragdoc.infrastructure.scheduler.MilvusDeleteSweeper.class,
+                        com.xxx.ragdoc.infrastructure.scheduler.VectorReconcileJob.class
+                    }),
             // 排除仅 chat-app 用的 rerank client: 它依赖 RerankProperties(application.chat 包),
             // parser 不调 rerank, 排除它解掉 NoUniqueBean
             @ComponentScan.Filter(

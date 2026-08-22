@@ -54,9 +54,16 @@ llm:
 embedding:
   base-url: ${EMBEDDING_BASE_URL:http://localhost:8082}
   model: ${EMBEDDING_MODEL:BAAI/bge-m3}
+  # P1(云端 embedding): 指向云 provider(如智谱 .../paas/v4 + embedding-3)时必填 Bearer key;
+  # 本地 TEI 留空。dimensions 需与 Milvus collection 维度一致(本项目 1024)。
+  api-key: ${EMBEDDING_API_KEY:}
+  dimensions: ${EMBEDDING_DIMENSIONS:0}
   # Rosetta amd64 模拟下 BGE-M3 推理慢(单条 ~7s, batch=6 翻倍), 必须 >40s 才不超时
   # 生产用 GPU/原生 amd64 时可降到 5000ms
-  timeout-ms: 90000
+  timeout-ms: ${EMBEDDING_TIMEOUT_MS:90000}
+  # P1 修复(索引吞吐): embed HTTP 并发信号量。Rosetta BGE-M3 吞吐低, 多消费者并发压入
+  # 会在 TEI 排队 → 集体超时 → CB 开 → 重排风暴; 串行喂反而总吞吐最高。GPU 生产设 0。
+  max-concurrent: ${EMBEDDING_MAX_CONCURRENT:1}
 
 # V2-C: 检索 feature flag
 # dense(默认): 单路 BGE-M3 dense ANN, 生产基线

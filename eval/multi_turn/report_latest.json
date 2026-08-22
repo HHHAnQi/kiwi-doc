@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-04T16:33:53.563613Z",
+  "generated_at": "2026-08-22T16:32:38.382342Z",
   "chat_url": "http://localhost:8080/api/v1/chat",
   "judge_model": "deepseek-chat",
   "gates": [
@@ -16,169 +16,169 @@
     {
       "gate": "G2",
       "status": "FAIL",
-      "pass_n": 2,
+      "pass_n": 3,
       "total": 20,
-      "rate": 0.1,
+      "rate": 0.15,
       "threshold": 0.85,
       "details": [
         {
           "question_id": "mt_g2_001",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "Sentinel 与 Hystrix 有对比文档 [1]。Guideline 提供了从 Hystrix 迁移到 Sentinel 的指南 [1]。",
+          "actual_answer": "片段中未提及 Hystrix。",
           "expected_standalone": "Hystrix 默认的 QPS 阈值是多少?",
-          "judge": "FAIL: 回答未提及 Hystrix 的 QPS 阈值、threadPool.size 或 metrics.rollingStats.timeInMilliseconds 等关键事实。",
+          "judge": "FAIL  \n回答未提及关键事实中的任何核心点（如Hystrix、QPS阈值、threadPool.size或metrics.rollingStats.timeInMilliseconds）。",
           "pass": false
         },
         {
           "question_id": "mt_g2_002",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "[1] 中使用的端口号根据需求可自行更改 [1]；[5] 中 admin 的 address 的 socket_address 的 port_value 为 15000，这个值可以修改；[4] 中配置的 addresses 端口 20880 也可以根据需求调整 [1][4][5]。",
+          "actual_answer": "Nacos 默认端口可以通过配置修改，主端口通过 server.port 配置，gRPC 端口通过偏移量计算 [1][3][4]。RocketMQ 默认监听端口 listenPort 可以修改 [2]。Nacos 的 Prometheus 端口可通过 metrics.exporter.prometheus.port 修改 [5]。",
           "expected_standalone": "Nacos 和 RocketMQ 的默认端口能否修改?",
-          "judge": "FAIL  \n回答未提及Nacos通过application.properties修改server.port，也未提及RocketMQ通过namesrvAddr或broker.conf修改listenPort。",
-          "pass": false
+          "judge": "PASS  \n回答提到了Nacos通过server.port修改端口，以及RocketMQ通过listenPort修改监听端口，覆盖了关键事实核心点。",
+          "pass": true
         },
         {
           "question_id": "mt_g2_003",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "可以通过 `<dubbo:reference>` 标签下的 `<dubbo:method>` 配置方法级别参数，如设置 findFoo 方法的重试次数为 2 次 [6]。也可以在配置文件中对特定服务的消费者方法进行超时时间配置 [3]。",
+          "actual_answer": "可以在方法级别为特定方法指定 Mock 行为 [3]。例如，可以为 `com.foo.BarService` 的 `sayHello()` 方法单独配置 Mock 行为，使其返回 \"fake\" [3]。",
           "expected_standalone": "如何在 Dubbo 方法级别配置超时时间?",
-          "judge": "FAIL: 回答未提及方法级超时配置的具体语法（如 `<dubbo:method>` 或 `@DubboMethod`）及优先级高于服务级别这一核心点。",
+          "judge": "FAIL  \n回答内容是关于方法级别的Mock行为配置，未提及超时配置或优先级关系。",
           "pass": false
         },
         {
           "question_id": "mt_g2_004",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "片段中未提及\"第一种\"具体指什么内容，无法提供相关回答。",
+          "actual_answer": "流量控制规则用于保护服务提供方，而熔断降级规则用于保护服务消费方 [1][5]。流量控制规则处理消费方请求速度过高的情况，采用拒绝或排队等待的策略 [5]。熔断降级规则则是为了处理依赖服务不可用的情况，通过快速失败来保护业务系统的可用性 [2][3]。",
           "expected_standalone": "Sentinel 线程数限流和 QPS 限流的区别",
-          "judge": "FAIL  \n回答未提及QPS限流与线程数限流的区别及适用场景，未包含关键事实核心点。",
+          "judge": "FAIL  \n回答未提及QPS限流、线程数限流及其适用场景，与关键事实无关。",
           "pass": false
         },
         {
           "question_id": "mt_g2_005",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "在事务消息中，通过事务检查器检查本地事务状态，返回 TransactionResolution.ROLLBACK 进行回滚 [1]。在全局事务中，分支事务回滚时需要重新获取本地锁，进行反向补偿更新操作，直到其他事务释放全局锁 [2]。AT 模式下，二阶段 rollback 行为通过回滚日志自动生成补偿操作完成数据回滚 [3]。",
+          "actual_answer": "Seata AT 模式通过回滚日志自动生成补偿操作完成数据回滚 [3]。当事务超时或需要回滚时，TC 会执行二阶段 rollback 行为 [1]。AT 模式支持 Dameng 数据库和 PolarDB-X 2.0 数据库 [2]。",
           "expected_standalone": "Seata AT 模式如何处理回滚?",
-          "judge": "FAIL  \n回答未提及“一阶段提交前生成undo_log（前镜像+后镜像）”这一核心事实，仅笼统提到“回滚日志自动生成补偿操作”。",
+          "judge": "FAIL  \n回答未提及 undo_log、前镜像/后镜像，也未说明根据 undo_log 反向生成 SQL 还原数据的具体机制。",
           "pass": false
         },
         {
           "question_id": "mt_g2_006",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "系统默认配置的数据库是Mysql，也能支持其他的关系型数据库 [2]。建库，缺省的数据库名字为\"nacos_Sync\"，数据库表不需要单独创建，默认使用了hibernate的自动建表功能 [2]。配置示例：spring.datasource.url=jdbc:mysql://127.0.0.1:3306/nacos_sync?characterEncoding=utf8，spring.dataso",
+          "actual_answer": "修改`${nacos.home}/conf/application.properties`文件，增加支持MySQL数据源配置，添加MySQL数据源的url、用户名和密码 [1][2]。需要自行准备MySQL数据库，版本要求5.6.5+，并初始化mysql-schema.sql文件 [3]。",
           "expected_standalone": "Nacos 从 derby 切换到 MySQL 怎么配置?",
-          "judge": "FAIL: 回答未提及在application.properties中设置spring.datasource.platform=mysql及db.num、db.url.0等配置项，也未提到使用nacos-mysql.sql初始化表。",
+          "judge": "FAIL: 回答未提及设置 spring.datasource.platform=mysql、db.num、db.url.0 等具体配置项，也未明确使用 nacos-mysql.sql 初始化表。",
           "pass": false
         },
         {
           "question_id": "mt_g2_007",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "Sentinel 的特点包括流量控制、流量整形、并发控制、熔断和系统自适应过载保护，以保证微服务的可靠性和弹性 [5]。它适用于丰富场景，已在阿里巴巴广泛应用，覆盖\"秒杀\"等核心场景，支持实时监控和小于500节点的集群运行信息聚合 [5]。Sentinel 提供与Spring Cloud、gRPC、Apache Dubbo和Quarkus等常用框架的开箱即用集成，并支持Java、Go、C++和Ru",
+          "actual_answer": "Nacos 支持将注册中心与配置中心在一个进程合并部署或者将两者分离部署的两种模式 [2]。Nacos 致力于帮助您发现、配置和管理微服务，提供动态服务发现、服务配置、服务元数据及流量管理特性 [5]。Nacos 支持命名空间来支持多环境隔离，可以在 Nacos 控制台创建多个命名空间 [5]。",
           "expected_standalone": "Nacos 作为注册中心有什么特点?",
-          "judge": "FAIL  \n回答内容完全围绕Sentinel的功能特性，未提及Nacos的服务发现、配置管理、AP/CP切换、健康检查、权重路由或命名空间隔离等关键事实。",
+          "judge": "FAIL: 回答未提及服务发现与配置管理一体、AP/CP切换、健康检查及权重路由等关键事实核心点。",
           "pass": false
         },
         {
           "question_id": "mt_g2_008",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "消费者必须关联一个指定的消费者分组，以获取分组内统一定义的行为配置和消费状态[5]。同一分组下的所有消费者需要保持投递顺序和消费重试策略一致[2][3]。消费者类型包括PushConsumer、SimpleConsumer和PullConsumer（仅推荐流处理场景使用）[5]。",
+          "actual_answer": "消费者端需严格按照接收-处理-应答的语义处理消息，避免异步处理导致乱序 [1]。使用PushConsumer类型时，RocketMQ保证按存储顺序一条一条投递消息；若使用SimpleConsumer，一次可能拉取多条消息，顺序性需业务方自行保证 [1]。消费者分组内所有消费者需保持投递顺序和消费重试策略一致 [4]。",
           "expected_standalone": "RocketMQ 消费者端如何配合保证消息顺序?",
-          "judge": "FAIL\n回答未提及MessageListenerOrderly、MessageListenerConcurrently或消费线程绑定queue等顺序消费机制。",
+          "judge": "FAIL  \n回答未提及 MessageListenerOrderly、MessageListenerConcurrently 或消费线程绑定 queue 保证单 queue 单线程消费的核心机制。",
           "pass": false
         },
         {
           "question_id": "mt_g2_009",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 94570684",
+          "actual_answer": "片段中未提及 Sentinel 熔断降级的慢调用比例触发计算方式。知识库中没有相关内容。",
           "expected_standalone": "Sentinel 慢调用比例熔断策略如何计算触发?",
-          "judge": "FAIL  \n回答未提及慢调用比例策略的任何核心内容，仅提示模型不可用。",
+          "judge": "FAIL: 回答未提及慢调用比例策略的任何核心内容。",
           "pass": false
         },
         {
           "question_id": "mt_g2_010",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 87f82455",
+          "actual_answer": "片段中未提及为什么Nacos集群节点数需要是奇数。",
           "expected_standalone": "Nacos 集群为什么推荐奇数节点?",
-          "judge": "FAIL  \n回答未包含任何关于 Nacos 节点数量、Raft quorum 或脑裂的内容，仅提示模型不可用。",
+          "judge": "FAIL: 回答未提及Nacos节点数需为奇数及Raft协议quorum、脑裂等关键事实。",
           "pass": false
         },
         {
           "question_id": "mt_g2_011",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: fc437d04",
+          "actual_answer": "Dubbo SPI 支持用户可定制化的鉴权认证以及适配公司内部基础设施的密钥存储 [1]。通过 Filter、Router、Protocol 等扩展点定义，实现与其他微服务配套系统的对接 [2]。MigrationAddressComparator 也是一个 SPI 拓展点，用户可以自行拓展，所有检查的结果取交集 [5]。",
           "expected_standalone": "Dubbo SPI 的加载机制具体是怎样的?",
-          "judge": "FAIL 回答未提及任何关于Dubbo SPI的关键事实，仅提示模型不可用。",
+          "judge": "FAIL: 回答未提及SPI从META-INF/dubbo/目录读取配置、IOC注入、AOP包装、按key定位或@Adaptive动态选择等核心机制。",
           "pass": false
         },
         {
           "question_id": "mt_g2_012",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "TCC 模式的三个阶段是 Try、Confirm 和 Cancel [2]。Try 阶段调用自定义的 prepare 逻辑，Confirm 阶段调用自定义的 commit 逻辑，Cancel 阶段调用自定义的 rollback 逻辑 [1]。",
+          "actual_answer": "TCC 模式包含一阶段 prepare 行为，调用自定义的 prepare 逻辑 [1][3]。二阶段 commit 行为，调用自定义的 commit 逻辑 [1][2][3][5]。二阶段 rollback 行为，调用自定义的 rollback 逻辑 [1][2][3][5]。",
           "expected_standalone": "Seata TCC 模式的三个阶段是什么?",
-          "judge": "PASS  \n回答明确提及TCC三阶段（Try/Confirm/Cancel）及各自职责，与关键事实核心点一致。",
-          "pass": true
+          "judge": "FAIL: 回答仅描述了TCC的prepare/commit/rollback行为，未提及Try/Confirm/Cancel命名、资源预留、业务侵入或开发成本等关键事实核心点。",
+          "pass": false
         },
         {
           "question_id": "mt_g2_013",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "Sentinel 与 Hystrix 的核心差异在于: Sentinel 提供实时监控控制台, 支持热点参数限流, 并能在运行时动态修改规则, 而 Hystrix 主要侧重于熔断降级且规则需要重启生效 [2]。",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 958741de",
           "expected_standalone": "Sentinel 和 Hystrix 在服务熔断上的差异是什么?",
-          "judge": "FAIL  \n回答未提及Sentinel的流量维度/资源粒度、Hystrix的命令模式/隔离策略，也未说明Hystrix已停止维护。",
+          "judge": "FAIL  \n回答未包含任何关于Sentinel或Hystrix的技术描述，仅提示模型不可用。",
           "pass": false
         },
         {
           "question_id": "mt_g2_014",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "服务端未收到二次确认或结果为Unknown时，会发起消息回查 [2]。生产者收到回查后，需要检查对应消息的本地事务执行最终结果 [2]。生产者根据检查到的本地事务最终状态再次提交二次确认 [2]。",
+          "actual_answer": "half message 的状态通过服务端回查机制检查，当未收到生产者的二次确认或确认结果为Unknown时，服务端会在固定时间后发起回查 [1]。生产者收到回查后，需要检查对应消息的本地事务执行最终结果，并再次提交二次确认 [1]。回查间隔时间和最大回查次数可通过参数限制配置 [1]。",
           "expected_standalone": "RocketMQ 事务消息的 half message 状态如何检查?",
-          "judge": "PASS  \n回答涵盖了回查机制、生产者检查本地事务结果并再次确认，但未明确提及UNKNOWN重试次数及超时按ROLLBACK处理，核心点基本覆盖。",
+          "judge": "PASS  \n回答涵盖了服务端回查机制、未确认或Unknown时触发回查、生产者检查本地事务并再次确认，以及回查次数可配置，与关键事实核心点一致。",
           "pass": true
         },
         {
           "question_id": "mt_g2_015",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "客户端通过 `@NacosValue` 注解的 `autoRefreshed = true` 属性感知配置变化 [1]。当 Nacos Server 配置变更时，带有 `@RefreshScope` 注解的 Bean 会自动重建以加载最新配置 [1][3]。Nacos 客户端 SDK 会在本地生成配置快照，在无法连接 Nacos Server 时提供容灾能力 [2]。",
+          "actual_answer": "Nacos提供配置订阅者即监听者查询能力，同时提供客户端当前配置的MD5校验值，以便帮助用户更好的检查配置变更是否推送到Client端 [2][3]。",
           "expected_standalone": "Nacos 客户端如何感知配置变化?",
-          "judge": "FAIL: 回答未提及长轮询机制及服务端变化立即返回、客户端拉取最新内容并触发回调的核心过程。",
+          "judge": "FAIL: 回答未提及长轮询机制、30s超时、服务端变更立即返回及客户端触发listener回调等核心事实。",
           "pass": false
         },
         {
           "question_id": "mt_g2_016",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 97c911f0",
+          "actual_answer": "本地调用使用 injvm 协议会执行 Dubbo 的 Filter 链 [1][2]。泛化调用主要用于客户端没有 API 接口及模型类元的情况 [1][2]。泛接口实现方式主要用于服务器端没有 API 接口及模型类元的情况 [5]。",
           "expected_standalone": "Dubbo 泛化调用的副作用是什么?",
-          "judge": "FAIL  \n回答未提及任何关于泛化调用的技术细节，仅提示模型不可用。",
+          "judge": "FAIL: 回答未提及泛化调用的副作用（如POJO转Map、类型推断失败、不支持复杂泛型、性能差、调试难）。",
           "pass": false
         },
         {
           "question_id": "mt_g2_017",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: d4249f31",
+          "actual_answer": "片段中未提及 Load1 阈值的具体数值。知识库中没有相关内容。",
           "expected_standalone": "Sentinel 系统自适应限流的 Load1 阈值是多少?",
-          "judge": "FAIL  \n回答未包含任何关于Sentinel SystemRule或highestSystemLoad的信息，仅提示模型不可用。",
+          "judge": "FAIL  \n回答未提及highestSystemLoad默认值、建议设置或触发逻辑，且明确表示无相关内容。",
           "pass": false
         },
         {
           "question_id": "mt_g2_018",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "RpcContext 是一个 ThreadLocal 的临时状态记录器，用于存放当前调用过程中所需的环境信息 [2]。通过 RpcContext 上的 setAttachment 和 getAttachment 可以在服务消费方和提供方之间进行参数的隐式传递 [3]。例如使用 `RpcContext.getContext().setAttachment(\"index\", \"1\")` 可以设置隐式参",
+          "actual_answer": "远程调用过程把 XID 也传递到服务提供方，在执行服务提供方的业务逻辑前，把 XID 绑定到当前应用的运行中 [2]。Seata 中事务管理者(TM)通过rpc至事务协调者(TC)创建全局事务，将TC生成的XID传递至其TM所调用的任意资源管理者(RM)中 [5]。",
           "expected_standalone": "Seata XID 在 RPC 中如何传递?",
-          "judge": "FAIL: 回答仅涉及RpcContext隐式参数传递，未提及Seata XID、TC生成、RootContext绑定或分支事务注册等关键事实。",
-          "pass": false
+          "judge": "PASS  \n回答提到了XID由TC生成并传递到RM，且绑定到当前应用运行中，覆盖了关键事实的核心点。",
+          "pass": true
         },
         {
           "question_id": "mt_g2_019",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "片段中未提及 [1][2][3][4][5]",
+          "actual_answer": "消息消费失败并不断重试，超过最大重试次数后，消息会被投递至死信队列(DLQ)状态 [4]。消息重试策略包括重试过程状态机、重试间隔和最大重试次数 [3]。在顺序消息消费失败进行消费重试时，为保障消息的顺序性，后续消息不可被消费 [4]。",
           "expected_standalone": "RocketMQ 死信队列的消息能重投到原 topic 吗?",
-          "judge": "FAIL: 回答未提及任何关于RocketMQ DLQ重投的具体方法或命令。",
+          "judge": "FAIL: 回答未提及RocketMQ DLQ重投的具体操作方式（mqadmin命令、Console UI或代码方式）。",
           "pass": false
         },
         {
           "question_id": "mt_g2_020",
           "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: c7b5c868",
+          "actual_answer": "协议层 export 的具体动作包括服务注册、启动、销毁等事件 [3]。Dubbo 允许配置多协议，可以在不同服务上支持不同协议或同一服务上同时支持多种协议 [5]。ture 签名的方法目前只支持 Dubbo 协议，其他协议由于第三方实现问题需要视具体情况而定 [1]。",
           "expected_standalone": "Dubbo 协议层 export 服务导出的具体动作是什么?",
-          "judge": "FAIL  \n回答未提及任何关于Dubbo服务导出的关键事实，仅提示模型不可用。",
+          "judge": "FAIL 回答未提及创建Exporter、启动netty监听端口、注册到Registry及触发ready状态等核心动作。",
           "pass": false
         }
       ]
@@ -196,7 +196,7 @@
         {
           "question_id": "mt_g3_001",
           "description": "1 turn OK + 1 turn NO_RECALL + 1 turn 重问 OK; 验证 NO_RECALL 文案不污染 rewrite",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: bd9af7a5",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 2244c6cc",
           "expected": "Nacos 默认端口和 RocketMQ NameServer 默认端口相比如何?",
           "judge": "FAIL",
           "pollution_marker": "",
@@ -205,16 +205,16 @@
         {
           "question_id": "mt_g3_002",
           "description": "LLM 出错后再问; 验证 'LLM 出错了 trace=xxx' 不污染 rewrite",
-          "actual_answer": "Sentinel 限流规则关联资源, 定义了限流阈值、流控行为(直接拒绝、Warm Up、匀速排队)以及调用关系(直接、关联、链路) [1][2]。当 QPS 超过阈值时, Sentinel 默认抛出 BlockException [1][2]。限流规则可通过 FlowRule 类配置, 设置 QPS 阈值和限制应用 [5]。单节点 Sentinel Dashboard 可承载 5000 QPS ",
+          "actual_answer": "Sentinel 提供了流量控制规则用于保护服务提供方 [1]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [2]。资源是设置流控规则的载体，通过簇点链路自发现，可以方便的对重要资源设置流控规则 [2]。",
           "expected": "Sentinel QPS 限流规则详细介绍",
-          "judge": "PASS",
+          "judge": "FAIL",
           "pollution_marker": "",
-          "pass": true
+          "pass": false
         },
         {
           "question_id": "mt_g3_003",
           "description": "EMPTY_KB 模拟 (知识库空时整轮 fail, 后续需重置 ctx); G3 验证 EMPTY_KB 是否拒写 history",
-          "actual_answer": "您需要先下载 Nacos 并启动 Nacos server [2]。操作步骤参见 [Nacos 快速入门](../quickstart/quick-start.mdx) [2]。请确保后台已经启动 Nacos服务 [4]。",
+          "actual_answer": "修改`application.yml`中配置中心、注册中心的配置 [1][2]。准备registry.conf文件，配置nacos注册中心 [5]。Nacos是Dubbo生态系统中重要的注册中心实现 [3]。",
           "expected": "Seata 如何从默认注册中心切换到 Nacos?",
           "judge": "FAIL",
           "pollution_marker": "",
@@ -223,7 +223,7 @@
         {
           "question_id": "mt_g3_004",
           "description": "持续 NO_RECALL 多轮的 stress (用户连续问 OOD); G3 验证 history 持续空不需清",
-          "actual_answer": "TCC 模式适合对一致性要求极高的核心业务，但开发成本较高 [1]。Seata 的 TCC 模式不与具体的服务框架耦合，与底层 RPC 协议和存储介质无关 [2]。建议在通用业务使用 AT 模式，仅在涉及跨库强一致的关键链路使用 TCC 或 XA 模式 [1]。",
+          "actual_answer": "TCC 模式支持把自定义的分支事务纳入到全局事务的管理中 [5]。TCC 模式不与具体的服务框架耦合，与底层 RPC 协议无关，与底层存储介质无关性 [3]。TCC 模式允许调用自定义的 rollback 逻辑 [5]。",
           "expected": "Seata TCC 模式好用吗?",
           "judge": "FAIL",
           "pollution_marker": "",
@@ -241,7 +241,7 @@
         {
           "question_id": "mt_g3_006",
           "description": "LLM fail + 用户重试 + 后续 OK; 验证 retry 后 ctx 干净",
-          "actual_answer": "Topic名称建议使用字母a~z或A~Z、数字0~9以及下划线(_)、短划线(-)和百分号(%)，长度建议1~64个字符[1]。系统保留字符包括TBW102、BenchmarkTest、SELF_TEST_TOPIC等，特殊前缀如rmq_sys_、%RETRY%、%DLQ%和rocketmq-broker-也不允许使用[1]。命名应尽量简短常用，避免特殊字符，防止系统解析异常和消息收发被拒绝[1]",
+          "actual_answer": "片段中未提及 Sentinel 流控效果的具体种类。",
           "expected": "Sentinel 直接拒绝 (Default) 流控效果详细介绍",
           "judge": "FAIL",
           "pollution_marker": "",
@@ -250,25 +250,25 @@
         {
           "question_id": "mt_g3_007",
           "description": "首 turn 即 NO_RECALL; 验证空 ctx 时 rewrite 不空指针",
-          "actual_answer": "片段中未提及Nacos集群部署所需的节点数量。",
+          "actual_answer": "3个或3个以上Nacos节点才能构成集群 [4]。",
           "expected": "Nacos 集群部署要几个节点?",
-          "judge": "FAIL",
+          "judge": "PASS",
           "pollution_marker": "",
-          "pass": false
+          "pass": true
         },
         {
           "question_id": "mt_g3_008",
           "description": "OK后多个OOD返回 (用户实验性恐吓); 验证多个降级 turn 后还能正常多轮",
-          "actual_answer": "Dubbo 可通过配置 `<dubbo:registry address=\"zookeeper://127.0.0.1:2181\" preferred=\"true\" />` 注册到注册中心 [2]。注册中心支持区域配置，如 `zone=\"beijing\"` 可实现同中心优先 [5]。也可通过配置 url 实现点对点注册，多个地址用分号隔开 [3]。",
+          "actual_answer": "Dubbo 支持同一服务向多注册中心同时注册，或者不同服务分别注册到不同的注册中心上去 [2]。Dubbo 的服务提供和消费信息在 Nacos 控制台中可以显示，服务名前缀为 `providers:` 的信息为服务提供者的元信息，`consumers:` 则代表服务消费者的元信息 [1]。重启 Dubbo 应用后，服务提供方和消费方的注册元信息会呈现在 Nacos 控制台中 [4]。",
           "expected": "Dubbo 服务怎么注册到注册中心?",
-          "judge": "FAIL\n\nBot 回答仅提及了 Dubbo 注册中心的配置方式（如 Zookeeper 地址、区域配置、点对点注册），但未覆盖关键事实中的核心内容：服务导出时 URL 写入注册中心（含 application/provider IP:port/接口列表/版本号），以及消费方订阅注册中心并监听 provider URL 变化。回答未涉及服务导出、URL 内容或消费方订阅监听机制，因此语义上未覆盖关键事实。",
+          "judge": "FAIL",
           "pollution_marker": "",
           "pass": false
         },
         {
           "question_id": "mt_g3_009",
           "description": "OK / LLM_DEGRADED 混合 + 后续 OK; 最严的 G3 case",
-          "actual_answer": "Sentinel 限流的核心概念是资源(Resource)和规则(Rule)，资源是被保护的方法或代码块，通常通过@SentinelResource注解标识[2]。规则关联资源，定义了限流阈值、流控行为(直接拒绝、Warm Up、匀速排队)以及调用关系(直接、关联、链路)[2]。当QPS超过阈值时，Sentinel默认抛出BlockException，业务可以通过blockHandler属性指定降",
+          "actual_answer": "Sentinel 提供了多种规则来保护系统的不同部分。流量控制规则用于保护服务提供方，熔断降级规则用于服务消费方，系统保护规则用于保护整个系统 [1]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用 URL 地址或方法签名表示资源 [4]。资源是设置流控规则的载体，通过簇点链路自发现，可以方便地对重要资源设置流控规则、熔断降级规则等 [4]。",
           "expected": "Sentinel 限流规则有哪些?",
           "judge": "FAIL",
           "pollution_marker": "",
@@ -277,7 +277,7 @@
         {
           "question_id": "mt_g3_010",
           "description": "LLM_DEGRADED 后 QUOTE 反问 (模拟用户引用错误文案); 验证 rewrite 不被污染",
-          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: d4236b48",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 7fe99a62",
           "expected": "RocketMQ 如何保证消息不丢?",
           "judge": "FAIL",
           "pollution_marker": "",
@@ -297,74 +297,74 @@
         {
           "session_index": 0,
           "topic": "nacos_cluster_3node",
-          "conv_id": "conv_g4_0_348ead10",
-          "ground_truth_entities_count": 1,
-          "summary_entities_count": 0,
-          "preserved_count": 0,
-          "fidelity_score": 0.0,
-          "pass": false,
-          "summary_preview": "用户连续5轮询问关于 `nacos_cluster_3node` 的使用方法、默认配置、组件优势、故障排查步骤及性能最佳实践，系统均回复“片段中未提及”并判定知识库中无相关内容。所有问题均未获得有效答案，未涉及任何具体组件、版本号或配置项。"
-        },
-        {
-          "session_index": 1,
-          "topic": "sentinel_flowrule_qps",
-          "conv_id": "conv_g4_1_f00dfce4",
-          "ground_truth_entities_count": 7,
-          "summary_entities_count": 5,
-          "preserved_count": 5,
-          "fidelity_score": 0.714,
-          "pass": true,
-          "summary_preview": "Sentinel 流控规则（sentinel_flowrule_qps）的使用：创建 FlowRule 对象并设置资源名、限流阈值和限流类型为 QPS，通过 FlowRuleManager.loadRules() 加载规则 [1][2]，示例包括 rule.setResource(\"HelloWorld\")、setCount(20)、setGrade(RuleConstant.FLOW_GRADE"
-        },
-        {
-          "session_index": 2,
-          "topic": "dubbo_spi_extension",
-          "conv_id": "conv_g4_2_77ce28bd",
-          "ground_truth_entities_count": 0,
-          "summary_entities_count": 0,
-          "preserved_count": 0,
-          "fidelity_score": 1.0,
-          "pass": true,
-          "summary_preview": "用户连续5轮询问关于 `dubbo_spi_extension` 的使用方法、默认配置、优势、故障排查步骤及性能最佳实践，助手均回复“片段中未提及”相关内容。所有对话均围绕同一组件 `dubbo_spi_extension`，但知识库片段中未包含该组件的任何具体信息。"
-        },
-        {
-          "session_index": 3,
-          "topic": "seata_at_undolog",
-          "conv_id": "conv_g4_3_25d57b2f",
-          "ground_truth_entities_count": 0,
-          "summary_entities_count": 0,
-          "preserved_count": 0,
-          "fidelity_score": 1.0,
-          "pass": true,
-          "summary_preview": "用户连续5轮询问 seata_at_undolog 相关问题（用法、默认配置、组件比较优势、故障排查步骤、性能最佳实践），助手均回复“片段中未提及”及“知识库中没有相关内容”，未提供任何具体信息。摘要中未出现任何版本号、配置项或具体数值。"
-        },
-        {
-          "session_index": 4,
-          "topic": "rocketmq_transaction_half",
-          "conv_id": "conv_g4_4_272a438c",
+          "conv_id": "conv_g4_0_3e4455fa",
           "ground_truth_entities_count": 4,
           "summary_entities_count": 2,
           "preserved_count": 2,
           "fidelity_score": 0.5,
           "pass": false,
-          "summary_preview": "RocketMQ 事务消息（rocketmq_transaction_half）通过分布式事务机制保证应用数据库更新和消息调用的事务一致性 [1][4]。事务消息提供金融级事务保证，用于处理订单处理、支付通知等场景 [2]。从 RocketMQ 5.0 版本开始，支持强制校验消息类型，每个主题只允许发送一种消息类型的消息 [2][4]。片段中未提及 rocketmq_transaction_hal"
+          "summary_preview": "nacos_cluster_3node 使用与配置：可通过 Docker 运行，命令为 `docker run --name nacos-cluster -e MODE=cluster -v /path/application.properties:/home/nacos/conf/application.properties -v /path/cluster.conf:/home/nacos/c"
+        },
+        {
+          "session_index": 1,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_1_c1d50ca3",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "fidelity_score": 1.0,
+          "pass": true,
+          "summary_preview": "Sentinel 的 sentinel_flowrule_qps 组件用于 QPS 限流，通过 FlowRule 的 setCount(20) 设置 QPS 阈值，setGrade(RULE_CONSTANT.FLOW_GRADE_QPS) 指定 QPS 模式，规则需加入 List<FlowRule> 并通过 FlowRuleManager.loadRules(rules) 加载 [1]。片段未提"
+        },
+        {
+          "session_index": 2,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_2_131cbc28",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "fidelity_score": 1.0,
+          "pass": true,
+          "summary_preview": "用户询问 dubbo_spi_extension 的用法、默认配置、优势、故障排查及性能最佳实践。用法可参考 Dubbo 扩展性详情及 apache/dubbo-spi-extensions 项目 [1]；默认配置未提及。其优势包括实现金丝雀发布、A/B测试、权重路由、同区域优先等场景化路由方案，支持流控策略运行态动态生效，并通过 Filter、Router、Protocol 等扩展点丰富功能或对"
+        },
+        {
+          "session_index": 3,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_3_a3bf0d19",
+          "ground_truth_entities_count": 5,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "fidelity_score": 0.6,
+          "pass": false,
+          "summary_preview": "用户多次询问 seata_at_undolog 相关内容，前两轮（使用方法、默认配置）均未在片段中找到答案。后续问答涉及优势、故障排查与性能最佳实践，核心信息如下：SAGA 模式具有高度自定义、最终一致性和高性能优势，可针对不同业务场景快速建立安全事务保障 [1]；AT 模式要求每个业务库必须包含 undo_log 表，若与分库分表组件联用需分库不分表 [3]；从 1.8.x 升级到 2.0.x "
+        },
+        {
+          "session_index": 4,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_4_ac9b20f7",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "fidelity_score": 1.0,
+          "pass": true,
+          "summary_preview": "RocketMQ 事务消息（rocketmq_transaction_half）通过事务生产者构建事务检查器实现，使用 `provider.newProducerBuilder().setTransactionChecker()` 方法 [3]。发送半事务消息使用 `producer.send(message, transaction)`，执行本地事务后通过 `transaction.commit"
         }
       ]
     },
     {
       "gate": "G5",
       "status": "FAIL",
-      "pass_n": 30,
+      "pass_n": 37,
       "total": 50,
-      "rate": 0.6,
+      "rate": 0.74,
       "threshold": 0.8,
       "details": [
         {
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 0,
-          "conv_id": "conv_g5_nacos_rocketmq_0_22ce4028",
-          "answer": "nacos_server_host 默认配置为 127.0.0.1:8848 [1]。nacos.config.server-addr 默认配置为 127.0.0.1:8848 [2]。Nacos 默认端口是 8848 [1][2]。",
+          "conv_id": "conv_g5_nacos_rocketmq_0_1faa50d9",
+          "answer": "Nacos默认主端口是8848 [1][2][3]。Nacos2.X版本新增gRPC通信方式，默认gRPC端口是9848 [1][3]。客户端和服务端使用相同的偏移量计算gRPC端口 [3][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -372,8 +372,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 1,
-          "conv_id": "conv_g5_nacos_rocketmq_1_80aab660",
-          "answer": "nacos_server_host 默认值为 127.0.0.1:8848 [1]；nacos.config.server-addr 默认值为 127.0.0.1:8848 [2]；nacos_server_host 配置项表示 nacos 服务端的IP地址和端口 [2]。",
+          "conv_id": "conv_g5_nacos_rocketmq_1_18bfd13d",
+          "answer": "Nacos默认端口是8848 [1][2][3]。gRPC通信方式的默认端口是9848 [3]。客户端和服务端使用相同的偏移量计算对应端口 [3][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -381,8 +381,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 2,
-          "conv_id": "conv_g5_nacos_rocketmq_2_ec4cae14",
-          "answer": "nacos_server_host 默认值为 127.0.0.1:8848 [1]。nacos.config.server-addr 默认配置为 127.0.0.1:8848 [2]。nacos_server_host 是 nacos 服务端的IP地址和端口，默认为 127.0.0.1:8848 [",
+          "conv_id": "conv_g5_nacos_rocketmq_2_ec82e1a7",
+          "answer": "Nacos 默认主端口是 8848 [1][2]。Nacos2.X 版本新增了 gRPC 通信方式，默认 gRPC 端口是 9848 [1][3]。客户端和服务端使用相同的偏移量计算逻辑来确定端口 [3][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -390,8 +390,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 3,
-          "conv_id": "conv_g5_nacos_rocketmq_3_488b25d4",
-          "answer": "nacos_server_host 默认值为 127.0.0.1:8848 [1]\nnacos.config.server-addr 默认值为 127.0.0.1:8848 [2]\nnacos_server_host 是 nacos 服务端的IP地址和端口 [2]",
+          "conv_id": "conv_g5_nacos_rocketmq_3_34e05e18",
+          "answer": "Nacos默认主端口是8848 [1][2][3]。Nacos2.X版本新增了gRPC通信方式，默认gRPC端口是9848 [1][3]。客户端和服务端使用相同的偏移量计算gRPC端口 [3][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -399,8 +399,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 4,
-          "conv_id": "conv_g5_nacos_rocketmq_4_e510f510",
-          "answer": "nacos_server_host 默认值为 127.0.0.1:8848 [1]。nacos.config.server-addr 默认配置为 127.0.0.1:8848 [2]。nacos_server_host 是 nacos 服务端的IP地址和端口 [2]。",
+          "conv_id": "conv_g5_nacos_rocketmq_4_97f72139",
+          "answer": "Nacos默认主端口是8848 [1][2]。Nacos2.X版本新增了gRPC通信方式，需要增加2个端口，其中gRPC端口默认是9848 [1][3]。客户端和服务端都使用相同的偏移量计算逻辑来确定gRPC端口 [3][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -408,8 +408,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 0,
-          "conv_id": "conv_g5_nacos_rocketmq_0_44b820b6",
-          "answer": "RocketMQ 通过消息组(MessageGroup)判定和识别顺序关系，相同消息组的多条消息遵循先进先出顺序[1]。生产顺序性需要满足单一生产者和串行发送两个条件[1]。消费顺序性通过客户端SDK和服务端通信协议保障消息按存储顺序投递，但业务方需严格按照接收-处理-应答的语义处理消息[1]。",
+          "conv_id": "conv_g5_nacos_rocketmq_0_1614e324",
+          "answer": "RocketMQ通过消息组(MessageGroup)判定和识别顺序关系，相同消息组的多条消息遵循先进先出的顺序关系 [1]。生产顺序性需要满足单一生产者和串行发送两个条件 [1]。消费顺序性通过客户端SDK和服务端通信协议保障消息按照存储顺序投递，但业务方需要严格按照接收-处理-应答的语义处理消息",
           "judge": "PASS",
           "pass": true
         },
@@ -417,8 +417,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 1,
-          "conv_id": "conv_g5_nacos_rocketmq_1_4943afb4",
-          "answer": "RocketMQ 通过消息组(MessageGroup)判定顺序，相同消息组消息按先进先出存储在同一个队列[n]。生产顺序性需满足单一生产者和串行发送条件，消费顺序性需按存储顺序处理并设置合理重试次数[n]。顺序消息支持生产顺序性和消费顺序性组合，可应用于撮合交易、数据同步等场景[n]。",
+          "conv_id": "conv_g5_nacos_rocketmq_1_7fbcb452",
+          "answer": "RocketMQ通过消息组(MessageGroup)判定和识别顺序性，相同消息组的多条消息遵循先进先出的顺序关系 [1]。生产顺序性需要满足单一生产者和串行发送的条件，消费顺序性需要保证投递顺序和有限重试 [1][2]。不同消息组的消息可以混合在同一个队列中，但不保证连续 [2]。",
           "judge": "PASS",
           "pass": true
         },
@@ -426,8 +426,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 2,
-          "conv_id": "conv_g5_nacos_rocketmq_2_829327c0",
-          "answer": "RocketMQ 通过消息组(MessageGroup)判定和识别顺序关系，相同消息组的多条消息遵循先进先出顺序[1]。生产顺序性要求单一生产者串行发送消息，消费顺序性要求消费者严格按照存储顺序处理消息[1]。顺序消息分为生产顺序性和消费顺序性，需同时满足两者才能实现严格FIFO处理[1]。",
+          "conv_id": "conv_g5_nacos_rocketmq_2_e6700b54",
+          "answer": "RocketMQ通过消息组(MessageGroup)判定和识别顺序性，相同消息组的多条消息遵循先进先出的顺序关系 [1]。生产顺序性需要满足单一生产者和串行发送的条件，消费顺序性需要保证投递顺序和有限重试 [1][2]。顺序消息分为生产顺序性和消费顺序性，两者组合可以实现不同粒度的顺序保证 [3]",
           "judge": "PASS",
           "pass": true
         },
@@ -435,8 +435,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 3,
-          "conv_id": "conv_g5_nacos_rocketmq_3_be7b56fc",
-          "answer": "RocketMQ 通过消息组(MessageGroup)判定和识别顺序关系，相同消息组的多条消息遵循先进先出顺序 [1]。生产顺序性要求单一生产者串行发送消息，消费顺序性需严格按照存储顺序处理，并设置合理重试次数 [1]。顺序消息分为生产顺序性和消费顺序性，两者组合可保证严格FIFO处理 [1]。",
+          "conv_id": "conv_g5_nacos_rocketmq_3_f7878c18",
+          "answer": "RocketMQ 通过消息组（MessageGroup）判定和识别顺序，相同消息组的多条消息遵循先进先出的顺序关系 [1]。生产顺序性需要满足单一生产者和串行发送两个条件 [1]。消费顺序性通过客户端SDK和服务端通信协议保障消息按照存储顺序投递，消费者需严格按照接收-处理-应答的语义处理消息 [1",
           "judge": "PASS",
           "pass": true
         },
@@ -444,8 +444,8 @@
           "from": "nacos",
           "to": "rocketmq",
           "variant_idx": 4,
-          "conv_id": "conv_g5_nacos_rocketmq_4_ddb91283",
-          "answer": "RocketMQ 通过消息组(MessageGroup)判定顺序，相同消息组消息按先进先出存储在同一队列[n]。生产顺序性需满足单一生产者和串行发送两个条件[n]。消费顺序性通过客户端SDK和服务端协议保障，但业务方需按接收-处理-应答语义处理消息[n]。",
+          "conv_id": "conv_g5_nacos_rocketmq_4_07bf4957",
+          "answer": "RocketMQ通过消息组(MessageGroup)判定和识别顺序性，相同消息组的多条消息遵循先进先出的顺序关系 [1]。生产顺序性需要满足单一生产者和串行发送的条件，确保消息按序存储在同一队列中 [1]。消费顺序性通过客户端SDK和服务端通信协议保障消息按照存储顺序投递，消费者需严格按照接收-处",
           "judge": "PASS",
           "pass": true
         },
@@ -453,8 +453,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 0,
-          "conv_id": "conv_g5_sentinel_seata_0_d5d1fcbd",
-          "answer": "Sentinel 限流的核心概念是资源(Resource)和规则(Rule)。规则关联资源, 定义了限流阈值、流控行为(直接拒绝、Warm Up、匀速排队)以及调用关系(直接、关联、链路)。当 QPS 超过阈值时, Sentinel 默认抛出 BlockException [1][2]。",
+          "conv_id": "conv_g5_sentinel_seata_0_f12a193d",
+          "answer": "Sentinel 的限流策略由业务侧自行实现，可基于滑动窗口、令牌桶等算法 [3]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [4]。限流策略通过 `rateLimiter.shouldLimit()` 方法实现，可按用户维度控制消费速率",
           "judge": "PASS",
           "pass": true
         },
@@ -462,8 +462,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 1,
-          "conv_id": "conv_g5_sentinel_seata_1_9ac26db5",
-          "answer": "Sentinel 限流的核心概念是资源(Resource)和规则(Rule)。规则关联资源, 定义了限流阈值、流控行为(直接拒绝、Warm Up、匀速排队)以及调用关系(直接、关联、链路)[1]。当 QPS 超过阈值时, Sentinel 默认抛出 BlockException, 业务可以通过 bl",
+          "conv_id": "conv_g5_sentinel_seata_1_742d0a4e",
+          "answer": "Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [4]。限流策略（`rateLimiter.shouldLimit()`）由业务侧自行实现，可基于滑动窗口、令牌桶等算法，按用户维度控制消费速率 [3][5]。Sentinel 会自动发现所有潜在",
           "judge": "PASS",
           "pass": true
         },
@@ -471,8 +471,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 2,
-          "conv_id": "conv_g5_sentinel_seata_2_4555faa8",
-          "answer": "Sentinel 的限流策略包括直接拒绝、Warm Up 和匀速排队 [1]。Sentinel 限流的核心概念是资源(Resource)和规则(Rule) [1]。当 QPS 超过阈值时，Sentinel 默认抛出 BlockException [1]。",
+          "conv_id": "conv_g5_sentinel_seata_2_bdfd400a",
+          "answer": "Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [4]。限流策略（`rateLimiter.shouldLimit()`）由业务侧自行实现，可基于滑动窗口、令牌桶等算法，按用户维度控制消费速率 [3][5]。Sentinel 会自动发现所有潜在",
           "judge": "PASS",
           "pass": true
         },
@@ -480,8 +480,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 3,
-          "conv_id": "conv_g5_sentinel_seata_3_6a0ae9f9",
-          "answer": "Sentinel 限流的核心概念是资源(Resource)和规则(Rule)。规则关联资源, 定义了限流阈值、流控行为(直接拒绝、Warm Up、匀速排队)以及调用关系(直接、关联、链路)。当 QPS 超过阈值时, Sentinel 默认抛出 BlockException [1][2]。",
+          "conv_id": "conv_g5_sentinel_seata_3_ddd98387",
+          "answer": "Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [4]。限流策略（`rateLimiter.shouldLimit()`）由业务侧自行实现，可基于滑动窗口、令牌桶等算法，按用户维度控制消费速率 [3][5]。Sentinel 会自动发现所有潜在",
           "judge": "PASS",
           "pass": true
         },
@@ -489,8 +489,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 4,
-          "conv_id": "conv_g5_sentinel_seata_4_b9ea17f8",
-          "answer": "Sentinel 限流的核心概念是资源(Resource)和规则(Rule) [1]。限流策略包括直接拒绝、Warm Up、匀速排队等流控行为 [1]。当 QPS 超过阈值时，Sentinel 默认抛出 BlockException [1]。规则关联资源，定义了限流阈值、流控行为以及调用关系 [2]",
+          "conv_id": "conv_g5_sentinel_seata_4_5e7a56d2",
+          "answer": "Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [4]。限流策略（`rateLimiter.shouldLimit()`）由业务侧自行实现，可基于滑动窗口、令牌桶等算法，按用户维度控制消费速率 [3][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -498,8 +498,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 0,
-          "conv_id": "conv_g5_sentinel_seata_0_c50261f0",
-          "answer": "AT 模式通过 undo_log 表记录修改前后的数据快照，在全局事务回滚时根据 undo_log 反向补偿 [5]。Seata 中当事务管理器决议为回滚时，TC 会进行对事务的二阶段回滚行为下发，如 AT 模式的 undo [4]。",
+          "conv_id": "conv_g5_sentinel_seata_0_ceb1a3db",
+          "answer": "Seata AT 模式的二阶段 rollback 行为通过回滚日志自动生成补偿操作完成数据回滚 [4]。AT 模式的一阶段 prepare 行为会在本地事务中一并提交业务数据更新和回滚日志记录 [4]。回滚时，系统利用这些回滚日志进行反向补偿操作 [4][5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -507,8 +507,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 1,
-          "conv_id": "conv_g5_sentinel_seata_1_31cad4f8",
-          "answer": "AT 模式通过 undo_log 表记录修改前后的数据快照，在全局事务回滚时根据 undo_log 反向补偿 [5]。Seata 中事务协调者(TC)在决议为回滚时，会下发二阶段回滚行为，AT 模式对应的是 undo 操作 [4]。",
+          "conv_id": "conv_g5_sentinel_seata_1_01a72877",
+          "answer": "Seata AT 模式在二阶段回滚时，通过回滚日志自动生成补偿操作完成数据回滚 [4]。AT 模式的一阶段 prepare 行为会在本地事务中提交业务数据更新和回滚日志记录 [4]。回滚行为通过回滚日志进行反向补偿，释放本地锁和连接资源 [5]。",
           "judge": "PASS",
           "pass": true
         },
@@ -516,8 +516,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 2,
-          "conv_id": "conv_g5_sentinel_seata_2_8d7fa00a",
-          "answer": "AT 模式通过 undo_log 表记录修改前后的数据快照，在全局事务回滚时根据 undo_log 反向补偿 [5]。Seata AT 模式的回滚由事务协调者(TC)下发回滚行为，执行 AT 模式的 undo 操作 [4]。",
+          "conv_id": "conv_g5_sentinel_seata_2_1a1cf5c6",
+          "answer": "Seata AT 模式通过回滚日志自动生成补偿操作完成数据回滚 [4]。AT 模式的一阶段 prepare 行为在本地事务中提交业务数据更新和回滚日志记录 [4]。二阶段 rollback 行为通过回滚日志自动进行数据回滚 [4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -525,8 +525,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 3,
-          "conv_id": "conv_g5_sentinel_seata_3_a2c92f11",
-          "answer": "AT 模式通过 undo_log 表记录修改前后的数据快照，在全局事务回滚时根据 undo_log 反向补偿 [5]。Seata 中当事务管理器决议为回滚时，TC 会进行对事务的二阶段回滚行为下发，AT 模式的回滚是 undo [4]。AT 模式要求每个业务数据库都创建 undo_log 表，并通过",
+          "conv_id": "conv_g5_sentinel_seata_3_3f8d9b87",
+          "answer": "Seata AT 模式的回滚通过回滚日志进行自动生成补偿操作完成数据回滚 [4]。在一阶段 prepare 行为中，会在本地事务中提交业务数据更新和相应回滚日志记录 [4]。二阶段 rollback 行为时，通过回滚日志自动生成补偿操作，完成数据回滚 [4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -534,8 +534,8 @@
           "from": "sentinel",
           "to": "seata",
           "variant_idx": 4,
-          "conv_id": "conv_g5_sentinel_seata_4_0b601da6",
-          "answer": "Seata AT 模式通过 undo_log 表记录修改前后的数据快照，在全局事务回滚时根据 undo_log 反向补偿 [5]。AT 模式要求每个业务数据库都创建 undo_log 表，并通过 @GlobalTransactional 注解标识全局事务入口 [5]。",
+          "conv_id": "conv_g5_sentinel_seata_4_976baa18",
+          "answer": "AT 模式通过回滚日志自动生成补偿操作完成数据回滚 [3]。二阶段 rollback 行为时，会利用回滚日志执行 undo 操作 [3][4]。AT 模式基于支持本地 ACID 事务的关系型数据库实现 [3]。",
           "judge": "PASS",
           "pass": true
         },
@@ -543,8 +543,8 @@
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 0,
-          "conv_id": "conv_g5_dubbo_nacos_0_df0a88e1",
-          "answer": "片段中未提及 Dubbo 默认序列化方式。",
+          "conv_id": "conv_g5_dubbo_nacos_0_d8e304a1",
+          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 776a9f06",
           "judge": "FAIL",
           "pass": false
         },
@@ -552,8 +552,8 @@
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 1,
-          "conv_id": "conv_g5_dubbo_nacos_1_e86e2e32",
-          "answer": "片段中未提及Dubbo默认序列化的相关信息。",
+          "conv_id": "conv_g5_dubbo_nacos_1_50b08ad9",
+          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 373c5c54",
           "judge": "FAIL",
           "pass": false
         },
@@ -561,8 +561,8 @@
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 2,
-          "conv_id": "conv_g5_dubbo_nacos_2_c1a5f737",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: c62a5108",
+          "conv_id": "conv_g5_dubbo_nacos_2_a03a792e",
+          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 925ee205",
           "judge": "FAIL",
           "pass": false
         },
@@ -570,8 +570,8 @@
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 3,
-          "conv_id": "conv_g5_dubbo_nacos_3_cf33ce9e",
-          "answer": "片段中未提及 Dubbo 默认序列化方式。",
+          "conv_id": "conv_g5_dubbo_nacos_3_b9547dd9",
+          "answer": "片段中未提及 Dubbo 默认序列化。",
           "judge": "FAIL",
           "pass": false
         },
@@ -579,8 +579,8 @@
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 4,
-          "conv_id": "conv_g5_dubbo_nacos_4_be59be77",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: a4c6cc2e",
+          "conv_id": "conv_g5_dubbo_nacos_4_d63e2169",
+          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 0192cf39",
           "judge": "FAIL",
           "pass": false
         },
@@ -588,98 +588,53 @@
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 0,
-          "conv_id": "conv_g5_dubbo_nacos_0_e0e10244",
-          "answer": "片段中未提及Nacos集群部署需要多少节点。",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_dubbo_nacos_0_439e9e36",
+          "answer": "3个或3个以上Nacos节点才能构成集群 [3]。",
+          "judge": "PASS",
+          "pass": true
         },
         {
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 1,
-          "conv_id": "conv_g5_dubbo_nacos_1_dae84a37",
-          "answer": "片段中未提及Nacos集群部署所需的节点数量。",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_dubbo_nacos_1_139e9ec0",
+          "answer": "3个或3个以上Nacos节点才能构成集群 [4]。集群模式通过自研一致性协议Distro以及Raft协议构建高可用集群 [2]。推荐使用MySQL数据库进行部署，而非内置Derby数据库 [3]。",
+          "judge": "PASS",
+          "pass": true
         },
         {
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 2,
-          "conv_id": "conv_g5_dubbo_nacos_2_ef7f1210",
-          "answer": "片段中未提及Nacos集群部署所需的节点数量。",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_dubbo_nacos_2_f1d7f7fd",
+          "answer": "3个或3个以上Nacos节点才能构成集群[5]。",
+          "judge": "PASS",
+          "pass": true
         },
         {
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 3,
-          "conv_id": "conv_g5_dubbo_nacos_3_489daf92",
-          "answer": "片段中未提及Nacos集群部署所需的节点数量。",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_dubbo_nacos_3_6975c2d5",
+          "answer": "3个或3个以上Nacos节点才能构成集群 [3]。",
+          "judge": "PASS",
+          "pass": true
         },
         {
           "from": "dubbo",
           "to": "nacos",
           "variant_idx": 4,
-          "conv_id": "conv_g5_dubbo_nacos_4_e752c6c2",
-          "answer": "片段中未提及Nacos集群部署所需的节点数量。",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_dubbo_nacos_4_08fcb7fb",
+          "answer": "3个或3个以上Nacos节点才能构成集群 [3]。",
+          "judge": "PASS",
+          "pass": true
         },
         {
           "from": "rocketmq",
           "to": "sentinel",
           "variant_idx": 0,
-          "conv_id": "conv_g5_rocketmq_sentinel_0_025ab78c",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: e5dde2e5",
-          "judge": "FAIL",
-          "pass": false
-        },
-        {
-          "from": "rocketmq",
-          "to": "sentinel",
-          "variant_idx": 1,
-          "conv_id": "conv_g5_rocketmq_sentinel_1_cd327939",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: c12b4428",
-          "judge": "FAIL",
-          "pass": false
-        },
-        {
-          "from": "rocketmq",
-          "to": "sentinel",
-          "variant_idx": 2,
-          "conv_id": "conv_g5_rocketmq_sentinel_2_c093e40d",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: dd6653f1",
-          "judge": "FAIL",
-          "pass": false
-        },
-        {
-          "from": "rocketmq",
-          "to": "sentinel",
-          "variant_idx": 3,
-          "conv_id": "conv_g5_rocketmq_sentinel_3_73adc255",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: e4239465",
-          "judge": "FAIL",
-          "pass": false
-        },
-        {
-          "from": "rocketmq",
-          "to": "sentinel",
-          "variant_idx": 4,
-          "conv_id": "conv_g5_rocketmq_sentinel_4_7de7a887",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: afb7bc0f",
-          "judge": "FAIL",
-          "pass": false
-        },
-        {
-          "from": "rocketmq",
-          "to": "sentinel",
-          "variant_idx": 0,
-          "conv_id": "conv_g5_rocketmq_sentinel_0_66fb62db",
-          "answer": "慢调用比例策略需要设置最大响应时间(RT), 当单位时间内响应时间超过 RT 的请求比例超过阈值时, 熔断器打开 [1]。熔断器打开后会进入半开探测阶段, 探测成功则恢复, 失败则继续保持打开状态 [1]。",
+          "conv_id": "conv_g5_rocketmq_sentinel_0_3239fec2",
+          "answer": "消息在超过最大重试次数后会被投递至死信队列(DLQ) [4]。消费死信队列的消息可以进行业务恢复 [4]。消息重试间隔是预分配的，通过不可见时间参数InvisibleDuration控制 [4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -687,8 +642,8 @@
           "from": "rocketmq",
           "to": "sentinel",
           "variant_idx": 1,
-          "conv_id": "conv_g5_rocketmq_sentinel_1_d580bc4a",
-          "answer": "慢调用比例策略需要设置最大响应时间(RT), 当单位时间内响应时间超过 RT 的请求比例超过阈值时, 熔断器打开 [1]。熔断器打开后会进入半开探测阶段, 探测成功则恢复, 失败则继续保持打开状态 [1]。",
+          "conv_id": "conv_g5_rocketmq_sentinel_1_7e66734f",
+          "answer": "消息消费失败并不断重试，超过最大重试次数后，消息会被投递至死信队列 [4]。您可以通过消费死信队列的消息进行业务恢复 [4]。SimpleConsumer消费者的重试间隔是预分配的，通过设置不可见时间参数InvisibleDuration来控制 [4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -696,8 +651,8 @@
           "from": "rocketmq",
           "to": "sentinel",
           "variant_idx": 2,
-          "conv_id": "conv_g5_rocketmq_sentinel_2_63396e56",
-          "answer": "慢调用比例策略需要设置最大响应时间(RT), 当单位时间内响应时间超过 RT 的请求比例超过阈值时, 熔断器打开 [1]。熔断器打开后会进入半开探测阶段, 探测成功则恢复, 失败则继续保持打开状态 [1]。",
+          "conv_id": "conv_g5_rocketmq_sentinel_2_aa15455d",
+          "answer": "消息消费失败并不断重试，超过最大重试次数后，消息会被投递至死信队列 [4]。您可以通过消费死信队列的消息进行业务恢复 [4]。SimpleConsumer消费者的重试间隔是预分配的，通过设置不可见时间参数 InvisibleDuration 控制消息的最大处理时长 [4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -705,8 +660,8 @@
           "from": "rocketmq",
           "to": "sentinel",
           "variant_idx": 3,
-          "conv_id": "conv_g5_rocketmq_sentinel_3_85c578b3",
-          "answer": "慢调用比例熔断需要设置最大响应时间(RT),当单位时间内响应时间超过RT的请求比例超过阈值时触发熔断 [1]。熔断器打开后会进入半开探测阶段,探测成功则恢复,失败则继续保持打开状态 [1]。",
+          "conv_id": "conv_g5_rocketmq_sentinel_3_a9c2e697",
+          "answer": "消息消费失败并不断重试，超过最大重试次数后会被投递至死信队列 [4]。您可以通过消费死信队列的消息进行业务恢复 [4]。消息在死信队列中不会再重试 [4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -714,17 +669,62 @@
           "from": "rocketmq",
           "to": "sentinel",
           "variant_idx": 4,
-          "conv_id": "conv_g5_rocketmq_sentinel_4_ca52e115",
-          "answer": "慢调用比例策略需要设置最大响应时间(RT), 当单位时间内响应时间超过 RT 的请求比例超过阈值时, 熔断器打开 [1]。熔断器打开后会进入半开探测阶段, 探测成功则恢复, 失败则继续保持打开状态 [1]。",
+          "conv_id": "conv_g5_rocketmq_sentinel_4_674d4c6e",
+          "answer": "消息消费失败并不断重试，直到超过最大重试次数后，消息会被投递至死信队列 [4]。您可以通过消费死信队列的消息进行业务恢复 [4]。SimpleConsumer消费者的重试间隔是预分配的，通过设置不可见时间参数InvisibleDuration来控制 [4]。",
           "judge": "PASS",
           "pass": true
+        },
+        {
+          "from": "rocketmq",
+          "to": "sentinel",
+          "variant_idx": 0,
+          "conv_id": "conv_g5_rocketmq_sentinel_0_851149ae",
+          "answer": "Sentinel 通过熔断降级来达到快速失败的目的 [3]。降级规则用于保护服务消费方，在依赖服务不可用时会快速失败而不是等待超时或重试 [3]。Sentinel 提供了熔断降级规则来保护服务消费方 [4]。",
+          "judge": "FAIL",
+          "pass": false
+        },
+        {
+          "from": "rocketmq",
+          "to": "sentinel",
+          "variant_idx": 1,
+          "conv_id": "conv_g5_rocketmq_sentinel_1_68aa7bf4",
+          "answer": "Sentinel 通过熔断降级来达到快速失败的目的 [3]。降级规则用于保护服务消费方，在调用时快速失败而不是等待超时或者重试 [3]。Sentinel 控制台是流量控制、熔断降级规则统一配置和管理的入口 [5]。",
+          "judge": "FAIL",
+          "pass": false
+        },
+        {
+          "from": "rocketmq",
+          "to": "sentinel",
+          "variant_idx": 2,
+          "conv_id": "conv_g5_rocketmq_sentinel_2_027ef2bf",
+          "answer": "Sentinel 通过熔断降级来达到快速失败的目的 [3]。降级规则用于保护服务消费方，在依赖服务不可用时快速失败 [3]。Sentinel 控制台是流量控制、熔断降级规则统一配置和管理的入口 [5]。",
+          "judge": "FAIL",
+          "pass": false
+        },
+        {
+          "from": "rocketmq",
+          "to": "sentinel",
+          "variant_idx": 3,
+          "conv_id": "conv_g5_rocketmq_sentinel_3_9d19ed87",
+          "answer": "Sentinel 慢调用比例熔断通过\"降级规则\"页面配置 [2]。Sentinel 会自动发现所有潜在资源和调用链，并在\"簇点链路\"页面展示 [3]。流量控制规则用于保护服务提供方，熔断降级规则用于保护服务消费方 [4]。",
+          "judge": "FAIL",
+          "pass": false
+        },
+        {
+          "from": "rocketmq",
+          "to": "sentinel",
+          "variant_idx": 4,
+          "conv_id": "conv_g5_rocketmq_sentinel_4_a92c0b7a",
+          "answer": "Sentinel 通过熔断降级来达到快速失败的目的 [3]。降级规则用于保护服务消费方 [3]。Sentinel 提供了熔断降级规则来保护系统 [4]。",
+          "judge": "FAIL",
+          "pass": false
         },
         {
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 0,
-          "conv_id": "conv_g5_seata_dubbo_0_77f67cb8",
-          "answer": "TCC 模式需要业务实现 Try、Confirm、Cancel 三个阶段 [1]。一阶段 prepare 行为是调用自定义的 prepare 逻辑，二阶段 commit 行为是调用自定义的 commit 逻辑，二阶段 rollback 行为是调用自定义的 rollback 逻辑 [2]。TCC 模式",
+          "conv_id": "conv_g5_seata_dubbo_0_661b016c",
+          "answer": "TCC 模式的一阶段 prepare 行为是调用自定义的 prepare 逻辑 [2][3][4]。二阶段 commit 行为是调用自定义的 commit 逻辑 [2][3][4]。二阶段 rollback 行为是调用自定义的 rollback 逻辑 [2][3][4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -732,8 +732,8 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 1,
-          "conv_id": "conv_g5_seata_dubbo_1_b4e20aeb",
-          "answer": "TCC 模式需要业务实现 Try、Confirm、Cancel 三个阶段 [1]。Try 是一阶段 prepare 行为，Confirm 是二阶段 commit 行为，Cancel 是二阶段 rollback 行为 [1]。TCC 模式不依赖于底层数据资源的事务支持，调用自定义的 prepare、c",
+          "conv_id": "conv_g5_seata_dubbo_1_07cbfe8f",
+          "answer": "TCC 模式的一阶段 prepare 行为是调用 **自定义** 的 prepare 逻辑 [1][2][3]。二阶段 commit 行为是调用 **自定义** 的 commit 逻辑 [1][2][3]。二阶段 rollback 行为是调用 **自定义** 的 rollback 逻辑 [1][2]",
           "judge": "PASS",
           "pass": true
         },
@@ -741,8 +741,8 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 2,
-          "conv_id": "conv_g5_seata_dubbo_2_703f47e3",
-          "answer": "TCC 模式需要业务实现 Try、Confirm、Cancel 三个阶段 [1]。一阶段 prepare 行为是调用自定义的 prepare 逻辑 [2]。二阶段 commit 行为是调用自定义的 commit 逻辑，二阶段 rollback 行为是调用自定义的 rollback 逻辑 [2]。",
+          "conv_id": "conv_g5_seata_dubbo_2_140e1f08",
+          "answer": "TCC 模式的一阶段 prepare 行为：调用 **自定义** 的 prepare 逻辑 [1][2][3]。二阶段 commit 行为：调用 **自定义** 的 commit 逻辑 [1][2][3]。二阶段 rollback 行为：调用 **自定义** 的 rollback 逻辑 [1][2]",
           "judge": "PASS",
           "pass": true
         },
@@ -750,8 +750,8 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 3,
-          "conv_id": "conv_g5_seata_dubbo_3_a2c0612a",
-          "answer": "TCC 模式需要业务实现 Try、Confirm、Cancel 三个阶段 [1]。Try 是一阶段 prepare 行为，Confirm 是二阶段 commit 行为，Cancel 是二阶段 rollback 行为 [1]。TCC 模式不依赖于底层数据资源的事务支持，调用自定义的 prepare、c",
+          "conv_id": "conv_g5_seata_dubbo_3_e0aef412",
+          "answer": "TCC 模式的一阶段 prepare 行为是调用 **自定义** 的 prepare 逻辑 [1][2][3]。二阶段 commit 行为是调用 **自定义** 的 commit 逻辑 [1][2][3]。二阶段 rollback 行为是调用 **自定义** 的 rollback 逻辑 [1][2]",
           "judge": "PASS",
           "pass": true
         },
@@ -759,8 +759,8 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 4,
-          "conv_id": "conv_g5_seata_dubbo_4_e5dd76dd",
-          "answer": "TCC 模式需要业务实现 Try、Confirm、Cancel 三个阶段 [1]。一阶段 prepare 行为是调用自定义的 prepare 逻辑 [2]。二阶段 commit 行为是调用自定义的 commit 逻辑，rollback 行为是调用自定义的 rollback 逻辑 [2]。",
+          "conv_id": "conv_g5_seata_dubbo_4_fbb8d4a3",
+          "answer": "TCC 模式的一阶段 prepare 行为是调用自定义的 prepare 逻辑 [2][4]。二阶段 commit 行为是调用自定义的 commit 逻辑 [2][3][4]。二阶段 rollback 行为是调用自定义的 rollback 逻辑 [2][3][4]。",
           "judge": "PASS",
           "pass": true
         },
@@ -768,17 +768,17 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 0,
-          "conv_id": "conv_g5_seata_dubbo_0_640690c4",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 26e6aeba",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_seata_dubbo_0_39657496",
+          "answer": "Dubbo SPI 支持扩展点按需加载，而 Java SPI 会一次性加载所有实现 [2]。Dubbo SPI 提供了更丰富的扩展点配置能力，包括自适应扩展、激活扩展等 [2]。Dubbo SPI 通过 `@SPI` 注解定义扩展点接口，Java SPI 则使用 `META-INF/services",
+          "judge": "PASS",
+          "pass": true
         },
         {
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 1,
-          "conv_id": "conv_g5_seata_dubbo_1_a448f85f",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 5622548e",
+          "conv_id": "conv_g5_seata_dubbo_1_2dd74a22",
+          "answer": "Dubbo SPI 支持通过 Filter、Router、Protocol 等扩展点实现功能扩展 [2]。Dubbo SPI 支持运行态动态生效流控策略，无需重新部署 [2]。Dubbo SPI 支持 Transaction、Tracing 等扩展实现方案 [2]。",
           "judge": "FAIL",
           "pass": false
         },
@@ -786,8 +786,8 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 2,
-          "conv_id": "conv_g5_seata_dubbo_2_47502cfb",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 10f8c13a",
+          "conv_id": "conv_g5_seata_dubbo_2_0e1954a9",
+          "answer": "Dubbo SPI 支持通过 Filter、Router、Protocol 等扩展点实现功能扩展 [2]。Dubbo SPI 支持运行态动态生效流控策略，无需重新部署 [2]。Dubbo SPI 已有 Transaction、Tracing 等扩展实现方案 [2]。",
           "judge": "FAIL",
           "pass": false
         },
@@ -795,8 +795,8 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 3,
-          "conv_id": "conv_g5_seata_dubbo_3_7458502e",
-          "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 5d3886b6",
+          "conv_id": "conv_g5_seata_dubbo_3_f2e2df60",
+          "answer": "Dubbo SPI 支持通过 Filter、Router、Protocol 等扩展点实现功能扩展 [2]。Dubbo SPI 支持运行态动态生效流控策略，无需重新部署 [2]。Dubbo SPI 支持 Transaction、Tracing 等扩展实现方案 [2]。",
           "judge": "FAIL",
           "pass": false
         },
@@ -804,10 +804,10 @@
           "from": "seata",
           "to": "dubbo",
           "variant_idx": 4,
-          "conv_id": "conv_g5_seata_dubbo_4_b9557a95",
-          "answer": "片段中未提及 Dubbo SPI 和 Java SPI 的区别。",
-          "judge": "FAIL",
-          "pass": false
+          "conv_id": "conv_g5_seata_dubbo_4_2ae4ee0d",
+          "answer": "Dubbo SPI 支持扩展点按需加载，而 Java SPI 加载所有实现类 [2]。Dubbo SPI 提供了更丰富的扩展点特性，包括自适应扩展、自动激活等 [2]。Dubbo SPI 通过 `@SPI` 注解标记接口，Java SPI 通过 `META-INF/services` 文件配置 [2",
+          "judge": "PASS",
+          "pass": true
         }
       ]
     }

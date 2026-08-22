@@ -47,6 +47,9 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
     // Phase 3.A: 调用 BGE-M3 服务时走 CircuitBreaker(命名 instance "embedding"),
     // 失败率 ≥ 50% 自动熔断, 防 TEI/Ollama Embedding 长时间挂掉把整站 chat 拖死。
     private final CircuitBreaker circuitBreaker;
+
+    /** P1: embed 并发闸(可选); props.maxConcurrent<=0 时不启用。 */
+    private final java.util.concurrent.Semaphore concurrencyLimit;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public BgeM3EmbeddingClient(EmbeddingProperties props, CircuitBreakerRegistry cbRegistry) {
@@ -54,6 +57,10 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
         // cbRegistry 已由 application.yml resilience4j.circuitbreaker.instances.embedding 装载配置,
         // 这里仅按名取 instance。若配置缺失则按 registry default config 新建。
         this.circuitBreaker = cbRegistry.circuitBreaker("embedding");
+        this.concurrencyLimit =
+                props.getMaxConcurrent() > 0
+                        ? new java.util.concurrent.Semaphore(props.getMaxConcurrent())
+                        : null;
     }
 
     private WebClient client() {
@@ -99,6 +106,13 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
         // 关键 bug: 之前用了 /v1/embeddings + 字段 inputs(复数) → 422/415 反序列化失败。
         // 标准是 input(单数)。这里用 OpenAI 兼容路径, parseResponse 现有逻辑能直接解析。
         ObjectNode body = objectMapper.createObjectNode();
+        // P1(云端 embedding): 本地 TEI 忽略 model 字段, 云端(智谱等)必填
+        if (props.getModel() != null && !props.getModel().isBlank()) {
+            body.put("model", props.getModel());
+        }
+        if (props.getDimensions() > 0) {
+            body.put("dimensions", props.getDimensions());
+        }
         // OpenAI 兼容: input 接受数组
         ArrayNode inputsNode = body.putArray("input");
         for (String input : inputs) {
@@ -106,25 +120,67 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
         }
 
         try {
-            // Phase 3.A: embedding CircuitBreaker 装饰。熔断态会直接抛 CallNotPermittedException,
-            // 不进 HTTP 调用, 让上游 RetrieveService 知晓并形成降级链。
-            String respJson =
-                    circuitBreaker.executeSupplier(
-                            () ->
-                                    client().post()
-                                            .uri("/v1/embeddings")
-                                            .header("Content-Type", "application/json")
-                                            .bodyValue(body.toString())
-                                            .retrieve()
-                                            .bodyToMono(String.class)
-                                            .timeout(Duration.ofMillis(props.getTimeoutMs()))
-                                            .block());
+            // P1: 串行/限流喂 TEI(信号量公平排队), 防并发排队导致的集体超时-熔断风暴
+            if (concurrencyLimit != null) {
+                try {
+                    concurrencyLimit.acquire();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("Embedding 调用被中断", ie);
+                }
+            }
+            try {
+                callEmbedWithGuard(inputs, body);
+            } finally {
+                if (concurrencyLimit != null) concurrencyLimit.release();
+            }
+            String respJson = lastResponse;
             return parseResponse(respJson, inputs.size());
         } catch (Exception e) {
             log.error(
                     "embedding.call_failed batch_size={}, error={}", inputs.size(), e.getMessage());
             throw new IllegalStateException("Embedding 服务调用失败: " + e.getMessage(), e);
         }
+    }
+
+    private volatile String lastResponse;
+
+    private void callEmbedWithGuard(List<String> inputs, ObjectNode body) {
+        // Phase 3.A: embedding CircuitBreaker 装饰。熔断态会直接抛 CallNotPermittedException,
+        // 不进 HTTP 调用, 让上游 RetrieveService 知晓并形成降级链。
+        lastResponse =
+                circuitBreaker.executeSupplier(
+                        () -> {
+                            var request =
+                                    client()
+                                            .post()
+                                            .uri(embeddingsPath())
+                                            .header("Content-Type", "application/json");
+                            // P1(云端 embedding): 云 provider 需要 Bearer key; 本地 TEI 无需
+                            if (props.getApiKey() != null && !props.getApiKey().isBlank()) {
+                                request =
+                                        request.header(
+                                                "Authorization", "Bearer " + props.getApiKey());
+                            }
+                            return request
+                                    .bodyValue(body.toString())
+                                    .retrieve()
+                                    .bodyToMono(String.class)
+                                    .timeout(Duration.ofMillis(props.getTimeoutMs()))
+                                    .block();
+                        });
+    }
+
+    /**
+     * P1: base-url 已以版本段(/v1, /v4)结尾的 provider(智谱 paas/v4, OpenAI /v1)直接拼
+     * /embeddings; 本地 TEI 裸 host(8082) 拼老路径 /v1/embeddings, 行为不变。
+     */
+    private String embeddingsPath() {
+        String base = props.getBaseUrl() == null ? "" : props.getBaseUrl().trim();
+        if (base.endsWith("/v1") || base.endsWith("/v4")) {
+            return "/embeddings";
+        }
+        return "/v1/embeddings";
     }
 
     private List<EmbeddingResult> parseResponse(String json, int expectSize) {
