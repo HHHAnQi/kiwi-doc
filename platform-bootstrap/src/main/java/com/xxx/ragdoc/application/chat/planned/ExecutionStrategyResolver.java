@@ -39,7 +39,12 @@ public class ExecutionStrategyResolver {
 
     private final boolean hasOverride;
 
-    /** 生产构造器 (Spring component-scan 默认调用): 无 override, 读 PlannerProperties 字段。 */
+    /**
+     * 生产构造器 (Spring component-scan 默认调用): 无 override, 读 PlannerProperties 字段。
+     * P1 修复: 双构造器并存且均无 @Autowired 时, Spring 回退找无参构造 → NoSuchMethodException
+     * 启动失败(此前从未整包启动过所以未暴露)。显式标注本构造器为注入入口。
+     */
+    @org.springframework.beans.factory.annotation.Autowired
     public ExecutionStrategyResolver(PlannerProperties plannerProperties) {
         this.plannerProperties = plannerProperties;
         this.plannedPipelineEnabledOverride = false;

@@ -24,6 +24,9 @@ import org.springframework.stereotype.Component;
  * <p>PR-7a 第一版 callIndex = {@code request.replanIndex()} (=0 initial, =1 唯一允许的 replan)。
  */
 @Slf4j
+// P1 修复(装配冲突): 装饰器标 @Primary — PlannedAgentExecutionCoordinator 注入的
+// PlannerProvider 解析到本装饰器(harness 关闭时纯转发 delegate)。
+@org.springframework.context.annotation.Primary
 @Component
 public class HarnessAwarePlannerProvider implements PlannerProvider {
 
@@ -36,7 +39,8 @@ public class HarnessAwarePlannerProvider implements PlannerProvider {
     private final HarnessProperties harnessProperties;
 
     public HarnessAwarePlannerProvider(
-            PlannerProvider delegate,
+            @org.springframework.beans.factory.annotation.Qualifier("basePlannerProvider")
+                    PlannerProvider delegate,
             HarnessProvider harnessProvider,
             HarnessProperties harnessProperties,
             ObjectMapper objectMapper /* 显式注入避免误用; 当前 PR 不直接序列化 (HarnessProvider 内部完成) */) {

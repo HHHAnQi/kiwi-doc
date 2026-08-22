@@ -27,7 +27,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class JpaDocumentStateAdapter implements DocumentStatePort {
 
     private final DocumentJpaRepository documentJpaRepository;
-    private final DocumentMapper documentMapper; // 复用同一个 mapper util
     private final PlatformTransactionManager txManager;
 
     /** 短事务: 不传播外层管道事务, 让中间态立刻对其它会话可见。 */
@@ -49,9 +48,9 @@ public class JpaDocumentStateAdapter implements DocumentStatePort {
                                                     () ->
                                                             new IllegalStateException(
                                                                     "Document 不存在: " + documentId));
-                            Document d = documentMapper.toDomain(entity);
+                            Document d = DocumentMapper.toDomain(entity);
                             d.markChunked(chunks);
-                            documentMapper.toEntity(d, entity);
+                            DocumentMapper.toEntity(d, entity);
                             documentJpaRepository.save(entity);
                             log.debug(
                                     "doc_state.mark_chunked doc_id={}, status=CHUNKED", documentId);
@@ -86,9 +85,9 @@ public class JpaDocumentStateAdapter implements DocumentStatePort {
                                                     () ->
                                                             new IllegalStateException(
                                                                     "Document 不存在: " + documentId));
-                            Document d = documentMapper.toDomain(entity);
+                            Document d = DocumentMapper.toDomain(entity);
                             mutator.accept(d);
-                            documentMapper.toEntity(d, entity);
+                            DocumentMapper.toEntity(d, entity);
                             documentJpaRepository.save(entity);
                             log.debug(
                                     "doc_state.transition doc_id={}, status={}", documentId, label);

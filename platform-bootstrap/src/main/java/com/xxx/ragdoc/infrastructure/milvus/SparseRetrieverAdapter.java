@@ -21,7 +21,9 @@ import org.springframework.stereotype.Component;
 public class SparseRetrieverAdapter implements SparseSearchPort {
 
     private final SparseRetriever sparseRetriever;
-    private final MilvusFilterExprBuilder exprBuilder;
+    // P1 修复(hybrid 启用后暴露的存量 bug): MilvusFilterExprBuilder 是纯静态工具类
+    // (私有构造器), 不能作 bean 注入 — dense 模式下本 Adapter 从未加载所以一直没炸。
+
 
     @Override
     public List<ScoredChunk> search(
@@ -42,7 +44,7 @@ public class SparseRetrieverAdapter implements SparseSearchPort {
         com.xxx.ragdoc.application.document.port.VectorStore.MetadataFilter filter =
                 new com.xxx.ragdoc.application.document.port.VectorStore.MetadataFilter(
                         source, version, null, tenantId, allowedDocIds);
-        String expr = exprBuilder.build(null, filter);
+        String expr = MilvusFilterExprBuilder.build(null, filter);
         try {
             return sparseRetriever.search(queryText, expr, topK);
         } catch (RuntimeException ex) {

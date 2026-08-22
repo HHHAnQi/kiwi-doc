@@ -6,6 +6,7 @@ import com.xxx.ragdoc.application.chat.port.ChatClient;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,7 +27,11 @@ import org.springframework.stereotype.Component;
  * <p>PR-7a 仅实现核心 plan(); 完整 function-call schema + few-shot 由 PR-7c评测时调优。
  */
 @Slf4j
-@Component
+// P1 修复(装配冲突): 底层 planner 按 rag.agent.planner.model-enabled 二选一
+// (PlannerProperties 语义), 与 RuleTemplatePlannerProvider 互斥; bean 名固定
+// basePlannerProvider 供 HarnessAwarePlannerProvider 装饰器限定注入。
+@Component("basePlannerProvider")
+@ConditionalOnProperty(prefix = "rag.agent.planner", name = "model-enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class ModelPlannerProvider implements PlannerProvider {
 
