@@ -57,6 +57,25 @@ public class ParseWorker {
     private final ChunkRepository chunkRepository;
     private final VectorStore vectorStore;
     private final ChunkingProperties chunkingProps;
+
+    /**
+     * P1 Contextual Retrieval: embed 输入 = 确定性上下文前缀(来源+文档+章节) + chunk 原文。
+     * 与 TikaParsingTrigger(sync 路径)同一规则; 只影响向量, 原文/哈希/BM25 不动。
+     */
+    private List<String> contextualEmbedInputs(Document doc, List<Chunk> chunks) {
+        java.util.function.Function<Chunk, String> toInput =
+                chunkingProps.isContextualPrefixEnabled()
+                        ? c ->
+                                com.xxx.ragdoc.application.document.chunking
+                                        .ContextualEmbeddingPrefix.build(
+                                        doc.originalFilename(),
+                                        doc.source(),
+                                        c.sectionPath(),
+                                        chunkingProps.getContextualPrefixMaxChars())
+                                + c.content()
+                        : Chunk::content;
+        return chunks.stream().map(toInput).toList();
+    }
     private final ParseTaskService parseTaskService;
     private final ParseTaskRepository parseTaskRepository;
     private final IngestionPolicy ingestionPolicy;
@@ -157,7 +176,7 @@ public class ParseWorker {
         }
         chunks = new ArrayList<>(
                 ingestionPolicy.deduplicateChunks(doc.id().value(), chunks, redactionCount));
-        chunkTexts = chunks.stream().map(Chunk::content).toList();
+        chunkTexts = contextualEmbedInputs(doc, chunks);
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
         ingestionPolicy.validateEmbeddings(
                 doc.id().value(), embeddings, chunks.size(), redactionCount);
@@ -255,8 +274,7 @@ public class ParseWorker {
 
         childChunks = new java.util.ArrayList<>(
                 ingestionPolicy.deduplicateChunks(doc.id().value(), childChunks, redactionCount));
-        childTexts = childChunks.stream().map(Chunk::content)
-                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        childTexts = new ArrayList<>(contextualEmbedInputs(doc, childChunks));
 
         // D. embed 只 children
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(childTexts);

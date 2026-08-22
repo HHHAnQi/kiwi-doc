@@ -91,6 +91,26 @@ public class TikaParsingTrigger implements ParsingTrigger {
     /** Tika 是线程安全(内部 facade 单例), 复用即可。 */
     private final Tika tika = new Tika();
 
+    /**
+     * P1 Contextual Retrieval: embed 输入 = 确定性上下文前缀 + chunk 原文。
+     * 只影响向量; chunk.content/哈希/Milvus BM25 文本保持原文。flag 关闭时 = baseline。
+     */
+    private java.util.List<String> contextualEmbedInputs(
+            Document doc, java.util.List<Chunk> chunks) {
+        java.util.function.Function<Chunk, String> toInput =
+                chunkingProps.isContextualPrefixEnabled()
+                        ? c ->
+                                com.xxx.ragdoc.application.document.chunking
+                                        .ContextualEmbeddingPrefix.build(
+                                        doc.originalFilename(),
+                                        doc.source(),
+                                        c.sectionPath(),
+                                        chunkingProps.getContextualPrefixMaxChars())
+                                + c.content()
+                        : Chunk::content;
+        return chunks.stream().map(toInput).toList();
+    }
+
     private static final int MAX_TEXT_LENGTH = 5_000_000; // 5M 字符上限保护, 防超大文件 OOM
 
     @Override
@@ -245,8 +265,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
         }
         if (ingestionPolicy != null) {
             chunks = ingestionPolicy.deduplicateChunks(documentId, chunks, redactionCount);
-            chunkTexts = chunks.stream().map(Chunk::content).toList();
         }
+        chunkTexts = contextualEmbedInputs(doc, chunks);
         // Task 4: 顺序 — CHUNKED 在切片完成时; EMBEDDING 在调 embedding 前;
         //          INDEXING 在 upsert 前; INDEXED 在外层 trigger 完成。
         // flat 路径: chunks 已构造 (in-memory), 先 mark CHUNKED
@@ -373,8 +393,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
         if (ingestionPolicy != null) {
             childChunks = new java.util.ArrayList<>(
                     ingestionPolicy.deduplicateChunks(documentId, childChunks, redactionCount));
-            childTexts = childChunks.stream().map(Chunk::content).collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
         }
+        childTexts = new java.util.ArrayList<>(contextualEmbedInputs(doc, childChunks));
 
         // 步骤 C: embed 只 children
         // Task 4: CHUNKED → EMBEDDING

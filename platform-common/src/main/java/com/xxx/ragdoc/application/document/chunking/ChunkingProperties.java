@@ -24,6 +24,17 @@ public class ChunkingProperties {
     /** 切片模式: flat(默认) / parent_child。 */
     private Mode mode = Mode.FLAT;
 
+    /**
+     * Contextual Retrieval(P1): embed 输入前是否拼接确定性上下文前缀(来源+文档标题+章节路径)。
+     *
+     * <p>见 {@link ContextualEmbeddingPrefix}。只改 embedding 输入, 不动 chunk 原文/哈希/BM25 文本。
+     * 默认 true; 关闭 = baseline 行为(评测消融用)。
+     */
+    private boolean contextualPrefixEnabled = true;
+
+    /** 前缀长度上限(字符), 防 section_path 极深时前缀反客为主。 */
+    private int contextualPrefixMaxChars = 120;
+
     public enum Mode {
         FLAT,
         PARENT_CHILD
