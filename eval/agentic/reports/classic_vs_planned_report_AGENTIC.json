@@ -1,0 +1,118 @@
+{
+  "runs": 3,
+  "cases": 20,
+  "modes": {
+    "AGENTIC": {
+      "accuracy_mean": 0.1833,
+      "accuracy_stdev": 0.3663,
+      "pass_all_3": 0.15,
+      "latency_p50_ms": 10454,
+      "latency_p95_ms": 20069,
+      "avg_citations": 6.28,
+      "non_ok_rate": 0.3,
+      "per_case": {
+        "amh-001": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-002": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-003": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-004": [
+          "FAIL",
+          "FAIL",
+          "PASS"
+        ],
+        "amh-005": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-006": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-007": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-008": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-009": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-010": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-011": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-012": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-013": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-014": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-015": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-016": [
+          "PASS",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-017": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-018": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-019": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-020": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ]
+      }
+    }
+  },
+  "router_auto_upgrade_rate": 0.0
+}

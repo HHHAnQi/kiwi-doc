@@ -3,6 +3,7 @@ package com.xxx.ragdoc.application.chat.planner;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -74,19 +75,112 @@ public class ModelPlannerProvider implements PlannerProvider {
         }
         String parsed = extractJson(raw);
         try {
-            PlannerResponse decoded = mapper.readValue(parsed, PlannerResponse.class);
+            PlannerResponse decoded = decode(parsed);
             if (decoded.steps() == null) {
                 throw new PlannerException(
                         PlannerException.Reason.SCHEMA_VIOLATION,
                         "planner response missing steps run=" + request.runId());
             }
             return decoded;
-        } catch (JsonProcessingException e) {
+        } catch (PlannerException pe) {
+            throw pe;
+        } catch (Exception e) {
             throw new PlannerException(
                     PlannerException.Reason.INVALID_JSON,
                     "planner JSON parse failed run=" + request.runId() + ": " + e.getMessage(),
                     e);
         }
+    }
+
+    /**
+     * P1 修复(冒烟实测): PlannedToolStep.input 声明为 ToolInput 接口, Jackson 无类型信息
+     * 直接 readValue 必失败("no Creators") — Model Planner 此前从未对真实 LLM 输出跑通过。
+     * 两段式: 先树解析, 再按 step.toolName 把 input node 转具体 Input record。
+     */
+    private PlannerResponse decode(String json) throws Exception {
+        com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
+        List<PlannedToolStep> steps = new ArrayList<>();
+        java.util.Map<String, String> stepIdRemap = new java.util.HashMap<>();
+        for (com.fasterxml.jackson.databind.JsonNode st : root.path("steps")) {
+            String toolName = st.path("toolName").asText("");
+            com.fasterxml.jackson.databind.JsonNode inputNode = st.path("input");
+            // 容错: LLM 常把 input 写成纯字符串 query 而非对象 → 包装为默认 SearchInput
+            if (inputNode.isTextual() && !inputNode.asText().isBlank()) {
+                inputNode =
+                        mapper.createObjectNode()
+                                .put("query", inputNode.asText())
+                                .put("topK", 5);
+            }
+            com.xxx.ragdoc.application.chat.tool.ToolInput input =
+                    switch (toolName) {
+                        case "semantic_search", "keyword_search", "metadata_search" ->
+                                mapper.treeToValue(
+                                        inputNode,
+                                        com.xxx.ragdoc.application.chat.tool.SearchInput.class);
+                        case "document_fetch" ->
+                                mapper.treeToValue(
+                                        inputNode,
+                                        com.xxx.ragdoc.application.chat.tool.DocumentFetchInput
+                                                .class);
+                        case "citation_verify" ->
+                                mapper.treeToValue(
+                                        inputNode,
+                                        com.xxx.ragdoc.application.chat.tool.CitationVerifyInput
+                                                .class);
+                        default ->
+                                throw new PlannerException(
+                                        PlannerException.Reason.SCHEMA_VIOLATION,
+                                        "planner unknown tool in plan: " + toolName);
+                    };
+            // P1: LLM 生成的 stepId 常过长/含非法字符(PlanValidator 拒绝) → 确定性重命名
+            // 并重映射 dependsOn(stepId 是内部标识, 规则版本来就是 plan-step-{N})
+            String canonicalId = "plan-step-" + steps.size();
+            stepIdRemap.put(st.path("stepId").asText(canonicalId), canonicalId);
+            List<String> deps = new ArrayList<>();
+            st.path("dependsOn").forEach(d -> deps.add(d.asText()));
+            List<String> reqIds = new ArrayList<>();
+            st.path("requirementIds").forEach(r -> reqIds.add(r.asText()));
+            steps.add(
+                    new PlannedToolStep(
+                            canonicalId,
+                            toolName,
+                            st.path("toolVersion").asText("v1"),
+                            input,
+                            deps,
+                            reqIds,
+                            st.path("expectedEvidence").asText(""),
+                            st.path("required").asBoolean(true)));
+        }
+        // dependsOn 引用旧 id → 重映射(未知的依赖删掉, 保持 DAG 有效)
+        for (int i = 0; i < steps.size(); i++) {
+            PlannedToolStep st = steps.get(i);
+            List<String> mapped =
+                    st.dependsOn().stream()
+                            .map(stepIdRemap::get)
+                            .filter(java.util.Objects::nonNull)
+                            .toList();
+            if (!mapped.equals(st.dependsOn())) {
+                steps.set(
+                        i,
+                        new PlannedToolStep(
+                                st.stepId(),
+                                st.toolName(),
+                                st.toolVersion(),
+                                st.input(),
+                                mapped,
+                                st.requirementIds(),
+                                st.expectedEvidence(),
+                                st.required()));
+            }
+        }
+        List<String> targeted = new ArrayList<>();
+        root.path("targetedRequirementIds").forEach(t -> targeted.add(t.asText()));
+        return new PlannerResponse(
+                root.path("planId").asText("model-plan"),
+                root.path("planVersion").asText("v1"),
+                steps,
+                targeted,
+                root.path("reasonCode").asText(""));
     }
 
     static String buildPrompt(PlannerRequest request) {
@@ -103,6 +197,17 @@ public class ModelPlannerProvider implements PlannerProvider {
                         + "\"steps\":[{stepId,toolName,toolVersion,input,dependsOn,requirementIds,"
                         + "expectedEvidence,required}],\"targetedRequirementIds\":[],\"reasonCode\":\"\"}.\n");
         sb.append("- max ").append(request.remainingBudget().remainingSteps()).append(" steps.\n");
+        // Phase 1 对照评测结论的最大杠杆: 规划必须真正分解。规则版 Planner 整题单步,
+        // 与 Classic 同构(实测 acc 落后且延迟×5)。模型版的核心价值就在这里:
+        sb.append(
+                "- DECOMPOSITION (critical): for multi-hop/comparison questions, generate ONE "
+                        + "search step PER component or sub-question (e.g. 'compare A and B' → one "
+                        + "step retrieving A's facts, another for B's), 2-4 steps total. Each step's "
+                        + "query should be a focused standalone sub-query, NOT the full user "
+                        + "question repeated.\n");
+        sb.append(
+                "- Prefer different complementary tools/views across steps (e.g. semantic_search "
+                        + "for concept A, keyword_search for exact config keys of B).\n");
         sb.append("\nUser question: ").append(request.normalizedQuery()).append('\n');
         sb.append("Intent: ").append(request.intent()).append('\n');
         sb.append("Replan index: ").append(request.replanIndex()).append('\n');

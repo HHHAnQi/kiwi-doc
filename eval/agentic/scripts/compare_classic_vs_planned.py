@@ -31,7 +31,11 @@ CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8080/api/v1/chat")
 TOKEN = os.getenv("TEST_AUTH_TOKEN", "dev-token-change-me")
 RUNS = int(os.getenv("CMP_RUNS", "3"))
 DATASET = PROJECT / "eval/agentic/datasets/agentic_v2.pilot20.jsonl"
-OUT = PROJECT / "eval/agentic/reports/classic_vs_planned_report.json"
+OUT = PROJECT / (
+    "eval/agentic/reports/classic_vs_planned_report"
+    + (("_" + os.getenv("CMP_MODES").replace(",", "-")) if os.getenv("CMP_MODES") else "")
+    + ".json"
+)
 JUDGE_URL = os.getenv("JUDGE_LLM_PROVIDER_1_BASE_URL", "https://api.deepseek.com/v1") + "/chat/completions"
 JUDGE_KEY = os.getenv("JUDGE_LLM_PROVIDER_1_API_KEY", "")
 JUDGE_MODEL = os.getenv("JUDGE_LLM_PROVIDER_1_MODEL", "deepseek-chat")
@@ -118,7 +122,7 @@ def main():
     print(f"[load] {len(cases)} 题带 goldAnswer")
     report = {"runs": RUNS, "cases": len(cases), "modes": {}}
 
-    for mode in ("RAG", "AGENTIC"):
+    for mode in os.getenv("CMP_MODES", "RAG,AGENTIC").split(","):
         per_case = {c["caseId"]: [] for c in cases}
         for run in range(1, RUNS + 1):
             for i, c in enumerate(cases, 1):

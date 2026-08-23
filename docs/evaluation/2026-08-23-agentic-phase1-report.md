@@ -53,3 +53,35 @@ agentic 开关关闭(rag.agent.planner.enabled=false 默认值未动), 本报告
 CMP_RUNS=3 .venv/bin/python3 eval/agentic/scripts/compare_classic_vs_planned.py
 # 报告: eval/agentic/reports/classic_vs_planned_report.json
 ```
+
+---
+
+## 附: Model Planner(查询分解)追加实验(2026-08-23 晚)
+
+Phase 1 结论后的最大杠杆验证: 启用 Model Planner + 分解指引
+(每子题一步、工具视角互补)。过程中修复 3 个"从未对真实 LLM 输出跑通"的缺陷:
+
+1. PlannedToolStep.input 是 ToolInput 接口, Jackson 直接反序列化必失败 → 两段式
+   解码(树解析 + 按 toolName 转具体 Input record);
+2. LLM 常把 input 写成纯字符串 → 容错包装为默认 SearchInput;
+3. LLM 生成的 stepId 过长/非法(PlanValidator 拒绝) → decode 阶段确定性重命名
+   (plan-step-{N}) + dependsOn 重映射。
+
+分解机制验证成功(冒烟: 对比题生成 4 步计划, 2×semantic + 2×keyword, 20 条候选):
+
+| 指标 | Rule Planner | **Model Planner** | Classic 基线 |
+|---|---|---|---|
+| accuracy | 25.0% | 18.3% | 36.7% |
+| pass³ | 20% | 15% | 35% |
+| non-OK | 18.3% | 30.0% | 13.3% |
+| p50 延迟 | 15.2s | **10.5s** | 2.9s |
+| 平均引用 | 4.2 | **6.3** | 5.0 |
+
+**归因**: 分解本身生效(证据量 +50%, 延迟 -31%), 但准确率反降 —— 瓶颈从
+"规划不分解"转移到"多需求覆盖判定过保守"(30% 拒答中含可答题目; 多 requirement
+使 sufficiency 的覆盖判定更难全部通过)。**结论不变且更精确: agentic 的启用
+前提是规划与判定两组件联合校准, 单改任一方都不兑现收益** —— 这与业界
+"harness 整体决定上限"的判断一致。
+
+下一步若继续: sufficiency 多需求校准(用 gold 标注"最小充分证据集")是当前
+约束瓶颈; 之后才是 Router 句式扩充与终版对照。
