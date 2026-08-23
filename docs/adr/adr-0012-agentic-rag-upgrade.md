@@ -122,3 +122,46 @@ PR 曲线依据。
 | 延迟/成本失控 | 路由分层 + 硬预算 + p95 单独观测；不达标即收敛阈值 |
 | 多跳题集太小结论不稳 | 20 题起步、Phase 2 扩 50；报告标注置信区间 |
 | 伤到 Classic 主路径 | G1 gate（±3pp）每阶段必跑，CI -3% 阻断不变 |
+
+---
+
+## 7. v2 修订（2026-08-23 代码复查 + 业界调研后）
+
+代码复查结论：编排/工具/预算框架/CAS/checkpoint/评测脚手架完成度很高，但存在
+**3 个 P0 缺陷使主链路（sufficiency 不足 → replan 再检索 → 作答）无法走通**，
+通电前必须修复。
+
+### Phase 0（新增，2-4 天）: 修 P0 通电
+
+| # | 缺陷 | 证据 | 修复 | 工作量 |
+|---|---|---|---|---|
+| P0-1 | `rag.agent.sufficiency.*` 不在 yml，默认 disabled → DispatchingSufficiencyJudge 恒返 UNDETERMINED → Guard 全部拒答 | SufficiencyProperties.java:23-30; DispatchingSufficiencyJudge.java:38-47 | application.yml 补 sufficiency 开关（enabled/model-fallback/timeout 环境变量占位） | 0.5h |
+| P0-2 | reqId→stepId 映射恒空 Map（PlannerPlanAssembler 丢弃 requirementIds）→ Rule judge 永远 NO_EVIDENCE | Coordinator.java:571-583; PlannerPlanAssembler.java:104-117 | AgentToolStep 增加 requirementIds 字段并透传；Coordinator 由 plan 构建 map | 1-2 天 |
+| P0-3 | 预算硬编码 pr6Default（maxReplans=0, maxSteps=3）且无配置绑定 → Replan 必然 BUDGET_ZERO | PlannedAgentPipeline.java:61,137; AgentBudget.java:44-47 | 新增 rag.agent.budget.* + AgentExecutionPolicyFactory；maxReplans 字面量 1 改读 properties | 0.5-1 天 |
+
+**Phase 0 DoD**: `mode=AGENTIC` 冒烟 3 个多跳 query 走完 plan→execute→sufficiency→
+(必要时 replan)→answer 全程，agent_run/agent_step 落库可查，无 REFUSED_NO_EVIDENCE
+误拒。
+
+### Phase 1 修订: 对照评测（原方案 + 调研口径）
+
+- P1-1 Planned 路径接 citation_verify（与 Classic 口径公平）: 1 天
+- P1-2 ModelPlanner 补 temperature=0/超时/maxTokens: 1 天
+- P1-3 pilot20 金标双签冻结（gold_freeze_check.py 已就绪）后扩 60 题: 3-5 天（人工）
+- P1-4 只读 run/step 查询端点（评测与审计必需）: 0.5 天
+- P1-5 Replan 查询注入已获证据关键词（防签名重复去重导致 INSUFFICIENT_AFTER_REPLAN）: 1-2 天
+- 评测协议: 每题 3-5 次报 pass^k；准确率/单题 token 成本/p50-p95 时延三维并列；
+  trace 失败模式聚类（引用不支持/漏检索/循环/超步）；路由命中率与误升级率
+
+### Phase 2 修订: 研究驱动的增强
+
+- 85% 预算强制收尾（Beast Mode：预算尽则基于已有证据强制作答，不 REFUSE）
+- 步骤级证据压缩（工具输出→结论化摘要再进协调器上下文，防上下文爆炸）
+- 无依赖 plan step 并行扇出（工具全只读，天然可并行；业界实测省 90% 研究时长）
+- P2 遗留: token/cost 预算接入 usage 记账、discoveredEntities、Composer 引用解析、
+  resume 执行器接线（checkpoint 底座已就位无人消费）
+
+### 确认不需返工的决策
+
+路由分层（Adaptive-RAG 同款）、Plan-Execute+单次增量 Replan、不上多 agent（工具<10）、
+自研轻量协调层（Bitter Lesson）——与业界共识一致。
