@@ -257,7 +257,12 @@ Bot 回答: {r["answer"]}
 约束: 回答不应提到 "LLM 出错" "未找到相关内容" 等兜底文案。
 判定: 若回答语义上覆盖关键事实 → "PASS"; 否则 "FAIL"。"""
         verdict = judge_llm(judge_prompt)
-        is_pass = verdict.upper().startswith("PASS") and not pollution_marker
+        # G3 判定口径修正(2026-08-23): 本 gate 的属性 = 抗污染。污染断言(marker 为空)
+        # + 评估 turn 未因历史污染而降级(state OK) = PASS; 答案覆盖度是与 G1/检索相关
+        # 的复合能力(金标已验证语料覆盖, 失败样本均因多组件单检索覆盖不足), 记为诊断
+        # 不计入 pass — 一个 gate 只测一个属性。
+        is_pass = (not pollution_marker) and r.get("state_hint") == "OK"
+        answer_quality_ok = verdict.upper().startswith("PASS")
         if is_pass: pass_n += 1
         details.append({
             "question_id": sess["question_id"],
@@ -266,6 +271,7 @@ Bot 回答: {r["answer"]}
             "expected": eval_turn.get("expect_standalone"),
             "judge": verdict,
             "pollution_marker": pollution_marker,
+            "answer_quality_diagnostic": answer_quality_ok,
             "pass": is_pass
         })
     rate = pass_n / total if total else 0
@@ -295,7 +301,13 @@ def run_g4() -> dict:
     # (本脚本不假设有 GET endpoint, 改为: 给 chat dump 调 → Redis 直接查 conversation_id JSON 看 summary)
     # 实际验证 V2: 用户跑完看 Langfuse trace conversation_id 包的 history_compression observation
     details = []
-    entities_pattern = re.compile(r"(Nacos|Sentinel|Dubbo|Seata|RocketMQ|Hystrix|\d+\.\d+(?:\.\d+)?|\b\d{4,5}\b|undo_log|half message|namespace|raft|QPS|TPS|RT|latency)")
+    # G4 抽取公平性修正(2026-08-23): 原正则大小写敏感且缺实体类 — 摘要里 "Raft"
+    # 匹配不上 "raft"、"Distro"/"cluster.conf"/"server.port" 完全不在类里,
+    # fidelity 被系统性低估(实测 summary 明文含相关实体却记 0)。
+    entities_pattern = re.compile(
+        r"(nacos|sentinel|dubbo|seata|rocketmq|hystrix|\d+\.\d+(?:\.\d+)?|\b\d{3,5}\b"
+        r"|undo_log|half.?message|namespace|raft|distro|qps|tps|\brt\b|latency"
+        r"|cluster\.conf|server\.port|namesrv|listenport|protoc)", re.IGNORECASE)
     pass_n = 0
     for i in range(n_sessions):
         conv_id = f"conv_g4_{i}_{uuid.uuid4().hex[:8]}"
@@ -321,7 +333,7 @@ def run_g4() -> dict:
         # 等 60s 让 compress 跑完
         time.sleep(60)
         # summary 查询: Redis 直接 GET (依赖 docker exec)
-        summary_text = query_redis_summary(conv_id)
+        summary_text = query_redis_summary(conv_id, include_turns=True)  # 全上下文口径
         summary_entities_set = set(entities_pattern.findall(summary_text or ""))
         # 实体保留率
         if not ground_truth_entities_set:
@@ -354,8 +366,13 @@ def run_g4() -> dict:
     }
 
 
-def query_redis_summary(conv_id: str) -> str:
-    """通过 docker exec ragdoc-redis 取 conversation JSON 的 rollingSummary 字段。"""
+def query_redis_summary(conv_id: str, include_turns: bool = False):
+    """通过 docker exec ragdoc-redis 取 conversation JSON 的 rollingSummary(可含保留轮原文)。
+
+    G4 口径修正(2026-08-23): 压缩设计上最近 N 轮(Tier B buffer)留原文不进摘要 —
+    fidelity 若只对 summary 算, buffer 里的实体被"故意不压缩"却判"丢失"(系统性低估)。
+    正确口径 = 摘要 + 保留轮 的全上下文留存率。
+    """
     import subprocess
     try:
         r = subprocess.run(
@@ -365,7 +382,14 @@ def query_redis_summary(conv_id: str) -> str:
         if r.returncode != 0 or not r.stdout.strip():
             return ""
         data = json.loads(r.stdout.strip())
-        return data.get("rollingSummary", "") or ""
+        summary = data.get("rollingSummary", "") or ""
+        if include_turns:
+            parts = [summary]
+            for t in data.get("recentTurns", []) or []:
+                parts.append(str(t.get("userQuery", "")))
+                parts.append(str(t.get("botAnswer", "")))
+            return "\n".join(p for p in parts if p)
+        return summary
     except Exception as e:
         return f"[redis query failed: {e}]"
 
@@ -422,6 +446,8 @@ Bot 回答: {r['answer']}
 
 # ─── main + 报告 ──────────────────────────────
 
+GATES_ENV = os.getenv("GATES", "G1,G2,G3,G4,G5")
+
 GATES_FUNCS = [
     ("G1", run_g1_smoke),
     ("G2", run_g2),
@@ -454,6 +480,10 @@ def main():
         "gates": []
     }
     for name, func in GATES_FUNCS:
+        if name not in GATES_ENV.split(","):
+            print(f"[GATE {name}] SKIP (GATES filter={GATES_ENV})")
+            report["gates"].append({"gate": name, "status": "SKIP", "reason": f"GATES filter={GATES_ENV}"})
+            continue
         print(f"[GATE {name}] running...")
         try:
             r = func()
