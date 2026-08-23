@@ -259,6 +259,12 @@ public class ChatService {
                     null);
         }
         final String finalRetrieveQuery = retrieveQuery;
+        // G2 可测性修复: 把实际送检索的 query(多轮时为 rewrite 后的 standalone)放进 MDC,
+        // ChatController 透出为 X-Effective-Query 响应头 — 评测脚本据此做 query-vs-query
+        // 直接对比, G2 不再混入检索/生成质量。
+        if (!finalRetrieveQuery.equals(cmd.query())) {
+            org.slf4j.MDC.put("rag.effectiveQuery", finalRetrieveQuery);
+        }
 
         // 2. 决策 EMPTY_KB (无 READY 文档直接兜底, 不进 LLM 不召回不 rewrite — 防浪费)
         // PR-1: 在外层声明 evidence 快照引用, 供 finishAndRecord 落 trace 同步落库 (else 块外引用)。

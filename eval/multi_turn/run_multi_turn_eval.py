@@ -31,6 +31,7 @@ import os
 import re
 import sys
 import time
+import urllib.parse
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -81,7 +82,12 @@ def call_chat(query: str, conversation_id=None, top_k=5) -> dict:
             "state_hint": r.json().get("state_hint", "UNKNOWN"),
             "answer": r.json().get("answer", ""),
             "citations": r.json().get("citations", []),
-            "trace_id": r.json().get("trace_id")
+            "trace_id": r.json().get("trace_id"),
+            # G2 可测性修复: 多轮 rewrite 后实际送检索的 standalone query(URL 编码, 头不支持中文)
+            "effective_query": (
+                urllib.parse.unquote(r.headers.get("X-Effective-Query"))
+                if r.headers.get("X-Effective-Query") else None
+            ),
         }
     except Exception as e:
         return {"state_hint": "EXCEPTION", "answer": f"exception: {e}", "citations": []}
@@ -155,7 +161,32 @@ def run_g2() -> dict:
         eval_turn = sess["turns"][-1]
         # eval turn 调 LLM, 比对 rewrite 后 retrieve 召回正确
         r = call_chat(eval_turn["content"], conversation_id=conv_id)
-        # judge LLM 比对 answer vs expect_standalone / ground_truth_answer
+        # G2 可测性修复: 有 X-Effective-Query 时直接判 rewrite 质量(query-vs-query 语义等价),
+        # 不再混入检索/生成质量; 无头时回退旧的 answer-vs-gold 口径(兼容)。
+        if r.get("effective_query"):
+            judge_prompt = f"""判定「实际改写」是否与「期望独立问题」语义等价:
+即改写后的问题是否已正确消解指代/省略, 能独立检索到期望的答案。
+
+期望独立问题: {eval_turn.get("expect_standalone", "")}
+实际改写: {r["effective_query"]}
+原始追问(含指代): {eval_turn["content"]}
+
+要求: 实际改写必须 (1)补全了指代对象 (2)未偏离原追问意图 (3)自包含可独立检索。
+仅输出 "PASS" 或 "FAIL" 加一句简短理由。"""
+            verdict = judge_llm(judge_prompt)
+            is_pass = verdict.upper().startswith("PASS")
+            if is_pass: pass_n += 1
+            details.append({
+                "question_id": sess["question_id"],
+                "mode": "rewrite-direct(query-vs-query)",
+                "rewritten_by_app": r["effective_query"],
+                "raw_followup": eval_turn["content"],
+                "expected_standalone": eval_turn.get("expect_standalone"),
+                "judge": verdict,
+                "pass": is_pass
+            })
+            continue
+        # fallback: 旧口径(答案 vs 金标) — 仅当头缺失(如旧版本 app)
         judge_prompt = f"""请判定 bot 回答是否包含关键事实 (语义包含, 不要求精确)。
 
 关键事实: {eval_turn.get("ground_truth_answer", "")}
@@ -168,7 +199,8 @@ Bot 回答: {r["answer"]}
         if is_pass: pass_n += 1
         details.append({
             "question_id": sess["question_id"],
-            "rewritten_by_app": "(rewrite 在 app 内, 评测脚本端不可见; verify trace_id 观察 Langfuse)",
+            "mode": "answer-based(fallback)",
+            "rewritten_by_app": "(header 缺失)",
             "actual_answer": r["answer"][:200],
             "expected_standalone": eval_turn.get("expect_standalone"),
             "judge": verdict,

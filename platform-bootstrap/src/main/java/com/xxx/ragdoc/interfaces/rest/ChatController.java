@@ -56,7 +56,7 @@ public class ChatController {
             description =
                     "V1 仅返回 EMPTY_KB / NO_RECALL 兜底; V2 接入真实召回与 LLM "
                             + "后支持 OK / LLM_DEGRADED; V3-W1 加 /chat/sse 流式版本")
-    public ChatResponse chat(
+    public org.springframework.http.ResponseEntity<ChatResponse> chat(
             @Valid @RequestBody ChatRequest request,
             @org.springframework.web.bind.annotation.RequestHeader(
                             value = "X-Debug-Evidence",
@@ -82,7 +82,23 @@ public class ChatController {
         boolean includeEvidence =
                 evidenceDebugProperties.isDebugEnabled()
                         && "true".equalsIgnoreCase(debugEvidenceHeader);
-        return ChatResponse.from(result, includeEvidence);
+        // G2 可测性: 透出 rewrite 后的实际检索 query(仅当与原 query 不同时存在)
+        String effectiveQuery = org.slf4j.MDC.get("rag.effectiveQuery");
+        var builder =
+                org.springframework.http.ResponseEntity.ok()
+                        .body(ChatResponse.from(result, includeEvidence));
+        if (effectiveQuery != null) {
+            // HTTP 头只允许 ISO-8859-1, 中文会被 Spring 静默丢弃(实测) → URL 编码传输
+            builder =
+                    org.springframework.http.ResponseEntity.ok()
+                            .header(
+                                    "X-Effective-Query",
+                                    java.net.URLEncoder.encode(
+                                            effectiveQuery, java.nio.charset.StandardCharsets.UTF_8))
+                            .body(ChatResponse.from(result, includeEvidence));
+            org.slf4j.MDC.remove("rag.effectiveQuery");
+        }
+        return builder;
     }
 
     /**
