@@ -1,8 +1,51 @@
-# rag-doc-platform
+# rag-doc-platform (kiwi-doc)
 
-> 企业私有多模态 RAG 智能中台(**V3 验收门槛已命中**, faith 0.88 / recall 0.90 实测)。
-> 详细设计文档见上级目录 `企业私有多模态RAG智能中台-设计文档/`,
-> 关键 ADR 见 `docs/adr/`, V3 spec / runbook / 验收报告见 `docs/v3/`。
+> 企业级 RAG 文档问答平台。**核心方法论: 评测驱动开发** —— 每个能力先建评测、
+> 由评测暴露问题、修复后复测闭环(2026-08 累计定位并修复 16 个实测缺陷)。
+
+## 项目一句话
+
+Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系统:
+混合检索(dense+BM25 RRF) → cross-encoder 重排 → Contextual Retrieval 前缀 →
+引用可溯源生成; 多轮对话(SSE 贯通 + 异步历史压缩); Agentic RAG 路径
+(Plan-Execute + Sufficiency Judge + 预算/检查点)已通电并完成对照评测;
+平台能力经 MCP Server 对外暴露; 四层评测体系全程守护。
+
+## 评测驱动的修复闭环(本项目的主线叙事)
+
+不是"功能清单"驱动, 是"评测暴露 → 根因定位 → 修复 → 复测"驱动。
+每一条都有 commit 和评测报告可查(`docs/evaluation/`):
+
+| 评测暴露的问题 | 根因 | 修复 | 复测结果 |
+|---|---|---|---|
+| rerank 对照全指标差 5-9pp | 本地 Rosetta 跑不动 reranker | 迁 GPU + 隧道 | faith +9.2pp / recall +7.5pp |
+| 拒答率 16.25% | 评测配置与线上默认漂移 | hybrid 设默认 + contextual 前缀 | 拒答 4% |
+| 引用编号错位 | history 块占 [1] + 截断后 citations 不对齐 | marker 隔离 + 双闸门预算器 | 引用一一对齐 |
+| 多轮 gate 全 FAIL | SSE 丢 conversationId + 鹦鹉误杀 + 压缩丢写 | 三连修复 | G1 保持 PASS, G5 +14pp |
+| 索引 4 小时跑不完 | embed 并发风暴→熔断→DLQ | 信号量 + CB 阈值 + 云 embed | 6 分钟零失败 |
+| agentic 有证据仍拒答 63% | 判定器把"跨版本证据"误判为冲突终态 | 冲突语义修正 | 拒答 63%→18%, acc 11.7%→25% |
+
+**Agentic RAG 的诚实结论**(docs/evaluation/2026-08-23-agentic-phase1-report.md):
+当前语料(3074 chunks)+规则 Planner 下, agentic 未超 Classic 且延迟×5 ——
+按预设"不达标出口"保持默认关闭。这正是"何时不需要 Agent"的实证, 与业界共识一致。
+
+## 评测体系(四层)
+
+检索侧(Recall@K/MRR/NDCG) · 生成侧(RAGAS 四件套) · **拒答分离**(自研: 把诚实拒答
+与幻觉分开计量) · 多轮 gate(G1-G5) + agentic 对照(pass^k + 延迟/引用三维)。
+judge 治理: 异族 DeepSeek 与业务 GLM 物理隔离, 基线证书(题集 SHA256+commit 锁定),
+CI -3% 回归门禁, 曾自查出题集 100% 标注泄漏并判 FAIL。
+
+## 架构要点
+
+- **MySQL 为事实源, Milvus 为派生索引**(召回后逐条回库校验租户/软删/generation)
+- **异步索引链路**: outbox → RocketMQ → parser-service, 租约 + visibility timeout + 对账, kill -9 演练验证
+- **安全**: Deny-by-Default 认证 + 文档/块双层 ACL 守门 + prompt 注入双层防御(ingress 扫描 + 上下文隔离标签)
+- **Agent 执行**: 六维预算(步数/工具/LLM/token/成本/时长) + CAS 状态机 + checkpoint + 只读审计端点
+- **12 篇 ADR** 记录全部关键取舍(docs/adr/), 含 Agentic RAG 升级方案(ADR-0012)
+
+> V3 spec / runbook / 验收报告见 `docs/v3/`; 评测报告见 `docs/evaluation/`;
+> Agentic 调研见 `docs/research/`。
 
 ---
 
