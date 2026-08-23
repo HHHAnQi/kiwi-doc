@@ -219,19 +219,40 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
      * 简单 version-value 冲突检测: 两条 Evidence documentVersion 均非空且不同 → CONFLICT。 (PR-7b v1 只识别
      * VERSION_VALUE_MISMATCH; PR-7d 复杂冲突留给 Model Judge)
      */
+    /**
+     * 版本冲突检测(校准版, pilot20 实测 58 次误判 CONFLICT 的根因)。
+     *
+     * <p>原实现: 证据覆盖 ≥2 个 document version 即判 VERSION_VALUE_MISMATCH → 终态
+     * REFUSED_CONFLICT(无 Replan)。多组件对比题的证据天然跨文档/跨版本(dubbo 与 nacos 的
+     * version 字段本就不同), 该规则把一切对比题判死。
+     *
+     * <p>正确语义: 仅当 Requirement <b>显式锁定</b> expectedFilters.version 且证据版本与之
+     * 不符时才是冲突(用户要 v2.3 的答案, 检回 v3.0)。版本多样性本身 = 异质证据, 交给
+     * 类型映射/Model judge 做语义级判定。
+     */
     static EvidenceConflict detectVersionValueConflict(EvidenceRequirement req, List<Evidence> ev) {
-        Set<String> distinctVersions = new HashSet<>();
-        for (Evidence e : ev) {
-            if (e.documentVersion() != null && !e.documentVersion().isBlank()) {
-                distinctVersions.add(e.documentVersion());
+        String pinned = null;
+        if (req.expectedFilters() != null) {
+            Object v = req.expectedFilters().get("version");
+            if (v != null && !String.valueOf(v).isBlank()) {
+                pinned = String.valueOf(v).trim();
             }
         }
-        if (distinctVersions.size() >= 2) {
-            return new EvidenceConflict(
-                    req.requirementId(),
-                    EvidenceConflict.ConflictType.VERSION_VALUE_MISMATCH,
-                    ev.stream().map(Evidence::evidenceId).toList(),
-                    "multiple document versions: " + distinctVersions);
+        if (pinned == null || ev.size() < 2) {
+            // 需求未锁版本: 版本多样性不是冲突;
+            // 单条证据版本不符: EvidenceConflict 需 ≥2 evidenceId, 走 filter-mismatch
+            // 路径(matchesExpectedFilters → NOT_COVERED → Replan)语义更正确
+            return null;
+        }
+        for (Evidence e : ev) {
+            String dv = e.documentVersion();
+            if (dv != null && !dv.isBlank() && !pinned.equals(dv.trim())) {
+                return new EvidenceConflict(
+                        req.requirementId(),
+                        EvidenceConflict.ConflictType.VERSION_VALUE_MISMATCH,
+                        ev.stream().map(Evidence::evidenceId).toList(),
+                        "evidence version " + dv + " != pinned " + pinned);
+            }
         }
         return null;
     }

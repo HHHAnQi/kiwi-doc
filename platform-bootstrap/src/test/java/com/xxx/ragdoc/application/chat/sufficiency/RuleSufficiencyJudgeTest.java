@@ -132,15 +132,27 @@ class RuleSufficiencyJudgeTest {
         }
 
         @Test
-        @DisplayName("两条不同 documentVersion → CONFLICTED + REFUSE_CONFLICT")
-        void versionConflict() {
+        @DisplayName("校准: 未锁版本的版本多样性 = 异质证据非冲突(对比题不误杀) → SUFFICIENT")
+        void versionDiversityIsNotConflict() {
+            // pilot20 实测根因: 多组件对比题证据天然跨文档版本, 旧规则(≥2 version 即
+            // CONFLICT 终态)把一切对比题判死 → 58/67 REFUSED_CONFLICT
             EvidenceRequirement r1 = req("R1", RequirementType.FACT, true, List.of(), Map.of());
+            Evidence a = ev("tA", "R1", "v2 fact", "v2", null);
+            Evidence b = ev("tA", "R1", "v1 fact", "v1", null);
+            SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(a, b)));
+            assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
+        }
+
+        @Test
+        @DisplayName("校准: 需求锁定版本且证据不符(≥2条) → 仍 CONFLICTED")
+        void pinnedVersionMismatchStillConflicts() {
+            EvidenceRequirement r1 =
+                    req("R1", RequirementType.FACT, true, List.of(), Map.of("version", "v2"));
             Evidence a = ev("tA", "R1", "v2 fact", "v2", null);
             Evidence b = ev("tA", "R1", "v1 fact", "v1", null);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(a, b)));
             assertThat(d.status()).isEqualTo(SufficiencyStatus.CONFLICTED);
             assertThat(d.action()).isEqualTo(RecommendedAction.REFUSE_CONFLICT);
-            assertThat(d.conflicts()).hasSize(1);
         }
     }
 

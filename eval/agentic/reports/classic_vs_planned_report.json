@@ -1,0 +1,229 @@
+{
+  "runs": 3,
+  "cases": 20,
+  "modes": {
+    "RAG": {
+      "accuracy_mean": 0.3667,
+      "accuracy_stdev": 0.4824,
+      "pass_all_3": 0.35,
+      "latency_p50_ms": 2932,
+      "latency_p95_ms": 4929,
+      "avg_citations": 5,
+      "non_ok_rate": 0.1333,
+      "per_case": {
+        "amh-001": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-002": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-003": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-004": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-005": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-006": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-007": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-008": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-009": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-010": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-011": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-012": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-013": [
+          "FAIL",
+          "FAIL",
+          "PASS"
+        ],
+        "amh-014": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-015": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-016": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-017": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-018": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-019": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-020": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ]
+      }
+    },
+    "AGENTIC": {
+      "accuracy_mean": 0.25,
+      "accuracy_stdev": 0.4028,
+      "pass_all_3": 0.2,
+      "latency_p50_ms": 15178,
+      "latency_p95_ms": 27988,
+      "avg_citations": 4.17,
+      "non_ok_rate": 0.1833,
+      "per_case": {
+        "amh-001": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-002": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-003": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-004": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-005": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-006": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-007": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-008": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-009": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-010": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-011": [
+          "FAIL",
+          "FAIL",
+          "PASS"
+        ],
+        "amh-012": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-013": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-014": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-015": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-016": [
+          "PASS",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-017": [
+          "PASS",
+          "PASS",
+          "PASS"
+        ],
+        "amh-018": [
+          "PASS",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-019": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ],
+        "amh-020": [
+          "FAIL",
+          "FAIL",
+          "FAIL"
+        ]
+      }
+    }
+  },
+  "router_auto_upgrade_rate": 0.0
+}
