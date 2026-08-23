@@ -19,7 +19,12 @@
 
 ---
 
-## 启动步骤(已验证 2026-08-01)
+## 启动步骤(已验证 2026-08-01; 2026-08-23 复验通过)
+
+> **2026-08-23 复验记录**: 实例 SSH 端口现为 **37951**(历史 46908/49581 已失效,
+> AutoDL 重启实例会换端口)。本机已 `ssh-copy-id` 免密; start_rerank.sh 启动 ~25s 后
+> health OK, RTX 3090 显存占用 ~2.5GB, 烟测区分度 20x, 端到端 rerank_state=applied,
+> RAGAS 全指标提升(faith +9.2pp / recall +7.5pp, 见 eval 报告)。
 
 ```bash
 ssh -p <port> root@<autodl-host>      # 进 Autodl
@@ -56,7 +61,9 @@ curl -X POST http://127.0.0.1:6006/rerank \
 ### 方式 B: SSH 隧道(临时, 不需控制台操作)
 本机终端跑:
 ```bash
-ssh -L 19006:127.0.0.1:6006 -p 46908 root@connect.nmb2.seetacloud.com -N
+ssh -L 19006:127.0.0.1:6006 -p 37951 root@connect.nmb2.seetacloud.com -N
+# 当前常用形式(chat-app .env 指向本机 8084):
+#   ssh -p 37951 -N -L 8084:localhost:6006 root@connect.nmb2.seetacloud.com
 # 留这个终端开着
 ```
 应用本机 `.env`: `RAG_RERANK_BASE_URL=http://localhost:19006`
