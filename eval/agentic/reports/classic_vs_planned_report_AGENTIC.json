@@ -3,13 +3,13 @@
   "cases": 20,
   "modes": {
     "AGENTIC": {
-      "accuracy_mean": 0.1833,
-      "accuracy_stdev": 0.3663,
-      "pass_all_3": 0.15,
-      "latency_p50_ms": 10454,
-      "latency_p95_ms": 20069,
-      "avg_citations": 6.28,
-      "non_ok_rate": 0.3,
+      "accuracy_mean": 0.3,
+      "accuracy_stdev": 0.3571,
+      "pass_all_3": 0.1,
+      "latency_p50_ms": 8090,
+      "latency_p95_ms": 12763,
+      "avg_citations": 6.62,
+      "non_ok_rate": 0.25,
       "per_case": {
         "amh-001": [
           "FAIL",
@@ -22,13 +22,13 @@
           "FAIL"
         ],
         "amh-003": [
+          "PASS",
           "FAIL",
-          "FAIL",
-          "FAIL"
+          "PASS"
         ],
         "amh-004": [
-          "FAIL",
-          "FAIL",
+          "PASS",
+          "PASS",
           "PASS"
         ],
         "amh-005": [
@@ -37,9 +37,9 @@
           "FAIL"
         ],
         "amh-006": [
-          "PASS",
-          "PASS",
-          "PASS"
+          "FAIL",
+          "FAIL",
+          "FAIL"
         ],
         "amh-007": [
           "FAIL",
@@ -58,13 +58,13 @@
         ],
         "amh-010": [
           "FAIL",
-          "FAIL",
+          "PASS",
           "FAIL"
         ],
         "amh-011": [
+          "PASS",
           "FAIL",
-          "FAIL",
-          "FAIL"
+          "PASS"
         ],
         "amh-012": [
           "FAIL",
@@ -72,14 +72,14 @@
           "FAIL"
         ],
         "amh-013": [
-          "FAIL",
-          "FAIL",
-          "FAIL"
+          "PASS",
+          "PASS",
+          "PASS"
         ],
         "amh-014": [
           "FAIL",
           "FAIL",
-          "FAIL"
+          "PASS"
         ],
         "amh-015": [
           "FAIL",
@@ -87,13 +87,13 @@
           "FAIL"
         ],
         "amh-016": [
-          "PASS",
           "FAIL",
-          "FAIL"
+          "FAIL",
+          "PASS"
         ],
         "amh-017": [
           "PASS",
-          "PASS",
+          "FAIL",
           "PASS"
         ],
         "amh-018": [
@@ -102,14 +102,14 @@
           "FAIL"
         ],
         "amh-019": [
-          "PASS",
-          "PASS",
+          "FAIL",
+          "FAIL",
           "PASS"
         ],
         "amh-020": [
           "FAIL",
-          "FAIL",
-          "FAIL"
+          "PASS",
+          "PASS"
         ]
       }
     }
