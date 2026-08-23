@@ -39,16 +39,40 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "rag.conversation", name = "enabled", havingValue = "true")
 public class QueryContextualizer implements QueryContextualizerPort {
 
-    /**
-     * 取 history 最近 N turn 喂 rewrite LLM, 控制 prompt input token (~500)。 不用 rollingSummary: 是压缩过的, 喂
-     * rewrite LLM 反而扰指代消解。
-     */
-    private static final int HISTORY_TURNS_FED = 3;
+    // G2 校准: 轮数改为可配(ConversationProperties.rewriteHistoryTurns, 默认 5)。
+    // 不用 rollingSummary: 是压缩过的, 喂 rewrite LLM 反而扰指代消解。
 
+    /**
+     * G2 校准: 加 few-shot(正例 + 反例)。原 prompt 只有规则描述, fallback LLM 常见两类
+     * 失败: 复读原问题(鹦鹉, 已由编辑相似度兜底) / 过度扩展(把上一轮的答案塞进改写)。
+     * few-shot 是 G2 提分的主要杠杆。
+     */
     private static final String CONDENSE_PROMPT_TEMPLATE =
             """
             你是多轮对话上下文压缩助手。基于以下对话历史和后续问题, 把后续问题改写成一个自包含、
             无指代的独立问题 (resolve pronouns, e.g. 他/它/刚才 → 具体实体名)。
+
+            示例 1 (指代消解):
+            对话历史:
+            Q: Dubbo 支持哪些序列化方式?
+            A: Dubbo 支持 hessian2...
+            后续问题: 那它默认用哪一种?
+            独立问题: Dubbo 默认使用哪种序列化方式?
+
+            示例 2 (省略补全, 不要过度扩展):
+            对话历史:
+            Q: RocketMQ 的 NameServer 是什么?
+            A: NameServer 是路由注册中心...
+            后续问题: 集群部署要注意什么?
+            独立问题: RocketMQ NameServer 集群部署要注意什么?
+            (注意: 只补主语"RocketMQ NameServer", 不要把答案里的细节塞进问题)
+
+            示例 3 (后续问题已自包含 → 原样输出):
+            对话历史:
+            Q: Sentinel 怎么配置限流规则?
+            A: ...
+            后续问题: Seata 的 AT 模式怎么回滚?
+            独立问题: Seata 的 AT 模式怎么回滚?
 
             对话历史:
             %s
@@ -57,7 +81,7 @@ public class QueryContextualizer implements QueryContextualizerPort {
 
             要求:
             1. 输出 1 句中文, 不超过 60 字
-            2. 保留后续问题的核心实体
+            2. 保留后续问题的核心实体, 只补全指代和省略的成分
             3. 不要回答问题, 只改写
             4. 不要任何前缀、引号、解释, 直接输出改写后的独立问题
 
@@ -66,16 +90,29 @@ public class QueryContextualizer implements QueryContextualizerPort {
     private final ChatClient rewriteClient;
     private final CircuitBreaker cb;
     private final RagdocMetrics metrics;
+    private final com.xxx.ragdoc.application.chat.ConversationProperties conversationProperties;
 
     public QueryContextualizer(
-            LlmRouter llmRouter, CircuitBreakerRegistry cbRegistry, RagdocMetrics metrics) {
-        // 走 fallback LLM (DeepSeek-V3 便宜); LlmRouter 没 fallback 时退到 primary (rare, rare)
-        this.rewriteClient = llmRouter.getRouteClient("fallback");
+            LlmRouter llmRouter,
+            CircuitBreakerRegistry cbRegistry,
+            RagdocMetrics metrics,
+            com.xxx.ragdoc.application.chat.ConversationProperties conversationProperties) {
+        // G2 校准: 路由可配(默认 primary)。fallback(DeepSeek) 的 condense 质量是
+        // G2 2/20 的主要瓶颈; 需省钱可 rag.conversation.rewrite-route=fallback 切回。
+        this.rewriteClient =
+                llmRouter.getRouteClient(
+                        conversationProperties.getRewriteRoute() == null
+                                        || conversationProperties.getRewriteRoute().isBlank()
+                                ? "primary"
+                                : conversationProperties.getRewriteRoute());
         // 单独 cb instance "rewrite-llm", 不与主 LLM 共用 cb pool
         this.cb = cbRegistry.circuitBreaker("rewrite-llm");
         this.metrics = metrics;
+        this.conversationProperties = conversationProperties;
         log.info(
-                "QueryContextualizer enabled, route=fallback, cb=rewrite-llm (state={})",
+                "QueryContextualizer enabled, route={}, turns={}, cb=rewrite-llm (state={})",
+                conversationProperties.getRewriteRoute(),
+                conversationProperties.getRewriteHistoryTurns(),
                 cb.getState());
     }
 
@@ -134,7 +171,12 @@ public class QueryContextualizer implements QueryContextualizerPort {
     }
 
     private String buildPrompt(String currQuery, List<Turn> recentTurns) {
-        int n = Math.min(HISTORY_TURNS_FED, recentTurns.size());
+        int n =
+                Math.min(
+                        conversationProperties.getRewriteHistoryTurns() <= 0
+                                ? 5
+                                : conversationProperties.getRewriteHistoryTurns(),
+                        recentTurns.size());
         // 取最近 N turn (老的丢 — 它们在 rollingSummary 里如果有, 但不喂 rewrite)
         List<Turn> last3 = recentTurns.subList(recentTurns.size() - n, recentTurns.size());
 

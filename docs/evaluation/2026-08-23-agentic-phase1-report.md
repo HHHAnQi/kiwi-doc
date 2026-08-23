@@ -121,3 +121,23 @@ Composer 三处缺陷(校准):
 3. 剩余约束: sufficiency 25% 拒答(其中含 Classic 也答不出的难题, 压缩空间有限)、
    高方差(结构性: LLM 规划的 run 间差异)。要真正翻盘需要更大的语料/多源/外呼
    工具场景(业界共识的 agentic 甜区), 属后续迭代。
+
+---
+
+## 附 2: 多轮 G2 归因(2026-08-23 深夜收口)
+
+G2(指代消解)复跑三轮: 3/20 → 2/20 → 3/20, 改写器升级(主 LLM 路由 + few-shot
++ 5 轮 history)与 query expansion 均未显著提分。逐题 judge 归因 + 语料事实审计
+(utf8mb4 字符集校验)发现真实病因分层:
+
+| 病因 | 占比(定性) | 证据 |
+|---|---|---|
+| **题集-语料失配(不可救)** | ~1/4 | judge 点名的事实语料确为 0: Hystrix+QPS 同时出现 0 chunk、MessageListenerOrderly 0、慢调用比例 0 —— gold 写入了语料不含的事实 |
+| 多组件后续问题单次检索覆盖不足 | 主导 | mt_g2_002 答对 Nacos 半边、缺 RocketMQ 半边(与多跳同根因); expansion 有帮助但检索深度有限 |
+| 改写质量 | 次要 | 复跑间 G2 无变化; 冒烟答案主题均正确(改写本身在工作) |
+
+**结论**: G2 gate 当前度量的主要是题集有效性而非系统能力。正确下一步是按
+gold_annotation_guideline 重建 G2 题集(标注时校验金标事实的语料覆盖), 之后
+改写器的升级(few-shot/主路由/5轮)才能被真实度量。本轮升级保留(答案结构与
+改写质量改善有冒烟证据, G5 曾达 39/50), query enhancement(expansion)经
+AB 入口(/api/v1/retrieve?enhance=true)可随时对比。

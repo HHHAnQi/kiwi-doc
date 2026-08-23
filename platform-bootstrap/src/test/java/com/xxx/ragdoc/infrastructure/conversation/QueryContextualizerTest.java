@@ -48,10 +48,15 @@ class QueryContextualizerTest {
     void setUp() {
         routeClient = mock(OpenAiCompatibleLlmClient.class);
         router = mock(LlmRouter.class);
-        when(router.getRouteClient("fallback")).thenReturn(routeClient);
+        when(router.getRouteClient("primary")).thenReturn(routeClient); // G2 校准: 默认路由改 primary
         metrics = mock(RagdocMetrics.class);
         CircuitBreakerRegistry registry = CircuitBreakerRegistry.ofDefaults();
-        ctx = new QueryContextualizer(router, registry, metrics);
+        ctx =
+                    new QueryContextualizer(
+                            router,
+                            registry,
+                            metrics,
+                            new com.xxx.ragdoc.application.chat.ConversationProperties());
     }
 
     @Test

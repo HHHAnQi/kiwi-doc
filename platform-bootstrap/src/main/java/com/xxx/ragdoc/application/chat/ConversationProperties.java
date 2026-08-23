@@ -47,6 +47,16 @@ public class ConversationProperties {
     /** Tier B buffer window 大小 (保留最近 N turn 原文)。 */
     private int maxRecentTurns = 3;
 
+    /**
+     * G2 校准: rewrite 用的 LLM route。默认 primary(主 GLM) — fallback(DeepSeek) 的
+     * condense 改写质量是 G2 2/20 的主要瓶颈; 主 route 每次多花 ~200 token,
+     * 可用 rag.conversation.rewrite-route=fallback 切回省钱模式。
+     */
+    private String rewriteRoute = "primary";
+
+    /** G2 校准: 喂 rewrite LLM 的 history turn 数(原硬编码 3, 指代常跨更远轮次)。 */
+    private int rewriteHistoryTurns = 5;
+
     /** Redis TTL sliding (小时)。 */
     private int ttlHours = 24;
 }
