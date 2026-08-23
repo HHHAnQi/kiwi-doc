@@ -244,7 +244,9 @@ public class ModelSufficiencyJudge implements EvidenceSufficiencyJudge {
             String src = e.sourceTool() == null ? "" : e.sourceTool();
             String ver = e.documentVersion() == null ? "" : e.documentVersion();
             sb.append(" | src=").append(src).append(" | ver=").append(ver).append(" | ");
-            sb.append(truncate(e.content(), 200)).append('\n');
+            // 冒烟校准: 200 字符常把端口号/配置键等关键事实截掉, 叠加"不自信即
+            // NOT_COVERED"的保守规则 → 系统性误判不足 → 有证据仍拒答。放宽到 400。
+            sb.append(truncate(e.content(), 400)).append('\n');
         }
         sb.append("\nReply with ONLY the JSON object.");
         return sb.toString();

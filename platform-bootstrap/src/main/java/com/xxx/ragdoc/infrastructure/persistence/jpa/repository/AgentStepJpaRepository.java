@@ -16,7 +16,7 @@ public interface AgentStepJpaRepository extends JpaRepository<AgentStepEntity, L
 
     List<AgentStepEntity> findByRunIdOrderByStepSequenceAsc(String runId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentStepEntity e SET "
                     + "e.status = :target, "

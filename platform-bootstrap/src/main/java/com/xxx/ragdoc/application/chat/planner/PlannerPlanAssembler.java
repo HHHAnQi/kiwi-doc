@@ -109,6 +109,10 @@ public class PlannerPlanAssembler {
                                 s.toolVersion(),
                                 s.input(),
                                 s.dependsOn(),
+                                // P0-2: 透传需求归属, Coordinator 据此构建 reqId→stepId,
+                                // PhaseExecutor 注入 evidence.metadata.requirementIds,
+                                // Rule SufficiencyJudge 才能按 requirement 索引证据
+                                s.requirementIds(),
                                 s.expectedEvidence() == null ? "" : s.expectedEvidence(),
                                 s.required());
             } catch (IllegalArgumentException ex) {

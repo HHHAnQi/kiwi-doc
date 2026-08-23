@@ -70,6 +70,20 @@ rag:
       max-plan-steps: ${RAG_AGENT_MAX_PLAN_STEPS:3}
       max-replans: ${RAG_AGENT_MAX_REPLANS:1}
       min-router-confidence: ${RAG_AGENT_MIN_ROUTER_CONFIDENCE:0.80}
+    # P0-1 修复: sufficiency 开关此前完全不在 yml → 恒 disabled → Planned run 必然拒答
+    # (DispatchingSufficiencyJudge disabled 时恒返 UNDETERMINED, Guard 全拒)。
+    # rule 兜底 + LLM fallback 双开: rule 按 requirementIds 精确判, 语义级留给 model。
+    sufficiency:
+      enabled: ${RAG_AGENT_SUFFICIENCY_ENABLED:true}
+      model-fallback-enabled: ${RAG_AGENT_SUFFICIENCY_MODEL_FALLBACK:true}
+      model-timeout-millis: ${RAG_AGENT_SUFFICIENCY_MODEL_TIMEOUT_MS:8000}
+      model-max-output-tokens: ${RAG_AGENT_SUFFICIENCY_MODEL_MAX_TOKENS:512}
+    # P0-3 修复: 执行预算此前硬编码 pr6Default(maxReplans=0!) → Replan 必 BUDGET_ZERO。
+    # 默认值给 Replan 留足空间: 3 步初始 + 2 步 replan 余量。
+    budget:
+      max-steps: ${RAG_AGENT_BUDGET_MAX_STEPS:5}
+      max-tool-calls: ${RAG_AGENT_BUDGET_MAX_TOOL_CALLS:10}
+      max-replans: ${RAG_AGENT_BUDGET_MAX_REPLANS:1}
     recovery:
       enabled: ${RAG_AGENT_RECOVERY_ENABLED:true}
       stale-seconds: ${RAG_AGENT_RECOVERY_STALE_SECONDS:300}

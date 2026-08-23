@@ -29,7 +29,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
      *
      * <p>动态 IN (:statuses): Spring Data JPA 绑定 Collection → MySQL `status IN (?,?,?...)`。
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentRunEntity e SET e.status = :target, "
                     + "e.terminalReasonCode = :reasonCode, "
@@ -50,7 +50,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("reservationJson") String reservationJson);
 
     /** CAS 更新预算状态: 不改 status, 仅 usage+reservation。 */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentRunEntity e SET "
                     + "e.usageJson = :usageJson, "
@@ -68,7 +68,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("reservationJson") String reservationJson);
 
     /** CAS 更新 evidence 摘要。 */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentRunEntity e SET "
                     + "e.evidenceIdsJson = :evidenceIdsJson, "
@@ -89,7 +89,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
      *
      * <p>避免 settleStep 内两次串行 CAS 出现版本错位 (Revision §4)。
      */
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentRunEntity e SET "
                     + "e.usageJson = :usageJson, "
@@ -110,7 +110,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("evidenceIdsJson") String evidenceIdsJson,
             @Param("evidenceCount") int evidenceCount);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentRunEntity e SET e.ownerId=:ownerId, e.leaseUntil=:leaseUntil, "
                     + "e.heartbeatAt=:now, e.updatedAt=:now "
@@ -123,7 +123,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("now") Instant now,
             @Param("statuses") Collection<String> statuses);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE AgentRunEntity e SET e.leaseUntil=:leaseUntil, e.heartbeatAt=:now, "
                     + "e.updatedAt=:now WHERE e.runId=:runId AND e.ownerId=:ownerId "
@@ -135,7 +135,7 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
             @Param("now") Instant now,
             @Param("statuses") Collection<String> statuses);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE AgentRunEntity e SET e.ownerId=NULL, e.leaseUntil=NULL "
             + "WHERE e.runId=:runId AND e.ownerId=:ownerId")
     int releaseLease(@Param("runId") String runId, @Param("ownerId") String ownerId);

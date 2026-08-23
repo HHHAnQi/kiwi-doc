@@ -36,6 +36,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
     private final DefaultEvidenceGroundedAnswerComposer answerComposer;
     private final PlannedAgentRunFinalizer runFinalizer;
     private final com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProperties;
+    /** P0-3: 执行预算可配(原硬编码 pr6Default maxReplans=0 → Replan 必 BUDGET_ZERO)。 */
+    private final com.xxx.ragdoc.application.chat.agent.AgentBudgetProperties budgetProps;
 
     @Override
     public PipelineType type() {
@@ -58,7 +60,7 @@ public class PlannedAgentPipeline implements ChatPipeline {
                         context.principal(),
                         CancellationTokenSource.CancellationToken.never(),
                         allowedToolDescriptors(),
-                        com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy.pr6Default());
+                        buildAgenticPolicy());
         if (!prepared.ok()) {
             return ChatResult.of(StateHint.NO_RECALL, humanizeFailure(prepared), context.traceId());
         }
@@ -134,8 +136,7 @@ public class PlannedAgentPipeline implements ChatPipeline {
                             context.principal(),
                             cts.token(),
                             allowedToolDescriptors(),
-                            com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy
-                                    .pr6Default());
+                            buildAgenticPolicy());
         } catch (RuntimeException ex) {
             log.warn(
                     "planned.sse.prepare_failed req={} err={}", context.requestId(), ex.toString());
@@ -225,6 +226,39 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                                             : context.traceId().value(),
                                                     "答案流失败"));
                         });
+    }
+
+    /**
+     * P0-3: 预算从 rag.agent.budget.* 构建(原 pr6Default maxReplans=0 使 Replan 必死);
+     * maxReplans 取 budget 与 planner 配置的较小值, 防两处口径漂移。
+     */
+    private com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy buildAgenticPolicy() {
+        int maxReplans = Math.min(budgetProps.getMaxReplans(), plannerProperties.getMaxReplans());
+        com.xxx.ragdoc.application.chat.agent.AgentBudget budget =
+                new com.xxx.ragdoc.application.chat.agent.AgentBudget(
+                        budgetProps.getMaxSteps(),
+                        budgetProps.getMaxToolCalls(),
+                        budgetProps.getMaxPlannerCalls(),
+                        maxReplans,
+                        budgetProps.getMaxExecutionMillis(),
+                        0,
+                        0,
+                        budgetProps.getMaxTotalTokens(),
+                        java.math.BigDecimal.ZERO);
+        return new com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy(
+                budget,
+                java.time.Instant.now().plusMillis(budget.maxExecutionMillis()),
+                java.util.Set.of(
+                        "semantic_search",
+                        "keyword_search",
+                        "metadata_search",
+                        "document_fetch",
+                        "citation_verify"),
+                20,
+                4000,
+                true,
+                false,
+                true);
     }
 
     private java.util.List<com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor>

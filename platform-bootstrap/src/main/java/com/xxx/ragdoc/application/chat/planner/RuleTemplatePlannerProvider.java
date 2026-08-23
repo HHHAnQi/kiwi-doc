@@ -156,6 +156,21 @@ public class RuleTemplatePlannerProvider implements PlannerProvider {
             chosenTool = "semantic_search";
             chosenMetadata = false;
         } else {
+            chosenTool = null;
+            chosenMetadata = false;
+        }
+        // P1-5 修复(修正版): Replan 时换一路检索视角, 但 metadata_search 契约要求
+        // source/version/language 至少一项 filter — 无 filter 时只能 semantic→semantic
+        // (靠实体扩展改写 query 改变签名, 不再被 seenSignatures 误去重);
+        // metadata→semantic 方向无契约约束, 安全。
+        if (request.replanIndex() > 0) {
+            if ("metadata_search".equals(chosenTool) && semanticAllowed) {
+                chosenTool = "semantic_search";
+                chosenMetadata = false;
+            }
+            // semantic → metadata 的互换延迟到 filters 计算之后(见下方 replanFilterAwareSwap)
+        }
+        if (chosenTool == null) {
             log.info(
                     "planner.rule.tool_not_allowed — skip (allowed={})",
                     request.allowedTools().stream().map(PlannerToolDescriptor::name).toList());
@@ -166,6 +181,13 @@ public class RuleTemplatePlannerProvider implements PlannerProvider {
         String toolVer = "v1";
 
         String q = request.normalizedQuery() + " " + req.description();
+        // P1-5: replan 追加请求实体中未出现在 query 的词(实体扩展再检索)
+        if (request.replanIndex() > 0 && request.entities() != null) {
+            for (String ent : request.entities()) {
+                if (ent == null || ent.isBlank()) continue;
+                if (!q.contains(ent)) q = q + " " + ent.trim();
+            }
+        }
         String version =
                 firstNonBlank(
                         stringFilter(req.expectedFilters(), "version"),
@@ -174,8 +196,31 @@ public class RuleTemplatePlannerProvider implements PlannerProvider {
                 firstNonBlank(
                         stringFilter(req.expectedFilters(), "source"),
                         stringFilter(request.filters(), "source"));
+        // P1-5: 有 filter 时 semantic→metadata 互换成立(满足 metadata_search 契约),
+        // 换视角 + 需求聚焦双重改变检索行为, 给"证据不足"一个真正不同的第二次尝试。
+        if (request.replanIndex() > 0
+                && "semantic_search".equals(toolName)
+                && metadataAllowed
+                && (source != null || version != null)) {
+            toolName = "metadata_search";
+        }
+        int topK = 5;
+        if (request.replanIndex() > 0) {
+            // 需求聚焦 + 加深: Phase 0 已用「全查询+描述」检索且判不足; 第二次以需求描述
+            // 为主体(去掉整句查询的跨主题噪声, BM25/向量都更聚焦子问题), topK 5→8。
+            // 同时确保签名(topK 参与 normalizedForDedup)不再与 Phase 0 重复 →
+            // 不再被 seenSignatures 误去重导致 REPLAN_INVALID。
+            String desc = req.description() == null ? "" : req.description().trim();
+            if (!desc.isEmpty()) {
+                q = desc;
+                for (String ent : request.entities() == null ? List.<String>of() : request.entities()) {
+                    if (ent != null && !ent.isBlank() && !q.contains(ent)) q = q + " " + ent.trim();
+                }
+            }
+            topK = 8;
+        }
         ToolInput input =
-                new SearchInput(q.trim(), 5, new SearchInput.SearchFilters(source, version, null));
+                new SearchInput(q.trim(), topK, new SearchInput.SearchFilters(source, version, null));
 
         List<String> deps =
                 req.type() == RequirementType.FOLLOW_UP_ENTITY && subOrdinal > 0

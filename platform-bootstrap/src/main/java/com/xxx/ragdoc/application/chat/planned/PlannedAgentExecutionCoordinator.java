@@ -224,7 +224,9 @@ public class PlannedAgentExecutionCoordinator {
                         com.xxx.ragdoc.application.chat.planner.EvidenceCoverageSummary
                                 .empty() /* prior uncovered */,
                         0 /* replanCount */,
-                        1 /* maxReplans */,
+                        // P0-3: 从 policy 预算读(原字面量 1 与硬编码 pr6Default 的
+                        // maxReplans=0 相互矛盾)
+                        policy.budget().maxReplans(),
                         cancellation.isCancelled(),
                         policy.budget());
         if (!rd.allowed()) {
@@ -568,17 +570,21 @@ public class PlannedAgentExecutionCoordinator {
                 Map.of());
     }
 
+    /**
+     * P0-2 修复: reqId → stepId 映射真实现(此前恒空 Map → Rule SufficiencyJudge 对所有
+     * requirement 恒 NO_EVIDENCE → Planned run 必然拒答)。从 plan steps 的
+     * requirementIds(Assembler 已透传)反转构建; 一个 reqId 被多 step 服务时取首个
+     * (PhaseExecutor 注入证据归属只需任一来源)。
+     */
     private static Map<String, String> mapReqIdToStepId(
             PlannerPlanAssembler.AssemblyResult asm, DeterministicExecutionPlan plan) {
         Map<String, String> out = new HashMap<>();
-        // PlanValidator via PlannerPlanAssembler doesn't carry stepIdToReq mapping; use plan steps
-        // PR-7a PlannedToolStep.requirementIds is in PlannerResponse not in
-        // DeterministicExecutionPlan
-        // Simplification: use step.expectedEvidence or pass-through (step-level mapping preserved
-        // through agent stepId)
-        // PR-7c.3c: rely on PhaseExecutor's metadata injection stepId; reqId inferred by order
-        // For sufficiency indexing: ephemeral map not strictly required (Judge can read
-        // sourceStepId)
+        for (var step : plan.steps()) {
+            if (step.requirementIds() == null || step.requirementIds().isEmpty()) continue;
+            for (String rid : step.requirementIds()) {
+                out.putIfAbsent(rid, step.stepId());
+            }
+        }
         return out;
     }
 
