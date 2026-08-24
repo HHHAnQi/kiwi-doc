@@ -103,6 +103,9 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+      # 连接检测: components 列表总是可见(rerank/embedding 等依赖是否 UP),
+      # details(含 base-url 等信息)仍仅授权可见
+      show-components: always
   # Phase 3.A: RagdocMetrics 暴露 Prometheus percentile 直方图
   metrics:
     distribution:
