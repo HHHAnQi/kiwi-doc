@@ -1,0 +1,53 @@
+# ============================================================
+# prod profile: 生产硬化配置(dev 之外的 profile 加载)
+# 启动: --spring.profiles.active=prod + 环境变量注入全部凭据
+# 原则: 凭据无默认值(缺了起不来, 不吃 dev 默认), 池化/日志/暴露面收紧
+# ============================================================
+
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 5000
+      max-lifetime: 1800000
+
+logging:
+  level:
+    root: WARN
+    com.xxx.ragdoc: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+
+server:
+  error:
+    include-stacktrace: never
+
+management:
+  endpoint:
+    health:
+      show-details: never
+      show-components: when-authorized
+
+rag:
+  auth:
+    # 生产禁止 dev 默认主体(AuthProperties.verifyProfileGate 会 fail-fast)
+    dev-default-principal-enabled: false
+    allowlist-paths:
+      - /actuator/health
+      - /actuator/readiness
+  parser:
+    # 生产必须异步链路(sync 会阻塞请求线程, 见 application-dev.yml 注释)
+    mode: async
+  retrieve:
+    mode: hybrid
+  citation-verifier:
+    enabled: true
+    on-fail: WARN_ONLY   # 观察 2 个版本后视指标决定是否收紧 REFUSE
+
+llm:
+  api-key: ${LLM_API_KEY:}          # 无默认 — 环境变量必填
+  fallback-api-key: ${LLM_FALLBACK_API_KEY:}
+embedding:
+  api-key: ${EMBEDDING_API_KEY:}
+  base-url: ${EMBEDDING_BASE_URL:}  # 无默认 — 不允许静默回落本地 8082

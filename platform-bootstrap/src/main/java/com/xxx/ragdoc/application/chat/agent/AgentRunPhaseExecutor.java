@@ -289,7 +289,13 @@ public class AgentRunPhaseExecutor {
                             : (deduped
                                     ? StepSettlement.dedup(terminal, errorCode)
                                     : StepSettlement.realTool(
-                                            terminal, errorCode, 0, 0, java.math.BigDecimal.ZERO));
+                                            terminal,
+                                            errorCode,
+                                            // P2 接入(原恒 0): 工具输入按输入 token 记账,
+                                            // 证据内容按输出 token 记账(TokenEstimator 保守估算)
+                                            estimateTokens(planStep),
+                                            estimateTokens(stepEvidence),
+                                            java.math.BigDecimal.ZERO));
             AgentBudgetManager.SettleResult settled =
                     budgetManager.settle(runtimeUsage, runtimeReservation, settlement);
             runtimeUsage = settled.newUsage();
@@ -427,6 +433,17 @@ public class AgentRunPhaseExecutor {
 
     private static boolean isDedupMetadata(ToolResult<?> r) {
         return r != null && Boolean.TRUE.equals(r.metadata().get("deduplicated"));
+    }
+
+    /** P2: 步骤 token 估算 — 输入=工具步骤序列化, 输出=证据内容列表。 */
+    private static long estimateTokens(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof java.util.List<?> list) {
+            long sum = 0;
+            for (var x : list) sum += estimateTokens(x);
+            return sum;
+        }
+        return TokenEstimator.estimate(String.valueOf(o));
     }
 
     private static String signatureOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {

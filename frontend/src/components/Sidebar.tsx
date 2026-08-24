@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useChatStore } from '../store/useChatStore';
 import { useDocStore } from '../store/useDocStore';
 import { useUIStore } from '../store/useUIStore';
 import { UploadDropzone } from './UploadDropzone';
@@ -25,6 +26,16 @@ export function Sidebar({ onPickDoc, selectedDocId }: Props) {
   // DEV-B3: 仍有未加载文档时, footer 区显示 "加载更多 (剩余 N)"
   const remaining = Math.max(0, total - docs.length);
 
+  // 会话管理: 归档列表 + 当前会话
+  const archive = useChatStore((s) => s.archive);
+  const currentId = useChatStore((s) => s.conversationId);
+  const currentTitle = useChatStore((s) => (s.messages.length > 0 ? s.messages.find((m) => m.role === 'user')?.content.slice(0, 24) || '当前会话' : null));
+  const switchTo = useChatStore((s) => s.switchTo);
+  const deleteConversation = useChatStore((s) => s.deleteConversation);
+  const newConversation = useChatStore((s) => s.newConversation);
+  const entries = Object.entries(archive).sort((a, b) => b[1].updatedAt - a[1].updatedAt);
+  if (currentTitle) entries.unshift([currentId, { title: currentTitle, messages: [], updatedAt: Date.now() }] as const);
+
   return (
     <aside className="flex h-full w-72 flex-col border-r border-slate-200 bg-white">
       <div className="border-b border-slate-200 p-4">
@@ -34,6 +45,46 @@ export function Sidebar({ onPickDoc, selectedDocId }: Props) {
         </div>
         <UploadDropzone />
       </div>
+
+      {/* 会话列表(多轮管理) */}
+      {entries.length > 0 && (
+        <div className="border-b border-slate-100">
+          <div className="flex items-center justify-between px-4 py-2 text-xs text-slate-500">
+            <span>💬 会话 ({entries.length})</span>
+            <button
+              onClick={newConversation}
+              className="rounded border border-slate-300 px-1.5 py-0.5 text-[11px] text-slate-600 hover:bg-slate-100"
+              title="新建会话"
+            >
+              ＋新建
+            </button>
+          </div>
+          <div className="max-h-44 overflow-y-auto px-2 pb-2">
+            {entries.map(([id, c]) => (
+              <div
+                key={id}
+                className={`group flex items-center justify-between rounded px-2 py-1.5 text-xs ${
+                  id === currentId ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <button className="flex-1 truncate text-left" onClick={() => id !== currentId && switchTo(id)} title={c.title}>
+                  {id === currentId ? '📍 ' : ''}
+                  {c.title}
+                </button>
+                {id !== currentId && (
+                  <button
+                    className="ml-1 hidden text-slate-400 hover:text-red-500 group-hover:block"
+                    onClick={() => deleteConversation(id)}
+                    title="删除"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between px-4 py-2 text-xs text-slate-500 border-b border-slate-100">
         <span>

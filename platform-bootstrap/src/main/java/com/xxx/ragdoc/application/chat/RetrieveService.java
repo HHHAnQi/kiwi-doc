@@ -51,6 +51,20 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class RetrieveService {
 
+    /**
+     * P1: minScoreThreshold(rerank 分数闸门)配置。setter 注入(可选) — 保持
+     * Lombok 主构造器签名不变, 14 处既有测试调用零改动; 未注入时用默认阈值 0.3。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private ChatMessages chatMessages;
+
+    private double minScoreThreshold() {
+        return chatMessages != null ? chatMessages.getMinScoreThreshold() : 0.3;
+    }
+
+
+
+
     private final EmbeddingClient embeddingClient;
     private final VectorStore vectorStore;
     private final ChunkRepository chunkRepository;
@@ -415,9 +429,26 @@ public class RetrieveService {
                         top1HybridScore);
                 rerankT0 = System.currentTimeMillis();
                 // 必须与召回使用同一个 effectiveQuery；否则开启 query rewrite 后会用旧问题精排新候选。
-                List<ScoredChunk> reranked = rerankClient.rerank(effectiveQuery, candidates, topN);
+                var reranked = (java.util.List<ScoredChunk>) new java.util.ArrayList<ScoredChunk>(rerankClient.rerank(effectiveQuery, candidates, topN));
                 metrics.recordRerankLatency(System.currentTimeMillis() - rerankT0, true);
                 if (!reranked.isEmpty()) {
+                    // minScoreThreshold 接线(P1, 原定义从未使用): rerank 分数是 0-1 的
+                    // 绝对相关度, 低于阈值的候选是噪声 — 过滤掉, 全部低于则保留 top1
+                    // (防 over-filter 空结果, 宁可给最相关的也不 NO_RECALL)。
+                    // 注意: 只对 rerank 分数闸门; hybrid RRF 分绝对值极低(~0.03)不可比。
+                    double threshold = minScoreThreshold();
+                    List<ScoredChunk> gated =
+                            reranked.stream()
+                                    .filter(c -> c.score() >= threshold)
+                                    .toList();
+                    if (!gated.isEmpty() && gated.size() < reranked.size()) {
+                        log.info(
+                                "retrieve.score_gate threshold={}, dropped={}/{}",
+                                threshold,
+                                reranked.size() - gated.size(),
+                                reranked.size());
+                        reranked = gated;
+                    }
                     finalHits = reranked;
                     rerankState = "applied";
                     top1RerankScore = reranked.get(0).score();

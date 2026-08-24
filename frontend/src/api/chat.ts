@@ -14,6 +14,8 @@ import { apiURL, getToken } from './client';
 export interface ChatHandlers {
   onEvent: (ev: SSEEvent) => void;
   onError?: (err: Error) => void;
+  /** 响应头就绪时回调(AGENTIC 路径捕获 X-Agent-Run-Id 用于执行过程可视化) */
+  onHeaders?: (headers: Headers) => void;
   signal?: AbortSignal;
 }
 
@@ -55,6 +57,9 @@ export function chatSSE(req: ChatRequest, handlers: ChatHandlers): AbortControll
       handlers.onError?.(new Error(msg));
       return;
     }
+
+    // Agent 过程可视化: 捕获 AGENTIC 路径的 run id(SSE 同样可读响应头)
+    handlers.onHeaders?.(resp.headers);
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();

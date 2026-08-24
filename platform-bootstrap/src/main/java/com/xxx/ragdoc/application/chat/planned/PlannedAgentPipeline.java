@@ -65,6 +65,10 @@ public class PlannedAgentPipeline implements ChatPipeline {
             return ChatResult.of(StateHint.NO_RECALL, humanizeFailure(prepared), context.traceId());
         }
         PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
+        // Agent 过程可视化: 透出 runId(前端据此拉 /agent/runs/{id} 渲染执行步骤面板)
+        if (p.runId() != null) {
+            org.slf4j.MDC.put("rag.agentRunId", p.runId());
+        }
         // 单次 Answer generation
         EvidenceGroundedAnswerComposer.GroundedAnswer answer;
         try {
@@ -154,6 +158,10 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                     humanizeFailure(prepared)));
         }
         PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
+        // Agent 过程可视化: 透出 runId(前端据此拉 /agent/runs/{id} 渲染执行步骤面板)
+        if (p.runId() != null) {
+            org.slf4j.MDC.put("rag.agentRunId", p.runId());
+        }
         if (cts.token().isCancelled()) {
             runFinalizer.finalize(
                     p.runId(),

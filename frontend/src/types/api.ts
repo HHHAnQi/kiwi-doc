@@ -68,6 +68,25 @@ export interface ChatRequest {
   conversation_id?: string | null;
 }
 
+// ===== Agent 执行过程(GET /api/v1/agent/runs/{id}) =====
+export interface AgentStepView {
+  step_id: string;
+  sequence: number;
+  tool_name: string;
+  status: string;
+  result_count: number;
+  latency_ms: number | null;
+  error_code: string;
+}
+export interface AgentRunDetail {
+  run_id: string;
+  status: string;
+  plan_id: string;
+  evidence_count: number;
+  step_count: number;
+  steps: AgentStepView[];
+}
+
 // ===== SSE event 客户端类型 (sealed record ChatStreamEvent 对应)=====
 
 export type SSEEvent =

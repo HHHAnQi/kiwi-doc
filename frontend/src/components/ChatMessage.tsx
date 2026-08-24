@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -25,6 +26,36 @@ const MD_COMPONENTS: Components = {
 interface Props {
   msg: TChatMessage;
   onFeedbackSubmitted: (msgId: string) => void;
+}
+
+/** Agent 过程可视化: 折叠式执行步骤面板(工具/状态/证据数/耗时)。 */
+function AgentRunPanel({ run }: { run: import('../types/api').AgentRunDetail }) {
+  const [open, setOpen] = useState(false);
+  const okCount = run.steps.filter((s) => s.status === 'SUCCEEDED').length;
+  return (
+    <div className="mt-2 rounded border border-indigo-200 bg-indigo-50/60 text-xs">
+      <button
+        className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-indigo-700"
+        onClick={() => setOpen(!open)}
+      >
+        <span>{open ? '▾' : '▸'}</span>
+        <span>🤖 Agent 执行: {run.step_count} 步 ({okCount} 成功) · {run.evidence_count} 证据 · {run.status}</span>
+      </button>
+      {open && (
+        <div className="space-y-1 px-3 pb-2">
+          {run.steps.map((s) => (
+            <div key={s.step_id} className="flex items-center gap-2 text-slate-600">
+              <span className="w-4 text-right text-slate-400">{s.sequence}</span>
+              <span className="font-mono text-[11px] text-indigo-600">{s.tool_name}</span>
+              <span className={s.status === 'SUCCEEDED' ? 'text-green-600' : 'text-amber-600'}>{s.status}</span>
+              <span>· {s.result_count} 证据</span>
+              {s.latency_ms != null && <span className="text-slate-400">{s.latency_ms}ms</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ChatMessageView({ msg, onFeedbackSubmitted }: Props) {
@@ -98,6 +129,7 @@ export function ChatMessageView({ msg, onFeedbackSubmitted }: Props) {
         )}
       </div>
       {isUser && <Avatar role="user" />}
+        {msg.agentRun && <AgentRunPanel run={msg.agentRun} />}
     </div>
   );
 }

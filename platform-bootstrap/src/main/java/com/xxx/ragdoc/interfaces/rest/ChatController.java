@@ -87,6 +87,14 @@ public class ChatController {
         var builder =
                 org.springframework.http.ResponseEntity.ok()
                         .body(ChatResponse.from(result, includeEvidence));
+        // Agent 过程可视化: AGENTIC 路径透出 runId(ASCII, 无需编码)
+        String agentRunId = org.slf4j.MDC.get("rag.agentRunId");
+        if (agentRunId != null) {
+            builder = org.springframework.http.ResponseEntity.ok()
+                    .header("X-Agent-Run-Id", agentRunId)
+                    .body(ChatResponse.from(result, includeEvidence));
+            org.slf4j.MDC.remove("rag.agentRunId");
+        }
         if (effectiveQuery != null) {
             // HTTP 头只允许 ISO-8859-1, 中文会被 Spring 静默丢弃(实测) → URL 编码传输
             builder =
