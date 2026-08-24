@@ -36,6 +36,121 @@ Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系�
 judge 治理: 异族 DeepSeek 与业务 GLM 物理隔离, 基线证书(题集 SHA256+commit 锁定),
 CI -3% 回归门禁, 曾自查出题集 100% 标注泄漏并判 FAIL。
 
+### 终版评测数据(2026-08-24, 100 题 × 3 轮, judge=DeepSeek)
+
+| 指标 | rerank OFF | rerank ON | **终版 mean±std(全配置)** |
+|---|---|---|---|
+| faithfulness | 0.747 | 0.840 | **0.777 ± 0.003** |
+| context_precision | 0.506 | 0.562 | 0.556 ± 0.004 |
+| context_recall | 0.450 | 0.525 | 0.503 ± 0.012 |
+| refusal_rate | 4% | 4% | 6.3% ± 2.1% |
+| faith_on_answered | 0.768 | 0.854 | 0.804 ± 0.001 |
+
+多轮 Gate: G1 单轮不退化 **PASS** · G2 指代消解 **18/20** · G3 抗污染 **9/10**
+· G4 压缩零丢失 **5/5** · G5 话题漂移 33-39/50(未校准, 如实标注)。
+
+Agentic 对照: Classic 36.7% vs Agentic 30.0%(五轮校准 11.7%→30%, 延迟×2.8)
+—— 数据结论: 当前语料保持默认关闭, 全程可追溯见
+`docs/evaluation/2026-08-23-agentic-phase1-report.md`。
+每个数字的完整出处(题集/协议/judge/原始文件): `docs/evaluation/evidence-provenance.md`。
+
+## 架构图(Mermaid, GitHub 原生渲染)
+
+### 系统总览
+
+```mermaid
+flowchart LR
+    subgraph FE["前端 React 19"]
+        UI["SSE 流式对话<br/>引用卡片/会话管理<br/>Agent 执行可视化"]
+    end
+    subgraph APP["chat-app (Spring Boot 3, DDD 六边形)"]
+        ORCH["ChatOrchestrator<br/>+ TaskRouter 路由"]
+        CLA["ClassicRagPipeline"]
+        PLN["PlannedAgentPipeline<br/>(Agentic)"]
+        RET["RetrieveService<br/>hybrid+RRF+rerank+score gate"]
+        CHAT["ChatService<br/>多轮改写/历史压缩/引用对齐"]
+        MCP["MCP Server<br/>(rag_search/rag_ask)"]
+    end
+    subgraph STORE["存储层"]
+        MY[("MySQL<br/>事实源 SoT")]
+        MV[("Milvus<br/>派生索引<br/>dense+BM25")]
+        RD[("Redis<br/>会话/短期记忆")]
+        MIN[("MinIO<br/>原始文件")]
+    end
+    subgraph INGEST["异步索引链路 parser-service"]
+        MQ{{"RocketMQ<br/>outbox+租约"}}
+        PARSE["Tika 解析→脱敏→注入扫描<br/>→切块→Contextual 前缀→Embedding"]
+    end
+    subgraph EXT["外部依赖"]
+        LLM["GLM-4-plus / DeepSeek<br/>(主备双路由+熔断)"]
+        EMB["Embedding API"]
+        RER["bge-reranker-v2-m3<br/>(GPU, 经健康检测)"]
+        JDG["DeepSeek Judge<br/>(评测, 物理隔离)"]
+    end
+
+    FE -->|SSE / REST| ORCH
+    ORCH --> CLA & PLN
+    CLA --> CHAT --> RET
+    PLN --> RET
+    RET --> MV & MY & RER
+    CHAT --> RD & LLM
+    MCP --> RET
+    MQ --> PARSE --> MY & MV
+    PARSE --> EMB & MIN
+```
+
+### 读路径: RAG 检索与生成
+
+```mermaid
+flowchart TD
+    Q[用户 query] --> RW{"多轮?<br/>conversation_id"}
+    RW -->|是| CTX["QueryContextualizer<br/>指代消解改写(G2 18/20)"]
+    RW -->|否| EXP["Query Expansion<br/>多路查询扩展"]
+    CTX --> HYB
+    EXP --> HYB["混合检索<br/>dense ANN + BM25 → RRF 融合"]
+    HYB --> ACL["ACL 双层校验<br/>Milvus 预过滤 + MySQL 回库<br/>(租户/软删/generation)"]
+    ACL --> RR["cross-encoder 重排<br/>(GPU, faith +9.2pp)"]
+    RR --> GATE{"score gate<br/>rerank 分 < 0.3 过滤"}
+    GATE --> CTXASS["上下文组装<br/>history 块隔离标记<br/>+ token/char 双闸门预算<br/>+ citations 对齐"]
+    CTXASS --> LLM["LLM 生成<br/>带 n 引用 + 注入隔离标签"]
+    LLM --> VER["citation verifier<br/>(NLI 核验, WARN_ONLY)"]
+    VER --> ANS["答案 + 引用卡片"]
+```
+
+### 写路径: 异步索引链路(可靠性)
+
+```mermaid
+flowchart TD
+    UP["上传(MIME 白名单+SHA256 幂等)"] --> DB1[("documents<br/>status=UPLOADED")]
+    DB1 --> OBX["parse_tasks 账本<br/>+ Outbox Relay(租约)"]
+    OBX -->|RocketMQ| CS["ParseTaskConsumer<br/>lease CAS 抢占"]
+    CS --> P1["Tika 抽文→PiiSanitizer 脱敏<br/>→ RegexSecurityScanner 注入扫描"]
+    P1 --> P2["结构感知切块<br/>(flat / parent-child)"]
+    P2 --> P3["Contextual Retrieval 前缀<br/>(来源|文档|章节) + Embedding"]
+    P3 --> P4["MySQL chunks + Milvus upsert<br/>(delete+insert, generation 隔离)"]
+    P4 --> OK["INDEXED ✓"]
+    CS -.崩溃兜底.-> VT["VisibilityTimeout<br/>回收过期 RUNNING"]
+    P3 -.失败.-> RT["重试 x3 → DLQ"]
+    style OK fill:#dfd
+```
+
+### Agentic 执行循环(对照评测后默认关闭, 详见报告)
+
+```mermaid
+flowchart TD
+    IN["多跳 query"] --> RT{"TaskRouter<br/>MULTI_HOP 且 conf≥0.80?"}
+    RT -->|否| CL["Classic RAG"]
+    RT -->|是| REQ["需求冻结<br/>(Requirement 抽取)"]
+    REQ --> PLAN["Planner 规划<br/>(LLM 查询分解: 每子题一步)"]
+    PLAN --> EXE["工具执行循环<br/>semantic/keyword/metadata_search<br/>+ document_fetch(预算内)"]
+    EXE --> SUF{"Sufficiency Judge<br/>证据充分?"}
+    SUF -->|"不足(≤1次)"| RP["增量 Replan<br/>(需求聚焦+视角切换)"]
+    RP --> EXE
+    SUF -->|充分| CMP["Grounded Composer<br/>带 n 引用成文"]
+    CMP --> AUD["agent_run/agent_step 落库<br/>+ 审计端点 + 前端步骤可视化"]
+    style CL fill:#dfd
+```
+
 ## 架构要点
 
 - **MySQL 为事实源, Milvus 为派生索引**(召回后逐条回库校验租户/软删/generation)
