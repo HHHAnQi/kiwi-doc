@@ -8,10 +8,10 @@
 
 | 指标 | 数值 | 说明 |
 |---|---|---|
-| faithfulness | 0.7743 | 答案是否完全从 context 推导, 高=低幻觉 |
-| answer_relevancy | 0.7236 | 答案相关性, 高=答非所问少 |
-| context_precision | 0.5670 | LLM judge 检索条目相关性位次质量 |
-| context_recall | 0.5050 | ground_truth 被 context 覆盖比例 |
+| faithfulness | 0.7800 | 答案是否完全从 context 推导, 高=低幻觉 |
+| answer_relevancy | 0.6914 | 答案相关性, 高=答非所问少 |
+| context_precision | 0.5550 | LLM judge 检索条目相关性位次质量 |
+| context_recall | 0.4900 | ground_truth 被 context 覆盖比例 |
 
 ## 样本数: 100
 
@@ -23,6 +23,6 @@
 
 | 指标 | 数值 | 说明 |
 |---|---|---|
-| **refusal_rate** | 0.0500 (5/100) | 拒答率(短答 or 含'无相关') |
-| **faith_on_answered** | 0.7993 | 非拒答题 faith 均值 ← 真实 RAG 能力 |
-| faith_on_refused | 0.3000 | 拒答题 faith, 应≈0(尺刻度验证) |
+| **refusal_rate** | 0.0800 (8/100) | 拒答率(短答 or 含'无相关') |
+| **faith_on_answered** | 0.8043 | 非拒答题 faith 均值 ← 真实 RAG 能力 |
+| faith_on_refused | 0.5000 | 拒答题 faith, 应≈0(尺刻度验证) |
