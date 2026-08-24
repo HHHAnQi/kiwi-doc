@@ -187,3 +187,23 @@ Tier B buffer 的组合确实零丢失); summary 单独的实体保留率(0.2-0.
 **多轮 gate 终态: G1 PASS / G2 18/20 PASS / G3 9/10 PASS / G4 5/5 PASS / G5 波动(33-39/50)。**
 方法论主线不变: 先修度量(可测性+口径公平), 再修系统 — G3/G4 与 G2 同剧本,
 三次验证了"gate 挂掉先怀疑尺子"。
+
+---
+
+## 附 5: 全配置终版数据(2026-08-24)
+
+配置变化(query expansion ON + citation verifier WARN_ONLY + 改写器升级 + rerank GPU 恢复)
+与上次 rerank ON 基线存在漂移 — 按项目自己的"评测-线上口径一致"原则重跑:
+
+| 指标 | rerank OFF(旧) | rerank ON(旧基线) | **全配置终版** |
+|---|---|---|---|
+| faithfulness | 0.747 | 0.840 | **0.818** |
+| answer_relevancy | 0.690 | 0.768 | 0.742 |
+| context_precision | 0.506 | 0.562 | **0.575** |
+| context_recall | 0.450 | 0.525 | 0.525 |
+| refusal_rate | 4% | 4% | 5% |
+| faith_on_answered | 0.768 | 0.854 | 0.846 |
+
+解读: precision 微升(0.562→0.575, expansion 多路召回的贡献), faithfulness 微降
+(0.840→0.818, 在 judge 噪声区间内, ±1-2pp 不应过度解读 — 报告诚实口径);
+整体与旧基线一致, 当前数字可作简历正式口径。
