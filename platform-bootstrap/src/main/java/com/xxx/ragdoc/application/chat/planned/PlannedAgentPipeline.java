@@ -38,6 +38,13 @@ public class PlannedAgentPipeline implements ChatPipeline {
     private final com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProperties;
     /** P0-3: 执行预算可配(原硬编码 pr6Default maxReplans=0 → Replan 必 BUDGET_ZERO)。 */
     private final com.xxx.ragdoc.application.chat.agent.AgentBudgetProperties budgetProps;
+    /**
+     * 检索锚定(2026-08-25): 原查询 hybrid 检索结果作为"保底"加入 Agentic 证据池。
+     * 根因: LLM 分解后的子查询方向跑偏(实测 Dubbo/Seata 题检索到 Sentinel/RocketMQ),
+     * 而原查询一次性 hybrid 检索精准命中 — include_original 模式(LangChain
+     * MultiQueryRetriever), 即使所有子查询跑偏, 原查询结果保证相关证据存在。
+     */
+    private final com.xxx.ragdoc.application.chat.RetrieveService retrieveService;
 
     @Override
     public PipelineType type() {
@@ -69,6 +76,10 @@ public class PlannedAgentPipeline implements ChatPipeline {
         if (p.runId() != null) {
             org.slf4j.MDC.put("rag.agentRunId", p.runId());
         }
+        // 检索锚定: 原查询 hybrid 检索结果合并到 Agentic 证据池(去重, 上限20)
+        java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> anchoredEvidence =
+                anchorWithOriginalQuery(command, p.evidence(), context);
+
         // 单次 Answer generation
         EvidenceGroundedAnswerComposer.GroundedAnswer answer;
         try {
@@ -78,7 +89,7 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                     command.query(),
                                     p.requirements(),
                                     p.coverage(),
-                                    p.evidence(),
+                                    anchoredEvidence,
                                     context.principal().tenantId(),
                                     p.runId()));
         } catch (Exception ex) {
@@ -267,6 +278,43 @@ public class PlannedAgentPipeline implements ChatPipeline {
                 true,
                 false,
                 true);
+    }
+
+    /**
+     * 检索锚定: 原查询走一次 hybrid 检索(与 Classic 相同), 结果合并到 Agentic 证据池。
+     * 去重: 按 content 前200字符; 上限: 合并后最多 20 条(Composer 上下文预算内)。
+     */
+    private java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> anchorWithOriginalQuery(
+            ChatCommand command,
+            java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> agenticEvidence,
+            ChatExecutionContext context) {
+        try {
+            com.xxx.ragdoc.application.chat.RetrieveService.RetrieveResult result = retrieveService.retrieve(command);
+            if (result.items().isEmpty()) return agenticEvidence;
+            java.util.Set<String> existing = new java.util.HashSet<>();
+            for (var e : agenticEvidence) {
+                if (e.content() != null) existing.add(e.content().substring(0, Math.min(200, e.content().length())));
+            }
+            java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> merged = new java.util.ArrayList<>(agenticEvidence);
+            String tenant = context != null && context.principal() != null ? context.principal().tenantId() : "default";
+            for (var c : result.items()) {
+                String content = c.llmContext() != null ? c.llmContext() : c.snippet();
+                if (content == null || content.isBlank()) continue;
+                String key = content.substring(0, Math.min(200, content.length()));
+                if (existing.contains(key)) continue;
+                existing.add(key);
+                merged.add(com.xxx.ragdoc.application.chat.evidence.Evidence.of(
+                        tenant, c.docId(), c.chunkId(), null, content, (double) c.score(), 0.0,
+                        "original_query_anchor", java.util.Map.of("anchor", "original_query")));
+                if (merged.size() >= 20) break;
+            }
+            log.info("planned.evidence_anchored agentic={} original={} merged={}",
+                    agenticEvidence.size(), result.items().size(), merged.size());
+            return merged;
+        } catch (Exception e) {
+            log.warn("planned.anchor_failed: {}", e.getMessage());
+            return agenticEvidence;
+        }
     }
 
     private java.util.List<com.xxx.ragdoc.application.chat.planner.PlannerToolDescriptor>
