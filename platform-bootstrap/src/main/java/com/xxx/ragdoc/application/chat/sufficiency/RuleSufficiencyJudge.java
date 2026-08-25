@@ -139,8 +139,22 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
                     RecommendedAction.REFUSE_NO_EVIDENCE /* 保守默认; Pipeline 可调 Model 覆盖 */,
                     "RULE_SEMANTIC_UNDETERMINED");
         }
-        // 3. INSUFFICIENT (至少 required 一个 missing)
+        // 3. INSUFFICIENT / PARTIAL (required 有 missing)
+        // 改动(2026-08-25): 区分"部分覆盖"和"全无" — 65% 拒答率的根因是
+        // 有证据但仍被判 INSUFFICIENT → 终态拒答。≥1 个 required 有证据 → PARTIAL
+        // → Composer 带标注回答; 全部 required 无证据 → 仍 INSUFFICIENT(防幻觉底线)。
         if (!missing.isEmpty()) {
+            boolean anyCovered = coverages.stream()
+                    .anyMatch(c -> c.status() == CoverageStatus.COVERED);
+            if (anyCovered) {
+                return SufficiencyDecision.rule(
+                        SufficiencyStatus.PARTIAL,
+                        coverages,
+                        missing,
+                        List.of(),
+                        RecommendedAction.ANSWER_PARTIAL,
+                        "RULE_PARTIAL_SOME_COVERED");
+            }
             SufficiencyStatus status = SufficiencyStatus.INSUFFICIENT;
             RecommendedAction action = RecommendedAction.REFUSE_NO_EVIDENCE;
             return SufficiencyDecision.rule(

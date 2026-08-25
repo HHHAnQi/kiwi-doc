@@ -1,0 +1,138 @@
+{
+  "dataset_size": 1,
+  "metrics": {
+    "retrieval": {
+      "ndcg@5": 1.0,
+      "precision@5": 0.2,
+      "recall@5": 1.0,
+      "hit_rate@5": 1.0,
+      "mrr@5": 1.0
+    },
+    "generation": {
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0,
+      "answer_correctness": 0.67,
+      "citation_recall": 1.0,
+      "citation_accuracy": 0.2,
+      "citation_hit_rate": 1.0
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 0.67,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 1
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "Nacos Spring Cloud 的 dataId 前缀和文件扩展名如何配置，如何实现配置自动更新？",
+        "gold_answer": "dataId 前缀默认取 spring.application.name，也可通过 spring.cloud.nacos.config.prefix 配置；文件扩展名通过 spring.cloud.nacos.config.file-extension 配置，支持 properties 和 yaml；使用 @RefreshScope 实现配置自动更新。",
+        "answer": "Nacos Spring Cloud 的 dataId 前缀默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix` 来配置 [1]。\n\n文件扩展名（file-extension）为配置内容的数据格式，可以通过配置项 `spring.cloud.nacos.config.file-extension` 来配置，目前只支持 `properties` 和 `yaml` 类型 [1]。\n\n实现配置自动更新可以通过以下两种方式：\n1. 使用 Spring Cloud 原生注解 `@RefreshScope`，在类上添加该注解即可实现配置自动更新 [1]\n2. 使用 Nacos Spring 的 `@NacosPropertySource` 注解，设置 `autoRefreshed = true` 参数，如 `@NacosPropertySource(dataId = \"example\", autoRefreshed = true)` [2][3][4]",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1426,
+          1495,
+          1063,
+          1496,
+          1497
+        ],
+        "gold_chunk_ids": [
+          1426
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1426,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时…",
+            "llm_context": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时，对应的连接符 `-` 也将不存在，dataId 的拼接格式变成 `${prefix}.${file-extension}`**\n* `file-exetension` 为配置内容的数据格式，可以通过配置项 `spring.cloud.nacos.config.file-extension` 来配置。目前只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：\n只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：\n@RestController\n@RequestMapping(\"/config\")\n@RefreshScope\npublic class ConfigController {\n\n    @Value(\"${useLocalCache:false}\")\n    private boolean useLocalCache;\n\n    @RequestMapping(\"/get\")\n    public boolean get() {\n        return useLocalCache;\n    }\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1495,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "最新版本可以在 maven 仓库，如 \"[mvnrepository.com]( )\" 中获取。\n\n2. 添加 `@EnableNacosConfig` 注解启用 Nacos Spring 的配置管理服务。以下示例中，我们使用 `@NacosPropertySource` 加载了 `dataId` 为 `example` 的配置源，并开启自动更新：",
+            "llm_context": "最新版本可以在 maven 仓库，如 \"[mvnrepository.com]( )\" 中获取。\n\n2. 添加 `@EnableNacosConfig` 注解启用 Nacos Spring 的配置管理服务。以下示例中，我们使用 `@NacosPropertySource` 加载了 `dataId` 为 `example` 的配置源，并开启自动更新：\n的配置管理服务。以下示例中，我们使用 `@NacosPropertySource` 加载了 `dataId` 为 `example` 的配置源，并开启自动更新：\n@Configuration\n@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = \"127.0.0.1:8848\"))\n@NacosPropertySource(dataId = \"example\", autoRefreshed = true)\npublic class NacosConfiguration {\n\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1063,
+            "doc_id": 127,
+            "page": 0,
+            "snippet": "3. 使用 `@NacosPropertySource` 加载 `dataId` 为 `example` 的配置源，并开启自动更新：",
+            "llm_context": "3. 使用 `@NacosPropertySource` 加载 `dataId` 为 `example` 的配置源，并开启自动更新：\n@SpringBootApplication\n@NacosPropertySource(dataId = \"example\", autoRefreshed = true)\npublic class NacosConfigApplication {\n\n    public static void main(String[] args) {\n        SpringApplication.run(NacosConfigApplication.class, args);\n    }\n}\n\n@Controller\n@RequestMapping(\"config\")\npublic class ConfigController {\n\n    @NacosValue(value = \"${useLocalCache:false}\", autoRefreshed = true)\n    private boolean useLocalCache;\n\n    @RequestMapping(value = \"/get\", method = GET)\n    @ResponseBody\n    public boolean get() {\n        return useLocalCache;\n    }\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring Boot，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1496,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "的配置管理服务。以下示例中，我们使用 `@NacosPropertySource` 加载了 `dataId` 为 `example` 的配置源，并开启自动更新：",
+            "llm_context": "的配置管理服务。以下示例中，我们使用 `@NacosPropertySource` 加载了 `dataId` 为 `example` 的配置源，并开启自动更新：\n@Configuration\n@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = \"127.0.0.1:8848\"))\n@NacosPropertySource(dataId = \"example\", autoRefreshed = true)\npublic class NacosConfiguration {\n\n}\n\n@Controller\n@RequestMapping(\"config\")\npublic class ConfigController {\n\n    @NacosValue(value = \"${useLocalCache:false}\", autoRefreshed = true)\n    private boolean useLocalCache;\n\n    @RequestMapping(value = \"/get\", method = GET)\n    @ResponseBody\n    public boolean get() {\n        return useLocalCache;\n    }\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1497,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "@Configuration\n@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = \"127.0.0.1:8848\"))\n@NacosPropertySource(dataId = \"example\", autoRefreshed = true)\npublic class NacosConfiguration {\n\n…",
+            "llm_context": "@Configuration\n@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = \"127.0.0.1:8848\"))\n@NacosPropertySource(dataId = \"example\", autoRefreshed = true)\npublic class NacosConfiguration {\n\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring，成为注册配置中心",
+              "启动配置管理"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 0,
+  "k": 5,
+  "timestamp": "2026-08-25T04:06:03.766121+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "api_base_url": "http://localhost:8096",
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "generated_at": "2026-08-25T07:22:20.548736+00:00",
+  "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+  "judge_model": "qwen-max",
+  "fingerprints": {
+    "datasets": {
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/conv_holdout_20.jsonl": "02f104068c364d24d4e18b28776d98cca912705bdcdff52c7e02d2b95adce29f",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/antipollution_holdout_10.jsonl": "77fca9478251b703552782e0219761fa248de44963d6e5729ed03c7b6e86a531",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/fidelity_holdout_50.json": "f506f82c7e505f101a055387fb14ba94f1ab0f33404920f41eed821b6fa3610d",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/topic_shift_holdout_50.json": "9922204b79b1336beccfd0235dc804a4eb7b586250aaa6e99f586749fec7804f"
+    },
+    "g1_result": {
+      "path": "eval/runs/e88ce80c67603948/metadata.json",
+      "sha256": "7c4ad757c477a43bdefcb574700f32354c6671c6a455e8386079cd2185956c69"
+    },
+    "g1_baseline": {
+      "path": "eval/ragas_baseline.json",
+      "sha256": "1da6556485ee3520bb12ceb569f16df91d6a7e55c65ca1df5f8767efaa5cbf79"
+    },
+    "config": {
+      "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+      "judge_model": "qwen-max",
+      "judge_provider_id": 2,
+      "gates": "G3,G4",
+      "g1_min_samples": 80,
+      "g1_max_age_hours": 48
+    }
+  },
+  "gates": [
+    {
+      "gate": "G1",
+      "status": "SKIP",
+      "reason": "GATES filter=G3,G4"
+    },
+    {
+      "gate": "G2",
+      "status": "SKIP",
+      "reason": "GATES filter=G3,G4"
+    },
+    {
+      "gate": "G3",
+      "status": "PASS",
+      "pass_n": 9,
+      "total": 10,
+      "rate": 0.9,
+      "pollution_count": 0,
+      "threshold": 0,
+      "note": "G3 硬 gate: pollution_count 必须 0",
+      "details": [
+        {
+          "question_id": "mt_g3_001",
+          "description": "1 turn OK + 1 turn NO_RECALL + 1 turn 重问 OK; 验证 NO_RECALL 文案不污染 rewrite",
+          "actual_answer": "Nacos 默认监听端口是 8848，2.X 版本新增了 gRPC 通信方式，会额外生成一个端口，默认为 9848 [1][2]。RocketMQ 的 prometheus 监听端口默认为 5557，用于 rocketmq-exporter [1]。Nacos 提供配置订阅者查询能力和 MD5 校验值，帮助检查配置变更是否推送到客户端 [3][4]。",
+          "expected": "Nacos 默认端口和 RocketMQ NameServer 默认端口相比如何?",
+          "judge": "FAIL\n\n解析：Bot 的回答中提到了 Nacos 默认监听端口是 8848，但没有提到 RocketMQ NameServer 的默认端口号9876，也没有指出这两个组件使用不同的端口来避免冲突的事实。此外，关于Nacos的gRPC通信方式和RocketMQ的prometheus监听端口的信息虽然正确，但这些信息偏离了关键事实的核心内容。因此，根据提供的关键事实标准，此回答判定为 FAIL。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 0,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_002",
+          "description": "LLM 出错后再问; 验证 'LLM 出错了 trace=xxx' 不污染 rewrite",
+          "actual_answer": "QPS限流可以通过设置FlowRule的count属性和RuleConstant.FLOW_GRADE_QPS来实现，例如将count设置为20表示限制QPS为20 [1]。建议使用业务语义明确的命名规则进行限流，如按用户限流使用`{userId}`格式，按用户+业务类型限流使用`{userId}_{bizType}`格式 [2]。也可以实现自定义的限流逻辑，如LiteTopicRateLimit",
+          "expected": "Sentinel QPS 限流规则详细介绍",
+          "judge": "FAIL\n\n理由：虽然bot的回答提到了QPS限流的概念，并且说明了如何通过设置FlowRule的参数来实现QPS限流，但它并没有明确提到当单位时间内的请求数超过设定阈值时会触发哪种行为（如直接拒绝、Warm Up或排队等待）。因此，该回答没有完全覆盖给出的关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 1,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_003",
+          "description": "EMPTY_KB 模拟 (知识库空时整轮 fail, 后续需重置 ctx); G3 验证 EMPTY_KB 是否拒写 history",
+          "actual_answer": "需要先下载 Nacos 并启动 Nacos server，操作步骤参见 [Nacos 快速入门][3][4][5]。",
+          "expected": "Seata 如何从默认注册中心切换到 Nacos?",
+          "judge": "FAIL\n\n解析：bot的回答并没有提到关于Seata Server/Client修改`registry.conf`文件的相关内容，也没有涉及设置`type=\"nacos\"`、`namespace`、`cluster`和`serverAddr`这些参数的具体信息。此外，对于确保Client能够发现TC（事务协调器）的同步配置也未被提及。因此，根据给定的关键事实来看，这个回答没有覆盖到所需的关键点。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 0,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_004",
+          "description": "持续 NO_RECALL 多轮的 stress (用户连续问 OOD); G3 验证 history 持续空不需清",
+          "actual_answer": "TCC事务模式在1.5.0增加了防悬挂功能，需要由Seata框架开启防悬挂时，需提前在客户端业务库中增加特定表 [3]。TCC模式一阶段方法进行了优化，不再需要在一阶段的接口入参定义`BusinessActionContext`，若一阶段需要使用到`BusinessActionContext`，可以通过`BusinessActionContextUtil.getContext()`取得 [3]。T",
+          "expected": "Seata TCC 模式好用吗?",
+          "judge": "FAIL\n\n解析：虽然bot的回答提到了TCC模式的一些特点，如增加了防悬挂功能、一阶段方法的优化等，并指出TCC模式不与具体的服务框架耦合，但并没有提及关键事实中所强调的优点（强一致性和性能优势）、缺点（业务侵入性、幂等问题）、以及适用场景（适合金融场景）和对CRUD业务建议采用AT模式等内容。因此，判定为未完全覆盖关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 0,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_005",
+          "description": "混合 NO_RECALL 后验证当前语料可回答的 RocketMQ 问题不被污染",
+          "actual_answer": "RocketMQ 通过以下机制保证消息不丢失：\n\n1. RocketMQ 默认对消息进行持久化，将消息存储到服务端的存储文件中，保证消息的可回溯性和系统故障场景下的可恢复性 [4][5]。\n\n2. RocketMQ 提供完整的确认和重试机制，通过消费重试策略保证每条消息都按照业务预期被处理，避免消息异常被忽略 [1]。\n\n3. RocketMQ 采用基于 DLedger 的 Raft 一致性协议确",
+          "expected": "RocketMQ 如何保证消息不丢?",
+          "judge": "PASS\n\n解析：Bot 的回答中提到了RocketMQ通过服务端持久化（第1点）、生产消费链路的确认和重试机制（第2点和第4点）来降低消息丢失的风险。虽然没有直接提到“同步刷盘”，但持久化存储到服务端实际上已经隐含了这一过程，因为要实现可靠的消息持久化，通常会涉及到数据同步写入磁盘的操作。因此，根据给出的关键事实标准，可以认为该回答在语义上覆盖了关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": true,
+          "simulated_degraded_turns": 0,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_006",
+          "description": "LLM fail + 用户重试 + 后续 OK; 验证 retry 后 ctx 干净",
+          "actual_answer": "第一种配置方式是通过-D参数进行指定的配置 [2]。另一种配置方式是在构造客户端时，通过`Properties`对象进行指定 [2]。详细的配置可以参考application.example.yml文件，该文件存放了所有可使用的详细配置 [4]。",
+          "expected": "Sentinel 直接拒绝 (Default) 流控效果详细介绍",
+          "judge": "FAIL\n\nBot 的回答中并没有提到关于直接拒绝（controlBehavior=Default）策略下，超过阈值的请求如何处理、是否会抛出BlockException (FlowException)以及这种策略适合的应用场景等关键事实。因此，根据提供的评判标准，判定为 \"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 1,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_007",
+          "description": "首 turn 即 NO_RECALL; 验证空 ctx 时 rewrite 不空指针",
+          "actual_answer": "3个或3个以上Nacos节点才能构成集群 [2][4]。当前集群文件中只有两个Nacos节点地址 [1][3]。Nacos版本为服务端：Nacos2.0.0-ALPHA2，客户端：Nacos2.0.0-ALPHA2 [5]。",
+          "expected": "Nacos 集群部署要几个节点?",
+          "judge": "FAIL\n\n解释：虽然bot提到了3个或3个以上Nacos节点才能构成集群，但没有明确指出推荐使用奇数个节点以满足Raft quorum，并且未提到这样做的目的是为了避免脑裂。因此，关键事实并未被完全覆盖。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 0,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_008",
+          "description": "OK后多个OOD返回 (用户实验性恐吓); 验证多个降级 turn 后还能正常多轮",
+          "actual_answer": "Dubbo 服务可以通过以下方式注册：\n\n1. 使用独立的注册中心组件，如 Nacos、Zookeeper、Consul、Etcd 等 [1]\n2. 将服务组织与注册交给底层容器平台，如 Kubernetes，实现更云原生的服务注册方式 [1][2]\n3. 支持同一服务向多个注册中心同时注册，或不同服务分别注册到不同注册中心 [4]\n4. 在 Dubbo 3 中，支持应用级注册模型，注册粒度从接口",
+          "expected": "Dubbo 服务怎么注册到注册中心?",
+          "judge": "FAIL\n\n虽然bot的回答提到了Dubbo服务可以使用Nacos、Zookeeper等作为注册中心，并且简要介绍了Dubbo支持的服务注册方式，但没有具体提到关键事实中的“Dubbo service export 时 URL 写入 Registry (Nacos/Zookeeper)，含 application/provider IP:port/接口列表/版本号。消费方订阅 Registry 监听 provider URL 变化。”这部分内容。因此，根据给出的关键事实和评判标准，判定为\"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 0,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_009",
+          "description": "OK / LLM_DEGRADED 混合 + 后续 OK; 最严的 G3 case",
+          "actual_answer": "Sentinel 提供了流量控制规则用于保护服务提供方 [1]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，资源是设置流控规则的载体 [2]。Sentinel 控制台是流量控制、熔断降级规则统一配置和管理的入口 [3]。",
+          "expected": "Sentinel 限流规则有哪些?",
+          "judge": "FAIL\n\n解析：Bot 的回答提到了 Sentinel 提供了流量控制规则，并且简要介绍了资源的概念以及 Sentinel 控制台的作用，但是并没有具体提到关键事实中所要求的四种限流规则（QPS / 线程数 / 关联 / 链路）及其配合的流控效果（直接拒绝 / Warm Up / 匀速排队），也没有提及监控机制是从滑动窗口统计这一点。因此，根据提供的关键事实来判断，这个回答没有覆盖所有必要的信息。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 1,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_010",
+          "description": "降级轮次不入 history 后，明确重试最初问题应回到最近有效业务主题",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 54ee1545",
+          "expected": "RocketMQ 如何保证消息不丢?",
+          "judge": "FAIL",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "simulated_degraded_turns": 1,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "gate": "G4",
+      "status": "PASS",
+      "pass_n": 8,
+      "total": 10,
+      "overall_rate": 0.8,
+      "threshold": 0.7,
+      "note": "实跑 10 session，生成完成后统一等待 45s 再读取压缩上下文，并发会话数 2；完整门禁要求 G4_SESSIONS=50",
+      "details": [
+        {
+          "session_index": 0,
+          "topic": "nacos_cluster_3node",
+          "conv_id": "conv_g4_0_dbf18f13",
+          "ground_truth_entities_count": 9,
+          "summary_entities_count": 9,
+          "preserved_count": 9,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 1016,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "nacos_cluster_3node需要配置3个或3个以上节点才能构成集群[1][2]。在nacos的解压目录nacos/conf下，需要配置cluster.conf文件，每行格式为ip:port[1][2]。可以使用Docker运行集群，命令为docker run --name nacos-cluster -e MODE=cluster -v /path/application.propert"
+        },
+        {
+          "session_index": 1,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_1_68c01136",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 396,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Sentinel 流量控制规则可以通过代码方式设置，例如创建 FlowRule 对象并设置资源名称、限制 QPS 值和规则类型，然后通过 FlowRuleManager.loadRules 方法加载规则 [1]。Sentinel 将每个需要流控的 URL 或接口称为资源，资源是设置流控规则的载体 [3]。Sentinel 控制台提供了统一的规则配置和管理入口，可以配置规则并实时查看流量控制效果 ["
+        },
+        {
+          "session_index": 2,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_2_69b9b082",
+          "ground_truth_entities_count": 7,
+          "summary_entities_count": 7,
+          "preserved_count": 7,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 343,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Dubbo SPI扩展可通过Filter、Router、Protocol等关键流程上的扩展点实现功能扩展或与其他微服务配套系统对接。自2.1.0版本开始支持，具体使用方法可参考dubbo项目中的示例代码，更多扩展实现可在apache/dubbo-spi-extensions项目中找到。Dubbo的扩展能力使其能够构建运维整个微服务体系所需的各项服务治理能力，如Tracing、Transaction"
+        },
+        {
+          "session_index": 3,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_3_3a72a41b",
+          "ground_truth_entities_count": 13,
+          "summary_entities_count": 13,
+          "preserved_count": 13,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 647,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "seata_at_undolog 是 Seata 框架中用于 AT 模式下事务回滚的日志表 [1]。当分支事务注册 TC 后，在本地事务提交前发生全局事务回滚时，会使用 undo_log 表记录回滚信息，防止资源悬挂问题 [1][4]。Seata 的 AT 模式默认全局隔离级别是读未提交（Read Uncommitted）[3]。在升级到 Seata 1.3.0 时，mysql undolog 表"
+        },
+        {
+          "session_index": 4,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_4_7d6a84ac",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 594,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "rocketmq_transaction_half是事务消息的一种状态，当生产者将消息发送至服务端并收到Ack确认后，消息被标记为\"暂不能投递\"状态[1]。生产者需要执行本地事务逻辑，并根据本地事务执行结果向服务端提交二次确认（Commit或Rollback）[1]。如果服务端未收到二次确认或收到Unknown状态，会经过固定时间后对生产者发起消息回查，生产者需要检查本地事务的最终结果并再次提交二"
+        },
+        {
+          "session_index": 5,
+          "topic": "nacos_long_polling",
+          "conv_id": "conv_g4_5_1c560fcf",
+          "ground_truth_entities_count": 5,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "fidelity_score": 0.6,
+          "compression_observed": true,
+          "rolling_summary_len": 363,
+          "recent_turns_count": 4,
+          "pass": false,
+          "summary_preview": "nacos_monitor{name='longPolling'}指标用于监控Nacos config的长连接数[1][3]。Nacos config长连接数可以通过该指标进行监控[1][3]。configLongPollTimeout参数用于设置长轮询的超时时间，单位为毫秒，默认值为30000[1][2]。nacos_long_polling默认配置包括：configLongPollTimeou"
+        },
+        {
+          "session_index": 6,
+          "topic": "sentinel_helloworld_flowrule_20qps",
+          "conv_id": "conv_g4_6_dd6ff17f",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "fidelity_score": 1.0,
+          "compression_observed": false,
+          "rolling_summary_len": 0,
+          "recent_turns_count": 5,
+          "pass": false,
+          "summary_preview": "\nsentinel_helloworld_flowrule_20qps 怎么用?\nSentinel 中可以通过 FlowRule 设置流量控制规则，限制资源访问频率为每秒20次。具体实现是创建 FlowRule 对象，设置资源名为\"HelloWorld\"，计数为20，等级为QPS，然后通过 FlowRuleManager.loadRules 加载规则。使用 Sentinel 控制台可以配置规则并实"
+        },
+        {
+          "session_index": 7,
+          "topic": "dubbo_protocol_export",
+          "conv_id": "conv_g4_7_e9df7f68",
+          "ground_truth_entities_count": 7,
+          "summary_entities_count": 7,
+          "preserved_count": 7,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 504,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "dubbo_protocol_export 用于配置服务暴露的协议和端口，默认配置是每个服务都会在本地暴露，无需进行任何配置即可进行本地引用[1][4]。如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可[1][4]。在配置文件中，可以使用<dubbo:protocol>标签定义多个协议，如 dubbo 和 rmi 协议，分别设置不同的端口[2]"
+        },
+        {
+          "session_index": 8,
+          "topic": "seata_tcc_try_confirm_cancel",
+          "conv_id": "conv_g4_8_8b38e3c0",
+          "ground_truth_entities_count": 6,
+          "summary_entities_count": 6,
+          "preserved_count": 6,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 773,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Seata TCC模式包含三个执行阶段：Try阶段(预定操作资源)、Confirm阶段(执行主要业务逻辑)和Cancel阶段(事务回滚)[2]。使用TCC模式需要定义TCC接口，包含prepare、confirm和rollback方法，并在实现类上使用@LocalTCC注解，在prepare方法上使用@TwoPhaseBusinessAction注解[3]。@TwoPhaseBusinessAct"
+        },
+        {
+          "session_index": 9,
+          "topic": "rocketmq_consume_orderly",
+          "conv_id": "conv_g4_9_4ea4aa30",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 522,
+          "recent_turns_count": 5,
+          "pass": true,
+          "summary_preview": "rocketmq_consume_orderly 用于实现顺序消费，需要消费者分组内所有消费者保持一致的投递顺序和消费重试策略 [2][4][5]。顺序消费时，如果设置了消息组，会按照消息组粒度严格保证消息顺序；如果没有设置消息组，则按队列存储粒度保证顺序，但不保证与发送顺序一致 [3]。rocketmq_consume_orderly 默认配置是并发消费模式，不保证消息顺序 [4]。当设置为顺序"
+        }
+      ]
+    },
+    {
+      "gate": "G5",
+      "status": "SKIP",
+      "reason": "GATES filter=G3,G4"
+    }
+  ],
+  "overall_status": "INCOMPLETE"
+}

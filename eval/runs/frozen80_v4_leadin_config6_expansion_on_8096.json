@@ -1,0 +1,560 @@
+{
+  "dataset_size": 6,
+  "metrics": {
+    "retrieval": {
+      "precision@5": 0.3,
+      "recall@5": 0.7777777777777778,
+      "hit_rate@5": 1.0,
+      "ndcg@5": 0.6389076472874347,
+      "mrr@5": 0.638888888888889
+    },
+    "generation": {
+      "evidence_completeness": 0.9339999999999999,
+      "answer_correctness": 0.9,
+      "faithfulness": 0.9,
+      "citation_hit_rate": 1.0,
+      "citation_accuracy": 0.32,
+      "citation_recall": 0.7333333333333333
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      },
+      {
+        "recall@5": 0.6666666666666666,
+        "precision@5": 0.4,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 0.7039180890341347,
+        "__question_id": 2
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 3
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.4,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "ndcg@5": 0.5437713091520254,
+        "__question_id": 4
+      },
+      {
+        "recall@5": 0.6666666666666666,
+        "precision@5": 0.4,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.25,
+        "ndcg@5": 0.38364913903790027,
+        "__question_id": 5
+      },
+      {
+        "recall@5": 0.3333333333333333,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.25,
+        "ndcg@5": 0.20210734650054757,
+        "__question_id": 6
+      }
+    ],
+    "generation": [
+      {
+        "__question_id": 1,
+        "error": "non-OK generation state: LLM_DEGRADED"
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.4,
+        "citation_recall": 0.6666666666666666,
+        "citation_hit_rate": 1.0,
+        "__question_id": 2
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 0.5,
+        "evidence_completeness": 0.67,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 3
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.4,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 4
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.4,
+        "citation_recall": 0.6666666666666666,
+        "citation_hit_rate": 1.0,
+        "__question_id": 5
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 0.3333333333333333,
+        "citation_hit_rate": 1.0,
+        "__question_id": 6
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+        "gold_answer": "在 Spring Cloud Alibaba 中配置扩展配置 extension-configs 需要通过 spring.cloud.nacos.config.prefix 来配置前缀，并使用 @RefreshScope 注解实现配置动态刷新。",
+        "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 4ed295dc",
+        "state_hint": "LLM_DEGRADED",
+        "cited_chunk_ids": [
+          1426,
+          1399,
+          1385,
+          2116,
+          2113
+        ],
+        "gold_chunk_ids": [
+          1426
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1426,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时…",
+            "llm_context": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时，对应的连接符 `-` 也将不存在，dataId 的拼接格式变成 `${prefix}.${file-extension}`**\n* `file-exetension` 为配置内容的数据格式，可以通过配置项 `spring.cloud.nacos.config.file-extension` 来配置。目前只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：\n只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：\n@RestController\n@RequestMapping(\"/config\")\n@RefreshScope\npublic class ConfigController {\n\n    @Value(\"${useLocalCache:false}\")\n    private boolean useLocalCache;\n\n    @RequestMapping(\"/get\")\n    public boolean get() {\n        return useLocalCache;\n    }\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1399,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "<dependency>\n    <groupId>com.alibaba.cloud</groupId>\n    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n    <version>${latest.version}</version>\n</dependency>\n",
+            "llm_context": "<dependency>\n    <groupId>com.alibaba.cloud</groupId>\n    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n    <version>${latest.version}</version>\n</dependency>\n",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nac…",
+            "llm_context": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-config 实现配置的动态变更。\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-discovery 实现服务的注册与发现。",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心"
+            ]
+          },
+          {
+            "chunk_id": 2116,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "<!--Nacos Discovery-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>\n     <version>[latest version]</version>\n </dep…",
+            "llm_context": "<!--Nacos Discovery-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>\n     <version>[latest version]</version>\n </dependency>\n\n<!--Nacos Config-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n     <version>[latest version]</version>\n </dependency>\n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题",
+              "Spring Cloud Alibaba"
+            ]
+          },
+          {
+            "chunk_id": 2113,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": " \n\n目前支持修改cluster.conf文件的方式进行扩缩容, 改完后无需重启, Server会自动刷新到文件新内容。\n\n Nacos客户端修改日志级别 \n\n配置-D参数com.alibaba.nacos.naming.log.level设置naming客户端的日志级别，例如设置为error：\n`-Dcom.alibaba.nacos.naming.log.level=error`\n同样的，-D…",
+            "llm_context": " \n\n目前支持修改cluster.conf文件的方式进行扩缩容, 改完后无需重启, Server会自动刷新到文件新内容。\n\n Nacos客户端修改日志级别 \n\n配置-D参数com.alibaba.nacos.naming.log.level设置naming客户端的日志级别，例如设置为error：\n`-Dcom.alibaba.nacos.naming.log.level=error`\n同样的，-D参数com.alibaba.nacos.config.log.level用来设置config客户端的日志级别。\n\n Nacos与Zipkin 整合出现 Service not found 问题 \n\n配置`spring-cloud-seluth`参数：`spring.zipkin.discovery-client-enabled=false`。\n\n如果仍然存在`Service not found`错误，则建议先使用open-api将Zipkin-server注册为永久实例服务：\n\n`curl -X POST ' '`\n\n然后，前往nacos控制台，找到服务名为`zipkin-server`的服务，找到集群配置，设置健康检查模式为`TCP`，端口号为`9411`(即zipkin-server的端口)。\n\n 如何依赖最新的Nacos客户端？ \n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 2,
+        "question": "如何通过 XML 的 dubbo:reference interface 与 url 配置点对点直连服务提供者？",
+        "gold_answer": "使用 dubbo:reference 声明服务接口和提供者 URL，例如 interface 设置为服务接口全限定名，url 设置为 dubbo://localhost:20890。",
+        "answer": "点对点直连方式将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点不影响 B 接口从注册中心获取列表 [1][2]。在 XML 配置中，可通过 dubbo:reference 的 url 属性指定提供者地址，绕过注册中心 [3]。具体配置为：<dubbo:reference id=\"xxxService\" interface=\"com.alibaba.xxx.XxxService\" url=\"dubbo://localhost:20890\" /> [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          959,
+          958,
+          960,
+          2072,
+          2071
+        ],
+        "gold_chunk_ids": [
+          959,
+          960,
+          961
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "llm_context": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 958,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/explicit-target/\ndescription: Dubbo 中点对点的直连方式\nlinkTitle: 直连提供者\ntitle: 直连提供者\ntype: docs\nweight: 5\n---\n\n \n\n在开发及测试环境下，经常需要绕过注册中心，只测试指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/explicit-target/\ndescription: Dubbo 中点对点的直连方式\nlinkTitle: 直连提供者\ntitle: 直连提供者\ntype: docs\nweight: 5\n---\n\n \n\n在开发及测试环境下，经常需要绕过注册中心，只测试指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 960,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "llm_context": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：\n<dubbo:reference id=\"xxxService\" interface=\"com.alibaba.xxx.XxxService\" url=\"dubbo://localhost:20890\" />\n",
+            "section_path": [
+              "通过 XML 配置"
+            ]
+          },
+          {
+            "chunk_id": 2072,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置，竖号分隔表示同时连接多个不同注册中心，同一注册中心的多个集群地址用逗号分隔 -->\n    <dubbo:registry address=\"10.20.141.150:9090|10.20.154.177:9010\" />\n    <!-- 引用服务 -->\n    <dubbo:reference id=\"helloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          },
+          {
+            "chunk_id": 2071,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置 -->\n    <dubbo:registry id=\"chinaRegistry\" address=\"10.20.141.150:9090\" />\n    <dubbo:registry id=\"intlRegistry\" address=\"10.20.154.177:9010\" default=\"false\" />\n    <!-- 引用中文站服务 -->\n    <dubbo:reference id=\"chinaHelloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" registry=\"chinaRegistry\" />\n    <!-- 引用国际站站服务 -->\n    <dubbo:reference id=\"intlHelloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" registry=\"intlRegistry\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 3,
+        "question": "配置 Dubbo 端口时，可以在哪些配置文件中设置？",
+        "gold_answer": "可以在 Dubbo Spring 外部化配置文件和 Spring XML 配置文件中设置端口，推荐使用外部化配置。",
+        "answer": "可以在 `dubbo-config.properties` 文件中设置 Dubbo 端口 [3][4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1085,
+          761,
+          1086,
+          1087,
+          1108
+        ],
+        "gold_chunk_ids": [
+          1085
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1085,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "假设您 Dubbo 应用使用 Spring Framework 装配，将有两种配置方法可选，分别为：[Dubbo Spring 外部化配置]( )以及 Spring XML 配置文件以及，笔者强烈推荐前者。",
+            "llm_context": "假设您 Dubbo 应用使用 Spring Framework 装配，将有两种配置方法可选，分别为：[Dubbo Spring 外部化配置]( )以及 Spring XML 配置文件以及，笔者强烈推荐前者。",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "配置注册中心"
+            ]
+          },
+          {
+            "chunk_id": 761,
+            "doc_id": 92,
+            "page": 0,
+            "snippet": "配置Dubbo Consumer的Dubbo配置文件`consumer.yaml`，让客户端能够找到Nacos集群。",
+            "llm_context": "配置Dubbo Consumer的Dubbo配置文件`consumer.yaml`，让客户端能够找到Nacos集群。",
+            "section_path": [
+              "使用流程",
+              "开始迁移",
+              "Dubbo 客户端连接到 Nacos 注册中心",
+              "Dubbo Consumer客户端迁移"
+            ]
+          },
+          {
+            "chunk_id": 1086,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "Dubbo Spring 外部化配置是由 Dubbo `2.5.8` 引入的新特性，可通过 Spring `Environment` 属性自动地生成并绑定 Dubbo 配置 Bean，实现配置简化，并且降低微服务开发门槛。\n\n假设您 Dubbo 应用的使用 Nacos 作为注册中心，并且其服务器 IP 地址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `…",
+            "llm_context": "Dubbo Spring 外部化配置是由 Dubbo `2.5.8` 引入的新特性，可通过 Spring `Environment` 属性自动地生成并绑定 Dubbo 配置 Bean，实现配置简化，并且降低微服务开发门槛。\n\n假设您 Dubbo 应用的使用 Nacos 作为注册中心，并且其服务器 IP 地址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：\n址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：\n## application\ndubbo.application.name = your-dubbo-application\n\n## Nacos registry address\ndubbo.registry.address = nacos://10.20.153.10:8848\n##如果要使用自己创建的命名空间可以使用下面2种方式\n#dubbo.registry.address = nacos://10.20.153.10:8848?namespace=5cbb70a5-xxx-xxx-xxx-d43479ae0932\n#dubbo.registry.parameters.namespace=5cbb70a5-xxx-xxx-xxx-d43479ae0932\n...\n",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "Dubbo Spring 外部化配置"
+            ]
+          },
+          {
+            "chunk_id": 1087,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：",
+            "llm_context": "址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：\n## application\ndubbo.application.name = your-dubbo-application\n\n## Nacos registry address\ndubbo.registry.address = nacos://10.20.153.10:8848\n##如果要使用自己创建的命名空间可以使用下面2种方式\n#dubbo.registry.address = nacos://10.20.153.10:8848?namespace=5cbb70a5-xxx-xxx-xxx-d43479ae0932\n#dubbo.registry.parameters.namespace=5cbb70a5-xxx-xxx-xxx-d43479ae0932\n...\n\n随后，重启您的 Dubbo 应用，Dubbo 的服务提供和消费信息在 Nacos 控制台中可以显示：\n\n![image-[REDACTED_BANK_CARD]-4668726.png | left | 747x284]( \"\")\n\n如图所示，服务名前缀为 `providers:` 的信息为服务提供者的元信息，`consumers:` 则代表服务消费者的元信息。点击“**详情**”可查看服务状态详情：\n\n![image-[REDACTED_BANK_CARD]-4668906.png | left | 747x437]( \"\")\n\n如果您正在使用 Spring XML 配置文件装配 Dubbo 注册中心的话，请参考下一节。",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "Dubbo Spring 外部化配置"
+            ]
+          },
+          {
+            "chunk_id": 1108,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "同样地，`@EnableDubbo` 注解激活 Dubbo 注解驱动和外部化配置，不过当前属于服务消费者，无需指定 Java 包名扫描标注 `@Service` 的服务实现。\n\n`@Reference` 是 Dubbo 远程服务的依赖注入注解，需要服务提供方和消费端约定接口（interface）、版本（version）以及分组（group）信息。在当前服务消费示例中，`DemoService` 的…",
+            "llm_context": "同样地，`@EnableDubbo` 注解激活 Dubbo 注解驱动和外部化配置，不过当前属于服务消费者，无需指定 Java 包名扫描标注 `@Service` 的服务实现。\n\n`@Reference` 是 Dubbo 远程服务的依赖注入注解，需要服务提供方和消费端约定接口（interface）、版本（version）以及分组（group）信息。在当前服务消费示例中，`DemoService` 的服务版本来源于属性配置文件 `consumer-config.properties`。\n\n`@PostConstruct` 部分代码则说明当 `DemoServiceConsumerBootstrap` Bean 初始化时，执行十次 Dubbo 远程方法调用。",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "完整示例",
+              "Spring 注解驱动示例",
+              "服务消费方注解驱动实现"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 4,
+        "question": "如何指定 Dubbo 的线程堆栈导出路径？",
+        "gold_answer": "可以通过在 dubbo.properties 中设置 `dubbo.application.dump.directory` 属性，或在 XML 配置中使用 `<dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />` 来指定线程堆栈导出路径。",
+        "answer": "可以通过以下方式指定 Dubbo 的线程堆栈导出路径：\n\n1. 在 dubbo.properties 文件中配置：dubbo.application.dump.directory=/tmp [1][4][5]\n\n2. 在 XML 配置中指定：\n```xml\n<dubbo:application ...>\n    <dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />\n</dubbo:application>\n``` [3][4]\n\n默认导出路径是 user.home 标识的用户主目录 [1][4]",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          773,
+          964,
+          776,
+          774,
+          775
+        ],
+        "gold_chunk_ids": [
+          775,
+          776
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 773,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/dump/\ndescription: 在 Dubbo 自动导出线程堆栈来保留现场\nlinkTitle: 导出线程堆栈\ntitle: 导出线程堆栈\ntype: docs\nweight: 43\n---\n\n \n\n当业务线程池满时，我们需要知道线程都在等待哪些资源、条件，以找到系统的瓶颈点或异常点。dubbo 通过 Jstack 自动导出…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/dump/\ndescription: 在 Dubbo 自动导出线程堆栈来保留现场\nlinkTitle: 导出线程堆栈\ntitle: 导出线程堆栈\ntype: docs\nweight: 43\n---\n\n \n\n当业务线程池满时，我们需要知道线程都在等待哪些资源、条件，以找到系统的瓶颈点或异常点。dubbo 通过 Jstack 自动导出线程堆栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：\n栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：\n# dubbo.properties\ndubbo.application.dump.directory=/tmp\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "llm_context": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：\n然后在映射文件 `xxx.properties` 中加入配置，其中 key 为服务名，value 为服务提供者 URL：\n`1.0.15` 及以上版本支持，`2.0` 以上版本自动加载 ${user.home}/dubbo-resolve.properties文件，不需要配置\n \n \n \n为了避免复杂化线上环境，不要在线上使用这个功能，只应在测试阶段使用。",
+            "section_path": [
+              "通过文件映射"
+            ]
+          },
+          {
+            "chunk_id": 776,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "<dubbo:application ...>\n    <dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />\n</dubbo:application>\n",
+            "llm_context": "<dubbo:application ...>\n    <dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />\n</dubbo:application>\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 774,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：",
+            "llm_context": "栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：\n# dubbo.properties\ndubbo.application.dump.directory=/tmp\n\n<dubbo:application ...>\n    <dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />\n</dubbo:application>\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 775,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "# dubbo.properties\ndubbo.application.dump.directory=/tmp\n",
+            "llm_context": "# dubbo.properties\ndubbo.application.dump.directory=/tmp\n",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 5,
+        "question": "Dubbo protocol 的 accesslog 属性能否直接指定日志文件路径，示例是什么？",
+        "gold_answer": "可以。将 accesslog 属性设置为目标文件路径，例如 <dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />。",
+        "answer": "Dubbo protocol 的 accesslog 属性可以直接指定日志文件路径。示例为：`<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />` [4][5]。开启访问日志可以记录每一次请求信息，类似于apache的访问日志，但需要注意此日志量比较大，可能会占用较多磁盘容量 [4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          964,
+          1992,
+          1993,
+          770,
+          772
+        ],
+        "gold_chunk_ids": [
+          770,
+          771,
+          772
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "llm_context": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：\n然后在映射文件 `xxx.properties` 中加入配置，其中 key 为服务名，value 为服务提供者 URL：\n`1.0.15` 及以上版本支持，`2.0` 以上版本自动加载 ${user.home}/dubbo-resolve.properties文件，不需要配置\n \n \n \n为了避免复杂化线上环境，不要在线上使用这个功能，只应在测试阶段使用。",
+            "section_path": [
+              "通过文件映射"
+            ]
+          },
+          {
+            "chunk_id": 1992,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1993,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "llm_context": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出到当前应用的log4j日志：\n想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出到当前应用的log4j日志：\n<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 772,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "llm_context": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 6,
+        "question": "将 Dubbo 访问日志输出到指定文件的 protocol 配置示例是什么？",
+        "gold_answer": "将 dubbo:protocol 的 accesslog 属性设置为目标文件路径，例如 <dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />。",
+        "answer": "将访问日志输出到指定文件的 protocol 配置示例是：\n<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" /> [4]\n\n此配置会将 Dubbo 的访问日志输出到指定文件，类似于 Apache 的访问日志。需要注意，此日志量比较大，请关注磁盘容量 [4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1993,
+          964,
+          1992,
+          770,
+          2040
+        ],
+        "gold_chunk_ids": [
+          770,
+          771,
+          772
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1993,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "llm_context": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "llm_context": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：\n然后在映射文件 `xxx.properties` 中加入配置，其中 key 为服务名，value 为服务提供者 URL：\n`1.0.15` 及以上版本支持，`2.0` 以上版本自动加载 ${user.home}/dubbo-resolve.properties文件，不需要配置\n \n \n \n为了避免复杂化线上环境，不要在线上使用这个功能，只应在测试阶段使用。",
+            "section_path": [
+              "通过文件映射"
+            ]
+          },
+          {
+            "chunk_id": 1992,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出到当前应用的log4j日志：\n想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出到当前应用的log4j日志：\n<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 1,
+  "k": 5,
+  "timestamp": "2026-08-25T03:47:08.166912+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

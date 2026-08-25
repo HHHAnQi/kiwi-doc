@@ -1,0 +1,160 @@
+{
+  "dataset_size": 1,
+  "metrics": {
+    "retrieval": {
+      "hit_rate@8": 1.0,
+      "precision@8": 0.25,
+      "mrr@8": 0.25,
+      "recall@8": 0.6666666666666666,
+      "ndcg@8": 0.3501483019834802
+    },
+    "generation": {
+      "citation_recall": 0.6666666666666666,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0,
+      "citation_hit_rate": 1.0,
+      "citation_accuracy": 0.25,
+      "answer_correctness": 0.8
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@8": 0.6666666666666666,
+        "precision@8": 0.25,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.25,
+        "ndcg@8": 0.3501483019834802,
+        "__question_id": 1
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 0.8,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.25,
+        "citation_recall": 0.6666666666666666,
+        "citation_hit_rate": 1.0,
+        "__question_id": 1
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "将 Dubbo 访问日志输出到指定文件的 protocol 配置示例是什么？",
+        "gold_answer": "将 dubbo:protocol 的 accesslog 属性设置为目标文件路径，例如 <dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />。",
+        "answer": "将 Dubbo 访问日志输出到指定文件的 protocol 配置示例是：\n<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" /> [8]\n\n也可以将访问日志输出到当前应用的log4j日志 [4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1993,
+          964,
+          1992,
+          770,
+          2040,
+          1591,
+          502,
+          772
+        ],
+        "gold_chunk_ids": [
+          770,
+          771,
+          772
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1993,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "llm_context": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "llm_context": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "section_path": [
+              "通过文件映射"
+            ]
+          },
+          {
+            "chunk_id": 1992,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出到当前应用的log4j日志：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          },
+          {
+            "chunk_id": 1591,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          },
+          {
+            "chunk_id": 502,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "其中：\n- `configVersion` 表示 dubbo 的版本\n- `scope`表示配置作用范围，分别是应用（application）或服务（service）粒度。**必填**。\n- `key` 指定规则体作用在哪个服务或应用。**必填**。\n - scope=service时，key取值为[{group}:]{service}[:{version}]的组合\n- scope=applica…",
+            "llm_context": "其中：\n- `configVersion` 表示 dubbo 的版本\n- `scope`表示配置作用范围，分别是应用（application）或服务（service）粒度。**必填**。\n- `key` 指定规则体作用在哪个服务或应用。**必填**。\n - scope=service时，key取值为[{group}:]{service}[:{version}]的组合\n- scope=application时，key取值为application名称\n- `enabled=true` 覆盖规则是否生效，可不填，缺省生效。\n- `configs` 定义具体的覆盖规则内容，可以指定n（n>=1）个规则体。**必填**。\n - side，\n - applications\n - services\n - parameters\n - addresses\n - providerAddresses\n\n**对于绝大多数配置场景，只需要理清楚以下问题基本就知道配置该怎么写了：**\n1. 要修改整个应用的配置还是某个服务的配置。\n - 应用：`scope: application, key: app-name`（还可使用`services`指定某几个服务）。\n - 服务：`scope: service, key:group+service+version `。\n\n2. 修改是作用到消费者端还是提供者端。\n - 消费者：`side: consumer` ，作用到消费端时（你还可以进一步使用`providerAddress`, `applications`选定特定的提供者示例或应用）。\n - 提供者：`side: provider`。\n\n3. 配置是否只对某几个特定实例生效。\n",
+            "section_path": [
+              "规则详解",
+              "配置模板"
+            ]
+          },
+          {
+            "chunk_id": 772,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "llm_context": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "section_path": []
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 0,
+  "k": 8,
+  "timestamp": "2026-08-25T03:32:30.309977+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

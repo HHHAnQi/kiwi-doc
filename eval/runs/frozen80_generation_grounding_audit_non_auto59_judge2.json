@@ -1,0 +1,1020 @@
+{
+  "dataset": "eval/golden/golden_v3_frozen80.jsonl",
+  "scope": "non_auto_reviewed_or_curated",
+  "sample_count": 59,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "generated_at": "2026-08-25T02:12:54.806075+00:00",
+  "counts": {
+    "full": 45,
+    "partial": 13,
+    "none": 1
+  },
+  "full_support_rate": 0.7627118644067796,
+  "results": [
+    {
+      "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        502
+      ],
+      "retrieved_chunk_ids": [
+        502,
+        497,
+        498
+      ],
+      "support": "full",
+      "supported_answer": "在配置 Dubbo 应用时，通过设置 `scope` 字段为 `application` 来指定配置作用的应用粒度，该字段为必填项。",
+      "reason": "证据中明确提到通过设置`scope`字段为`application`来指定配置作用的应用粒度，并且指出`scope`是必填项。"
+    },
+    {
+      "question": "Nacos 控制台如何帮助用户管理服务流量权重？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1421
+      ],
+      "retrieved_chunk_ids": [
+        1421,
+        1400,
+        1411,
+        1396,
+        1455,
+        1407,
+        1473,
+        1429,
+        1394,
+        1452,
+        1439,
+        1445
+      ],
+      "support": "full",
+      "supported_answer": "Nacos 控制台通过服务管理功能帮助用户管理服务流量权重，包括服务健康状态检查和服务权重管理等功能。",
+      "reason": "证据中明确提到了Nacos控制台提供服务流量权重的调整以及健康状态管理。"
+    },
+    {
+      "question": "在Nacos中，如何定义实例的权重以及其作用？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1421
+      ],
+      "retrieved_chunk_ids": [
+        1421
+      ],
+      "support": "partial",
+      "supported_answer": "在Nacos中，实例的权重是可以通过编辑按钮进行修改的数值，权重越大分配给该实例的流量越大。",
+      "reason": "证据提到了权重可以被调整且影响流量分配，但未明确指出权重为浮点数及其实例级别的配置属性。"
+    },
+    {
+      "question": "在Spring Cloud Alibaba中，如何修改Dubbo服务的超时时间？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        500
+      ],
+      "retrieved_chunk_ids": [
+        500
+      ],
+      "support": "partial",
+      "supported_answer": "在Spring Cloud Alibaba中，可以通过Dubbo的配置修改服务的超时时间。例如，在配置文件中指定服务名和超时时间，如将DemoService的超时时间设置为6000ms。",
+      "reason": "证据未明确提及使用动态配置中心（如Nacos）来修改超时时间"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中禁用特定的提供者实例？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        467
+      ],
+      "retrieved_chunk_ids": [
+        466
+      ],
+      "support": "partial",
+      "supported_answer": "通过覆盖规则为目标提供者设置参数，可临时禁用该提供者实例。",
+      "reason": "证据中提到了可以通过override的URL参数来禁用提供者，但没有明确提到需要设置disabled=true。"
+    },
+    {
+      "question": "如何在Nacos中修改服务实例的流量权重？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1421
+      ],
+      "retrieved_chunk_ids": [
+        1421,
+        1425,
+        1436
+      ],
+      "support": "full",
+      "supported_answer": "在Nacos中，服务实例的流量权重是实例级别的配置，权重为浮点数，权重越大，分配给该实例的流量越大。您可以通过点击实例的编辑按钮来修改实例的权重值以调整流量分配。",
+      "reason": "证据中明确提到了可以点击实例的编辑按钮来修改实例的权重，并且说明了权重越大分配的流量也越大。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何使用 XML 配置来创建服务消费者的示例？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1118
+      ],
+      "retrieved_chunk_ids": [
+        1118,
+        1115,
+        1116,
+        1102,
+        1117,
+        1099
+      ],
+      "support": "partial",
+      "supported_answer": "加载 /META-INF/spring/dubbo-consumer-context.xml，刷新 Spring 上下文并取得 DemoService Bean，即可启动 XML 配置的服务消费者。",
+      "reason": "证据中确实提到了加载指定的 XML 文件、刷新上下文以及获取 DemoService Bean 的步骤，但未明确指出这是创建服务消费者的唯一或全部过程。"
+    },
+    {
+      "question": "在Spring Cloud Alibaba中，如何判断平滑加权轮询算法是否适合用户有加权轮询需求的情况？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1684
+      ],
+      "retrieved_chunk_ids": [
+        1684,
+        1685
+      ],
+      "support": "partial",
+      "supported_answer": "根据片段9，当用户有加权轮询需求时，可考虑使用平滑加权轮询算法，但证据未提及需结合具体场景评估其适用性。",
+      "reason": "证据支持了在有加权轮询需求时可以使用该算法，但没有提到需要基于特定场景进一步评估这一点。"
+    },
+    {
+      "question": "Dubbo 如何实现从服务器端调用客户端逻辑？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        382
+      ],
+      "retrieved_chunk_ids": [
+        382,
+        381
+      ],
+      "support": "full",
+      "supported_answer": "Dubbo 通过参数回调机制实现从服务器端调用客户端逻辑，只需在 Spring 配置中声明回调参数类型，Dubbo 会基于长连接生成反向代理，从而支持服务端回调客户端。",
+      "reason": "证据中明确提到了通过声明callback类型的参数和基于长连接生成反向代理来实现服务器端调用客户端逻辑。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何使业务类在 Nacos 配置变更时自动重建以加载最新配置？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1426
+      ],
+      "retrieved_chunk_ids": [
+        1426,
+        1385
+      ],
+      "support": "partial",
+      "supported_answer": "通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新。",
+      "reason": "证据提到了使用 `@RefreshScope` 注解来实现配置的自动更新，但未明确提到配置变化后 Bean 会刷新并加载新配置的具体过程。"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中通过 XML 配置实现点对点直连服务提供者？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        961
+      ],
+      "retrieved_chunk_ids": [
+        959,
+        960
+      ],
+      "support": "full",
+      "supported_answer": "在 Spring Cloud Alibaba 中，可通过在配置中设置 url 指向服务提供者地址来实现点对点直连，多个地址用分号隔开，从而绕过注册中心。",
+      "reason": "证据明确提到了通过配置url指向服务提供者以实现点对点直连，并且指出了多个地址间应使用分号隔开以及该方式会绕过注册中心。"
+    },
+    {
+      "question": "Spring Cloud Alibaba 2.7.5 版本引入的线程池模型相比老版本有哪些改进？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        605
+      ],
+      "retrieved_chunk_ids": [
+        605,
+        601,
+        603,
+        604
+      ],
+      "support": "full",
+      "supported_answer": "2.7.5 版本引入的线程池模型通过复用业务线程处理返回结果，免去了额外的消费端线程池开销，相比老版本减少了线程分配过多的问题并提升了性能。",
+      "reason": "证据中详细描述了2.7.5版本如何复用业务线程处理返回结果，并提到这减少了额外的消费端线程池开销、解决了线程分配过多的问题以及提升了性能。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何配置远程服务的 Stub？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1850
+      ],
+      "retrieved_chunk_ids": [
+        1845,
+        1846,
+        1854
+      ],
+      "support": "partial",
+      "supported_answer": "在 Spring 配置文件中为服务设置 stub 实现类，stub 必须有可传入 Proxy 的构造函数。",
+      "reason": "证据提到了在Spring配置文件中配置Stub的方法，但没有具体提到将stub配置为com.foo.BarServiceStub这一细节。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何实现一个远程服务的代理？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        961
+      ],
+      "retrieved_chunk_ids": [
+        962,
+        961,
+        960,
+        959,
+        964,
+        965,
+        963,
+        958,
+        966,
+        967
+      ],
+      "support": "full",
+      "supported_answer": "使用 dubbo:reference 声明服务接口和提供者 URL，Dubbo 会据此创建远程服务代理。",
+      "reason": "证据中明确提到了通过 <dubbo:reference> 标签声明服务接口和提供者 URL 的方式来创建远程服务代理。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何使用 RpcContext 进行隐式参数传递？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        8
+      ],
+      "retrieved_chunk_ids": [
+        11,
+        8,
+        12
+      ],
+      "support": "full",
+      "supported_answer": "在 Spring Cloud Alibaba 中，可通过 RpcContext.getContext().setAttachment() 设置隐式参数，远程调用时自动传递，服务端用 getAttachment() 获取。注意 path、group 等为保留字段，且不建议常规业务使用。",
+      "reason": "证据中明确提到了使用 setAttachment 和 getAttachment 方法进行隐式参数传递，并指出了一些保留字段和不建议常规业务使用的提示。"
+    },
+    {
+      "question": "配置 Dubbo 端口时，可以在哪些配置文件中设置？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1085
+      ],
+      "retrieved_chunk_ids": [
+        1085,
+        1086,
+        1087,
+        1108,
+        1114,
+        1090,
+        1117,
+        1093,
+        1115,
+        1105,
+        1103,
+        1100,
+        1104,
+        1089
+      ],
+      "support": "full",
+      "supported_answer": "可以在 Dubbo Spring 外部化配置文件和 Spring XML 配置文件中设置端口，推荐使用外部化配置。",
+      "reason": "证据明确提到了Dubbo Spring外部化配置文件以及Spring XML配置文件作为配置选项，并且有推荐使用外部化配置的表述。"
+    },
+    {
+      "question": "为什么在 Spring Cloud Alibaba 中获取客户端隐式传入的参数不建议常规业务使用？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        12
+      ],
+      "retrieved_chunk_ids": [
+        12,
+        11
+      ],
+      "support": "partial",
+      "supported_answer": "因为隐式传参主要用于框架集成，类似cookie机制，不建议常规业务使用。",
+      "reason": "证据中提到了隐式传参主要用于框架集成，并且不建议常规业务使用，但没有明确提到避免不必要的复杂性和潜在风险。"
+    },
+    {
+      "question": "如何配置 Dubbo 协议以实现延迟连接？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1566
+      ],
+      "retrieved_chunk_ids": [
+        1566
+      ],
+      "support": "full",
+      "supported_answer": "延迟连接用于减少长连接数，只有在调用发起时才创建长连接。",
+      "reason": "证据中明确说明了延迟连接的目的和行为，与标准答案完全一致。"
+    },
+    {
+      "question": "覆盖规则是从哪个版本开始支持从服务和应用两个粒度来调整动态配置的？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        497
+      ],
+      "retrieved_chunk_ids": [
+        497,
+        498,
+        502
+      ],
+      "support": "full",
+      "supported_answer": "覆盖规则从 2.7.0 版本开始支持从服务和应用两个粒度来调整动态配置。",
+      "reason": "证据明确指出2.7.0版本开始，支持从服务和服务两个粒度来调整动态配置。"
+    },
+    {
+      "question": "BarServiceStub 的构造函数接收什么参数？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1852
+      ],
+      "retrieved_chunk_ids": [
+        1852,
+        1854,
+        1846,
+        1857
+      ],
+      "support": "full",
+      "supported_answer": "BarServiceStub 的构造函数接收 BarService 类型的参数。",
+      "reason": "证据中明确指出了构造函数传入的是 BarService 类型的对象，这与标准答案一致。"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        2703
+      ],
+      "retrieved_chunk_ids": [
+        2703,
+        2689,
+        2690,
+        2666,
+        2752,
+        2721,
+        2719,
+        2715,
+        2701,
+        2741,
+        2674
+      ],
+      "support": "partial",
+      "supported_answer": "Nacos 集群模式可通过 Raft 组织节点；生产部署建议使用 MySQL 数据库。",
+      "reason": "证据中提到 Nacos 通过 Raft 协议组织节点，并建议使用 MySQL 数据库进行部署，但没有具体提到按集群部署文档启动节点。"
+    },
+    {
+      "question": "Dubbo 微服务支持哪些部署架构？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        115
+      ],
+      "retrieved_chunk_ids": [
+        115,
+        129,
+        79,
+        131,
+        123,
+        92,
+        103,
+        128,
+        95,
+        83,
+        88,
+        73,
+        110
+      ],
+      "support": "full",
+      "supported_answer": "Dubbo 微服务支持 Kubernetes 和 Service Mesh 两种主要部署架构，其中 Service Mesh 又包括经典 Mesh 和 Proxyless Mesh 两种模式。",
+      "reason": "证据中明确提到了 Dubbo 支持 Kubernetes 和 Service Mesh（包括经典 Mesh 和 Proxyless Mesh）作为其主要部署架构。"
+    },
+    {
+      "question": "如何配置广播调用失败后停止调用其他节点的比例？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        976
+      ],
+      "retrieved_chunk_ids": [
+        976,
+        977
+      ],
+      "support": "full",
+      "supported_answer": "通过配置 broadcast.fail.percent 参数（取值0-100）来设置节点调用失败的比例，当达到该比例后，BroadcastClusterInvoker 将不再调用其他节点并直接抛出异常。例如设置 broadcast.fail.percent=20 表示当20%的节点调用失败就停止调用其他节点。",
+      "reason": "证据中完整地提到了参数名称、取值范围、功能以及具体的例子。"
+    },
+    {
+      "question": "在Spring Cloud Alibaba中，如何配置一个服务提供端使其调用需要鉴权认证通过？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        63
+      ],
+      "retrieved_chunk_ids": [
+        63,
+        65,
+        68
+      ],
+      "support": "full",
+      "supported_answer": "在Spring Cloud Alibaba中，配置服务提供端使其调用需要鉴权认证通过，只需在服务提供端设置`service.auth`为true，表示该服务的调用需要鉴权认证通过；若还需对参数进行校验，可同时设置`param.sign`为true。",
+      "reason": "证据中明确提到了设置`service.auth`为true以启用鉴权认证，并且提到如果需要对参数进行校验，可以设置`param.sign`为true。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何使用 `force:` 和 `fail:` 来控制 Mock 行为？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1771
+      ],
+      "retrieved_chunk_ids": [
+        1771,
+        1777
+      ],
+      "support": "full",
+      "supported_answer": "在 Spring Cloud Alibaba 中，可通过 `mock=force:return+null` 强制返回 null 来屏蔽服务，或使用 `fail:` 前缀（如 `mock=fail:return+null`）在调用失败时返回指定值，以控制 Mock 行为。",
+      "reason": "证据中提到了`force:`和`fail:`的使用方法及其与`return`组合使用的场景，完全支持标准答案中的描述。"
+    },
+    {
+      "question": "在Nacos中，如何使用配置订阅者来监听配置变更并检查变更是否已推送到客户端？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        1450
+      ],
+      "retrieved_chunk_ids": [
+        1450,
+        1439
+      ],
+      "support": "full",
+      "supported_answer": "使用配置订阅者查询监听者，并比较客户端当前配置的 MD5 校验值，可检查配置变更是否已推送到客户端。",
+      "reason": "证据[chunk_id=1450]完整支持了标准答案中提到的所有关键步骤和方法。"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中限制客户端服务使用的连接数？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        418
+      ],
+      "retrieved_chunk_ids": [
+        418
+      ],
+      "support": "full",
+      "supported_answer": "在 Spring Cloud Alibaba 中，可以通过限制 `com.foo.BarService` 的每个方法每客户端并发执行（或占用连接的请求数）不能超过 10 个来限制客户端服务使用的连接数。",
+      "reason": "证据完全支持标准答案中的所有关键事实"
+    },
+    {
+      "question": "在生产环境中，使用 Spring Cloud Alibaba Nacos 时，建议采用哪种数据源配置？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        3037
+      ],
+      "retrieved_chunk_ids": [
+        3037,
+        3040,
+        3027
+      ],
+      "support": "full",
+      "supported_answer": "生产环境推荐Nacos集群模式并默认使用外置数据库，以获得高可用、高扩展和高并发能力。",
+      "reason": "证据中提到了集群模式是生产环境推荐的部署方式，并且默认采用外置数据库存储，同时强调了这种模式的优点包括高可用、高扩展和高并发。"
+    },
+    {
+      "question": "Dubbo3 相比 Dubbo2 在哪些方面进行了升级？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        75
+      ],
+      "retrieved_chunk_ids": [
+        75,
+        76,
+        73,
+        79,
+        103,
+        115,
+        95,
+        110,
+        92,
+        88
+      ],
+      "support": "full",
+      "supported_answer": "Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。",
+      "reason": "证据中明确提到了 Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等方面进行了全面升级。"
+    },
+    {
+      "question": "如何指定 Dubbo 的线程堆栈导出路径？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        775,
+        776
+      ],
+      "retrieved_chunk_ids": [
+        773,
+        776,
+        774,
+        775
+      ],
+      "support": "full",
+      "supported_answer": "可以通过在 dubbo.properties 中设置 `dubbo.application.dump.directory` 属性，或在 XML 配置中使用 `<dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />` 来指定线程堆栈导出路径。",
+      "reason": "证据完整支持了标准答案中的两种配置方法。"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中开启访问日志？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        772
+      ],
+      "retrieved_chunk_ids": [
+        771,
+        770,
+        772
+      ],
+      "support": "partial",
+      "supported_answer": "设置 dubbo:protocol 的 accesslog 属性；属性可指定日志文件路径，同时应关注日志量和磁盘容量。",
+      "reason": "证据提到了设置dubbo:protocol的accesslog属性以及注意日志量和磁盘容量，但没有明确提到可以将访问日志输出到当前应用的log4j日志。"
+    },
+    {
+      "question": "Nacos支持哪些类型的构建物？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        194
+      ],
+      "retrieved_chunk_ids": [
+        194,
+        198,
+        202,
+        150,
+        205
+      ],
+      "support": "partial",
+      "supported_answer": "Nacos 支持标准 Docker 镜像及 zip(tar.gz) 压缩包的构建物。(注意：Docker镜像支持从0.2版本开始)",
+      "reason": "证据中提到Docker镜像的支持是从0.2版本开始，这是标准答案中未提及的具体信息。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何确保配置集的 Data ID 具有全局唯一性？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        2577
+      ],
+      "retrieved_chunk_ids": [
+        2577,
+        2550,
+        2544,
+        2560
+      ],
+      "support": "full",
+      "supported_answer": "在 Spring Cloud Alibaba 中，Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则来保证全局唯一性。",
+      "reason": "所有提供的证据均支持使用类似 Java 包命名的方式来确保 Data ID 的全局唯一性。"
+    },
+    {
+      "question": "在 Nacos 中，配置分组的作用是什么？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        564
+      ],
+      "retrieved_chunk_ids": [
+        564,
+        569,
+        562,
+        565
+      ],
+      "support": "full",
+      "supported_answer": "配置分组是Nacos中组织配置的维度之一，通过有意义的字符串对配置集进行分组，以区分Data ID相同的配置集，默认分组为DEFAULT_GROUP。",
+      "reason": "提供的证据完全支持标准答案中的所有关键事实。"
+    },
+    {
+      "question": "Dubbo 的扩展能力体现在哪些方面？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        95
+      ],
+      "retrieved_chunk_ids": [
+        95,
+        79,
+        110,
+        103,
+        113,
+        115,
+        88,
+        73,
+        92,
+        99,
+        75,
+        76,
+        123
+      ],
+      "support": "full",
+      "supported_answer": "Dubbo 的扩展能力体现在用户几乎可以在任意功能点定制自己的实现，以改变框架的默认行为来满足业务需求。",
+      "reason": "证据中明确提到 Dubbo 是高度可扩展的，用户几乎可以在任意功能点去定制自己的实现，以改变框架的默认行为来满足自己的业务需求。"
+    },
+    {
+      "question": "在Spring Cloud Alibaba中，如何设置服务的客户端的`loadbalance`属性为`leastactive`？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        425
+      ],
+      "retrieved_chunk_ids": [
+        424,
+        426,
+        425
+      ],
+      "support": "partial",
+      "supported_answer": "在Spring Cloud Alibaba中，可以通过配置服务的客户端的`loadbalance`属性为`leastactive`来设置负载均衡策略。",
+      "reason": "证据中没有直接提到是针对Spring Cloud Alibaba框架的具体操作方式。"
+    },
+    {
+      "question": "在 Dubbo 中如何实现分布式事务的支持？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        599
+      ],
+      "retrieved_chunk_ids": [
+        599,
+        600
+      ],
+      "support": "full",
+      "supported_answer": "Dubbo 中分布式事务基于 JTA/XA 规范实现，并可采用 Seata 来完成对分布式事务的支持。",
+      "reason": "证据中明确提到了Dubbo中分布式事务基于JTA/XA规范实现，以及可以采用Seata来支持分布式事务。"
+    },
+    {
+      "question": "在Spring Cloud Alibaba中，如何使用异步方式进行Dubbo服务调用？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        60
+      ],
+      "retrieved_chunk_ids": [
+        60,
+        69
+      ],
+      "support": "full",
+      "supported_answer": "在Dubbo中，从2.7.0版本开始，异步调用基于CompletableFuture实现，客户端可通过NIO非阻塞方式并行调用多个远程服务，无需启动多线程。",
+      "reason": "证据完全支持标准答案中的所有关键事实。"
+    },
+    {
+      "question": "Dubbo3 如何支持云原生微服务架构？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        115
+      ],
+      "retrieved_chunk_ids": [
+        79,
+        123,
+        115,
+        75,
+        76,
+        103,
+        73,
+        92,
+        120,
+        95,
+        129,
+        128,
+        131,
+        88
+      ],
+      "support": "partial",
+      "supported_answer": "Dubbo3 通过支持 Kubernetes 和 Service Mesh 等云原生基础设施，并升级 Triple 协议、统一路由规则等核心组件来支持云原生微服务架构。",
+      "reason": "证据中没有提到计划支持 Serverless 和 Native Image 以提升弹性伸缩能力的具体信息。"
+    },
+    {
+      "question": "Dubbo 如何支持 Kubernetes 平台调度？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        123
+      ],
+      "retrieved_chunk_ids": [
+        123,
+        115,
+        79,
+        131,
+        120,
+        92,
+        129,
+        103
+      ],
+      "support": "full",
+      "supported_answer": "Dubbo 通过实现服务生命周期与容器生命周期的对齐，并适配 Kubernetes 的 probe 事件，同时支持使用 Kubernetes Service 作为服务注册与发现机制，从而支持 Kubernetes 平台调度。",
+      "reason": "证据中详细说明了 Dubbo 实现服务生命周期与容器生命周期对齐、适配 Kubernetes probe 事件以及使用 Kubernetes Service 作为服务注册与发现机制的内容。"
+    },
+    {
+      "question": "在 Nacos 中，配置变更历史和服务标签是如何关联的？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        191
+      ],
+      "retrieved_chunk_ids": [
+        191
+      ],
+      "support": "full",
+      "supported_answer": "在 Nacos 中，配置变更历史和服务标签通过 ID 关联，配置变更历史记录配置的修改，服务标签用于打标分类和索引。",
+      "reason": "证据完全支持了标准答案中的所有关键事实。"
+    },
+    {
+      "question": "如何将访问日志输出到指定的文件？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        772
+      ],
+      "retrieved_chunk_ids": [
+        771,
+        770
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "证据中没有提到通过设置accesslog属性为指定文件路径来配置访问日志输出的具体方法。"
+    },
+    {
+      "question": "Seata 中 TM、RM 和 TC 在事务生命周期中分别承担什么职责？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        4
+      ],
+      "retrieved_chunk_ids": [
+        4,
+        5
+      ],
+      "support": "full",
+      "supported_answer": "TM 创建全局事务并决定提交或回滚；RM 管理资源并注册分支事务；TC 统一协调各 RM 执行二阶段提交或回滚。",
+      "reason": "证据详细描述了TM、RM和TC在Seata事务生命周期中的具体职责，与标准答案完全一致。"
+    },
+    {
+      "question": "Seata AT 模式在提交本地事务前为什么必须获取全局锁？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        114
+      ],
+      "retrieved_chunk_ids": [
+        121,
+        114,
+        118,
+        116
+      ],
+      "support": "full",
+      "supported_answer": "本地事务提交前必须先取得全局锁；获取失败时不能提交，超过重试范围会回滚本地事务并释放本地锁，以避免全局事务间的数据冲突。",
+      "reason": "证据中明确提到在本地事务提交前需要确保先拿到全局锁，拿不到则不能提交，并且有对超过重试范围后回滚本地事务的描述。"
+    },
+    {
+      "question": "Seata AT 模式默认的全局隔离级别是什么，如何实现全局读已提交？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        121
+      ],
+      "retrieved_chunk_ids": [
+        121
+      ],
+      "support": "full",
+      "supported_answer": "AT 模式默认全局隔离级别是读未提交；需要全局读已提交时，通过代理 SELECT FOR UPDATE 申请并等待全局锁。",
+      "reason": "证据中明确提到了 AT 模式的默认全局隔离级别为读未提交，并且描述了通过 SELECT FOR UPDATE 语句的代理来实现全局读已提交的具体方法。"
+    },
+    {
+      "question": "Seata Saga 模式发生异常时如何执行补偿回滚？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        818
+      ],
+      "retrieved_chunk_ids": [
+        818,
+        816,
+        814,
+        815
+      ],
+      "support": "full",
+      "supported_answer": "Saga 使用状态图定义服务调用及补偿节点；异常时状态机引擎反向执行已成功节点对应的补偿节点完成回滚。",
+      "reason": "证据中明确提到了使用状态图定义服务调用流程和补偿节点，以及在异常情况下通过状态机引擎反向执行补偿节点来实现事务回滚。"
+    },
+    {
+      "question": "Seata TCC 模式的一阶段和二阶段分别执行什么逻辑？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        784
+      ],
+      "retrieved_chunk_ids": [
+        784,
+        785,
+        786
+      ],
+      "support": "full",
+      "supported_answer": "一阶段调用自定义 prepare；二阶段根据结果调用自定义 commit 或 rollback。TCC 不依赖底层数据资源的事务支持。",
+      "reason": "证据中明确提到TCC模式下一阶段是调用自定义prepare逻辑，二阶段则根据情况调用自定义commit或rollback逻辑，并且指出TCC不依赖于底层数据资源的事务支持。"
+    },
+    {
+      "question": "Seata XA 模式如何保证分支事务可回滚和持久化？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        82
+      ],
+      "retrieved_chunk_ids": [
+        82,
+        111,
+        101,
+        97
+      ],
+      "support": "full",
+      "supported_answer": "业务 SQL 在 XA 分支中执行以保证可回滚，XA prepare 保证持久化；完成阶段再执行 XA commit 或 rollback。",
+      "reason": "证据完整支持了标准答案中的所有关键事实。"
+    },
+    {
+      "question": "RocketMQ 普通消息从发送到删除经历哪些主要生命周期状态？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        849
+      ],
+      "retrieved_chunk_ids": [
+        849,
+        846,
+        851,
+        842,
+        843
+      ],
+      "support": "full",
+      "supported_answer": "主要经历初始化、待消费、消费中、消费提交和消息删除；消费提交后先逻辑标记已消费，达到保存期限或空间条件后才物理删除。",
+      "reason": "证据中详细描述了普通消息从初始化到消息删除的各个生命周期状态，并且明确提到了消费提交后逻辑标记为已消费以及基于保存时间和存储空间的消息物理删除机制。"
+    },
+    {
+      "question": "RocketMQ 定时消息的定时时间应如何设置，有哪些边界限制？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        991
+      ],
+      "retrieved_chunk_ids": [
+        991,
+        995,
+        986,
+        988,
+        992,
+        1004,
+        996,
+        989,
+        1005
+      ],
+      "support": "full",
+      "supported_answer": "定时时间要使用毫秒级 Unix 时间戳并晚于当前时间；超过支持范围或早于当前时间会立即投递，默认最大定时时长为 24 小时。",
+      "reason": "证据中明确提到定时时间必须是毫秒级Unix时间戳，且需晚于当前时间，最大定时时长默认为24小时。"
+    },
+    {
+      "question": "RocketMQ 顺序消息如何通过消息组保证顺序？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        1029
+      ],
+      "retrieved_chunk_ids": [
+        1029,
+        1030,
+        1027,
+        1051,
+        1033,
+        1034,
+        1041,
+        1052,
+        1035,
+        1026,
+        1036,
+        1040,
+        1028,
+        1050,
+        1037,
+        1031,
+        1044
+      ],
+      "support": "full",
+      "supported_answer": "相同消息组的消息按发送顺序存储并遵循FIFO；不同消息组之间不保证顺序。要保证生产顺序还需单一生产者串行发送。",
+      "reason": "证据中明确指出了相同消息组的消息按照先后顺序存储在同一队列中，不同消息组的消息不保证顺序，并且提到为了保证生产顺序性需要单一生产者串行发送。"
+    },
+    {
+      "question": "RocketMQ 事务消息在什么情况下会触发事务回查？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        1010
+      ],
+      "retrieved_chunk_ids": [
+        1024,
+        1010,
+        1014,
+        1015,
+        1011,
+        1006,
+        1008,
+        1023,
+        1007
+      ],
+      "support": "full",
+      "supported_answer": "服务端未收到二次确认，或收到 Unknown 状态时，会在固定时间后向生产者集群发起事务回查；生产者检查本地事务后再次提交 Commit 或 Rollback。",
+      "reason": "证据中明确指出在服务端未收到二次确认结果或收到Unknown状态时，会经过固定时间后对消息生产者发起消息回查，并且生产者需要根据本地事务的最终状态再次提交二次确认。"
+    },
+    {
+      "question": "RocketMQ 因服务端流控错误触发发送重试时采用什么退避策略？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        1239
+      ],
+      "retrieved_chunk_ids": [
+        1248,
+        1233,
+        1247,
+        1235,
+        1239,
+        1250,
+        1243,
+        1242,
+        1234,
+        1236,
+        1244,
+        1237,
+        1249,
+        1246,
+        1245,
+        1238,
+        1240,
+        1241
+      ],
+      "support": "full",
+      "supported_answer": "采用指数退避并加入随机抖动；默认初始等待 1 秒、倍率 1.6、抖动因子 0.2、最大等待 120 秒。",
+      "reason": "证据中明确提到了指数退避策略以及具体的参数值，完全支持标准答案中的所有关键事实。"
+    },
+    {
+      "question": "RocketMQ 提供哪些消费者类型，PullConsumer 适合什么场景？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        1273
+      ],
+      "retrieved_chunk_ids": [
+        1253,
+        1273,
+        1255,
+        1254,
+        1300,
+        1318,
+        1290,
+        1284,
+        1308,
+        1326
+      ],
+      "support": "full",
+      "supported_answer": "提供 PushConsumer、SimpleConsumer 和 PullConsumer；PullConsumer 仅推荐在流处理框架集成场景使用，大多数场景使用前两者。",
+      "reason": "证据中明确提到了这三种消费者类型，并且指出了PullConsumer的推荐使用场景以及PushConsumer和SimpleConsumer的普遍适用性。"
+    },
+    {
+      "question": "Sentinel 主要从哪些方面保障微服务的可靠性？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        301
+      ],
+      "retrieved_chunk_ids": [
+        301,
+        303,
+        305
+      ],
+      "support": "full",
+      "supported_answer": "Sentinel 围绕流量提供流量控制、流量整形、并发限制、熔断和系统自适应过载保护。",
+      "reason": "证据中明确提到了标准答案中的所有关键点，包括流量控制、流量整形、并发限制、熔断和系统自适应过载保护。"
+    },
+    {
+      "question": "Sentinel 的实时监控可以展示哪些范围的运行信息？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        303
+      ],
+      "retrieved_chunk_ids": [
+        303,
+        334,
+        305
+      ],
+      "support": "full",
+      "supported_answer": "可以实时查看单机运行信息，也可以查看少于 500 个节点集群的聚合运行信息。",
+      "reason": "证据中明确提到了可以实时查看单机运行信息以及少于500个节点集群的聚合运行信息。"
+    },
+    {
+      "question": "Sentinel 原生支持哪些语言，并能集成哪些常用框架？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        305
+      ],
+      "retrieved_chunk_ids": [
+        305,
+        309,
+        332,
+        314
+      ],
+      "support": "full",
+      "supported_answer": "原生支持 Java、Go、C++ 和 Rust，并提供 Spring Cloud、gRPC、Apache Dubbo、Quarkus 等框架的开箱即用集成。",
+      "reason": "证据中明确提到了Sentinel原生支持的语言和可以集成的常用框架，与标准答案完全一致。"
+    },
+    {
+      "question": "如何为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        323,
+        325
+      ],
+      "retrieved_chunk_ids": [
+        325,
+        324,
+        323,
+        329,
+        330
+      ],
+      "support": "full",
+      "supported_answer": "创建 FlowRule，将 resource 设为 HelloWorld、count 设为 20、grade 设为 FLOW_GRADE_QPS，再通过 FlowRuleManager.loadRules 加载规则。",
+      "reason": "证据中明确提到了创建FlowRule对象并设置resource、count和grade属性的具体步骤，以及通过FlowRuleManager.loadRules加载规则。"
+    },
+    {
+      "question": "为什么 Sentinel 控制台的簇点链路页面可能暂时看不到资源？",
+      "review_status": "human_curated",
+      "gold_chunk_ids": [
+        1728
+      ],
+      "retrieved_chunk_ids": [
+        1728,
+        1730
+      ],
+      "support": "full",
+      "supported_answer": "资源监控采用延迟初始化，客户端产生访问量后，资源才会出现在簇点链路页面。",
+      "reason": "证据中明确提到了只有当客户端有访问量之后，资源监控才会通过lazy-initializing的方式显示在簇点链路页面上。"
+    }
+  ]
+}

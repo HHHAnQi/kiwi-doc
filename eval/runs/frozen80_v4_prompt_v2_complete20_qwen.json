@@ -1,0 +1,1720 @@
+{
+  "dataset_size": 20,
+  "metrics": {
+    "retrieval": {
+      "mrr@5": 0.5291666666666667,
+      "precision@5": 0.16,
+      "ndcg@5": 0.5643134018044054,
+      "hit_rate@5": 0.7,
+      "recall@5": 0.6875
+    },
+    "generation": {
+      "citation_hit_rate": 0.7058823529411765,
+      "answer_correctness": 0.8235294117647058,
+      "citation_recall": 0.6911764705882353,
+      "citation_accuracy": 0.1647058823529412,
+      "faithfulness": 0.9364705882352942,
+      "evidence_completeness": 0.792156862745098
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 2
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 3
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 4
+      },
+      {
+        "recall@5": 0.0,
+        "precision@5": 0.0,
+        "hit_rate@5": 0.0,
+        "mrr@5": 0.0,
+        "ndcg@5": 0.0,
+        "__question_id": 5
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.3333333333333333,
+        "ndcg@5": 0.5,
+        "__question_id": 6
+      },
+      {
+        "recall@5": 0.75,
+        "precision@5": 0.6,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 0.8318724637288826,
+        "__question_id": 7
+      },
+      {
+        "recall@5": 0.0,
+        "precision@5": 0.0,
+        "hit_rate@5": 0.0,
+        "mrr@5": 0.0,
+        "ndcg@5": 0.0,
+        "__question_id": 8
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.5,
+        "ndcg@5": 0.6309297535714575,
+        "__question_id": 9
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.5,
+        "ndcg@5": 0.6309297535714575,
+        "__question_id": 10
+      },
+      {
+        "recall@5": 0.0,
+        "precision@5": 0.0,
+        "hit_rate@5": 0.0,
+        "mrr@5": 0.0,
+        "ndcg@5": 0.0,
+        "__question_id": 11
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 12
+      },
+      {
+        "recall@5": 0.0,
+        "precision@5": 0.0,
+        "hit_rate@5": 0.0,
+        "mrr@5": 0.0,
+        "ndcg@5": 0.0,
+        "__question_id": 13
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.5,
+        "ndcg@5": 0.6309297535714575,
+        "__question_id": 14
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.5,
+        "ndcg@5": 0.6309297535714575,
+        "__question_id": 15
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 0.25,
+        "ndcg@5": 0.43067655807339306,
+        "__question_id": 16
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 17
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 18
+      },
+      {
+        "recall@5": 0.0,
+        "precision@5": 0.0,
+        "hit_rate@5": 0.0,
+        "mrr@5": 0.0,
+        "ndcg@5": 0.0,
+        "__question_id": 19
+      },
+      {
+        "recall@5": 0.0,
+        "precision@5": 0.0,
+        "hit_rate@5": 0.0,
+        "mrr@5": 0.0,
+        "ndcg@5": 0.0,
+        "__question_id": 20
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 1
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 2
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 3
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 4
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.0,
+        "citation_recall": 0.0,
+        "citation_hit_rate": 0.0,
+        "__question_id": 5
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 6
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 0.75,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.6,
+        "citation_recall": 0.75,
+        "citation_hit_rate": 1.0,
+        "__question_id": 7
+      },
+      {
+        "answer_correctness": 0.0,
+        "faithfulness": 0.5,
+        "evidence_completeness": 0.0,
+        "citation_accuracy": 0.0,
+        "citation_recall": 0.0,
+        "citation_hit_rate": 0.0,
+        "__question_id": 8
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 9
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 10
+      },
+      {
+        "__question_id": 11,
+        "error": "non-OK generation state: LLM_DEGRADED"
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 12
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.0,
+        "citation_recall": 0.0,
+        "citation_hit_rate": 0.0,
+        "__question_id": 13
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 14
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 15
+      },
+      {
+        "__question_id": 16,
+        "error": "non-OK generation state: REFUSED"
+      },
+      {
+        "__question_id": 17,
+        "error": "non-OK generation state: REFUSED"
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 18
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 0.67,
+        "evidence_completeness": 0.16666666666666666,
+        "citation_accuracy": 0.0,
+        "citation_recall": 0.0,
+        "citation_hit_rate": 0.0,
+        "__question_id": 19
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.0,
+        "citation_recall": 0.0,
+        "citation_hit_rate": 0.0,
+        "__question_id": 20
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "Nacos2 三节点集群服务发现性能测试的容量和核心接口 TPS 达到了什么水平？",
+        "gold_answer": "压测时服务及实例容量达到百万级并持续稳定；注册/注销实例 TPS 超过 26000，查询实例 TPS 超过 30000。该测试只覆盖临时实例和单核心接口。",
+        "answer": "Nacos2三节点集群服务发现性能测试中，服务及实例容量达到百万级，集群运行持续稳定 [1]。注册/注销实例TPS达到26000以上，查询实例TPS能够达到30000以上，总体较Nacos1.X分别提升至少2倍和3倍 [1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1799,
+          1843,
+          1748,
+          1825,
+          1784
+        ],
+        "gold_chunk_ids": [
+          1799
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1799,
+            "doc_id": 183,
+            "page": 0,
+            "snippet": "Nacos2服务发现性能测试都是针对重点功能，通过对3节点规模集群进行压测，可以看到接口性能负载和容量，以及对比相同/类似场景下Nacos1.X版本的提升。\n\n1. 压测时服务及实例容量达到百万级，集群运行持续稳定，达到预期；（该场景没有计算频繁变更导致的频繁推送内容，仅单纯计算容量上线，附带推送的真实场景将在下轮压测报告中给出）\n2. 注册/注销实例TPS达到 26000 以上，总体较Nacos…",
+            "llm_context": "Nacos2服务发现性能测试都是针对重点功能，通过对3节点规模集群进行压测，可以看到接口性能负载和容量，以及对比相同/类似场景下Nacos1.X版本的提升。\n\n1. 压测时服务及实例容量达到百万级，集群运行持续稳定，达到预期；（该场景没有计算频繁变更导致的频繁推送内容，仅单纯计算容量上线，附带推送的真实场景将在下轮压测报告中给出）\n2. 注册/注销实例TPS达到 26000 以上，总体较Nacos1.X提升至少2倍，接口达到预期；\n3. 查询实例TPS能够达到 30000 以上，总体较Nacos1.X提升3倍左右，接口达到预期；\n\n**注意** \n\n- 本次只测试临时实例注册/查询/注销，未涉及持久实例；\n- 本测试为对比Nacos1.X版本的测试场景，仅测试单核心接口的能力值，**真实模拟场景压测** 将在后续版本给出；\n- 本测试供给大家作为参考，如有不足或偏差，请指正! 如果对性能有其他需求，可以给我们提issue。",
+            "section_path": [
+              "Nacos2.0.0-ALPHA2 服务发现性能测试报告",
+              "测试结论"
+            ]
+          },
+          {
+            "chunk_id": 1843,
+            "doc_id": 176,
+            "page": 0,
+            "snippet": "单项基础接口压测\n\n- Nacos2.0读QPS 14000QPS，对比Nacos1.X QPS 8000 提升75%。\n- Nacos2.0写TPS 2500TPS，对比Nacos1.X无明显提升。\n- Nacos2.0支撑长链接40000以上，对比Nacos1.X提升7倍以上。\n- Nacos2.0变更推送1500/s, 对比Nacos1.X无明显提升。\n\n**注意** \n\n- 本测试为对比N…",
+            "llm_context": "单项基础接口压测\n\n- Nacos2.0读QPS 14000QPS，对比Nacos1.X QPS 8000 提升75%。\n- Nacos2.0写TPS 2500TPS，对比Nacos1.X无明显提升。\n- Nacos2.0支撑长链接40000以上，对比Nacos1.X提升7倍以上。\n- Nacos2.0变更推送1500/s, 对比Nacos1.X无明显提升。\n\n**注意** \n\n- 本测试为对比Nacos1.X版本的测试场景，仅测试单核心接口的能力值，**真实模拟场景压测** 将在后续版本给出；\n- 本测试供给大家作为参考，如有不足或偏差，请指正! 如果对性能有其他需求，可以给我们提issue。",
+            "section_path": [
+              "Nacos 2.0.0-ALPHA2 配置性能测试报告",
+              "测试结论"
+            ]
+          },
+          {
+            "chunk_id": 1748,
+            "doc_id": 183,
+            "page": 0,
+            "snippet": "cos2的服务发现性能负载和容量与Nacos1的区别，帮助用户更快的运用评估Nacos系统负荷。\n\nNacos1.0性能测试参考 [服务发现性能测试报告]( )",
+            "llm_context": "cos2的服务发现性能负载和容量与Nacos1的区别，帮助用户更快的运用评估Nacos系统负荷。\n\nNacos1.0性能测试参考 [服务发现性能测试报告]( )",
+            "section_path": [
+              "Nacos2.0.0-ALPHA2 服务发现性能测试报告",
+              "测试目的"
+            ]
+          },
+          {
+            "chunk_id": 1825,
+            "doc_id": 176,
+            "page": 0,
+            "snippet": "能力\n- 验证Nacos服务长连接容量能力\n\n测试方式均是在相同的环境下，使用相同的压力进行测试，分别比对Nacos2.X版本和Nacos1.X版本的性能差异。",
+            "llm_context": "能力\n- 验证Nacos服务长连接容量能力\n\n测试方式均是在相同的环境下，使用相同的压力进行测试，分别比对Nacos2.X版本和Nacos1.X版本的性能差异。",
+            "section_path": [
+              "Nacos 2.0.0-ALPHA2 配置性能测试报告",
+              "测试场景"
+            ]
+          },
+          {
+            "chunk_id": 1784,
+            "doc_id": 183,
+            "page": 0,
+            "snippet": "相较Nacos1.X版本，查询性能总体提升至少3倍，在服务端机能减半的情况下，服务实例数基本一致的情况下，TPS仍能做到3倍左右的提高，单机多线程场景甚至有10倍的提升。",
+            "llm_context": "相较Nacos1.X版本，查询性能总体提升至少3倍，在服务端机能减半的情况下，服务实例数基本一致的情况下，TPS仍能做到3倍左右的提高，单机多线程场景甚至有10倍的提升。",
+            "section_path": [
+              "Nacos2.0.0-ALPHA2 服务发现性能测试报告",
+              "测试数据",
+              "2. 查询实例",
+              "结果分析"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 2,
+        "question": "spring-cloud-alibaba-seata 以 2.2.0.RELEASE 为分界点，内部依赖发生了什么变化？",
+        "gold_answer": "2.2.0.RELEASE 之前内部依赖 seata-all；从 2.2.0.RELEASE 起内部改为依赖 seata-spring-boot-starter，并由后者提供 Seata 的自动配置。",
+        "answer": "spring-cloud-alibaba-seata 在 2.2.0.RELEASE 版本前依赖 seata-all，从 2.2.0.RELEASE 开始(含)内部开始依赖 seata-spring-boot-starter [1]。2.2.0.RELEASE 内部集成 seata-spring-boot-starter 1.0.0，可以升级为 seata-spring-boot-starter 1.1.0 [1]。低版本 spring-cloud-alibaba-seata 只能配合 seata-all 使用，高版本只能配合 seata-spring-boot-starter 使用 [1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          2083,
+          1938,
+          1903,
+          2084,
+          1937
+        ],
+        "gold_chunk_ids": [
+          2083
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "page": 0,
+            "snippet": " Cloud Alibaba]( )来进行seata\n事务上下文的传递，与Spring Cloud Alibaba 版本集成依赖关系，参考 [版本说明]( )\nspring-cloud-alibaba-seata 在 2.2.0.RELEASE 版本前 依赖的是seata-all 若继续使用低版本的 spring-cloud-alibaba-seata 可以使用高版本的 seata-all 取代内…",
+            "llm_context": " Cloud Alibaba]( )来进行seata\n事务上下文的传递，与Spring Cloud Alibaba 版本集成依赖关系，参考 [版本说明]( )\nspring-cloud-alibaba-seata 在 2.2.0.RELEASE 版本前 依赖的是seata-all 若继续使用低版本的 spring-cloud-alibaba-seata 可以使用高版本的 seata-all 取代内置的 seata-all 版本；\n从spring-cloud-alibaba-seata 在 2.2.0.RELEASE 开始后（含）内部开始依赖seata-spring-boot-starter,2.2.0.RELEASE 内部集成 seata-spring-boot-starter 1.0.0 可以升级为 seata-spring-boot-starter 1.1.0，seata-spring-boot-starter 集成了seata-all，seata-spring-boot-starter 包装了对于properties或yml 配置的autoconfig 功能，在spring-cloud-alibaba-seata 2.2.0.RELEASE 前\nautoconfig 功能由其本身支持，在其后去掉 spring-cloud-alibaba-seata 中关于 seata 本身的autoconfig 由seata-spring-boot-starter 支持，因此低版本spring-cloud-alibaba-seata 只能配合 seata-all使用，高版本spring-cloud-alibaba-seata 只能配合seata-spring-boot-starter 使用，以2.2.0.RELEASE为分界点。\n\n",
+            "section_path": [
+              "版本升级指南"
+            ]
+          },
+          {
+            "chunk_id": 1938,
+            "doc_id": 177,
+            "page": 0,
+            "snippet": "f可删除)，内部已依赖seata-all\n- 依赖spring-cloud-starter-alibaba-seata，内部集成了seata，并实现了xid传递",
+            "llm_context": "f可删除)，内部已依赖seata-all\n- 依赖spring-cloud-starter-alibaba-seata，内部集成了seata，并实现了xid传递",
+            "section_path": [
+              "部署指南",
+              "Seata新手部署指南",
+              "业务系统集成Client",
+              "步骤一：添加seata依赖（建议单选）"
+            ]
+          },
+          {
+            "chunk_id": 1903,
+            "doc_id": 177,
+            "page": 0,
+            "snippet": "- spring-cloud-starter-alibaba-seata\n> 查看版本说明 \n> 2.1.0内嵌seata-all 0.7.1，2.1.1内嵌seata-all 0.9.0，2.2.0内嵌seata-spring-boot-starter 1.0.0, 2.2.1内嵌seata-spring-boot-starter 1.1.0",
+            "llm_context": "- spring-cloud-starter-alibaba-seata\n> 查看版本说明 \n> 2.1.0内嵌seata-all 0.7.1，2.1.1内嵌seata-all 0.9.0，2.2.0内嵌seata-spring-boot-starter 1.0.0, 2.2.1内嵌seata-spring-boot-starter 1.1.0",
+            "section_path": [
+              "部署指南",
+              "Seata新手部署指南",
+              "注意事项"
+            ]
+          },
+          {
+            "chunk_id": 2084,
+            "doc_id": 208,
+            "page": 0,
+            "snippet": "pring-cloud-alibaba-seata 只能配合seata-spring-boot-starter 使用，以2.2.0.RELEASE为分界点。\n\n4. TC端采用 db 存储模式时 branch_table 中增加 gmt_create，gmt_modified 字段的精度，用于精确确认回滚的顺序，\n[各数据库脚本参考]( )\n\n \n\n********\n\n 1. 0.8、0.9版本如…",
+            "llm_context": "pring-cloud-alibaba-seata 只能配合seata-spring-boot-starter 使用，以2.2.0.RELEASE为分界点。\n\n4. TC端采用 db 存储模式时 branch_table 中增加 gmt_create，gmt_modified 字段的精度，用于精确确认回滚的顺序，\n[各数据库脚本参考]( )\n\n \n\n********\n\n 1. 0.8、0.9版本如何升级到1.0版本？ \n \n 注意事项 \n\n 1. （可选）1.0支持yml、properties，需用seata-spring-boot-starter替换掉 seata-all\n 2. （必选）TC端表lock_table字段branch_id增加普通索引\n 3. （可选）部分参数命名改动， 点击查看参数配置 \n 4. （可选） client.report.success.enable可以置为false，提升性能\n\n \n\n",
+            "section_path": [
+              "版本升级指南"
+            ]
+          },
+          {
+            "chunk_id": 1937,
+            "doc_id": 177,
+            "page": 0,
+            "snippet": "- 依赖seata-all\n- 依赖seata-spring-boot-starter，支持yml、properties配置(.conf可删除)，内部已依赖seata-all\n- 依赖spring-cloud-starter-alibaba-seata，内部集成了seata，并实现了xid传递",
+            "llm_context": "- 依赖seata-all\n- 依赖seata-spring-boot-starter，支持yml、properties配置(.conf可删除)，内部已依赖seata-all\n- 依赖spring-cloud-starter-alibaba-seata，内部集成了seata，并实现了xid传递",
+            "section_path": [
+              "部署指南",
+              "Seata新手部署指南",
+              "业务系统集成Client",
+              "步骤一：添加seata依赖（建议单选）"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 3,
+        "question": "在注册动态配置覆盖规则时，`override://`的用途是什么？",
+        "gold_answer": "`override://` 表示数据采用覆盖方式，用于向注册中心写入动态配置覆盖规则，支持 `override` 和 `absent` 两种操作，是必填项。",
+        "answer": "`override://` 表示数据采用覆盖方式，支持 `override` 和 `absent`，可扩展，**必填** [1]。覆盖规则是 Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力 [4]。该功能通常由监控中心或治理中心的页面完成 [2][3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          464,
+          462,
+          461,
+          497,
+          465
+        ],
+        "gold_chunk_ids": [
+          464
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 464,
+            "doc_id": 56,
+            "page": 0,
+            "snippet": "其中：\n\n* `override://` 表示数据采用覆盖方式，支持 `override` 和 `absent`，可扩展，**必填**。\n* `0.0.0.0` 表示对所有 IP 地址生效，如果只想覆盖某个 IP 的数据，请填入具体 IP，**必填**。\n* `com.foo.BarService` 表示只对指定服务生效，**必填**。\n* `category=configurators` 表示该…",
+            "llm_context": "其中：\n\n* `override://` 表示数据采用覆盖方式，支持 `override` 和 `absent`，可扩展，**必填**。\n* `0.0.0.0` 表示对所有 IP 地址生效，如果只想覆盖某个 IP 的数据，请填入具体 IP，**必填**。\n* `com.foo.BarService` 表示只对指定服务生效，**必填**。\n* `category=configurators` 表示该数据为动态配置类型，**必填**。\n* `dynamic=false` 表示该数据为持久数据，当注册方退出时，数据依然保存在注册中心，**必填**。\n* `enabled=true` 覆盖规则是否生效，可不填，缺省生效。\n* `application=foo` 表示只对指定应用生效，可不填，表示对所有应用生效。\n* `timeout=1000` 表示将满足以上条件的 `timeout` 参数的值覆盖为 1000。如果想覆盖其它参数，直接加在 `override` 的 URL 参数上。\n\n示例：\n\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 462,
+            "doc_id": 56,
+            "page": 0,
+            "snippet": "title: 旧配置规则\ntype: docs\nweight: 35\n---\n\n \n\n向注册中心写入动态配置覆盖规则。该功能通常由监控中心或治理中心的页面完成。",
+            "llm_context": "title: 旧配置规则\ntype: docs\nweight: 35\n---\n\n \n\n向注册中心写入动态配置覆盖规则。该功能通常由监控中心或治理中心的页面完成。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 461,
+            "doc_id": 56,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/config-rule-deprecated/\ndescription: Dubbo 中旧版本的规则配置方式\nlinkTitle: 旧配置规则\ntitle: 旧配置规则\ntype: docs\nweight: 35\n---\n\n \n\n向注册中心写入动态配置覆盖规则。该功能通常由监控中心或治理中心的页面完成。",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/config-rule-deprecated/\ndescription: Dubbo 中旧版本的规则配置方式\nlinkTitle: 旧配置规则\ntitle: 旧配置规则\ntype: docs\nweight: 35\n---\n\n \n\n向注册中心写入动态配置覆盖规则。该功能通常由监控中心或治理中心的页面完成。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/config-rule/\ndescription: 在 Dubbo 中配置应用级治理规则和服务级治理规则\nlinkTitle: 配置规则\ntitle: 配置规则\ntype: docs\nweight: 34\n---\n\n \n\n \n本文描述的是新版本规则配置，而不是[老版本配置规则](../config-rule-deprecated)…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/config-rule/\ndescription: 在 Dubbo 中配置应用级治理规则和服务级治理规则\nlinkTitle: 配置规则\ntitle: 配置规则\ntype: docs\nweight: 34\n---\n\n \n\n \n本文描述的是新版本规则配置，而不是[老版本配置规则](../config-rule-deprecated) \n \n\n覆盖规则是 Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力。2.7.0 版本开始，支持从**服务**和**应用**两个粒度来调整动态配置。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 465,
+            "doc_id": 56,
+            "page": 0,
+            "snippet": "0` 表示将满足以上条件的 `timeout` 参数的值覆盖为 1000。如果想覆盖其它参数，直接加在 `override` 的 URL 参数上。\n\n示例：\n\n1. 禁用提供者：(通常用于临时踢除某台提供者机器，相似的，禁止消费者访问请使用路由规则)",
+            "llm_context": "0` 表示将满足以上条件的 `timeout` 参数的值覆盖为 1000。如果想覆盖其它参数，直接加在 `override` 的 URL 参数上。\n\n示例：\n\n1. 禁用提供者：(通常用于临时踢除某台提供者机器，相似的，禁止消费者访问请使用路由规则)",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 4,
+        "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+        "gold_answer": "在配置 Dubbo 应用时，通过设置 `scope` 字段为 `application` 来指定配置作用的应用粒度，该字段为必填项。",
+        "answer": "在 Dubbo 配置中，通过 `scope` 参数指定配置作用的应用粒度，可选值为 `application`（应用粒度）或 `service`（服务粒度）[1]。当 `scope=application` 时，`key` 取值为应用名称[1]。这种配置方式允许从应用或服务两个粒度动态调整 RPC 调用行为，无需重启应用[2][3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          502,
+          498,
+          497,
+          503,
+          2138
+        ],
+        "gold_chunk_ids": [
+          502
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 502,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "其中：\n- `configVersion` 表示 dubbo 的版本\n- `scope`表示配置作用范围，分别是应用（application）或服务（service）粒度。**必填**。\n- `key` 指定规则体作用在哪个服务或应用。**必填**。\n - scope=service时，key取值为[{group}:]{service}[:{version}]的组合\n- scope=applica…",
+            "llm_context": "其中：\n- `configVersion` 表示 dubbo 的版本\n- `scope`表示配置作用范围，分别是应用（application）或服务（service）粒度。**必填**。\n- `key` 指定规则体作用在哪个服务或应用。**必填**。\n - scope=service时，key取值为[{group}:]{service}[:{version}]的组合\n- scope=application时，key取值为application名称\n- `enabled=true` 覆盖规则是否生效，可不填，缺省生效。\n- `configs` 定义具体的覆盖规则内容，可以指定n（n>=1）个规则体。**必填**。\n - side，\n - applications\n - services\n - parameters\n - addresses\n - providerAddresses\n\n**对于绝大多数配置场景，只需要理清楚以下问题基本就知道配置该怎么写了：**\n1. 要修改整个应用的配置还是某个服务的配置。\n - 应用：`scope: application, key: app-name`（还可使用`services`指定某几个服务）。\n - 服务：`scope: service, key:group+service+version `。\n\n2. 修改是作用到消费者端还是提供者端。\n - 消费者：`side: consumer` ，作用到消费端时（你还可以进一步使用`providerAddress`, `applications`选定特定的提供者示例或应用）。\n - 提供者：`side: provider`。\n\n3. 配置是否只对某几个特定实例生效。\n",
+            "section_path": [
+              "规则详解",
+              "配置模板"
+            ]
+          },
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": " Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力。2.7.0 版本开始，支持从**服务**和**应用**两个粒度来调整动态配置。",
+            "llm_context": " Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力。2.7.0 版本开始，支持从**服务**和**应用**两个粒度来调整动态配置。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/config-rule/\ndescription: 在 Dubbo 中配置应用级治理规则和服务级治理规则\nlinkTitle: 配置规则\ntitle: 配置规则\ntype: docs\nweight: 34\n---\n\n \n\n \n本文描述的是新版本规则配置，而不是[老版本配置规则](../config-rule-deprecated)…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/config-rule/\ndescription: 在 Dubbo 中配置应用级治理规则和服务级治理规则\nlinkTitle: 配置规则\ntitle: 配置规则\ntype: docs\nweight: 34\n---\n\n \n\n \n本文描述的是新版本规则配置，而不是[老版本配置规则](../config-rule-deprecated) \n \n\n覆盖规则是 Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力。2.7.0 版本开始，支持从**服务**和**应用**两个粒度来调整动态配置。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 503,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "s`, `applications`选定特定的提供者示例或应用）。\n - 提供者：`side: provider`。\n\n3. 配置是否只对某几个特定实例生效。\n - 所有实例：`addresses: [\"0.0.0.0\"] `或`addresses: [\"0.0.0.0:*\"] `具体由side值决定。\n - 指定实例：`addersses[实例地址列表]`。\n\n4. 要修改的属性是哪个。",
+            "llm_context": "s`, `applications`选定特定的提供者示例或应用）。\n - 提供者：`side: provider`。\n\n3. 配置是否只对某几个特定实例生效。\n - 所有实例：`addresses: [\"0.0.0.0\"] `或`addresses: [\"0.0.0.0:*\"] `具体由side值决定。\n - 指定实例：`addersses[实例地址列表]`。\n\n4. 要修改的属性是哪个。",
+            "section_path": [
+              "规则详解",
+              "配置模板"
+            ]
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "page": 0,
+            "snippet": "- key: 消费者应用名\n- step: 状态名（FORCE_INTERFACE、APPLICATION_FIRST、FORCE_APPLICATION）\n- threshold: 决策阈值（浮点数，具体含义参考后文）\n- proportion: 灰度比例（0～100，决定调用次数比例）\n- delay: 延迟决策时间（延迟决策的时间，实际等待时间为 1～2 倍 delay 时间，取决于注册中心…",
+            "llm_context": "- key: 消费者应用名\n- step: 状态名（FORCE_INTERFACE、APPLICATION_FIRST、FORCE_APPLICATION）\n- threshold: 决策阈值（浮点数，具体含义参考后文）\n- proportion: 灰度比例（0～100，决定调用次数比例）\n- delay: 延迟决策时间（延迟决策的时间，实际等待时间为 1～2 倍 delay 时间，取决于注册中心第一次通知的时间，对于目前 Dubbo 的注册中心实现次配置项保留 0 即可）\n- force: 强制切换（对于 FORCE_INTERFACE、FORCE_APPLICATION 是否不考虑决策直接切换，可能导致无地址调用失败问题）\n- interfaces: 接口粒度配置\n\n参考配置示例如下：",
+            "section_path": [
+              "规则体说明"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 5,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 XML 配置来创建服务消费者的示例？",
+        "gold_answer": "加载 /META-INF/spring/dubbo-consumer-context.xml，刷新 Spring 上下文并取得 DemoService Bean，即可启动 XML 配置的服务消费者。",
+        "answer": "在 Spring Cloud Alibaba 中，可以通过定义服务消费方 XML 上下文配置文件 `/META-INF/spring/dubbo-consumer-context.xml` 来创建服务消费者示例 [2]。使用 Nacos 作为注册中心，服务器 IP 地址为 `10.20.153.10`，并在 XML 文件中装配 Spring Bean [3]。运行服务消费者引导类 `DemoServiceConsumerXmlBootstrap` 可以观察控制台输出内容 [5]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1385,
+          1117,
+          1092,
+          1383,
+          1119
+        ],
+        "gold_chunk_ids": [
+          1118
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nac…",
+            "llm_context": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-config 实现配置的动态变更。\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-discovery 实现服务的注册与发现。",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心"
+            ]
+          },
+          {
+            "chunk_id": 1117,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "- 定义服务消费方 XML 上下文配置文件 - `/META-INF/spring/dubbo-consumer-context.xml`",
+            "llm_context": "- 定义服务消费方 XML 上下文配置文件 - `/META-INF/spring/dubbo-consumer-context.xml`",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "完整示例",
+              "Spring XML 配置驱动示例",
+              "服务消费方 XML 配置驱动"
+            ]
+          },
+          {
+            "chunk_id": 1092,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "应用的使用 Nacos 作为注册中心，并且其服务器 IP 地址为：`10.20.153.10`，并且装配 Spring Bean 在 XML 文件中，如下所示：",
+            "llm_context": "应用的使用 Nacos 作为注册中心，并且其服务器 IP 地址为：`10.20.153.10`，并且装配 Spring Bean 在 XML 文件中，如下所示：",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "Spring XML 配置文件"
+            ]
+          },
+          {
+            "chunk_id": 1383,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "向 Spring Cloud 的使用者，通过示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务发现\nsidebar:\n order: 4\n---",
+            "llm_context": "向 Spring Cloud 的使用者，通过示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务发现\nsidebar:\n order: 4\n---",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1119,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "同样地，先启动两个 `DemoServiceProviderXmlBootstrap` 引导类，观察 Nacos 注册中心服务提供者变化：\n\n![image-[REDACTED_BANK_CARD]-4676927.png | left | 747x33]( \"\")\n\nXML 配置驱动的服务版本为 `2.0.0`，因此注册服务无误。\n\n再运行服务消费者引导类 `DemoServiceConsume…",
+            "llm_context": "同样地，先启动两个 `DemoServiceProviderXmlBootstrap` 引导类，观察 Nacos 注册中心服务提供者变化：\n\n![image-[REDACTED_BANK_CARD]-4676927.png | left | 747x33]( \"\")\n\nXML 配置驱动的服务版本为 `2.0.0`，因此注册服务无误。\n\n再运行服务消费者引导类 `DemoServiceConsumerXmlBootstrap`，观察控制台输出内容：",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "完整示例",
+              "Spring XML 配置驱动示例",
+              "运行 XML 配置驱动示例"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 6,
+        "question": "在Spring Cloud Alibaba中，如何判断平滑加权轮询算法是否适合用户有加权轮询需求的情况？",
+        "gold_answer": "用户有加权轮询需求时，可以考虑使用平滑加权轮询算法。",
+        "answer": "平滑加权轮询算法在 Dubbo 中实现了流量平滑分配，即使权重不同也能保证短时间内按期望分布 [1][3]。经过合计权重轮次后，循环回到起点，整个过程流量平滑且概率分布符合期望 [2][3]。如果用户有加权轮询需求，可放心使用该算法 [2][3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1676,
+          1685,
+          1684,
+          1666,
+          1690
+        ],
+        "gold_chunk_ids": [
+          1684
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1676,
+            "doc_id": 175,
+            "page": 0,
+            "snippet": "* **加权轮询**，按公约后的权重设置轮询比率，循环调用节点\n* 缺点：同样存在慢的提供者累积请求的问题。\n\n加权轮询过程过程中，如果某节点权重过大，会存在某段时间内调用过于集中的问题。 \n例如 ABC 三节点有如下权重：`{A: 3, B: 2, C: 1}` \n那么按照最原始的轮询算法，调用过程将变成：`A A A B B C` \n\n对此，Dubbo 借鉴 Nginx 的平滑加权轮询算法，对…",
+            "llm_context": "* **加权轮询**，按公约后的权重设置轮询比率，循环调用节点\n* 缺点：同样存在慢的提供者累积请求的问题。\n\n加权轮询过程过程中，如果某节点权重过大，会存在某段时间内调用过于集中的问题。 \n例如 ABC 三节点有如下权重：`{A: 3, B: 2, C: 1}` \n那么按照最原始的轮询算法，调用过程将变成：`A A A B B C` \n\n对此，Dubbo 借鉴 Nginx 的平滑加权轮询算法，对此做了优化，调用过程可抽象成下表:",
+            "section_path": [
+              "负载均衡策略",
+              "RoundRobin"
+            ]
+          },
+          {
+            "chunk_id": 1685,
+            "doc_id": 175,
+            "page": 0,
+            "snippet": "+2+1）轮次后，循环又回到了起点，整个过程中节点流量是平滑的，且哪怕在很短的时间周期内，概率都是按期望分布的。\n\n如果用户有加权轮询的需求，可放心使用该算法。",
+            "llm_context": "+2+1）轮次后，循环又回到了起点，整个过程中节点流量是平滑的，且哪怕在很短的时间周期内，概率都是按期望分布的。\n\n如果用户有加权轮询的需求，可放心使用该算法。",
+            "section_path": [
+              "负载均衡策略",
+              "RoundRobin"
+            ]
+          },
+          {
+            "chunk_id": 1684,
+            "doc_id": 175,
+            "page": 0,
+            "snippet": "我们发现经过合计权重（3+2+1）轮次后，循环又回到了起点，整个过程中节点流量是平滑的，且哪怕在很短的时间周期内，概率都是按期望分布的。\n\n如果用户有加权轮询的需求，可放心使用该算法。",
+            "llm_context": "我们发现经过合计权重（3+2+1）轮次后，循环又回到了起点，整个过程中节点流量是平滑的，且哪怕在很短的时间周期内，概率都是按期望分布的。\n\n如果用户有加权轮询的需求，可放心使用该算法。",
+            "section_path": [
+              "负载均衡策略",
+              "RoundRobin"
+            ]
+          },
+          {
+            "chunk_id": 1666,
+            "doc_id": 175,
+            "page": 0,
+            "snippet": "| 算法                        | 特性                    | 备注                                            |\n| :-------------------------- | :---------------------- | :---------------------------------------…",
+            "llm_context": "| 算法                        | 特性                    | 备注                                            |\n| :-------------------------- | :---------------------- | :---------------------------------------------- |\n| RandomLoadBalance           | 加权随机                | 默认算法，默认权重相同                          |\n| RoundRobinLoadBalance       | 加权轮询                | 借鉴于 Nginx 的平滑加权轮询算法，默认权重相同， |\n| LeastActiveLoadBalance      | 最少活跃优先 + 加权随机 | 背后是能者多劳的思想                            |\n| ShortestResponseLoadBalance | 最短响应优先 + 加权随机 | 更加关注响应速度                                |\n| ConsistentHashLoadBalance   | 一致性 Hash             | 确定的入参，确定的提供者，适用于有状态请求      |\n",
+            "section_path": [
+              "负载均衡策略"
+            ]
+          },
+          {
+            "chunk_id": 1690,
+            "doc_id": 175,
+            "page": 0,
+            "snippet": "* **加权最短响应优先**，在最近一个滑动窗口中，响应时间越短，越优先调用。相同响应时间的进行加权随机。\n* 使得响应时间越快的提供者，处理更多的请求。\n* 缺点：可能会造成流量过于集中于高性能节点的问题。\n\n这里的响应时间 = 某个提供者在窗口时间内的平均响应时间，窗口时间默认是 30s。",
+            "llm_context": "* **加权最短响应优先**，在最近一个滑动窗口中，响应时间越短，越优先调用。相同响应时间的进行加权随机。\n* 使得响应时间越快的提供者，处理更多的请求。\n* 缺点：可能会造成流量过于集中于高性能节点的问题。\n\n这里的响应时间 = 某个提供者在窗口时间内的平均响应时间，窗口时间默认是 30s。",
+            "section_path": [
+              "负载均衡策略",
+              "ShortestResponse"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 7,
+        "question": "在 Spring Cloud Alibaba 中，如何配置远程服务的 Stub？",
+        "gold_answer": "在 Spring 配置文件中为服务设置 stub 实现类，stub 必须有可传入 Proxy 的构造函数。",
+        "answer": "在 Spring Cloud Alibaba 中，配置远程服务的 Stub 需要在接口旁边放置一个 Stub 实现，该实现必须实现相同的接口并有一个传入远程服务实例的构造函数 [3]。在 Spring 配置文件中进行相应配置，Stub 可以决定是否调用 Proxy [1][2]。Stub 必须有可传入 Proxy 的构造函数 [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1845,
+          1846,
+          1854,
+          1857,
+          1592
+        ],
+        "gold_chunk_ids": [
+          1845,
+          1846,
+          1850,
+          1854
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1845,
+            "doc_id": 192,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/local-stub/\ndescription: 在 Dubbo 中利用本地存根在客户端执行部分逻辑\nlinkTitle: 本地存根\ntitle: 本地存根\ntype: docs\nweight: 25\n---\n\n \n\n远程服务后，客户端通常只剩下接口，而实现全在服务器端，但提供方有些时候想在客户端也执行部分逻辑，比如：做 Thre…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/local-stub/\ndescription: 在 Dubbo 中利用本地存根在客户端执行部分逻辑\nlinkTitle: 本地存根\ntitle: 本地存根\ntype: docs\nweight: 25\n---\n\n \n\n远程服务后，客户端通常只剩下接口，而实现全在服务器端，但提供方有些时候想在客户端也执行部分逻辑，比如：做 ThreadLocal 缓存，提前验证参数，调用失败后伪造容错数据等等，此时就需要在 API 中带上 Stub，客户端生成 Proxy 实例，会把 Proxy 通过构造函数传给 Stub [^1]，然后把 Stub 暴露给用户，Stub 可以决定要不要去调 Proxy。\n\n \n\n在 spring 配置文件中按以下方式配置：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1846,
+            "doc_id": 192,
+            "page": 0,
+            "snippet": "构造函数传给 Stub [^1]，然后把 Stub 暴露给用户，Stub 可以决定要不要去调 Proxy。\n\n \n\n在 spring 配置文件中按以下方式配置：",
+            "llm_context": "构造函数传给 Stub [^1]，然后把 Stub 暴露给用户，Stub 可以决定要不要去调 Proxy。\n\n \n\n在 spring 配置文件中按以下方式配置：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1854,
+            "doc_id": 192,
+            "page": 0,
+            "snippet": "[^1]: Stub 必须有可传入 Proxy 的构造函数。\n[^2]: 在 interface 旁边放一个 Stub 实现，它实现 BarService 接口，并有一个传入远程 BarService 实例的构造函数",
+            "llm_context": "[^1]: Stub 必须有可传入 Proxy 的构造函数。\n[^2]: 在 interface 旁边放一个 Stub 实现，它实现 BarService 接口，并有一个传入远程 BarService 实例的构造函数",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1857,
+            "doc_id": 192,
+            "page": 0,
+            "snippet": "数。\n[^2]: 在 interface 旁边放一个 Stub 实现，它实现 BarService 接口，并有一个传入远程 BarService 实例的构造函数",
+            "llm_context": "数。\n[^2]: 在 interface 旁边放一个 Stub 实现，它实现 BarService 接口，并有一个传入远程 BarService 实例的构造函数",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1592,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 8,
+        "question": "如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式？",
+        "gold_answer": "Nacos 集群模式可通过 Raft 组织节点；生产部署建议使用 MySQL 数据库。",
+        "answer": "片段中未提及如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式。知识库中没有相关内容。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1485,
+          372,
+          1486,
+          1564,
+          2114
+        ],
+        "gold_chunk_ids": [
+          2703
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1485,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 372,
+            "doc_id": 36,
+            "page": 0,
+            "snippet": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "Nacos Spring Cloud",
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 1486,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "cos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "cos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 1564,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "er`的服务，找到集群配置，设置健康检查模式为`TCP`，端口号为`9411`(即zipkin-server的端口)。\n\n 如何依赖最新的Nacos客户端？ \n很多用户都是通过Spring Cloud Alibaba或者Dubbo依赖的Nacos客户端，那么Spring Cloud Alibaba和Dubbo中依赖的Nacos客户端版本，往往会落后于Nacos最新发布的版本。在一些情况下，用户需要…",
+            "llm_context": "er`的服务，找到集群配置，设置健康检查模式为`TCP`，端口号为`9411`(即zipkin-server的端口)。\n\n 如何依赖最新的Nacos客户端？ \n很多用户都是通过Spring Cloud Alibaba或者Dubbo依赖的Nacos客户端，那么Spring Cloud Alibaba和Dubbo中依赖的Nacos客户端版本，往往会落后于Nacos最新发布的版本。在一些情况下，用户需要强制将Nacos客户端升级到最新，此时却往往不知道该升级哪个依赖，这里将Spring Cloud Alibaba和Dubbo的依赖升级说明如下：",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 9,
+        "question": "在Spring Cloud Alibaba中，如何配置一个服务提供端使其调用需要鉴权认证通过？",
+        "gold_answer": "在Spring Cloud Alibaba中，配置服务提供端使其调用需要鉴权认证通过，只需在服务提供端设置`service.auth`为true，表示该服务的调用需要鉴权认证通过；若还需对参数进行校验，可同时设置`param.sign`为true。",
+        "answer": "服务提供端需要设置`service.auth`为true，表示该服务的调用需要鉴权认证通过[1][2]。`param.sign`为`true`表示需要对参数也进行校验[1][2]。该配置方式适用于对安全性敏感的业务，如支付类服务[2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          65,
+          63,
+          68,
+          70,
+          1727
+        ],
+        "gold_chunk_ids": [
+          63
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 65,
+            "doc_id": 28,
+            "page": 0,
+            "snippet": "服务提供端，只需要设置`service.auth`为true，表示该服务的调用需要鉴权认证通过。`param.sign`为`true`表示需要对参数也进行校验。",
+            "llm_context": "服务提供端，只需要设置`service.auth`为true，表示该服务的调用需要鉴权认证通过。`param.sign`为`true`表示需要对参数也进行校验。",
+            "section_path": [
+              "服务鉴权"
+            ]
+          },
+          {
+            "chunk_id": 63,
+            "doc_id": 28,
+            "page": 0,
+            "snippet": "类似支付之类的对安全性敏感的业务可能会有限制匿名调用的需求。在加固安全性方面，2.7.5 引入了基于AK/SK机制的认证鉴权机制，并且引入了鉴权服务中心，主要原理是消费端在请求需要鉴权的服务时，会通过SK、请求元数据、时间戳、参数等信息来生成对应的请求签名，通过Dubbo的Attahcment机制携带到对端进行验签，验签通过才进行业务逻辑处理。如下图所示：\n\n \n\n具体的接入方式也并不复杂：\n\n1…",
+            "llm_context": "类似支付之类的对安全性敏感的业务可能会有限制匿名调用的需求。在加固安全性方面，2.7.5 引入了基于AK/SK机制的认证鉴权机制，并且引入了鉴权服务中心，主要原理是消费端在请求需要鉴权的服务时，会通过SK、请求元数据、时间戳、参数等信息来生成对应的请求签名，通过Dubbo的Attahcment机制携带到对端进行验签，验签通过才进行业务逻辑处理。如下图所示：\n\n \n\n具体的接入方式也并不复杂：\n\n1. 使用者需要在微服务站点上填写自己的应用信息，并为该应用生成唯一的证书凭证。\n\n2. 之后在管理站点上提交工单，申请某个敏感业务服务的使用权限，并由对应业务管理者进行审批，审批通过之后，会生成对应的AK/SK到鉴权服务中心。\n\n3. 导入该证书到对应的应用下，并且进行配置。配置方式也十分简单，以注解方式为例：\n\n 服务提供端，只需要设置`service.auth`为true，表示该服务的调用需要鉴权认证通过。`param.sign`为`true`表示需要对参数也进行校验。",
+            "section_path": [
+              "服务鉴权"
+            ]
+          },
+          {
+            "chunk_id": 68,
+            "doc_id": 28,
+            "page": 0,
+            "snippet": "服务消费端，只需要配置好对应的证书等信息即可，之后会自动地在对这些需要认证的接口发起调用前进行签名操作，通过与鉴权服务的交互，用户无需在代码中配置AK/SK这些敏感信息，并且在不重启应用的情况下刷新AK/SK，达到权限动态下发的目的。\n\n该方案目前已经提交给Dubbo开源社区，并且完成了基本框架的合并，除了AK/SK的鉴权方式之外，通过SPI机制支持用户可定制化的鉴权认证以及适配公司内部基础设施的…",
+            "llm_context": "服务消费端，只需要配置好对应的证书等信息即可，之后会自动地在对这些需要认证的接口发起调用前进行签名操作，通过与鉴权服务的交互，用户无需在代码中配置AK/SK这些敏感信息，并且在不重启应用的情况下刷新AK/SK，达到权限动态下发的目的。\n\n该方案目前已经提交给Dubbo开源社区，并且完成了基本框架的合并，除了AK/SK的鉴权方式之外，通过SPI机制支持用户可定制化的鉴权认证以及适配公司内部基础设施的密钥存储。",
+            "section_path": [
+              "服务鉴权"
+            ]
+          },
+          {
+            "chunk_id": 70,
+            "doc_id": 28,
+            "page": 0,
+            "snippet": "经提交给Dubbo开源社区，并且完成了基本框架的合并，除了AK/SK的鉴权方式之外，通过SPI机制支持用户可定制化的鉴权认证以及适配公司内部基础设施的密钥存储。",
+            "llm_context": "经提交给Dubbo开源社区，并且完成了基本框架的合并，除了AK/SK的鉴权方式之外，通过SPI机制支持用户可定制化的鉴权认证以及适配公司内部基础设施的密钥存储。",
+            "section_path": [
+              "服务鉴权"
+            ]
+          },
+          {
+            "chunk_id": 1727,
+            "doc_id": 187,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/local-mock/\ndescription: 如何在 Dubbo 中利用本地伪装实现服务降级\nlinkTitle: 本地伪装\ntitle: 本地伪装\ntype: docs\nweight: 26\n---\n\n \n\n本地伪装 [^1] 通常用于服务降级，比如某验权服务，当服务提供方全部挂掉后，客户端不抛出异常，而是通过 Mock 数…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/local-mock/\ndescription: 如何在 Dubbo 中利用本地伪装实现服务降级\nlinkTitle: 本地伪装\ntitle: 本地伪装\ntype: docs\nweight: 26\n---\n\n \n\n本地伪装 [^1] 通常用于服务降级，比如某验权服务，当服务提供方全部挂掉后，客户端不抛出异常，而是通过 Mock 数据返回授权失败。\n\n在 spring 配置文件中按以下方式配置：",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 10,
+        "question": "在Nacos中，如何使用配置订阅者来监听配置变更并检查变更是否已推送到客户端？",
+        "gold_answer": "使用配置订阅者查询监听者，并比较客户端当前配置的 MD5 校验值，可检查配置变更是否已推送到客户端。",
+        "answer": "Nacos提供配置订阅者即监听者查询能力，同时提供客户端当前配置的MD5校验值，以便帮助用户更好的检查配置变更是否推送到Client端 [1][2]。您可以通过在Spring Bean中添加配置变更监听器方法来监听配置变化 [3]。Nacos支持基于Namespace和Group的配置分组管理，在配置管理中提供了订阅者查询等核心管理能力 [4][5]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          2624,
+          1450,
+          1519,
+          2614,
+          1439
+        ],
+        "gold_chunk_ids": [
+          1450
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 2624,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "Nacos提供配置订阅者即监听者查询能力，同时提供客户端当前配置的MD5校验值，以便帮助用户更好的检查配置变更是否推送到 Client 端。",
+            "llm_context": "Nacos提供配置订阅者即监听者查询能力，同时提供客户端当前配置的MD5校验值，以便帮助用户更好的检查配置变更是否推送到 Client 端。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.2. 配置管理",
+              "1.2.4. 监听者查询"
+            ]
+          },
+          {
+            "chunk_id": 1450,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "Nacos提供配置订阅者即监听者查询能力，同时提供客户端当前配置的MD5校验值，以便帮助用户更好的检查配置变更是否推送到 Client 端。",
+            "llm_context": "Nacos提供配置订阅者即监听者查询能力，同时提供客户端当前配置的MD5校验值，以便帮助用户更好的检查配置变更是否推送到 Client 端。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "配置管理",
+              "监听者查询"
+            ]
+          },
+          {
+            "chunk_id": 1519,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "然后您可以添加一个监听器，它将监听配置的变化。 您可以通过在 Spring Bean 中添加配置变更监听器方法来执行此操作：",
+            "llm_context": "然后您可以添加一个监听器，它将监听配置的变化。 您可以通过在 Spring Bean 中添加配置变更监听器方法来执行此操作：",
+            "section_path": [
+              "Nacos Spring关键特性",
+              "1. 注解驱动",
+              "1.2. 配置监听"
+            ]
+          },
+          {
+            "chunk_id": 2614,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "Nacos支持基于Namespace和Group的配置分组管理，以便用户更灵活的根据自己的需要按照环境或者应用、模块等分组管理微服务以及Spring的大量配置，在配置管理中主要提供了配置历史版本、回滚、订阅者查询等核心管理能力。",
+            "llm_context": "Nacos支持基于Namespace和Group的配置分组管理，以便用户更灵活的根据自己的需要按照环境或者应用、模块等分组管理微服务以及Spring的大量配置，在配置管理中主要提供了配置历史版本、回滚、订阅者查询等核心管理能力。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.2. 配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1439,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "Nacos支持基于Namespace和Group的配置分组管理，以便用户更灵活的根据自己的需要按照环境或者应用、模块等分组管理微服务以及Spring的大量配置，在配置管理中主要提供了配置历史版本、回滚、订阅者查询等核心管理能力。",
+            "llm_context": "Nacos支持基于Namespace和Group的配置分组管理，以便用户更灵活的根据自己的需要按照环境或者应用、模块等分组管理微服务以及Spring的大量配置，在配置管理中主要提供了配置历史版本、回滚、订阅者查询等核心管理能力。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "配置管理"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 11,
+        "question": "在生产环境中，使用 Spring Cloud Alibaba Nacos 时，建议采用哪种数据源配置？",
+        "gold_answer": "生产环境推荐 Nacos 集群模式并默认使用外置数据库，以获得高可用、高扩展和高并发能力。",
+        "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 829edb0b",
+        "state_hint": "LLM_DEGRADED",
+        "cited_chunk_ids": [
+          1485,
+          1077,
+          1486,
+          1564,
+          1565
+        ],
+        "gold_chunk_ids": [
+          3037
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1485,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 1077,
+            "doc_id": 127,
+            "page": 0,
+            "snippet": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "Nacos 融合 Spring Boot，成为注册配置中心",
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 1486,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "cos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "cos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 1564,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "* [Nacos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "相关项目"
+            ]
+          },
+          {
+            "chunk_id": 1565,
+            "doc_id": 141,
+            "page": 0,
+            "snippet": "cos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "llm_context": "cos]( )\n* [Nacos Spring]( )\n* [Nacos Spring Boot]( )\n* [Spring Cloud Alibaba]( )",
+            "section_path": [
+              "相关项目"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 12,
+        "question": "Nacos支持哪些类型的构建物？",
+        "gold_answer": "Nacos 支持标准 Docker 镜像及 zip(tar.gz) 压缩包的构建物。(注意：Docker镜像支持从0.2版本开始)",
+        "answer": "Nacos支持标准Docker镜像及zip(tar.gz)压缩包的构建物[1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          194,
+          2105,
+          2111,
+          205,
+          2102
+        ],
+        "gold_chunk_ids": [
+          194
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 194,
+            "doc_id": 2,
+            "page": 0,
+            "snippet": "Nacos 支持标准 Docker 镜像(TODO: 0.2版本开始支持）及 zip(tar.gz)压缩包的构建物。",
+            "llm_context": "Nacos 支持标准 Docker 镜像(TODO: 0.2版本开始支持）及 zip(tar.gz)压缩包的构建物。",
+            "section_path": [
+              "Nacos 架构",
+              "构建物、部署及启动模式",
+              "两种交付工件"
+            ]
+          },
+          {
+            "chunk_id": 2105,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "Nacos是什么 \n\nNacos 致力于帮助您发现、配置和管理微服务。Nacos 提供了一组简单易用的特性集，帮助您快速实现动态服务发现、服务配置、服务元数据及流量管理。详情可以参考[Nacos官网介绍](../../what-is-nacos.md)。\n\n Nacos如何支持多环境 \n\n在日常使用中常常需要不同的环境，比如日常，预发，线上环境，如果是逻辑隔离可以使用命名空间，Nacos支持命名空…",
+            "llm_context": "Nacos是什么 \n\nNacos 致力于帮助您发现、配置和管理微服务。Nacos 提供了一组简单易用的特性集，帮助您快速实现动态服务发现、服务配置、服务元数据及流量管理。详情可以参考[Nacos官网介绍](../../what-is-nacos.md)。\n\n Nacos如何支持多环境 \n\n在日常使用中常常需要不同的环境，比如日常，预发，线上环境，如果是逻辑隔离可以使用命名空间，Nacos支持命名空间来支持多环境隔离，可以在Nacos控制台创建多个命名空间。如果需要物理隔离，就要部署多套Nacos环境。\n\n Nacos是否生产可用 \n\nNacos在2019.1发布了Pre-GA版本，支持了安全隔离、监控和服务迁移等上生产的最后一公里，以更稳定的支撑用户的生产环境。详情可以参考[Nacos 发布 v0.8.0 Pre-GA 版本，安全稳定上生产]( )。\n\n Nacos有什么依赖 \n\n在单机模式下，Nacos没有任何依赖，在集群模式下，Nacos依赖Mysql做存储，详情可以参考[Nacos部署](../admin/deployment.md)。\n\n Nacos使用什么开源协议 \n\n",
+            "section_path": [
+              "FAQ",
+              "Nacos常规问题"
+            ]
+          },
+          {
+            "chunk_id": 2111,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "Zookeeper上的服务可以迁移到Nacos上吗 \n\n可以通过Nacos-Sync把Zookeeper服务迁移到Nacos，也可以从Nacos迁移到Zookeeper，具体可以参考[Nacos Sync 使用]( )。\n\n Nacos支持多配置文件 \n\nNacos通过Spring Cloud Alibaba Nacos Config支持了多配置文件，可以将配置存储在多个独立的配置文件中。关联的[…",
+            "llm_context": "Zookeeper上的服务可以迁移到Nacos上吗 \n\n可以通过Nacos-Sync把Zookeeper服务迁移到Nacos，也可以从Nacos迁移到Zookeeper，具体可以参考[Nacos Sync 使用]( )。\n\n Nacos支持多配置文件 \n\nNacos通过Spring Cloud Alibaba Nacos Config支持了多配置文件，可以将配置存储在多个独立的配置文件中。关联的[issue]( )，详情参考文档[Spring Cloud Alibaba Nacos Config]( )。\n\n Nacos支持Dubbo \n\nNacos 0.6版本和Dubbo集成，支持使用Nacos作为注册中心，关联[issue]( ),具体文档参考 [Dubbo 融合 Nacos 成为注册中心](../../ecology/use-nacos-with-dubbo.md) 。\n\n Nacos支持Spring体系 \n\nNacos完善支持了Sping技术栈，具体可以参考[Nacos Spring](../../ecology/use-nacos-with-spring.md)、[Nacos Spring Boot](../../ecology/use-nacos-with-spring-boot.md)、[Spring Cloud](../../ecology/use-nacos-with-spring-cloud.md)。\n\n 不使用Nacos SDK如何访问Nacos \n\nNacos的网络交互都是基于Http协议实现的，提供了[Open-API](./open-api.md)可以很容易实现Nacos的访问。\n\n Nacos对多语言的支持 \n\nNacos目前只支持Java，对于其他语言的支持还正在开发中，需要大家大力支持一起共建。\n\n Nacos0.8版本登陆失败 \n\n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题"
+            ]
+          },
+          {
+            "chunk_id": 205,
+            "doc_id": 2,
+            "page": 0,
+            "snippet": "业产品（如[MSE]( ), [EDAS]( )) 中会提供 Nacos 的免费的公有云服务。我们也欢迎和支持其他的公有云提供商提供 Nacos 的公有云服务。",
+            "llm_context": "业产品（如[MSE]( ), [EDAS]( )) 中会提供 Nacos 的免费的公有云服务。我们也欢迎和支持其他的公有云提供商提供 Nacos 的公有云服务。",
+            "section_path": [
+              "Nacos 架构",
+              "构建物、部署及启动模式",
+              "免费的公有云服务模式"
+            ]
+          },
+          {
+            "chunk_id": 2102,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "> 文档优化中......\n\n- Nacos常规问题\n - [Nacos是什么](#1.1)\n - [Nacos如何支持多环境](#1.2)\n - [Nacos是否生产可用](#1.3)\n - [Nacos有什么依赖](#1.4)\n - [Nacos使用什么开源协议](#1.5)\n\n- Nacos运维问题\n - [Nacos如何单机部署](#2.1)\n - [Nacos单机部署如何使用Mysql]…",
+            "llm_context": "> 文档优化中......\n\n- Nacos常规问题\n - [Nacos是什么](#1.1)\n - [Nacos如何支持多环境](#1.2)\n - [Nacos是否生产可用](#1.3)\n - [Nacos有什么依赖](#1.4)\n - [Nacos使用什么开源协议](#1.5)\n\n- Nacos运维问题\n - [Nacos如何单机部署](#2.1)\n - [Nacos单机部署如何使用Mysql](#2.2)\n - [生产环境如何部署Nacos](#2.3)\n - [Nacos如何Docker部署](#2.4)\n - [如何在k8s中部署Nacos](#2.5)\n - [如何监控Nacos](#2.6)\n - [Nacos在Docker环境下集群部署，无法正常启动，日志一直打印 Nacos is starting...](#2.7)\n\n- Nacos使用问题\n - [Zookeeper服务可以迁移到Nacos上吗](#3.1)\n - [Nacos支持多配置文件](#3.2)\n - [Nacos支持Dubbo](#3.3)\n - [Nacos支持Spring体系](#3.4)\n - [不使用Nacos SDK如何访问Nacos](#3.5)\n - [Nacos对多语言的支持](#3.6)\n - [Nacos0.8版本登陆失败](#3.7)\n - [服务端报错`java.lang.IllegalStateException: unable to find local peer: 127.0.0.1:8848`](#3.8)\n - [Nacos如何对配置进行加密](#3.9)\n - [Nacos报401错误](#3.10)\n - [Nacos权重不生效](#3.11)\n - [Nacos如何扩缩容](#3.12)\n - [Nacos客户端修改日志级别](#3.13)\n",
+            "section_path": [
+              "FAQ"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 13,
+        "question": "在 Spring Cloud Alibaba 中，如何确保配置集的 Data ID 具有全局唯一性？",
+        "gold_answer": "在 Spring Cloud Alibaba 中，Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则来保证全局唯一性，但此命名规则并非强制要求。",
+        "answer": "Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性 [1][2]。此命名规则非强制 [1][2]。配置 ID 采用类似 package.class 的命名规则保证全局唯一性，class 部分建议是配置的业务含义 [5]。全部字符小写，只允许英文字符和 4 种特殊字符（\".\"、\":\"、\"-\"、\"_\"），不超过 256 字节 [5]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          563,
+          562,
+          1417,
+          1412,
+          2550
+        ],
+        "gold_chunk_ids": [
+          2577
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 563,
+            "doc_id": 57,
+            "page": 0,
+            "snippet": "称标识。Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性。此命名规则非强制。",
+            "llm_context": "称标识。Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性。此命名规则非强制。",
+            "section_path": [
+              "Nacos 概念",
+              "配置集 ID"
+            ]
+          },
+          {
+            "chunk_id": 562,
+            "doc_id": 57,
+            "page": 0,
+            "snippet": "Nacos 中的某个配置集的 ID。配置集 ID 是组织划分配置的维度之一。Data ID 通常用于组织划分系统的配置集。一个系统或者应用可以包含多个配置集，每个配置集都可以被一个有意义的名称标识。Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性。此命名规则非强制。",
+            "llm_context": "Nacos 中的某个配置集的 ID。配置集 ID 是组织划分配置的维度之一。Data ID 通常用于组织划分系统的配置集。一个系统或者应用可以包含多个配置集，每个配置集都可以被一个有意义的名称标识。Data ID 通常采用类 Java 包（如 com.taobao.tc.refund.log.level）的命名规则保证全局唯一性。此命名规则非强制。",
+            "section_path": [
+              "Nacos 概念",
+              "配置集 ID"
+            ]
+          },
+          {
+            "chunk_id": 1417,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "e` ，是因为它是构成 Nacos 配置管理 `dataId`字段的一部分。\n\n在 Nacos Spring Cloud 中，`dataId` 的完整格式如下：",
+            "llm_context": "e` ，是因为它是构成 Nacos 配置管理 `dataId`字段的一部分。\n\n在 Nacos Spring Cloud 中，`dataId` 的完整格式如下：",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1412,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "说明：之所以需要配置 `spring.application.name` ，是因为它是构成 Nacos 配置管理 `dataId`字段的一部分。\n\n在 Nacos Spring Cloud 中，`dataId` 的完整格式如下：",
+            "llm_context": "说明：之所以需要配置 `spring.application.name` ，是因为它是构成 Nacos 配置管理 `dataId`字段的一部分。\n\n在 Nacos Spring Cloud 中，`dataId` 的完整格式如下：",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 2550,
+            "doc_id": 235,
+            "page": 0,
+            "snippet": "参数名 \n \n \n 参数类型 \n \n \n 描述 \n \n \n \n \n dataId \n \n \n string \n \n \n 配置 ID，采用类似 package.class（如com.taobao.tc.refund.log.level）的命名规则保证全局唯一性，class 部分建议是配置的业务含义。 全部字符小写。只允许英文字符和 4 种特殊字符（\".\"、\":\"、\"-\"、\"_\"）。不超过 256 字…",
+            "llm_context": "参数名 \n \n \n 参数类型 \n \n \n 描述 \n \n \n \n \n dataId \n \n \n string \n \n \n 配置 ID，采用类似 package.class（如com.taobao.tc.refund.log.level）的命名规则保证全局唯一性，class 部分建议是配置的业务含义。 全部字符小写。只允许英文字符和 4 种特殊字符（\".\"、\":\"、\"-\"、\"_\"）。不超过 256 字节。 \n \n \n \n \n group \n \n \n string \n \n \n 配置分组，建议填写 产品名：模块名 （如 Nacos:Test）保证唯一性。 只允许英文字符和4种特殊字符（\".\"、\":\"、\"-\"、\"_\"），不超过128字节。\n \n \n \n \n \n listener \n \n \n Listener \n \n \n 监听器，配置变更进入监听器的回调函数。",
+            "section_path": [
+              "Java SDK",
+              "配置管理",
+              "监听配置",
+              "请求参数"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 14,
+        "question": "Dubbo 如何支持 Kubernetes 平台调度？",
+        "gold_answer": "Dubbo 通过实现服务生命周期与容器生命周期的对齐，并适配 Kubernetes 的 probe 事件，同时支持使用 Kubernetes Service 作为服务注册与发现机制，从而支持 Kubernetes 平台调度。",
+        "answer": "Dubbo 支持 Kubernetes 平台调度通过实现 Dubbo 服务生命周期与容器生命周期的对齐，包括启动、销毁、服务注册等事件适配 Kubernetes 的 probe [2]。Dubbo 消费端节点能自动对接到 Kubernetes API-Server 或 DNS，根据服务名查询实例列表 [2]。服务通过标准的 Kubernetes Service API 定义并被调度到各个节点，无需额外注册中心组件 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          120,
+          123,
+          115,
+          79,
+          126
+        ],
+        "gold_chunk_ids": [
+          123
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 120,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "启动速度与资源消耗等。\n\n结合当前版本，本节主要从以下两点展开 Dubbo 的云原生特性\n* 容器调度平台（Kubernetes）\n* Service Mesh",
+            "llm_context": "启动速度与资源消耗等。\n\n结合当前版本，本节主要从以下两点展开 Dubbo 的云原生特性\n* 容器调度平台（Kubernetes）\n* Service Mesh",
+            "section_path": [
+              "云原生友好"
+            ]
+          },
+          {
+            "chunk_id": 123,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 微服务要支持 Kubernetes 平台调度，最基础的就是实现 dubbo 服务生命周期与容器生命周期的对齐，这包括 Dubbo 的启动、销毁、服务注册等生命周期事件。相比于以往 Dubbo 自行定义生命周期事件，并要求开发人员在运维实践过程中遵守约定，Kubernetes 底层基础设施定义了严格的组件生命周期事件(probe)，转而要求 Dubbo 去按约定适配。\n\nKubernet…",
+            "llm_context": "Dubbo 微服务要支持 Kubernetes 平台调度，最基础的就是实现 dubbo 服务生命周期与容器生命周期的对齐，这包括 Dubbo 的启动、销毁、服务注册等生命周期事件。相比于以往 Dubbo 自行定义生命周期事件，并要求开发人员在运维实践过程中遵守约定，Kubernetes 底层基础设施定义了严格的组件生命周期事件(probe)，转而要求 Dubbo 去按约定适配。\n\nKubernetes Service 是另一个层面的适配，这体现了服务定义与注册向云原生底层基础设施下沉的趋势。在这种模式下，用户不再需要搭建额外的注册中心组件，Dubbo 消费端节点能自动对接到 Kubernetes（API-Server 或 DNS），根据服务名（Kubernetes Service Name） 查询到实例列表（Kubernetes endpoints）。 此时服务是通过标准的 Kubernetes Service API 定义，并被调度到各个节点。",
+            "section_path": [
+              "云原生友好",
+              "Kubernetes"
+            ]
+          },
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native…",
+            "llm_context": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native Image 提高 Dubbo 的启动速度与资源消耗等。\n\n结合当前版本，本节主要从以下两点展开 Dubbo 的云原生特性\n* 容器调度平台（Kubernetes）\n* Service Mesh",
+            "section_path": [
+              "云原生友好"
+            ]
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富…",
+            "llm_context": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富的多语言客户端实现，其中 Java、Golang 版本是当前稳定性、活跃度最好的版本，其他多语言客户端正在持续建设中。\n\n自开源以来，Dubbo 就被一众大规模互联网、IT公司选型，经过多年企业实践积累了大量经验。Dubbo3 是站在巨人肩膀上的下一代产品，它汲取了上一代的优点并针对已知问题做了大量优化，因此，Dubbo 在解决业务落地与规模化实践方面有着无可比拟的优势：\n* 开箱即用\n * 易用性高，如 Java 版本的面向接口代理特性能实现本地透明调用\n * 功能丰富，基于原生库或轻量扩展即可实现绝大多数的微服务治理能力\n* 超大规模微服务集群实践\n * 高性能的跨进程通信协议\n * 地址发现、流量治理层面，轻松支持百万规模集群实例\n* 企业级微服务治理能力\n * 服务测试\n * 服务Mock\n\nDubbo3 是在云原生背景下诞生的，使用 Dubbo 构建的微服务遵循云原生思想，能更好的复用底层云原生基础设施、贴合云原生微服务架构。这体现在：\n* 服务支持部署在容器、Kubernetes平台，服务生命周期可实现与平台调度周期对齐；\n* 支持经典 Service Mesh 微服务架构，引入了 Proxyless Mesh 架构，进一步简化 Mesh 的落地与迁移成本，提供更灵活的选择；\n",
+            "section_path": [
+              "What Dubbo3 is"
+            ]
+          },
+          {
+            "chunk_id": 126,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "） 查询到实例列表（Kubernetes endpoints）。 此时服务是通过标准的 Kubernetes Service API 定义，并被调度到各个节点。",
+            "llm_context": "） 查询到实例列表（Kubernetes endpoints）。 此时服务是通过标准的 Kubernetes Service API 定义，并被调度到各个节点。",
+            "section_path": [
+              "云原生友好",
+              "Kubernetes"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 15,
+        "question": "Seata AT 模式在提交本地事务前为什么必须获取全局锁？",
+        "gold_answer": "本地事务提交前必须先取得全局锁；获取失败时不能提交，超过重试范围会回滚本地事务并释放本地锁，以避免全局事务间的数据冲突。",
+        "answer": "一阶段本地事务提交前，需要确保先拿到 **全局锁** [1][2]。拿不到 **全局锁** ，不能提交本地事务 [1][2]。获取全局锁是为了保证全局事务的一致性，防止其他事务同时修改相同数据 [1][2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          2471,
+          114,
+          2476,
+          2495,
+          121
+        ],
+        "gold_chunk_ids": [
+          114
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 2471,
+            "doc_id": 236,
+            "page": 0,
+            "snippet": "- 一阶段本地事务提交前，需要确保先拿到 **全局锁** 。\n- 拿不到 **全局锁** ，不能提交本地事务。\n- 拿 **全局锁** 的尝试被限制在一定范围内，超出范围将放弃，并回滚本地事务，释放本地锁。\n\n以一个示例来说明：\n\n两个全局事务 tx1 和 tx2，分别对 a 表的 m 字段进行更新操作，m 的初始值 1000。\n\ntx1 先开始，开启本地事务，拿到本地锁，更新操作 m = 100…",
+            "llm_context": "- 一阶段本地事务提交前，需要确保先拿到 **全局锁** 。\n- 拿不到 **全局锁** ，不能提交本地事务。\n- 拿 **全局锁** 的尝试被限制在一定范围内，超出范围将放弃，并回滚本地事务，释放本地锁。\n\n以一个示例来说明：\n\n两个全局事务 tx1 和 tx2，分别对 a 表的 m 字段进行更新操作，m 的初始值 1000。\n\ntx1 先开始，开启本地事务，拿到本地锁，更新操作 m = 1000 - 100 = 900。本地事务提交前，先拿到该记录的 **全局锁** ，本地提交释放本地锁。\ntx2 后开始，开启本地事务，拿到本地锁，更新操作 m = 900 - 100 = 800。本地事务提交前，尝试拿该记录的 **全局锁** ，tx1 全局提交前，该记录的全局锁被 tx1 持有，tx2 需要重试等待 **全局锁** 。\n\n \n\ntx1 二阶段全局提交，释放 **全局锁** 。tx2 拿到 **全局锁** 提交本地事务。\n\n \n\n如果 tx1 的二阶段全局回滚，则 tx1 需要重新获取该数据的本地锁，进行反向补偿的更新操作，实现分支的回滚。\n\n此时，如果 tx2 仍在等待该数据的 **全局锁**，同时持有本地锁，则 tx1 的分支回滚会失败。分支的回滚会一直重试，直到 tx2 的 **全局锁** 等锁超时，放弃 **全局锁** 并回滚本地事务释放本地锁，tx1 的分支回滚最终成功。\n\n",
+            "section_path": [
+              "Seata 是什么?",
+              "AT 模式",
+              "写隔离"
+            ]
+          },
+          {
+            "chunk_id": 114,
+            "doc_id": 8,
+            "page": 0,
+            "snippet": "- 一阶段本地事务提交前，需要确保先拿到 **全局锁** 。\n- 拿不到 **全局锁** ，不能提交本地事务。\n- 拿 **全局锁** 的尝试被限制在一定范围内，超出范围将放弃，并回滚本地事务，释放本地锁。\n\n以一个示例来说明：\n\n两个全局事务 tx1 和 tx2，分别对 a 表的 m 字段进行更新操作，m 的初始值 1000。\n\ntx1 先开始，开启本地事务，拿到本地锁，更新操作 m = 100…",
+            "llm_context": "- 一阶段本地事务提交前，需要确保先拿到 **全局锁** 。\n- 拿不到 **全局锁** ，不能提交本地事务。\n- 拿 **全局锁** 的尝试被限制在一定范围内，超出范围将放弃，并回滚本地事务，释放本地锁。\n\n以一个示例来说明：\n\n两个全局事务 tx1 和 tx2，分别对 a 表的 m 字段进行更新操作，m 的初始值 1000。\n\ntx1 先开始，开启本地事务，拿到本地锁，更新操作 m = 1000 - 100 = 900。本地事务提交前，先拿到该记录的 **全局锁** ，本地提交释放本地锁。\ntx2 后开始，开启本地事务，拿到本地锁，更新操作 m = 900 - 100 = 800。本地事务提交前，尝试拿该记录的 **全局锁** ，tx1 全局提交前，该记录的全局锁被 tx1 持有，tx2 需要重试等待 **全局锁** 。\n\n \n\ntx1 二阶段全局提交，释放 **全局锁** 。tx2 拿到 **全局锁** 提交本地事务。\n\n \n\n如果 tx1 的二阶段全局回滚，则 tx1 需要重新获取该数据的本地锁，进行反向补偿的更新操作，实现分支的回滚。\n\n此时，如果 tx2 仍在等待该数据的 **全局锁**，同时持有本地锁，则 tx1 的分支回滚会失败。分支的回滚会一直重试，直到 tx2 的 **全局锁** 等锁超时，放弃 **全局锁** 并回滚本地事务释放本地锁，tx1 的分支回滚最终成功。\n\n",
+            "section_path": [
+              "写隔离"
+            ]
+          },
+          {
+            "chunk_id": 2476,
+            "doc_id": 236,
+            "page": 0,
+            "snippet": "在数据库本地事务隔离级别 **读已提交（Read Committed）** 或以上的基础上，Seata（AT 模式）的默认全局隔离级别是 **读未提交（Read Uncommitted）** 。\n\n如果应用在特定场景下，必需要求全局的 **读已提交** ，目前 Seata 的方式是通过 SELECT FOR UPDATE 语句的代理。\n\n \n\nSELECT FOR UPDATE 语句的执行会申请 …",
+            "llm_context": "在数据库本地事务隔离级别 **读已提交（Read Committed）** 或以上的基础上，Seata（AT 模式）的默认全局隔离级别是 **读未提交（Read Uncommitted）** 。\n\n如果应用在特定场景下，必需要求全局的 **读已提交** ，目前 Seata 的方式是通过 SELECT FOR UPDATE 语句的代理。\n\n \n\nSELECT FOR UPDATE 语句的执行会申请 **全局锁** ，如果 **全局锁** 被其他事务持有，则释放本地锁（回滚 SELECT FOR UPDATE 语句的本地执行）并重试。这个过程中，查询是被 block 住的，直到 **全局锁** 拿到，即读取的相关数据是 **已提交** 的，才返回。\n\n出于总体性能上的考虑，Seata 目前的方案并没有对所有 SELECT 语句都进行代理，仅针对 FOR UPDATE 的 SELECT 语句。",
+            "section_path": [
+              "Seata 是什么?",
+              "AT 模式",
+              "读隔离"
+            ]
+          },
+          {
+            "chunk_id": 2495,
+            "doc_id": 236,
+            "page": 0,
+            "snippet": "6. 提交前，向 TC 注册分支：申请 `product` 表中，主键值等于 1 的记录的 **全局锁** 。\n7. 本地事务提交：业务数据的更新和前面步骤中生成的 UNDO LOG 一并提交。\n8. 将本地事务提交的结果上报给 TC。",
+            "llm_context": "6. 提交前，向 TC 注册分支：申请 `product` 表中，主键值等于 1 的记录的 **全局锁** 。\n7. 本地事务提交：业务数据的更新和前面步骤中生成的 UNDO LOG 一并提交。\n8. 将本地事务提交的结果上报给 TC。",
+            "section_path": [
+              "Seata 是什么?",
+              "AT 模式",
+              "工作机制",
+              "一阶段"
+            ]
+          },
+          {
+            "chunk_id": 121,
+            "doc_id": 8,
+            "page": 0,
+            "snippet": "在数据库本地事务隔离级别 **读已提交（Read Committed）** 或以上的基础上，Seata（AT 模式）的默认全局隔离级别是 **读未提交（Read Uncommitted）** 。\n\n如果应用在特定场景下，必需要求全局的 **读已提交** ，目前 Seata 的方式是通过 SELECT FOR UPDATE 语句的代理。\n\n \n\nSELECT FOR UPDATE 语句的执行会申请 …",
+            "llm_context": "在数据库本地事务隔离级别 **读已提交（Read Committed）** 或以上的基础上，Seata（AT 模式）的默认全局隔离级别是 **读未提交（Read Uncommitted）** 。\n\n如果应用在特定场景下，必需要求全局的 **读已提交** ，目前 Seata 的方式是通过 SELECT FOR UPDATE 语句的代理。\n\n \n\nSELECT FOR UPDATE 语句的执行会申请 **全局锁** ，如果 **全局锁** 被其他事务持有，则释放本地锁（回滚 SELECT FOR UPDATE 语句的本地执行）并重试。这个过程中，查询是被 block 住的，直到 **全局锁** 拿到，即读取的相关数据是 **已提交** 的，才返回。\n\n出于总体性能上的考虑，Seata 目前的方案并没有对所有 SELECT 语句都进行代理，仅针对 FOR UPDATE 的 SELECT 语句。",
+            "section_path": [
+              "读隔离"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 16,
+        "question": "Seata Saga 模式发生异常时如何执行补偿回滚？",
+        "gold_answer": "Saga 使用状态图定义服务调用及补偿节点；异常时状态机引擎反向执行已成功节点对应的补偿节点完成回滚。",
+        "answer": "该请求超出企业知识助手允许执行的能力范围。",
+        "state_hint": "REFUSED",
+        "cited_chunk_ids": [],
+        "gold_chunk_ids": [
+          818
+        ],
+        "context_source": "retrieve_fallback",
+        "citations": []
+      },
+      {
+        "__question_id": 17,
+        "question": "Seata TCC 模式的一阶段和二阶段分别执行什么逻辑？",
+        "gold_answer": "一阶段调用自定义 prepare；二阶段根据结果调用自定义 commit 或 rollback。TCC 不依赖底层数据资源的事务支持。",
+        "answer": "该请求超出企业知识助手允许执行的能力范围。",
+        "state_hint": "REFUSED",
+        "cited_chunk_ids": [],
+        "gold_chunk_ids": [
+          784
+        ],
+        "context_source": "retrieve_fallback",
+        "citations": []
+      },
+      {
+        "__question_id": 18,
+        "question": "RocketMQ 顺序消息如何通过消息组保证顺序？",
+        "gold_answer": "相同消息组的消息按发送顺序存储并遵循 FIFO；不同消息组之间不保证顺序。要保证生产顺序还需单一生产者串行发送。",
+        "answer": "RocketMQ 顺序消息通过消息组(MessageGroup)判定和识别顺序关系，相同消息组的多条消息之间遵循先进先出的顺序关系 [1]。相同消息组的消息按照先后顺序被存储在同一个队列中，不同消息组的消息可以混合在同一个队列中，且不保证连续 [1][3]。为保证顺序，建议将业务以消息组粒度进行拆分，例如将订单ID、用户ID作为消息组关键字，实现同一终端用户的消息按顺序处理 [4][5]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1029,
+          1033,
+          1030,
+          1052,
+          1051
+        ],
+        "gold_chunk_ids": [
+          1029
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1029,
+            "doc_id": 122,
+            "page": 0,
+            "snippet": "**什么是顺序消息**\n\n顺序消息是 Apache RocketMQ 提供的一种高级消息类型，支持消费者按照发送消息的先后顺序获取消息，从而实现业务场景中的顺序处理。 相比其他类型消息，顺序消息在发送、存储和投递的处理过程中，更多强调多条消息间的先后顺序关系。\n\nApache RocketMQ 顺序消息的顺序关系通过消息组（MessageGroup）判定和识别，发送顺序消息时需要为每条消息设置归属…",
+            "llm_context": "**什么是顺序消息**\n\n顺序消息是 Apache RocketMQ 提供的一种高级消息类型，支持消费者按照发送消息的先后顺序获取消息，从而实现业务场景中的顺序处理。 相比其他类型消息，顺序消息在发送、存储和投递的处理过程中，更多强调多条消息间的先后顺序关系。\n\nApache RocketMQ 顺序消息的顺序关系通过消息组（MessageGroup）判定和识别，发送顺序消息时需要为每条消息设置归属的消息组，相同消息组的多条消息之间遵循先进先出的顺序关系，不同消息组、无消息组的消息之间不涉及顺序性。\n\n基于消息组的顺序判定逻辑，支持按照业务逻辑做细粒度拆分，可以在满足业务局部顺序的前提下提高系统的并行度和吞吐能力。\n\n**如何保证消息的顺序性**\n\nApache RocketMQ 的消息的顺序性分为两部分，生产顺序性和消费顺序性。\n\n* **生产顺序性** ：\n\n Apache RocketMQ 通过生产者和服务端的协议保障单个生产者串行地发送消息，并按序存储和持久化。\n\n 如需保证消息生产的顺序性，则必须满足以下条件：\n * 单一生产者：消息生产的顺序性仅支持单一生产者，不同生产者分布在不同的系统，即使设置相同的消息组，不同生产者之间产生的消息也无法判定其先后顺序。\n \n * 串行发送：Apache RocketMQ 生产者客户端支持多线程安全访问，但如果生产者使用多线程并行发送，则不同线程间产生的消息将无法判定其先后顺序。 \n \n 满足以上条件的生产者，将顺序消息发送至 Apache RocketMQ 后，会保证设置了同一消息组的消息，按照发送顺序存储在同一队列中。服务端顺序存储逻辑如下：\n * 相同消息组的消息按照先后顺序被存储在同一个队列。\n \n * 不同消息组的消息可以混合在同一个队列中，且不保证连续。\n \n\n \n\n",
+            "section_path": [
+              "顺序消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 1033,
+            "doc_id": 122,
+            "page": 0,
+            "snippet": "|      生产顺序       | 消费顺序 |                                               顺序性效果                                               |\n|-----------------|------|-----------------------------------------------…",
+            "llm_context": "|      生产顺序       | 消费顺序 |                                               顺序性效果                                               |\n|-----------------|------|---------------------------------------------------------------------------------------------------|\n| 设置消息组，保证消息顺序发送。 | 顺序消费 | 按照消息组粒度，严格保证消息顺序。 同一消息组内的消息的消费顺序和发送顺序完全一致。                                                        |\n| 设置消息组，保证消息顺序发送。 | 并发消费 | 并发消费，尽可能按时间顺序处理。                                                                                  |\n| 未设置消息组，消息乱序发送。  | 顺序消费 | 按队列存储粒度，严格顺序。 基于 Apache RocketMQ 本身队列的属性，消费顺序和队列存储的顺序一致，但不保证和发送顺序一致。 |\n| 未设置消息组，消息乱序发送。  | 并发消费 | 并发消费，尽可能按照时间顺序处理。                                                                                 |\n",
+            "section_path": [
+              "顺序消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 1030,
+            "doc_id": 122,
+            "page": 0,
+            "snippet": "服务端顺序存储逻辑如下：\n * 相同消息组的消息按照先后顺序被存储在同一个队列。\n \n * 不同消息组的消息可以混合在同一个队列中，且不保证连续。\n \n\n \n\n 如上图所示，消息组1和消息组4的消息混合存储在队列1中， Apache RocketMQ 保证消息组1中的消息G1-M1、G1-M2、G1-M3是按发送顺序存储，且消息组4的消息G4-M1、G4-M2也是按顺序存储，但消息组1和消息组4中…",
+            "llm_context": "服务端顺序存储逻辑如下：\n * 相同消息组的消息按照先后顺序被存储在同一个队列。\n \n * 不同消息组的消息可以混合在同一个队列中，且不保证连续。\n \n\n \n\n 如上图所示，消息组1和消息组4的消息混合存储在队列1中， Apache RocketMQ 保证消息组1中的消息G1-M1、G1-M2、G1-M3是按发送顺序存储，且消息组4的消息G4-M1、G4-M2也是按顺序存储，但消息组1和消息组4中的消息不涉及顺序关系。\n\n \n\n* **消费顺序性** ：\n\n Apache RocketMQ\n 通过消费者和服务端的协议保障消息消费严格按照存储的先后顺序来处理。\n\n 如需保证消息消费的顺序性，则必须满足以下条件：\n * 投递顺序\n\n Apache RocketMQ 通过客户端SDK和服务端通信协议保障消息按照服务端存储顺序投递，但业务方消费消息时需要严格按照接收---处理---应答的语义处理消息，避免因异步处理导致消息乱序。\n\n :::note\n 消费者类型为PushConsumer时， Apache RocketMQ 保证消息按照存储顺序一条一条投递给消费者，若消费者类型为SimpleConsumer，则消费者有可能一次拉取多条消息。此时，消息消费的顺序性需要由业务方自行保证。消费者类型的具体信息，请参见[消费者分类](./06consumertype.md)。\n :::\n \n * 有限重试\n\n Apache RocketMQ 顺序消息投递仅在重试次数限定范围内，即一条消息如果一直重试失败，超过最大重试次数后将不再重试，跳过这条消息消费，不会一直阻塞后续消息处理。\n\n 对于需要严格保证消费顺序的场景，请务设置合理的重试次数，避免参数不合理导致消息乱序。\n \n \n \n\n**生产顺序性和消费顺序性组合**\n\n",
+            "section_path": [
+              "顺序消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 1052,
+            "doc_id": 122,
+            "page": 0,
+            "snippet": "保证顺序。\n\n因此建议将业务以消息组粒度进行拆分，例如，将订单ID、用户ID作为消息组关键字，可实现同一终端用户的消息按照顺序处理，不同用户的消息无需保证顺序。",
+            "llm_context": "保证顺序。\n\n因此建议将业务以消息组粒度进行拆分，例如，将订单ID、用户ID作为消息组关键字，可实现同一终端用户的消息按照顺序处理，不同用户的消息无需保证顺序。",
+            "section_path": [
+              "顺序消息",
+              "使用建议"
+            ]
+          },
+          {
+            "chunk_id": 1051,
+            "doc_id": 122,
+            "page": 0,
+            "snippet": "**串行消费，避免批量消费导致乱序**\n\n消息消费建议串行处理，避免一次消费多条消息，否则可能出现乱序情况。\n\n例如：发送顺序为1-\\>2-\\>3-\\>4，消费时批量消费，消费顺序为1-\\>23（批量处理，失败）-\\>23（重试处理）-\\>4，此时可能由于消息3的失败导致消息2被重复处理，最后导致消息消费乱序。\n\n**消息组尽可能打散，避免集中导致热点**\n\nApache RocketMQ 保证相…",
+            "llm_context": "**串行消费，避免批量消费导致乱序**\n\n消息消费建议串行处理，避免一次消费多条消息，否则可能出现乱序情况。\n\n例如：发送顺序为1-\\>2-\\>3-\\>4，消费时批量消费，消费顺序为1-\\>23（批量处理，失败）-\\>23（重试处理）-\\>4，此时可能由于消息3的失败导致消息2被重复处理，最后导致消息消费乱序。\n\n**消息组尽可能打散，避免集中导致热点**\n\nApache RocketMQ 保证相同消息组的消息存储在同一个队列中，如果不同业务场景的消息都集中在少量或一个消息组中，则这些消息存储压力都会集中到服务端的少量队列或一个队列中。容易导致性能热点，且不利于扩展。一般建议的消息组设计会采用订单ID、用户ID作为顺序参考，即同一个终端用户的消息保证顺序，不同用户的消息无需保证顺序。\n\n因此建议将业务以消息组粒度进行拆分，例如，将订单ID、用户ID作为消息组关键字，可实现同一终端用户的消息按照顺序处理，不同用户的消息无需保证顺序。",
+            "section_path": [
+              "顺序消息",
+              "使用建议"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 19,
+        "question": "Sentinel 主要从哪些方面保障微服务的可靠性？",
+        "gold_answer": "Sentinel 围绕流量提供流量控制、流量整形、并发限制、熔断和系统自适应过载保护。",
+        "answer": "Sentinel 主要通过流量控制、熔断降级和系统负载保护三个方面保障微服务可靠性 [1]。Sentinel 采用内存态存储监控和规则数据，监控最长存储时间为 5 分钟 [5]。Sentinel 可以通过微服务引擎(MSE 微服务引擎)提供企业服务支持 [2][4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          55,
+          341,
+          56,
+          340,
+          1774
+        ],
+        "gold_chunk_ids": [
+          301
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 55,
+            "doc_id": 20,
+            "page": 0,
+            "snippet": "- [Sentinel 为 Dubbo 服务保驾护航]( ) by [Eric Zhao]( )\n- [在生产环境中使用 Sentinel 控制台]( ) by [Eric Zhao]( )\n- [Sentinel 与 Hystrix 的对比]( ) by [Eric Zhao]( )\n- [Guideline: 从 Hystrix 迁移到 Sentinel]( ) by [Eric Zhao](…",
+            "llm_context": "- [Sentinel 为 Dubbo 服务保驾护航]( ) by [Eric Zhao]( )\n- [在生产环境中使用 Sentinel 控制台]( ) by [Eric Zhao]( )\n- [Sentinel 与 Hystrix 的对比]( ) by [Eric Zhao]( )\n- [Guideline: 从 Hystrix 迁移到 Sentinel]( ) by [Eric Zhao]( )\n- [Sentinel 控制台监控数据持久化【MySQL】]( ) by [cdfive]( )\n- [Sentinel 控制台监控数据持久化【InfluxDB】]( ) by [cdfive]( )\n- [Sentinel 控制台监控数据持久化【Apollo】]( ) by [cookiejoo]( )\n- [Sentinel一体化监控解决方案 CrateDB + Grafana]( ) by [Young Hu]( )\n- Sentinel 源码解析系列 by [houyi]( )\n - [Sentinel 原理-全解析]( )\n - [Sentinel 原理-调用链]( )\n - [Sentinel 原理-滑动窗口]( )\n - [Sentinel 实战-限流]( )\n - [Sentinel 实战-控制台]( )\n - [Sentinel 实战-规则持久化]( )\n- Sentinel 学习笔记 by [ro9er]( )\n - [Sentinel 学习笔记（1）-- 流量统计代码解析]( )\n - [Sentinel 学习笔记（2）-- 流量控制代码分析]( )\n - [Sentinel 学习笔记（3）-- 上下文统计Node建立分析]( )\n- [大流量下的服务质量治理 Dubbo Sentinel 初涉]( ) by [RyuGrade]( )\n",
+            "section_path": [
+              "Awesome Sentinel",
+              "Blog Posts"
+            ]
+          },
+          {
+            "chunk_id": 341,
+            "doc_id": 15,
+            "page": 0,
+            "snippet": "used through the [microservice engine (MSE 微服务引擎) provided by Alibaba Cloud]( ).",
+            "llm_context": "used through the [microservice engine (MSE 微服务引擎) provided by Alibaba Cloud]( ).",
+            "section_path": [
+              "Sentinel: The Sentinel of Your Microservices",
+              "Enterprise Service"
+            ]
+          },
+          {
+            "chunk_id": 56,
+            "doc_id": 20,
+            "page": 0,
+            "snippet": "笔记（3）-- 上下文统计Node建立分析]( )\n- [大流量下的服务质量治理 Dubbo Sentinel 初涉]( ) by [RyuGrade]( )\n- Sentinel 深入浅出系列 by [shxz130]( )\n - [Sentinel 深入浅出之原理篇 SlotChain]( )\n - [Sentinel 深入浅出之原理篇 Context初始化 & Entry初始化]( )\n -…",
+            "llm_context": "笔记（3）-- 上下文统计Node建立分析]( )\n- [大流量下的服务质量治理 Dubbo Sentinel 初涉]( ) by [RyuGrade]( )\n- Sentinel 深入浅出系列 by [shxz130]( )\n - [Sentinel 深入浅出之原理篇 SlotChain]( )\n - [Sentinel 深入浅出之原理篇 Context初始化 & Entry初始化]( )\n - [Sentinel 深入浅出之原理篇 NodeSelectorSlot]( )\n - [Sentinel 深入浅出之原理篇 ClusterBuilderSlot]( )\n - [Sentinel 深入浅出之原理篇 StatisticSlot&滑动窗口]( )\n - [Sentinel 深入浅出之原理篇 SystemSlot]( )\n - [Sentinel 深入浅出之原理篇 AuthoritySlot]( )\n - [Sentinel 深入浅出之原理篇 FlowSlot]( )\n - [Sentinel 深入浅出之原理篇 DegradeSlot]( )\n- [Alibaba Sentinel RESTful 接口流控处理优化]( ) by [luanlouis]( )\n- [Sentinel 控制台前端开发环境搭建]( ) by [cdfive]( )\n- [Sentinel 如何接入 OpenTracing]( ) by [Zhang Shun]( )\n- [阿里 Sentinel 源码解析]( ) by [Javadoop]( )\n- [阿里巴巴开源限流降级神器 Sentinel 大规模生产级应用实践]( ) by 步崖\n- [Introduction to Alibaba Sentinel]( ) by [Amit Bhave]( )\n",
+            "section_path": [
+              "Awesome Sentinel",
+              "Blog Posts"
+            ]
+          },
+          {
+            "chunk_id": 340,
+            "doc_id": 15,
+            "page": 0,
+            "snippet": "If you need Sentinel enterprise service support (Sentinel 企业版), or purchase cloud product services,\nyou can join the discussion by the DingTalk group (34754806). It can also be directly activated\nand …",
+            "llm_context": "If you need Sentinel enterprise service support (Sentinel 企业版), or purchase cloud product services,\nyou can join the discussion by the DingTalk group (34754806). It can also be directly activated\nand used through the [microservice engine (MSE 微服务引擎) provided by Alibaba Cloud]( ).",
+            "section_path": [
+              "Sentinel: The Sentinel of Your Microservices",
+              "Enterprise Service"
+            ]
+          },
+          {
+            "chunk_id": 1774,
+            "doc_id": 186,
+            "page": 0,
+            "snippet": "**持久化的后端数据库、可靠的配置中心**等。\n目前 Sentinel 采用内存态的方式存储监控和规则数据，监控最长存储时间为 5 分钟，控制台重启后数据丢失。",
+            "llm_context": "**持久化的后端数据库、可靠的配置中心**等。\n目前 Sentinel 采用内存态的方式存储监控和规则数据，监控最长存储时间为 5 分钟，控制台重启后数据丢失。",
+            "section_path": [
+              "Sentinel 控制台功能介绍",
+              "2. 限制"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 20,
+        "question": "Sentinel 的实时监控可以展示哪些范围的运行信息？",
+        "gold_answer": "可以实时查看单机运行信息，也可以查看少于 500 个节点集群的聚合运行信息。",
+        "answer": "Sentinel 实时监控功能可以实时查看集群中每个资源的实时访问以及流控情况 [1]。Sentinel 控制台提供监控功能，可以配置规则并实时查看流量控制效果 [2][3]。监控数据采用内存态存储，最长存储时间为 5 分钟，控制台重启后数据会丢失 [4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1733,
+          1723,
+          1722,
+          1774,
+          1728
+        ],
+        "gold_chunk_ids": [
+          303
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1733,
+            "doc_id": 186,
+            "page": 0,
+            "snippet": "Sentinel 监控功能能够实时查看集群中每个资源的实时访问以及流控情况。控制台左侧导航栏的“实时监控”菜单对应该功能。",
+            "llm_context": "Sentinel 监控功能能够实时查看集群中每个资源的实时访问以及流控情况。控制台左侧导航栏的“实时监控”菜单对应该功能。",
+            "section_path": [
+              "Sentinel 控制台功能介绍",
+              "1. 功能介绍",
+              "1.3 实时监控"
+            ]
+          },
+          {
+            "chunk_id": 1723,
+            "doc_id": 186,
+            "page": 0,
+            "snippet": "自发现、簇点链路自发现、监控、规则配置等功能。在 Sentinel 控制台上，我们可以配置规则并实时查看流量控制效果。使用 Sentinel 控制台的流程如下：",
+            "llm_context": "自发现、簇点链路自发现、监控、规则配置等功能。在 Sentinel 控制台上，我们可以配置规则并实时查看流量控制效果。使用 Sentinel 控制台的流程如下：",
+            "section_path": [
+              "Sentinel 控制台功能介绍",
+              "0. 概述"
+            ]
+          },
+          {
+            "chunk_id": 1722,
+            "doc_id": 186,
+            "page": 0,
+            "snippet": "Sentinel 控制台是流量控制、熔断降级规则统一配置和管理的入口，它为用户提供了机器自发现、簇点链路自发现、监控、规则配置等功能。在 Sentinel 控制台上，我们可以配置规则并实时查看流量控制效果。使用 Sentinel 控制台的流程如下：",
+            "llm_context": "Sentinel 控制台是流量控制、熔断降级规则统一配置和管理的入口，它为用户提供了机器自发现、簇点链路自发现、监控、规则配置等功能。在 Sentinel 控制台上，我们可以配置规则并实时查看流量控制效果。使用 Sentinel 控制台的流程如下：",
+            "section_path": [
+              "Sentinel 控制台功能介绍",
+              "0. 概述"
+            ]
+          },
+          {
+            "chunk_id": 1774,
+            "doc_id": 186,
+            "page": 0,
+            "snippet": "**持久化的后端数据库、可靠的配置中心**等。\n目前 Sentinel 采用内存态的方式存储监控和规则数据，监控最长存储时间为 5 分钟，控制台重启后数据丢失。",
+            "llm_context": "**持久化的后端数据库、可靠的配置中心**等。\n目前 Sentinel 采用内存态的方式存储监控和规则数据，监控最长存储时间为 5 分钟，控制台重启后数据丢失。",
+            "section_path": [
+              "Sentinel 控制台功能介绍",
+              "2. 限制"
+            ]
+          },
+          {
+            "chunk_id": 1728,
+            "doc_id": 186,
+            "page": 0,
+            "snippet": "Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源。Sentinel 会自动发现所有潜在的资源和资源之间的调用链，并在“簇点链路”页面展示。\n资源是设置流控规则的载体，通过簇点链路自发现，可以方便的对重要资源设置流控规则、熔断降级规则等。\n\n> 注意：**客户端有访问量之后，才能在簇点链路页面看到资源监控（lazy-initializing）**…",
+            "llm_context": "Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源。Sentinel 会自动发现所有潜在的资源和资源之间的调用链，并在“簇点链路”页面展示。\n资源是设置流控规则的载体，通过簇点链路自发现，可以方便的对重要资源设置流控规则、熔断降级规则等。\n\n> 注意：**客户端有访问量之后，才能在簇点链路页面看到资源监控（lazy-initializing）**。",
+            "section_path": [
+              "Sentinel 控制台功能介绍",
+              "1. 功能介绍",
+              "1.2 簇点链路自发现"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 3,
+  "k": 5,
+  "timestamp": "2026-08-25T03:24:17.241809+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "embedding-3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

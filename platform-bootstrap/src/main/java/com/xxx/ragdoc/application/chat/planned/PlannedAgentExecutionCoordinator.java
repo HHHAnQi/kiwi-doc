@@ -290,31 +290,16 @@ public class PlannedAgentExecutionCoordinator {
             replanResp = plannerProvider.plan(replanReq);
         } catch (RuntimeException ex) {
             log.warn("planned.replan_planner_failed run={} err={}", phase0.runId(), ex.toString());
-            runFinalizer.finalize(
-                    phase0.runId(),
-                    phase0.latestRunVersion(),
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "REPLAN_INVALID",
-                    phase0.usage(),
-                    phase0.reservation());
-            return PrepareResult.prematureFailure(
-                    phase0.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, "REPLAN_INVALID");
+            return replanFailureFallback(
+                    phase0, frozenRequirements, cancellation, "REPLAN_PLANNER_FAILED");
         }
 
         PlannerPlanAssembler.AssemblyResult asm =
                 planAssembler.assemble(replanReq, replanResp, policy);
         if (!asm.valid()) {
-            runFinalizer.finalize(
-                    phase0.runId(),
-                    phase0.latestRunVersion(),
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "REPLAN_INVALID:" + asm.invalidReason(),
-                    phase0.usage(),
-                    phase0.reservation());
-            return PrepareResult.prematureFailure(
-                    phase0.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, "REPLAN_INVALID");
+            return replanFailureFallback(
+                    phase0, frozenRequirements, cancellation,
+                    "REPLAN_INVALID:" + asm.invalidReason());
         }
         DeterministicExecutionPlan replanPlan = asm.plan();
 
@@ -447,18 +432,98 @@ public class PlannedAgentExecutionCoordinator {
             return PrepareResult.prematureFailure(
                     phase1.runId(), AgentRunStatus.REFUSED_CONFLICT, "CONFLICT");
         }
-        // 否则 INSUFFICIENT_AFTER_REPLAN / REPLAN_LIMIT_REACHED
-        String reason = "INSUFFICIENT_AFTER_REPLAN";
+        // 改动(2026-08-25): INSUFFICIENT_AFTER_REPLAN 不再终态拒答 —
+        // 65% 拒答率的终因。降级为 Classic-style 回答: 用已累积的证据直接 Composer 生成,
+        // 标注 INSUFFICIENT_AFTER_REPLAN_FALLBACK。run 状态改为 READY_TO_ANSWER(带 reason)
+        // 而非 REFUSED_NO_EVIDENCE, 只有完全无证据才保持拒答。
+        String reason = "INSUFFICIENT_AFTER_REPLAN_FALLBACK";
+        boolean hasAnyEvidence = !phase1.accumulatedEvidence().isEmpty();
+        if (hasAnyEvidence) {
+            // 有部分证据 → 降级为带证据的 Composer 回答
+            runFinalizer.finalize(
+                    phase1.runId(),
+                    phase1.latestRunVersion(),
+                    Set.of(AgentRunStatus.EXECUTING),
+                    AgentRunStatus.READY_TO_ANSWER,
+                    reason,
+                    phase1.usage(),
+                    phase1.reservation());
+            SufficiencyDecision fallbackSuff =
+                    SufficiencyDecision.rule(
+                            SufficiencyStatus.PARTIAL,
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            RecommendedAction.ANSWER_PARTIAL,
+                            reason);
+            return buildPrepared(
+                    phase1,
+                    fallbackSuff,
+                    frozenRequirements,
+                    phase1.latestRunVersion(),
+                    1 /* replanCount */,
+                    cancellation);
+        }
+        // 完全无证据 → 保持拒答(防幻觉底线)
         runFinalizer.finalize(
                 phase1.runId(),
                 phase1.latestRunVersion(),
                 Set.of(AgentRunStatus.EXECUTING),
                 AgentRunStatus.REFUSED_NO_EVIDENCE,
-                reason,
+                "INSUFFICIENT_AFTER_REPLAN_NO_EVIDENCE",
                 phase1.usage(),
                 phase1.reservation());
         return PrepareResult.prematureFailure(
-                phase1.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, reason);
+                phase1.runId(),
+                AgentRunStatus.REFUSED_NO_EVIDENCE,
+                "INSUFFICIENT_AFTER_REPLAN_NO_EVIDENCE");
+    }
+
+
+    /**
+     * 改动(2026-08-25): Replan 失败(REPLAN_INVALID / PLANNER_FAILED)时的降级处理。
+     * 有任何证据 → PARTIAL 回答(防 65% 拒答); 无证据 → 保持拒答(防幻觉底线)。
+     */
+    private PrepareResult replanFailureFallback(
+            PhaseExecutionResult phase,
+            List<EvidenceRequirement> frozenRequirements,
+            CancellationTokenSource.CancellationToken cancellation,
+            String reason) {
+        if (!phase.accumulatedEvidence().isEmpty()) {
+            runFinalizer.finalize(
+                    phase.runId(),
+                    phase.latestRunVersion(),
+                    Set.of(AgentRunStatus.EXECUTING),
+                    AgentRunStatus.READY_TO_ANSWER,
+                    reason + "_FALLBACK",
+                    phase.usage(),
+                    phase.reservation());
+            SufficiencyDecision fallbackSuff =
+                    SufficiencyDecision.rule(
+                            SufficiencyStatus.PARTIAL,
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            RecommendedAction.ANSWER_PARTIAL,
+                            reason + "_FALLBACK");
+            return buildPrepared(
+                    phase,
+                    fallbackSuff,
+                    frozenRequirements,
+                    phase.latestRunVersion(),
+                    1,
+                    cancellation);
+        }
+        runFinalizer.finalize(
+                phase.runId(),
+                phase.latestRunVersion(),
+                Set.of(AgentRunStatus.EXECUTING),
+                AgentRunStatus.REFUSED_NO_EVIDENCE,
+                reason + "_NO_EVIDENCE",
+                phase.usage(),
+                phase.reservation());
+        return PrepareResult.prematureFailure(
+                phase.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, reason + "_NO_EVIDENCE");
     }
 
     private SufficiencyDecision callSufficiency(

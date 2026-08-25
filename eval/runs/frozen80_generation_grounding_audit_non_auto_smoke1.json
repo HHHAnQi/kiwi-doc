@@ -1,0 +1,30 @@
+{
+  "dataset": "eval/golden/golden_v3_frozen80.jsonl",
+  "scope": "non_auto_reviewed_or_curated",
+  "sample_count": 1,
+  "judge_provider": 1,
+  "judge_model": "deepseek-chat",
+  "generated_at": "2026-08-25T02:07:49.610392+00:00",
+  "counts": {
+    "error": 1
+  },
+  "full_support_rate": 0.0,
+  "results": [
+    {
+      "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        502
+      ],
+      "retrieved_chunk_ids": [
+        502,
+        497,
+        498
+      ],
+      "support": "error",
+      "supported_answer": null,
+      "reason": "all judge providers failed: 402 Client Error: Payment Required for url: https://api.deepseek.com/v1/chat/completions",
+      "raw_judge_response": ""
+    }
+  ]
+}

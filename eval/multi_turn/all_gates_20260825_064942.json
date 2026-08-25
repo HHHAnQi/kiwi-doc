@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-08-25T06:49:42.838530+00:00",
+  "overall_status": "PASS",
+  "errors": [],
+  "sources": [
+    {
+      "path": "eval/multi_turn/report_20260825_063558.json",
+      "sha256": "5082458b5e562b8c8de1b62dd740cdb8b695cf9d1cb517b343cf68eee6416783",
+      "generated_at": "2026-08-25T06:15:18.834270+00:00"
+    },
+    {
+      "path": "eval/multi_turn/report_20260825_064825.json",
+      "sha256": "415d2bd7d0655721e9ef865313bd8f97ed121f6dc4073731b630b76ea38feff5",
+      "generated_at": "2026-08-25T06:36:49.369746+00:00"
+    }
+  ],
+  "fingerprints": {
+    "datasets": {
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/conv_holdout_20.jsonl": "cf00c46b9f7734c1f2bf321c4333f78c32a62ef6fe1c2f20b3032ae3715e7e50",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/antipollution_holdout_10.jsonl": "1a84d15a586b95dcfe67705be3abd1f2cffd87b9e6e20a0e1df325db727ec6a7",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/fidelity_holdout_50.json": "439b7de85d0a0bd97c3b21bcc3de12e520a52b388d1c6d078ba35b5cba523310",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/topic_shift_holdout_50.json": "9922204b79b1336beccfd0235dc804a4eb7b586250aaa6e99f586749fec7804f"
+    },
+    "g1_result": {
+      "path": "eval/runs/e88ce80c67603948/metadata.json",
+      "sha256": "7c4ad757c477a43bdefcb574700f32354c6671c6a455e8386079cd2185956c69"
+    },
+    "g1_baseline": {
+      "path": "eval/ragas_baseline.json",
+      "sha256": "1da6556485ee3520bb12ceb569f16df91d6a7e55c65ca1df5f8767efaa5cbf79"
+    },
+    "config": {
+      "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+      "judge_model": "qwen-max",
+      "judge_provider_id": 2,
+      "gates": "G4",
+      "g1_min_samples": 80,
+      "g1_max_age_hours": 48
+    }
+  },
+  "gates": [
+    {
+      "gate": "G1",
+      "status": "PASS",
+      "passed": null,
+      "total": 80,
+      "rate": null,
+      "pollution_count": null,
+      "compression_observed": null,
+      "deltas": {
+        "faithfulness": 0.008457,
+        "answer_relevancy": 0.013935,
+        "context_precision": 0.0043,
+        "context_recall": 0.003125
+      }
+    },
+    {
+      "gate": "G2",
+      "status": "PASS",
+      "passed": 19,
+      "total": 20,
+      "rate": 0.95,
+      "pollution_count": null,
+      "compression_observed": null,
+      "deltas": null
+    },
+    {
+      "gate": "G3",
+      "status": "PASS",
+      "passed": 7,
+      "total": 10,
+      "rate": 0.7,
+      "pollution_count": 0,
+      "compression_observed": null,
+      "deltas": null
+    },
+    {
+      "gate": "G4",
+      "status": "PASS",
+      "passed": 45,
+      "total": 50,
+      "rate": 0.9,
+      "pollution_count": null,
+      "compression_observed": 48,
+      "deltas": null
+    },
+    {
+      "gate": "G5",
+      "status": "PASS",
+      "passed": 50,
+      "total": 50,
+      "rate": 1.0,
+      "pollution_count": null,
+      "compression_observed": null,
+      "deltas": null
+    }
+  ]
+}

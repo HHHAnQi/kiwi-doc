@@ -1,0 +1,2991 @@
+{
+  "dataset_size": 30,
+  "metrics": {
+    "retrieval": {
+      "mrr@8": 0.8166666666666667,
+      "precision@8": 0.14166666666666666,
+      "hit_rate@8": 1.0,
+      "ndcg@8": 0.8289766184776152,
+      "recall@8": 0.95
+    },
+    "generation": {
+      "faithfulness": 0.9255172413793104,
+      "citation_hit_rate": 1.0,
+      "citation_accuracy": 0.3003694581280788,
+      "answer_correctness": 0.8144827586206896,
+      "evidence_completeness": 0.7467487684729064,
+      "citation_recall": 0.9482758620689655
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 1
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 2
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 3
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 4
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.3333333333333333,
+        "ndcg@8": 0.5,
+        "__question_id": 5
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 6
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 7
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.5,
+        "ndcg@8": 0.6309297535714575,
+        "__question_id": 8
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.5,
+        "ndcg@8": 0.6309297535714575,
+        "__question_id": 9
+      },
+      {
+        "recall@8": 0.5,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 0.6131471927654584,
+        "__question_id": 10
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 11
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 12
+      },
+      {
+        "recall@8": 0.6666666666666666,
+        "precision@8": 0.25,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 0.7039180890341347,
+        "__question_id": 13
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 14
+      },
+      {
+        "recall@8": 0.6666666666666666,
+        "precision@8": 0.25,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 0.7039180890341347,
+        "__question_id": 15
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.5,
+        "ndcg@8": 0.6309297535714575,
+        "__question_id": 16
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 17
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 18
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 19
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.25,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.3333333333333333,
+        "ndcg@8": 0.5437713091520254,
+        "__question_id": 20
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 21
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.25,
+        "ndcg@8": 0.43067655807339306,
+        "__question_id": 22
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.3333333333333333,
+        "ndcg@8": 0.5,
+        "__question_id": 23
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 24
+      },
+      {
+        "recall@8": 0.6666666666666666,
+        "precision@8": 0.25,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.25,
+        "ndcg@8": 0.3501483019834802,
+        "__question_id": 25
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 26
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 27
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 28
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 0.5,
+        "ndcg@8": 0.6309297535714575,
+        "__question_id": 29
+      },
+      {
+        "recall@8": 1.0,
+        "precision@8": 0.125,
+        "hit_rate@8": 1.0,
+        "mrr@8": 1.0,
+        "ndcg@8": 1.0,
+        "__question_id": 30
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.5,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 1
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.5,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 2
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8,
+        "citation_accuracy": 1.0,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 3
+      },
+      {
+        "__question_id": 4,
+        "error": "non-OK generation state: LLM_DEGRADED"
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.25,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 5
+      },
+      {
+        "answer_correctness": 0.8,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 6
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 1.0,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 7
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 8
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 0.5,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.3333333333333333,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 9
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 1.0,
+        "citation_recall": 0.5,
+        "citation_hit_rate": 1.0,
+        "__question_id": 10
+      },
+      {
+        "answer_correctness": 0.8,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.75,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 11
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 12
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.75,
+        "citation_accuracy": 0.4,
+        "citation_recall": 0.6666666666666666,
+        "citation_hit_rate": 1.0,
+        "__question_id": 13
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 0.667,
+        "evidence_completeness": 0.8571428571428571,
+        "citation_accuracy": 0.25,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 14
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.25,
+        "citation_accuracy": 0.25,
+        "citation_recall": 0.6666666666666666,
+        "citation_hit_rate": 1.0,
+        "__question_id": 15
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8571428571428571,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 16
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 0.333,
+        "evidence_completeness": 0.67,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 17
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8571428571428571,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 18
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.75,
+        "citation_accuracy": 0.5,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 19
+      },
+      {
+        "answer_correctness": 0.67,
+        "faithfulness": 0.67,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.2857142857142857,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 20
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 21
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 22
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 23
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.5,
+        "citation_accuracy": 0.16666666666666666,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 24
+      },
+      {
+        "answer_correctness": 0.8,
+        "faithfulness": 0.67,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.25,
+        "citation_recall": 0.6666666666666666,
+        "citation_hit_rate": 1.0,
+        "__question_id": 25
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 1.0,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 26
+      },
+      {
+        "answer_correctness": 0.8,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8571428571428571,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 27
+      },
+      {
+        "answer_correctness": 0.8,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8571428571428571,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 28
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 29
+      },
+      {
+        "answer_correctness": 0.95,
+        "faithfulness": 1.0,
+        "evidence_completeness": 0.8,
+        "citation_accuracy": 0.125,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 30
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+        "gold_answer": "延迟连接配置对 Dubbo 协议生效，因为 Dubbo 协议是长连接。",
+        "answer": "延迟连接用于减少长连接数，当有调用发起时，再创建长连接 [1]。Dubbo 从 2.2.0 版本开始，每个服务默认都会在本地暴露 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1566,
+          1591
+        ],
+        "gold_chunk_ids": [
+          1566
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1566,
+            "doc_id": 168,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/lazy-connect/\ndescription: 在 Dubbo 中配置延迟连接\nlinkTitle: 延迟连接\ntitle: 延迟连接\ntype: docs\nweight: 30\n---\n\n \n\n延迟连接用于减少长连接数。当有调用发起时，再创建长连接。",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/lazy-connect/\ndescription: 在 Dubbo 中配置延迟连接\nlinkTitle: 延迟连接\ntitle: 延迟连接\ntype: docs\nweight: 30\n---\n\n \n\n延迟连接用于减少长连接数。当有调用发起时，再创建长连接。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1591,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 2,
+        "question": "在 sayHello 方法中，如何避免使用 JDK 公用线程池？",
+        "gold_answer": "在 sayHello 方法中，建议为 CompletableFuture.supplyAsync 提供自定义线程池。",
+        "answer": "在 sayHello 方法中，避免使用 JDK 公用线程池的方法是为 supplyAsync 提供自定义线程池 [1]。具体实现是在调用 CompletableFuture.supplyAsync() 时传入自定义的线程池参数，而不是依赖默认的 JDK 公用线程池 [1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          16,
+          416
+        ],
+        "gold_chunk_ids": [
+          16
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 16,
+            "doc_id": 16,
+            "page": 0,
+            "snippet": "public class AsyncServiceImpl implements AsyncService {\n    @Override\n    public CompletableFuture<String> sayHello(String name) {\n        RpcContext savedContext = RpcContext.getContext();\n        //…",
+            "llm_context": "public class AsyncServiceImpl implements AsyncService {\n    @Override\n    public CompletableFuture<String> sayHello(String name) {\n        RpcContext savedContext = RpcContext.getContext();\n        // 建议为supplyAsync提供自定义线程池，避免使用JDK公用线程池\n        return CompletableFuture.supplyAsync(() -> {\n            System.out.println(savedContext.getAttachment(\"consumer-key1\"));\n            try {\n                Thread.sleep(5000);\n            } catch (InterruptedException e) {\n                e.printStackTrace();\n            }\n            return \"async response from provider.\";\n        });\n    }\n}\n",
+            "section_path": [
+              "定义 CompletableFuture 签名的接口"
+            ]
+          },
+          {
+            "chunk_id": 416,
+            "doc_id": 42,
+            "page": 0,
+            "snippet": "限制 `com.foo.BarService` 的 `sayHello` 方法，服务器端并发执行（或占用线程池线程数）不能超过 10 个：",
+            "llm_context": "限制 `com.foo.BarService` 的 `sayHello` 方法，服务器端并发执行（或占用线程池线程数）不能超过 10 个：",
+            "section_path": [
+              "配置样例",
+              "样例 2"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 3,
+        "question": "在Spring Cloud Alibaba中，如何配置加权最少活跃调用优先算法？",
+        "gold_answer": "在Spring Cloud Alibaba中，配置加权最少活跃调用优先算法需要设置相关属性，该策略会根据提供者的活跃数来决定优先级，活跃数越低的提供者将被更优先地调用。",
+        "answer": "在Spring Cloud Alibaba中，可以通过配置启用加权最少活跃调用优先算法，该算法会优先选择活跃数越低的提供者进行调用，相同活跃数的则进行加权随机选择。活跃数是指调用前后计数差（请求发送数 - 响应返回数），反映提供者的任务堆积量。该机制能使慢的提供者收到更少请求，而处理能力强的节点获得更多请求。[1]",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1688
+        ],
+        "gold_chunk_ids": [
+          1688
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1688,
+            "doc_id": 175,
+            "page": 0,
+            "snippet": "* **加权最少活跃调用优先**，活跃数越低，越优先调用，相同活跃数的进行加权随机。活跃数指调用前后计数差（针对特定提供者：请求发送数 - 响应返回数），表示特定提供者的任务堆积量，活跃数越低，代表该提供者处理能力越强。\n* 使慢的提供者收到更少请求，因为越慢的提供者的调用前后计数差会越大；相对的，处理能力越强的节点，处理更多的请求。",
+            "llm_context": "* **加权最少活跃调用优先**，活跃数越低，越优先调用，相同活跃数的进行加权随机。活跃数指调用前后计数差（针对特定提供者：请求发送数 - 响应返回数），表示特定提供者的任务堆积量，活跃数越低，代表该提供者处理能力越强。\n* 使慢的提供者收到更少请求，因为越慢的提供者的调用前后计数差会越大；相对的，处理能力越强的节点，处理更多的请求。",
+            "section_path": [
+              "负载均衡策略",
+              "LeastActive"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 4,
+        "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+        "gold_answer": "在 Spring Cloud Alibaba 中配置扩展配置 extension-configs 需要通过 spring.cloud.nacos.config.prefix 来配置前缀，并使用 @RefreshScope 注解实现配置动态刷新。",
+        "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 44453cf6",
+        "state_hint": "LLM_DEGRADED",
+        "cited_chunk_ids": [
+          1426,
+          1399,
+          1385,
+          2116,
+          2113
+        ],
+        "gold_chunk_ids": [
+          1426
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1426,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时…",
+            "llm_context": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时，对应的连接符 `-` 也将不存在，dataId 的拼接格式变成 `${prefix}.${file-extension}`**\n* `file-exetension` 为配置内容的数据格式，可以通过配置项 `spring.cloud.nacos.config.file-extension` 来配置。目前只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1399,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "<dependency>\n    <groupId>com.alibaba.cloud</groupId>\n    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n    <version>${latest.version}</version>\n</dependency>\n",
+            "llm_context": "<dependency>\n    <groupId>com.alibaba.cloud</groupId>\n    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n    <version>${latest.version}</version>\n</dependency>\n",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nac…",
+            "llm_context": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-config 实现配置的动态变更。\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-discovery 实现服务的注册与发现。",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心"
+            ]
+          },
+          {
+            "chunk_id": 2116,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "<!--Nacos Discovery-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>\n     <version>[latest version]</version>\n </dep…",
+            "llm_context": "<!--Nacos Discovery-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>\n     <version>[latest version]</version>\n </dependency>\n\n<!--Nacos Config-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n     <version>[latest version]</version>\n </dependency>\n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题",
+              "Spring Cloud Alibaba"
+            ]
+          },
+          {
+            "chunk_id": 2113,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": " \n\n目前支持修改cluster.conf文件的方式进行扩缩容, 改完后无需重启, Server会自动刷新到文件新内容。\n\n Nacos客户端修改日志级别 \n\n配置-D参数com.alibaba.nacos.naming.log.level设置naming客户端的日志级别，例如设置为error：\n`-Dcom.alibaba.nacos.naming.log.level=error`\n同样的，-D…",
+            "llm_context": " \n\n目前支持修改cluster.conf文件的方式进行扩缩容, 改完后无需重启, Server会自动刷新到文件新内容。\n\n Nacos客户端修改日志级别 \n\n配置-D参数com.alibaba.nacos.naming.log.level设置naming客户端的日志级别，例如设置为error：\n`-Dcom.alibaba.nacos.naming.log.level=error`\n同样的，-D参数com.alibaba.nacos.config.log.level用来设置config客户端的日志级别。\n\n Nacos与Zipkin 整合出现 Service not found 问题 \n\n配置`spring-cloud-seluth`参数：`spring.zipkin.discovery-client-enabled=false`。\n\n如果仍然存在`Service not found`错误，则建议先使用open-api将Zipkin-server注册为永久实例服务：\n\n`curl -X POST ' '`\n\n然后，前往nacos控制台，找到服务名为`zipkin-server`的服务，找到集群配置，设置健康检查模式为`TCP`，端口号为`9411`(即zipkin-server的端口)。\n\n 如何依赖最新的Nacos客户端？ \n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 5,
+        "question": "如何在本地克隆Nacos代码仓库并添加Alibaba/Nacos仓库为upstream仓库？",
+        "gold_answer": "首先克隆你的fork仓库，然后使用 `git remote add upstream https://github.com/alibaba/nacos.git` 添加upstream仓库。",
+        "answer": "克隆Nacos代码仓库的步骤是：使用`git clone ${your fork nacos repo address}`命令克隆fork到本地，然后进入nacos目录[4]。添加Alibaba/Nacos仓库为upstream仓库的命令是：`git remote add upstream https://github.com/alibaba/nacos.git`[1]。添加后可以使用`git remote -v`查看远程仓库配置，确认upstream已添加[1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          525,
+          623,
+          31,
+          524
+        ],
+        "gold_chunk_ids": [
+          31
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 525,
+            "doc_id": 64,
+            "page": 0,
+            "snippet": "git remote add upstream https://github.com/alibaba/nacos.git\n\ngit remote -v \n\n    origin\t   ${your fork nacos repo address} (fetch)\n    origin\t   ${your fork nacos repo address} (push)\n    upstream\tht…",
+            "llm_context": "git remote add upstream https://github.com/alibaba/nacos.git\n\ngit remote -v \n\n    origin\t   ${your fork nacos repo address} (fetch)\n    origin\t   ${your fork nacos repo address} (push)\n    upstream\thttps://github.com/alibaba/nacos.git (fetch)\n    upstream\thttps://github.com/alibaba/nacos.git (push)\n    \ngit fetch origin\ngit fetch upstream\n",
+            "section_path": [
+              "Nacos 贡献流程",
+              "3. 添加Alibaba/Nacos仓库为upstream仓库"
+            ]
+          },
+          {
+            "chunk_id": 623,
+            "doc_id": 71,
+            "page": 0,
+            "snippet": "git remote add upstream [REDACTED_EMAIL]:alibaba/nacos.git\ngit fetch upstream\ngit rebase upstream/master\ngit checkout -b your_awesome_patch\n... add some work\ngit push origin your_awesome_patch\n",
+            "llm_context": "git remote add upstream [REDACTED_EMAIL]:alibaba/nacos.git\ngit fetch upstream\ngit rebase upstream/master\ngit checkout -b your_awesome_patch\n... add some work\ngit push origin your_awesome_patch\n",
+            "section_path": [
+              "如何贡献",
+              "贡献代码",
+              "贡献流程"
+            ]
+          },
+          {
+            "chunk_id": 31,
+            "doc_id": 12,
+            "page": 0,
+            "snippet": "现在，如果您想贡献，请创建一个新的拉取请求。\n\n我们使用`develop`分支作为开发分支，这表明这是一个不稳定的分支。\n\n此外，我们的分支模型符合[ )。我们强烈建议新成员在创建PR之前完成上述文章。\n\n现在，如果您准备创建PR，这里是贡献者的工作流程：\n\n1. fork Nacos仓库到你的github仓库\n    \n2. 克隆fork到本地仓库\n    \n3. 创建一个新分支并进行处理\n  …",
+            "llm_context": "现在，如果您想贡献，请创建一个新的拉取请求。\n\n我们使用`develop`分支作为开发分支，这表明这是一个不稳定的分支。\n\n此外，我们的分支模型符合[ )。我们强烈建议新成员在创建PR之前完成上述文章。\n\n现在，如果您准备创建PR，这里是贡献者的工作流程：\n\n1. fork Nacos仓库到你的github仓库\n    \n2. 克隆fork到本地仓库\n    \n3. 创建一个新分支并进行处理\n    \n4. 保持分支同步\n    \n5. 提交您的更改（确保您的提交消息简明扼要）\n    \n6. 将提交推送到你的github远程仓库\n    \n7. 创建一个指向**开发**分支的Pull Request\n    \n\n创建Pull Request时：\n\n1. 请遵循[拉取请求模板]( )。\n    \n2. 请创建**开发**分支的请求。\n    \n3. 请确保PR有相应的问题。\n    \n4. 如果您的PR包含大量更改，例如组件重构或新组件，请写下有关其设计和使用的详细文档。\n    \n5. 请注意，单个PR不应该太大。如果需要进行大量更改，最好将更改分成几个单独的PR。\n    \n6. 创建PR后，将为拉取请求分配一个或多个审阅者。\n    \n7. 在合并PR之前，请注意合并提交节点（git commit），包括修复审核反馈，拼写错误，合并。最终提交消息应该清晰简洁。\n    \n\n",
+            "section_path": [
+              "为 Nacos 做贡献",
+              "贡献和Nacos社区构成",
+              "开始你的贡献"
+            ]
+          },
+          {
+            "chunk_id": 524,
+            "doc_id": 64,
+            "page": 0,
+            "snippet": "git clone ${your fork nacos repo address}\n\ncd nacos\n",
+            "llm_context": "git clone ${your fork nacos repo address}\n\ncd nacos\n",
+            "section_path": [
+              "Nacos 贡献流程",
+              "2. 克隆或下载您fork的Nacos代码仓库到您本地"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 6,
+        "question": "如何修改应用demo在20880端口上提供服务的权重？",
+        "gold_answer": "根据片段1，可通过配置configVersion: v2.7、scope: application、key: demo、addresses: [\"0.0.0.0:20880\"]、side: provider，并设置parameters中的weight为1000来修改应用demo在20880端口上提供服务的权重。",
+        "answer": "可以通过修改配置文件中的weight参数来实现。在configVersion为v2.7的配置中，将scope设置为application，key设置为demo，addresses设置为\"0.0.0.0:20880\"，side设置为provider，然后将parameters中的weight值修改为所需数值[1]。同样，对于key为demo-provider的应用，也可以通过修改相同位置的weight参数来调整权重[2][3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          499,
+          506,
+          501,
+          505,
+          2040
+        ],
+        "gold_chunk_ids": [
+          499
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 499,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "# 将应用demo（key:demo）在20880端口上提供（side:provider）的所有服务（scope:application）的权重修改为1000（weight:1000）。\n---\nconfigVersion: v2.7\nscope: application\nkey: demo\nenabled: true\nconfigs:\n- addresses: [\"0.0.0.0:20880\"]…",
+            "llm_context": "# 将应用demo（key:demo）在20880端口上提供（side:provider）的所有服务（scope:application）的权重修改为1000（weight:1000）。\n---\nconfigVersion: v2.7\nscope: application\nkey: demo\nenabled: true\nconfigs:\n- addresses: [\"0.0.0.0:20880\"]\n  side: provider\n  parameters:\n  weight: 1000\n  ...\n",
+            "section_path": [
+              "概览"
+            ]
+          },
+          {
+            "chunk_id": 506,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "   ---\n   configVersion: v2.7\n   scope: application\n   key: demo-provider\n   enabled: true\n   configs:\n   - addresses: [\"10.20.153.10:20880\"]\n     side: provider\n     parameters:\n       weight: 200\n  …",
+            "llm_context": "   ---\n   configVersion: v2.7\n   scope: application\n   key: demo-provider\n   enabled: true\n   configs:\n   - addresses: [\"10.20.153.10:20880\"]\n     side: provider\n     parameters:\n       weight: 200\n   ...\n",
+            "section_path": [
+              "规则详解",
+              "示例"
+            ]
+          },
+          {
+            "chunk_id": 501,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "---\nconfigVersion: v2.7\nscope: application/service\nkey: app-name/group+service+version\nenabled: true\nconfigs:\n- addresses: [\"0.0.0.0\"]\n  providerAddresses: [\"1.1.1.1:20880\", \"2.2.2.2:20881\"]\n  side: c…",
+            "llm_context": "---\nconfigVersion: v2.7\nscope: application/service\nkey: app-name/group+service+version\nenabled: true\nconfigs:\n- addresses: [\"0.0.0.0\"]\n  providerAddresses: [\"1.1.1.1:20880\", \"2.2.2.2:20881\"]\n  side: consumer\n  applications/services: []\n  parameters:\n    timeout: 1000\n    cluster: failfase\n    loadbalance: random\n- addresses: [\"0.0.0.0:20880\"]\n  side: provider\n  applications/services: []\n  parameters:\n    threadpool: fixed\n    threads: 200\n    iothreads: 4\n    dispatcher: all\n    weight: 200\n...\n",
+            "section_path": [
+              "规则详解",
+              "配置模板"
+            ]
+          },
+          {
+            "chunk_id": 505,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "   ---\n   configVersion: v2.7\n   scope: application\n   key: demo-provider\n   enabled: true\n   configs:\n   - addresses: [\"10.20.153.10:20880\"]\n     side: provider\n     parameters:\n       disabled: true…",
+            "llm_context": "   ---\n   configVersion: v2.7\n   scope: application\n   key: demo-provider\n   enabled: true\n   configs:\n   - addresses: [\"10.20.153.10:20880\"]\n     side: provider\n     parameters:\n       disabled: true\n   ...\n",
+            "section_path": [
+              "规则详解",
+              "示例"
+            ]
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 7,
+        "question": "阿里巴巴在Dubbo3中扮演了什么角色？",
+        "gold_answer": "阿里巴巴是Dubbo3的核心参与力量之一，主导了该版本许多核心功能的设计与开发，并将内部HSF通过Dubbo3形式贡献到开源社区，确定其为未来内部主推的服务框架。",
+        "answer": "阿里巴巴是参与在Dubbo3中的核心力量之一，主导了该版本许多核心功能的设计与开发[1]。阿里巴巴把Dubbo3社区版本确定为其未来内部主推的服务框架，并选择将内部HSF通过Dubbo3的形式贡献到开源社区[1]。在阿里巴巴内部，众多业务线包括电商系统的考拉、交易平台，以及饿了么、钉钉等都已经成功迁移到Dubbo3版本[1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          103
+        ],
+        "gold_chunk_ids": [
+          103
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着…",
+            "llm_context": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着非常大的规模与非常久的实践经验积累，是最具有企业规模化微服务实践话语权的框架之一。采用 Dubbo 的企业涵盖互联网、传统IT、金融、生产制造业多个领域，一些典型用户包括阿里巴巴、携程、工商银行、中国人寿、海尔、金蝶等。\n\n在企业大规模实践的过程中，Dubbo 的稳定性得到了验证，服务治理的易用性与丰富度也在不断提升，而也就是在这样的背景下催生了下一代的产品 - Dubbo3。Dubbo3 的整个设计与开发过程，始终有来自社区团队与众多企业用户的共同参与，因此 Dubbo3 的许多核心架构与功能都充分考虑了大规模微服务实践诉求。阿里巴巴是参与在 Dubbo3 中的核心力量之一，作为企业用户其主导了该版本许多核心功能的设计与开发，阿里巴巴把 Dubbo3 社区版本确定为其未来内部主推的服务框架，并选择将内部 HSF 通过 Dubbo3 的形式贡献到开源社区，在阿里巴巴内部，众多业务线包括电商系统的考拉、交易平台，以及饿了么、钉钉等都已经成功迁移到 Dubbo3 版本。同样全程参与在 Dubbo3 开发与验证试点过程中的企业用户包括工商银行、携程、斗鱼、小米等。\n \n Dubbo 的大规模实践经验主要体现在：\n * 高性能通信\n * 高可扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n",
+            "section_path": [
+              "大规模企业微服务实践沉淀"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 8,
+        "question": "Nacos 控制台如何帮助用户管理服务流量权重？",
+        "gold_answer": "Nacos 控制台通过服务管理功能帮助用户管理服务流量权重，包括服务 CRUD、健康状态检查和服务权重管理等功能。",
+        "answer": "Nacos 控制台允许用户通过点击实例的编辑按钮来修改实例的权重 [1][2]。用户可以通过调大权重来增加实例的流量，或将权重设为0来使实例不接收流量 [1][2]。服务流量权重的调整是 Nacos 控制台服务管理功能的一部分 [3][4][6]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          2600,
+          1421,
+          2586,
+          1400,
+          2105,
+          179,
+          1411,
+          2592
+        ],
+        "gold_chunk_ids": [
+          1421
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "llm_context": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.1. 服务管理",
+              "1.1.2. 服务流量权重支持及流量保护"
+            ]
+          },
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "llm_context": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "服务管理",
+              "服务流量权重支持及流量保护"
+            ]
+          },
+          {
+            "chunk_id": 2586,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "[Nacos 控制台]( )主要旨在于增强对于服务列表，健康状态管理，服务治理，分布式配置管理等方面的管控能力，以便进一步帮助用户降低管理微服务应用架构的成本，将提供包括下列基本功能:\n\n* 服务管理\n * 服务列表及服务健康状态展示\n * 服务元数据存储及编辑\n * 服务流量权重的调整\n * 服务优雅上下线\n* 配置管理\n * 多种配置格式编辑\n * 编辑DIFF\n * 示例代码\n * 推送状态…",
+            "llm_context": "[Nacos 控制台]( )主要旨在于增强对于服务列表，健康状态管理，服务治理，分布式配置管理等方面的管控能力，以便进一步帮助用户降低管理微服务应用架构的成本，将提供包括下列基本功能:\n\n* 服务管理\n * 服务列表及服务健康状态展示\n * 服务元数据存储及编辑\n * 服务流量权重的调整\n * 服务优雅上下线\n* 配置管理\n * 多种配置格式编辑\n * 编辑DIFF\n * 示例代码\n * 推送状态查询\n * 配置版本及一键回滚\n* 命名空间\n* 登录管理",
+            "section_path": [
+              "控制台手册"
+            ]
+          },
+          {
+            "chunk_id": 1400,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "> 该文档即将废弃，推荐查看[运维手册-控制台手册](../../manual/admin/console.md)。\n\n[Nacos 控制台]( )主要旨在于增强对于服务列表，健康状态管理，服务治理，分布式配置管理等方面的管控能力，以便进一步帮助用户降低管理微服务应用架构的成本，将提供包括下列基本功能:\n\n* 服务管理\n * 服务列表及服务健康状态展示\n * 服务元数据存储及编辑\n * 服务流量权…",
+            "llm_context": "> 该文档即将废弃，推荐查看[运维手册-控制台手册](../../manual/admin/console.md)。\n\n[Nacos 控制台]( )主要旨在于增强对于服务列表，健康状态管理，服务治理，分布式配置管理等方面的管控能力，以便进一步帮助用户降低管理微服务应用架构的成本，将提供包括下列基本功能:\n\n* 服务管理\n * 服务列表及服务健康状态展示\n * 服务元数据存储及编辑\n * 服务流量权重的调整\n * 服务优雅上下线\n* 配置管理\n * 多种配置格式编辑\n * 编辑DIFF\n * 示例代码\n * 推送状态查询\n * 配置版本及一键回滚\n* 命名空间\n* 登录管理",
+            "section_path": [
+              "控制台手册"
+            ]
+          },
+          {
+            "chunk_id": 2105,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "Nacos是什么 \n\nNacos 致力于帮助您发现、配置和管理微服务。Nacos 提供了一组简单易用的特性集，帮助您快速实现动态服务发现、服务配置、服务元数据及流量管理。详情可以参考[Nacos官网介绍](../../what-is-nacos.md)。\n\n Nacos如何支持多环境 \n\n在日常使用中常常需要不同的环境，比如日常，预发，线上环境，如果是逻辑隔离可以使用命名空间，Nacos支持命名空…",
+            "llm_context": "Nacos是什么 \n\nNacos 致力于帮助您发现、配置和管理微服务。Nacos 提供了一组简单易用的特性集，帮助您快速实现动态服务发现、服务配置、服务元数据及流量管理。详情可以参考[Nacos官网介绍](../../what-is-nacos.md)。\n\n Nacos如何支持多环境 \n\n在日常使用中常常需要不同的环境，比如日常，预发，线上环境，如果是逻辑隔离可以使用命名空间，Nacos支持命名空间来支持多环境隔离，可以在Nacos控制台创建多个命名空间。如果需要物理隔离，就要部署多套Nacos环境。\n\n Nacos是否生产可用 \n\nNacos在2019.1发布了Pre-GA版本，支持了安全隔离、监控和服务迁移等上生产的最后一公里，以更稳定的支撑用户的生产环境。详情可以参考[Nacos 发布 v0.8.0 Pre-GA 版本，安全稳定上生产]( )。\n\n Nacos有什么依赖 \n\n在单机模式下，Nacos没有任何依赖，在集群模式下，Nacos依赖Mysql做存储，详情可以参考[Nacos部署](../admin/deployment.md)。\n\n Nacos使用什么开源协议 \n\n",
+            "section_path": [
+              "FAQ",
+              "Nacos常规问题"
+            ]
+          },
+          {
+            "chunk_id": 179,
+            "doc_id": 2,
+            "page": 0,
+            "snippet": "- 服务管理：实现服务CRUD，域名CRUD，服务健康状态检查，服务权重管理等功能\n- 配置管理：实现配置管CRUD，版本管理，灰度管理，监听管理，推送轨迹，聚合数据等功能\n- 元数据管理：提供元数据CURD 和打标能力\n- 插件机制：实现三个模块可分可合能力，实现扩展点SPI机制\n- 事件机制：实现异步化事件通知，sdk数据变化异步通知等逻辑\n- 日志模块：管理日志分类，日志级别，日志可移植性（…",
+            "llm_context": "- 服务管理：实现服务CRUD，域名CRUD，服务健康状态检查，服务权重管理等功能\n- 配置管理：实现配置管CRUD，版本管理，灰度管理，监听管理，推送轨迹，聚合数据等功能\n- 元数据管理：提供元数据CURD 和打标能力\n- 插件机制：实现三个模块可分可合能力，实现扩展点SPI机制\n- 事件机制：实现异步化事件通知，sdk数据变化异步通知等逻辑\n- 日志模块：管理日志分类，日志级别，日志可移植性（尤其避免冲突），日志格式，异常码+帮助文档\n- 回调机制：sdk通知数据，通过统一的模式回调用户处理。接口和数据结构需要具备可扩展性\n- 寻址模式：解决ip，域名，nameserver、广播等多种寻址模式，需要可扩展\n- 推送通道：解决server与存储、server间、server与sdk间推送性能问题\n- 容量管理：管理每个租户，分组下的容量，防止存储被写爆，影响服务可用性\n- 流量管理：按照租户，分组等多个维度对请求频率，长链接个数，报文大小，请求流控进行控制\n- 缓存机制：容灾目录，本地缓存，server缓存机制。容灾目录使用需要工具\n- 启动模式：按照单机模式，配置模式，服务模式，dns模式，或者all模式，启动不同的程序+UI\n- 一致性协议：解决不同数据，不同一致性要求情况下，不同一致性机制\n- 存储模块：解决数据持久化、非持久化存储，解决数据分片问题\n- Nameserver：解决namespace到clusterid的路由问题，解决用户环境与nacos物理环境映射问题\n- CMDB：解决元数据存储，与三方cmdb系统对接问题，解决应用，人，资源关系\n- Metrics：暴露标准metrics数据，方便与三方监控系统打通\n- Trace：暴露标准trace，方便与SLA系统打通，日志白平化，推送轨迹等能力，并且可以和计量计费系统打通\n",
+            "section_path": [
+              "Nacos 架构",
+              "逻辑架构及其组件介绍"
+            ]
+          },
+          {
+            "chunk_id": 1411,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "限控制的情况下，进行服务的一些配置的编辑操作。Nacos在这个版本开放的控制台的服务发现部分，主要就是提供用户一个基本的运维页面，能够查看、编辑当前注册的服务。",
+            "llm_context": "限控制的情况下，进行服务的一些配置的编辑操作。Nacos在这个版本开放的控制台的服务发现部分，主要就是提供用户一个基本的运维页面，能够查看、编辑当前注册的服务。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "服务管理"
+            ]
+          },
+          {
+            "chunk_id": 2592,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "限控制的情况下，进行服务的一些配置的编辑操作。Nacos在这个版本开放的控制台的服务发现部分，主要就是提供用户一个基本的运维页面，能够查看、编辑当前注册的服务。",
+            "llm_context": "限控制的情况下，进行服务的一些配置的编辑操作。Nacos在这个版本开放的控制台的服务发现部分，主要就是提供用户一个基本的运维页面，能够查看、编辑当前注册的服务。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.1. 服务管理"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 9,
+        "question": "在Spring Cloud Alibaba中，如何修改Dubbo服务的超时时间？",
+        "gold_answer": "在Spring Cloud Alibaba中，可以通过Dubbo的配置修改服务的超时时间。例如，在配置文件中指定服务名和超时时间，如将DemoService的超时时间设置为6000ms。",
+        "answer": "在Spring Cloud Alibaba中修改Dubbo服务的超时时间可以通过配置中心实现。配置示例中显示，可以通过设置scope为service、key为服务接口全限定名，并在parameters中指定timeout值来修改超时时间。例如，将DemoService服务的超时时间修改为6000ms的配置为：configVersion: v2.7, scope: service, key: org.apache.dubbo.samples.governance.api.DemoService, enabled: true, configs中设置side: consumer和parameters: timeout: 6000 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          586,
+          500,
+          585
+        ],
+        "gold_chunk_ids": [
+          500
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 586,
+            "doc_id": 84,
+            "page": 0,
+            "snippet": "需要延迟暴露（delay > 0）服务的倒计时动作推迟到了 Spring 初始化完成后进行。你在使用 Dubbo 的过程中，并不会感知到此变化，因此请放心使用。",
+            "llm_context": "需要延迟暴露（delay > 0）服务的倒计时动作推迟到了 Spring 初始化完成后进行。你在使用 Dubbo 的过程中，并不会感知到此变化，因此请放心使用。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 500,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "# 所有消费（side:consumer）DemoService服务（key:org.apache.dubbo.samples.governance.api.DemoService）的应用实例（addresses:[0.0.0.0]），超时时间修改为6000ms\n---\nconfigVersion: v2.7\nscope: service\nkey: org.apache.dubbo.samples…",
+            "llm_context": "# 所有消费（side:consumer）DemoService服务（key:org.apache.dubbo.samples.governance.api.DemoService）的应用实例（addresses:[0.0.0.0]），超时时间修改为6000ms\n---\nconfigVersion: v2.7\nscope: service\nkey: org.apache.dubbo.samples.governance.api.DemoService\nenabled: true\nconfigs:\n- addresses: [0.0.0.0]\n  side: consumer\n  parameters:\n  timeout: 6000\n  ...\n",
+            "section_path": [
+              "概览"
+            ]
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/delay-publish/\ndescription: 延迟暴露 Dubbo 服务\nlinkTitle: 延迟暴露\ntitle: 延迟暴露\ntype: docs\nweight: 27\n---\n\n \n\n如果你的服务需要预热时间，比如初始化缓存，等待相关资源就位等，可以使用 delay 进行延迟暴露。我们在 Dubbo 2.6.5 版…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/delay-publish/\ndescription: 延迟暴露 Dubbo 服务\nlinkTitle: 延迟暴露\ntitle: 延迟暴露\ntype: docs\nweight: 27\n---\n\n \n\n如果你的服务需要预热时间，比如初始化缓存，等待相关资源就位等，可以使用 delay 进行延迟暴露。我们在 Dubbo 2.6.5 版本中对服务延迟暴露逻辑进行了细微的调整，将需要延迟暴露（delay > 0）服务的倒计时动作推迟到了 Spring 初始化完成后进行。你在使用 Dubbo 的过程中，并不会感知到此变化，因此请放心使用。",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 10,
+        "question": "如何在 Spring Cloud Alibaba 中禁用特定的提供者实例？",
+        "gold_answer": "通过覆盖规则为目标提供者设置参数，可临时禁用该提供者实例。",
+        "answer": "在 Spring Cloud Alibaba 中禁用特定的提供者实例，可以通过在 `override` 的 URL 参数上添加特定数值来实现。这种方法通常用于临时踢除某台提供者机器。示例中提到，禁止消费者访问应使用路由规则。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          466
+        ],
+        "gold_chunk_ids": [
+          466,
+          467
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 466,
+            "doc_id": 56,
+            "page": 0,
+            "snippet": "数，直接加在 `override` 的 URL 参数上。\n\n示例：\n\n1. 禁用提供者：(通常用于临时踢除某台提供者机器，相似的，禁止消费者访问请使用路由规则)",
+            "llm_context": "数，直接加在 `override` 的 URL 参数上。\n\n示例：\n\n1. 禁用提供者：(通常用于临时踢除某台提供者机器，相似的，禁止消费者访问请使用路由规则)",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 11,
+        "question": "如何在Nacos中修改服务实例的流量权重？",
+        "gold_answer": "在Nacos中，服务实例的流量权重是实例级别的配置，权重为浮点数，权重越大，分配给该实例的流量越大。您可以通过修改实例的权重值来调整流量分配。",
+        "answer": "在Nacos中可以通过点击实例的编辑按钮来修改服务实例的流量权重。如果想增加实例的流量，可以将权重调大；如果不想实例接收流量，则可以将权重设为0。Nacos提供流量权重控制能力，帮助用户保护服务提供者集群不被意外打垮[1][2][3][4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1421,
+          2600,
+          2603,
+          1425,
+          2362,
+          1436,
+          2611,
+          2730
+        ],
+        "gold_chunk_ids": [
+          1421
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "llm_context": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "服务管理",
+              "服务流量权重支持及流量保护"
+            ]
+          },
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "llm_context": "Nacos 为用户提供了流量权重控制的能力，同时开放了服务流量的阈值保护，以帮助用户更好的保护服务服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.1. 服务管理",
+              "1.1.2. 服务流量权重支持及流量保护"
+            ]
+          },
+          {
+            "chunk_id": 2603,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "llm_context": "服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.1. 服务管理",
+              "1.1.2. 服务流量权重支持及流量保护"
+            ]
+          },
+          {
+            "chunk_id": 1425,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "llm_context": "服务提供者集群不被意外打垮。如下图所以，可以点击实例的编辑按钮，修改实例的权重。如果想增加实例的流量，可以将权重调大，如果不想实例接收流量，则可以将权重设为0。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "服务管理",
+              "服务流量权重支持及流量保护"
+            ]
+          },
+          {
+            "chunk_id": 2362,
+            "doc_id": 214,
+            "page": 0,
+            "snippet": "修改实例信息\n\n> 通过该接口更新的元数据拥有更高的优先级，且具有记忆能力；会在对应实例删除后，依旧存在一段时间，如果在此期间实例重新注册，该元数据依旧生效；您可以通过`nacos.naming.clean.expired-metadata.expired-time`及`nacos.naming.clean.expired-metadata.interval`对记忆时间进行修改",
+            "llm_context": "修改实例信息\n\n> 通过该接口更新的元数据拥有更高的优先级，且具有记忆能力；会在对应实例删除后，依旧存在一段时间，如果在此期间实例重新注册，该元数据依旧生效；您可以通过`nacos.naming.clean.expired-metadata.expired-time`及`nacos.naming.clean.expired-metadata.interval`对记忆时间进行修改",
+            "section_path": [
+              "Open API 指南",
+              "服务发现",
+              "接口描述"
+            ]
+          },
+          {
+            "chunk_id": 1436,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "Nacos还提供服务实例的上下线操作，在服务详情页面，可以点击实例的“上线”或者“下线”按钮，被下线的实例，将不会包含在健康的实例列表里。",
+            "llm_context": "Nacos还提供服务实例的上下线操作，在服务详情页面，可以点击实例的“上线”或者“下线”按钮，被下线的实例，将不会包含在健康的实例列表里。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "服务管理",
+              "服务优雅上下线"
+            ]
+          },
+          {
+            "chunk_id": 2611,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "Nacos还提供服务实例的上下线操作，在服务详情页面，可以点击实例的“上线”或者“下线”按钮，被下线的实例，将不会包含在健康的实例列表里。",
+            "llm_context": "Nacos还提供服务实例的上下线操作，在服务详情页面，可以点击实例的“上线”或者“下线”按钮，被下线的实例，将不会包含在健康的实例列表里。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.1. 服务管理",
+              "1.1.4. 服务优雅上下线"
+            ]
+          },
+          {
+            "chunk_id": 2730,
+            "doc_id": 242,
+            "page": 0,
+            "snippet": "{\n    \"code\": 0,\n    \"data\": {\n        \"adWeightMap\": {},\n        \"autoChangeHealthCheckEnabled\": true,\n        \"checkTimes\": 3,\n        \"checksum\": null,\n        \"clientBeatInterval\": 5000,\n        \"…",
+            "llm_context": "{\n    \"code\": 0,\n    \"data\": {\n        \"adWeightMap\": {},\n        \"autoChangeHealthCheckEnabled\": true,\n        \"checkTimes\": 3,\n        \"checksum\": null,\n        \"clientBeatInterval\": 5000,\n        \"defaultCacheMillis\": 3000,\n        \"defaultInstanceEphemeral\": true,\n        \"defaultPushCacheMillis\": 10000,\n        \"disableAddIP\": false,\n        \"distroEnabled\": true,\n        \"distroServerExpiredMillis\": 10000,\n        \"distroThreshold\": 0.7,\n        \"enableAuthentication\": false,\n        \"enableStandalone\": true,\n        \"healthCheckEnabled\": true,\n        \"healthCheckWhiteList\": [],\n        \"httpHealthParams\": {\n            \"factor\": 0.85,\n            \"max\": 5000,\n            \"min\": 500\n        },\n        \"incrementalList\": [],\n        \"lightBeatEnabled\": true,\n        \"limitedUrlMap\": {},\n        \"masters\": null,\n        \"mysqlHealthParams\": {\n            \"factor\": 0.65,\n            \"max\": 3000,\n            \"min\": 2000\n        },\n        \"name\": \"00-00---000-NACOS_SWITCH_DOMAIN-000---00-00\",\n        \"overriddenServerStatus\": null,\n        \"pushCSharpVersion\": \"0.9.0\",\n        \"pushCVersion\": \"1.0.12\",\n        \"pushEnabled\": true,\n        \"pushGoVersion\": \"0.1.0\",\n        \"pushJavaVersion\": \"0.1.0\",\n        \"pushPythonVersion\": \"0.4.3\",\n        \"sendBeatOnly\": false,\n        \"serverStatusSynchronizationPeriodMillis\": 2000,\n        \"serviceStatusSynchronizationPeriodMillis\": 5000,\n        \"tcpHealthParams\": {\n            \"factor\": 0.75,\n            \"max\": 5000,\n            \"min\": 1000\n        }\n    },\n    \"message\": \"success\"\n}\n",
+            "section_path": [
+              "运维API",
+              "2. Nacos Naming 运维 API",
+              "2.1. 查看Naming模块的相关开关",
+              "示例"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 12,
+        "question": "Dubbo 如何实现从服务器端调用客户端逻辑？",
+        "gold_answer": "Dubbo 通过参数回调机制实现从服务器端调用客户端逻辑，只需在 Spring 配置中声明回调参数类型，Dubbo 会基于长连接生成反向代理，从而支持服务端回调客户端。",
+        "answer": "Dubbo 通过参数回调机制实现从服务器端调用客户端逻辑。只需要在 Spring 配置文件中声明参数为 callback 类型，Dubbo 会基于长连接生成反向代理。这样服务器端就可以通过这个反向代理调用客户端的逻辑 [1][2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          382,
+          381,
+          1845,
+          19,
+          79,
+          1591,
+          88,
+          60
+        ],
+        "gold_chunk_ids": [
+          382
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 382,
+            "doc_id": 35,
+            "page": 0,
+            "snippet": "参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "llm_context": "参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/callback-parameter/\ndescription: 通过参数回调从服务器端调用客户端逻辑\nlinkTitle: 参数回调\ntitle: 参数回调\ntype: docs\nweight: 23\n---\n\n \n\n参数回调方式与调用本地 callback 或 listener 相同，只需要在 Spring 的配置文件中声明哪…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/callback-parameter/\ndescription: 通过参数回调从服务器端调用客户端逻辑\nlinkTitle: 参数回调\ntitle: 参数回调\ntype: docs\nweight: 23\n---\n\n \n\n参数回调方式与调用本地 callback 或 listener 相同，只需要在 Spring 的配置文件中声明哪个参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1845,
+            "doc_id": 192,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/local-stub/\ndescription: 在 Dubbo 中利用本地存根在客户端执行部分逻辑\nlinkTitle: 本地存根\ntitle: 本地存根\ntype: docs\nweight: 25\n---\n\n \n\n远程服务后，客户端通常只剩下接口，而实现全在服务器端，但提供方有些时候想在客户端也执行部分逻辑，比如：做 Thre…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/local-stub/\ndescription: 在 Dubbo 中利用本地存根在客户端执行部分逻辑\nlinkTitle: 本地存根\ntitle: 本地存根\ntype: docs\nweight: 25\n---\n\n \n\n远程服务后，客户端通常只剩下接口，而实现全在服务器端，但提供方有些时候想在客户端也执行部分逻辑，比如：做 ThreadLocal 缓存，提前验证参数，调用失败后伪造容错数据等等，此时就需要在 API 中带上 Stub，客户端生成 Proxy 实例，会把 Proxy 通过构造函数传给 Stub [^1]，然后把 Stub 暴露给用户，Stub 可以决定要不要去调 Proxy。\n\n \n\n在 spring 配置文件中按以下方式配置：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 19,
+            "doc_id": 16,
+            "page": 0,
+            "snippet": "Dubbo 提供了一个类似 Servlet 3.0 的异步接口`AsyncContext`，在没有 CompletableFuture 签名接口的情况下，也可以实现 Provider 端的异步执行。\n\n服务接口定义：",
+            "llm_context": "Dubbo 提供了一个类似 Servlet 3.0 的异步接口`AsyncContext`，在没有 CompletableFuture 签名接口的情况下，也可以实现 Provider 端的异步执行。\n\n服务接口定义：",
+            "section_path": [
+              "使用AsyncContext"
+            ]
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富…",
+            "llm_context": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富的多语言客户端实现，其中 Java、Golang 版本是当前稳定性、活跃度最好的版本，其他多语言客户端正在持续建设中。\n\n自开源以来，Dubbo 就被一众大规模互联网、IT公司选型，经过多年企业实践积累了大量经验。Dubbo3 是站在巨人肩膀上的下一代产品，它汲取了上一代的优点并针对已知问题做了大量优化，因此，Dubbo 在解决业务落地与规模化实践方面有着无可比拟的优势：\n* 开箱即用\n * 易用性高，如 Java 版本的面向接口代理特性能实现本地透明调用\n * 功能丰富，基于原生库或轻量扩展即可实现绝大多数的微服务治理能力\n* 超大规模微服务集群实践\n * 高性能的跨进程通信协议\n * 地址发现、流量治理层面，轻松支持百万规模集群实例\n* 企业级微服务治理能力\n * 服务测试\n * 服务Mock\n\nDubbo3 是在云原生背景下诞生的，使用 Dubbo 构建的微服务遵循云原生思想，能更好的复用底层云原生基础设施、贴合云原生微服务架构。这体现在：\n* 服务支持部署在容器、Kubernetes平台，服务生命周期可实现与平台调度周期对齐；\n* 支持经典 Service Mesh 微服务架构，引入了 Proxyless Mesh 架构，进一步简化 Mesh 的落地与迁移成本，提供更灵活的选择；\n",
+            "section_path": [
+              "What Dubbo3 is"
+            ]
+          },
+          {
+            "chunk_id": 1591,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 提供了从服务定义、服务发现、服务通信到流量管控等几乎所有的服务治理能力，并且尝试从使用上对用户屏蔽底层细节，以提供更好的易用性。\n\n定义服务在 Dubbo 中非常简单与直观，可以选择使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），也可以使用 Protobuf IDL 语言中立的方式。无论选择哪种方式，站在服务消费方的视角，都可以通过 Dubbo 提供的透明代…",
+            "llm_context": "Dubbo 提供了从服务定义、服务发现、服务通信到流量管控等几乎所有的服务治理能力，并且尝试从使用上对用户屏蔽底层细节，以提供更好的易用性。\n\n定义服务在 Dubbo 中非常简单与直观，可以选择使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），也可以使用 Protobuf IDL 语言中立的方式。无论选择哪种方式，站在服务消费方的视角，都可以通过 Dubbo 提供的透明代理直接编码。\n>需要注意的是，在 Dubbo 中，我们提到服务时，通常是指 RPC 粒度的、提供某个具体业务增删改功能的接口或方法，与一些微服务概念书籍中泛指的服务并不是一个概念。\n\n点对点的服务通信是 Dubbo 提供的另一项基本能力，Dubbo 以 RPC 的方式将请求数据（Request）发送给后端服务，并接收服务端返回的计算结果（Response）。RPC 通信对用户来说是完全透明的，使用者无需关心请求是如何发出去的、发到了哪里，每次调用只需要拿到正确的调用结果就行。同步的 Request-Response 是默认的通信模型，它最简单但却不能覆盖所有的场景，因此，Dubbo 提供更丰富的通信模型：\n* 消费端异步请求(Client Side Asynchronous Request-Response)\n* 提供端异步执行（Server Side Asynchronous Request-Response）\n* 消费端请求流（Request Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\n",
+            "section_path": [
+              "一站式微服务解决方案"
+            ]
+          },
+          {
+            "chunk_id": 60,
+            "doc_id": 11,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/async-call/\ndescription: 在 Dubbo 中发起异步调用\nlinkTitle: 异步调用\ntitle: 异步调用\ntype: docs\nweight: 21\n---\n\n \n\n从 2.7.0 开始，Dubbo 的所有异步编程接口开始以 [CompletableFuture]( ) 为基础\n\n基于 NIO 的非…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/async-call/\ndescription: 在 Dubbo 中发起异步调用\nlinkTitle: 异步调用\ntitle: 异步调用\ntype: docs\nweight: 21\n---\n\n \n\n从 2.7.0 开始，Dubbo 的所有异步编程接口开始以 [CompletableFuture]( ) 为基础\n\n基于 NIO 的非阻塞实现并行调用，客户端不需要启动多线程即可完成并行调用多个远程服务，相对多线程开销较小。",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 13,
+        "question": "如何在 Spring Cloud Alibaba 中通过 XML 配置实现点对点直连服务提供者？",
+        "gold_answer": "在 Spring Cloud Alibaba 中，可通过在配置中设置 url 指向服务提供者地址来实现点对点直连，多个地址用分号隔开，从而绕过注册中心。",
+        "answer": "在 Spring Cloud Alibaba 中通过 XML 配置实现点对点直连服务提供者，可以在 `<dubbo:reference>` 标签中配置 url 属性指向提供者，将绕过注册中心 [3]。多个地址用分号隔开 [3]。点对点直连方式将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表 [1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          959,
+          2040,
+          960,
+          2072,
+          2071
+        ],
+        "gold_chunk_ids": [
+          959,
+          960,
+          961
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "llm_context": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          },
+          {
+            "chunk_id": 960,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "llm_context": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "section_path": [
+              "通过 XML 配置"
+            ]
+          },
+          {
+            "chunk_id": 2072,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置，竖号分隔表示同时连接多个不同注册中心，同一注册中心的多个集群地址用逗号分隔 -->\n    <dubbo:registry address=\"10.20.141.150:9090|10.20.154.177:9010\" />\n    <!-- 引用服务 -->\n    <dubbo:reference id=\"helloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          },
+          {
+            "chunk_id": 2071,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置 -->\n    <dubbo:registry id=\"chinaRegistry\" address=\"10.20.141.150:9090\" />\n    <dubbo:registry id=\"intlRegistry\" address=\"10.20.154.177:9010\" default=\"false\" />\n    <!-- 引用中文站服务 -->\n    <dubbo:reference id=\"chinaHelloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" registry=\"chinaRegistry\" />\n    <!-- 引用国际站站服务 -->\n    <dubbo:reference id=\"intlHelloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" registry=\"intlRegistry\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 14,
+        "question": "Spring Cloud Alibaba 2.7.5 版本引入的线程池模型相比老版本有哪些改进？",
+        "gold_answer": "2.7.5 版本引入的线程池模型通过复用业务线程处理返回结果，免去了额外的消费端线程池开销，相比老版本减少了线程分配过多的问题并提升了性能。",
+        "answer": "关于「Spring Cloud Alibaba 2.7.5 版本引入的线程池模型相比老版本有哪些改进？」从两个角度对比:\n\n【关于 2.7.5】\n2.7.5 版本引入了 ThreadlessExecutor 模型，业务线程在调用 future.get() 前会调用 ThreadlessExecutor.wait() 阻塞等待 [1]。改进后的模型通过复用业务端被阻塞的线程，解决了消费端线程数分配过多的问题 [2]。2.7.5 版本对整个调用链路做了全面优化，总体 QPS 性能提升将近 30%，减少了调用过程中的内存分配开销 [3]。\n\n【关于 Spring Cloud】\n模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 29fd51e2",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          605,
+          603,
+          601,
+          604
+        ],
+        "gold_chunk_ids": [
+          605
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 605,
+            "doc_id": 70,
+            "page": 0,
+            "snippet": "我们重点关注 Consumer 部分：\n\n1. 业务线程发出请求，拿到一个 Future 实例。\n2. 业务线程紧接着调用 future.get 阻塞等待业务结果返回。\n3. 当业务数据返回后，交由独立的 Consumer 端线程池进行反序列化等处理，并调用 future.set 将反序列化后的业务结果置回。\n4. 业务线程拿到结果直接返回\n\n**2.7.5 版本引入的线程池模型**\n\n \n\n1.…",
+            "llm_context": "我们重点关注 Consumer 部分：\n\n1. 业务线程发出请求，拿到一个 Future 实例。\n2. 业务线程紧接着调用 future.get 阻塞等待业务结果返回。\n3. 当业务数据返回后，交由独立的 Consumer 端线程池进行反序列化等处理，并调用 future.set 将反序列化后的业务结果置回。\n4. 业务线程拿到结果直接返回\n\n**2.7.5 版本引入的线程池模型**\n\n \n\n1. 业务线程发出请求，拿到一个 Future 实例。\n2. 在调用 future.get() 之前，先调用 ThreadlessExecutor.wait()，wait 会使业务线程在一个阻塞队列上等待，直到队列中被加入元素。\n3. 当业务数据返回后，生成一个 Runnable Task 并放入 ThreadlessExecutor 队列\n4. 业务线程将 Task 取出并在本线程中执行：反序列化业务数据并 set 到 Future。\n5. 业务线程拿到结果直接返回\n\n这样，相比于老的线程池模型，由业务线程自己负责监测并解析返回结果，免去了额外的消费端线程池开销。\n\n关于性能优化，在接下来的版本中将会持续推进，主要从以下两个方面入手：\n\n1. RPC 调用链路。目前能看到的点包括：进一步减少执行链路的内存分配、在保证协议兼容性的前提下提高协议传输效率、提高 Filter、Router 等计算效率。\n",
+            "section_path": [
+              "消费端线程池模型优化",
+              "老的线程池模型"
+            ]
+          },
+          {
+            "chunk_id": 603,
+            "doc_id": 70,
+            "page": 0,
+            "snippet": "对 2.7.5 版本之前的 Dubbo 应用，尤其是一些消费端应用，当面临需要消费大量服务且并发数比较大的大流量场景时（典型如网关类场景），经常会出现消费端线程数分配过多的问题，具体问题讨论可参见 [Need a limited Threadpool in consumer side #2013]( )\n\n改进后的消费端线程池模型，通过复用业务端被阻塞的线程，很好的解决了这个问题。",
+            "llm_context": "对 2.7.5 版本之前的 Dubbo 应用，尤其是一些消费端应用，当面临需要消费大量服务且并发数比较大的大流量场景时（典型如网关类场景），经常会出现消费端线程数分配过多的问题，具体问题讨论可参见 [Need a limited Threadpool in consumer side #2013]( )\n\n改进后的消费端线程池模型，通过复用业务端被阻塞的线程，很好的解决了这个问题。",
+            "section_path": [
+              "消费端线程池模型优化"
+            ]
+          },
+          {
+            "chunk_id": 601,
+            "doc_id": 70,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/consumer-threadpool/\ndescription: Dubbo 消费端线程池模型用法\nlinkTitle: 消费端线程池模型\ntitle: 消费端线程池模型\ntype: docs\nweight: 35\n---\n\n \n\n2.7.5 版本对整个调用链路做了全面的优化，根据压测结果显示，总体 QPS 性能提升将近 30%…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/consumer-threadpool/\ndescription: Dubbo 消费端线程池模型用法\nlinkTitle: 消费端线程池模型\ntitle: 消费端线程池模型\ntype: docs\nweight: 35\n---\n\n \n\n2.7.5 版本对整个调用链路做了全面的优化，根据压测结果显示，总体 QPS 性能提升将近 30%，同时也减少了调用过程中的内存分配开销。其中一个值得提及的设计点是 2.7.5 引入了 Servicerepository 的概念，在服务注册阶段提前生成 ServiceDescriptor 和 MethodDescriptor，以减少 RPC 调用阶段计算 Service 原信息带来的资源消耗。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 604,
+            "doc_id": 70,
+            "page": 0,
+            "snippet": "ed Threadpool in consumer side #2013]( )\n\n改进后的消费端线程池模型，通过复用业务端被阻塞的线程，很好的解决了这个问题。",
+            "llm_context": "ed Threadpool in consumer side #2013]( )\n\n改进后的消费端线程池模型，通过复用业务端被阻塞的线程，很好的解决了这个问题。",
+            "section_path": [
+              "消费端线程池模型优化"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 15,
+        "question": "如何通过 XML 的 dubbo:reference interface 与 url 配置点对点直连服务提供者？",
+        "gold_answer": "使用 dubbo:reference 声明服务接口和提供者 URL，例如 interface 设置为服务接口全限定名，url 设置为 dubbo://localhost:20890。",
+        "answer": "点对点直连方式将以服务接口为单位，忽略注册中心的提供者列表 [1][2]。在 XML 配置中，可通过 dubbo:reference 的 url 属性指向提供者，将绕过注册中心 [3]。多个地址用分号隔开，配置如下：在 dubbo:reference 中添加 url 属性指定提供者地址 [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          959,
+          958,
+          960,
+          2072,
+          2071,
+          1195,
+          386,
+          2040
+        ],
+        "gold_chunk_ids": [
+          959,
+          960,
+          961
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "llm_context": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 958,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/explicit-target/\ndescription: Dubbo 中点对点的直连方式\nlinkTitle: 直连提供者\ntitle: 直连提供者\ntype: docs\nweight: 5\n---\n\n \n\n在开发及测试环境下，经常需要绕过注册中心，只测试指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/explicit-target/\ndescription: Dubbo 中点对点的直连方式\nlinkTitle: 直连提供者\ntitle: 直连提供者\ntype: docs\nweight: 5\n---\n\n \n\n在开发及测试环境下，经常需要绕过注册中心，只测试指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 960,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "llm_context": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "section_path": [
+              "通过 XML 配置"
+            ]
+          },
+          {
+            "chunk_id": 2072,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置，竖号分隔表示同时连接多个不同注册中心，同一注册中心的多个集群地址用逗号分隔 -->\n    <dubbo:registry address=\"10.20.141.150:9090|10.20.154.177:9010\" />\n    <!-- 引用服务 -->\n    <dubbo:reference id=\"helloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          },
+          {
+            "chunk_id": 2071,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置 -->\n    <dubbo:registry id=\"chinaRegistry\" address=\"10.20.141.150:9090\" />\n    <dubbo:registry id=\"intlRegistry\" address=\"10.20.154.177:9010\" default=\"false\" />\n    <!-- 引用中文站服务 -->\n    <dubbo:reference id=\"chinaHelloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" registry=\"chinaRegistry\" />\n    <!-- 引用国际站站服务 -->\n    <dubbo:reference id=\"intlHelloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" registry=\"intlRegistry\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          },
+          {
+            "chunk_id": 1195,
+            "doc_id": 133,
+            "page": 0,
+            "snippet": "import org.apache.dubbo.rpc.service.GenericService; \n... \n \n// 引用远程服务 \n// 该实例很重量，里面封装了所有与注册中心及服务提供方连接，请缓存\nReferenceConfig<GenericService> reference = new ReferenceConfig<GenericService>(); \n// 弱类型接口名\n…",
+            "llm_context": "import org.apache.dubbo.rpc.service.GenericService; \n... \n \n// 引用远程服务 \n// 该实例很重量，里面封装了所有与注册中心及服务提供方连接，请缓存\nReferenceConfig<GenericService> reference = new ReferenceConfig<GenericService>(); \n// 弱类型接口名\nreference.setInterface(\"com.xxx.XxxService\");  \nreference.setVersion(\"1.0.0\");\n// 声明为泛化接口 \nreference.setGeneric(true);  \n\n// 用org.apache.dubbo.rpc.service.GenericService可以替代所有接口引用  \nGenericService genericService = reference.get(); \n \n// 基本类型以及Date,List,Map等不需要转换，直接调用 \nObject result = genericService.$invoke(\"sayHello\", new String[] {\"java.lang.String\"}, new Object[] {\"world\"}); \n \n// 用Map表示POJO参数，如果返回值为POJO也将自动转成Map \nMap<String, Object> person = new HashMap<String, Object>(); \nperson.put(\"name\", \"xxx\"); \nperson.put(\"password\", \"yyy\"); \n// 如果返回POJO将自动转成Map \nObject result = genericService.$invoke(\"findPerson\", new String[]\n{\"com.xxx.Person\"}, new Object[]{person}); \n \n...\n",
+            "section_path": [
+              "通过 API 方式使用泛化调用"
+            ]
+          },
+          {
+            "chunk_id": 386,
+            "doc_id": 35,
+            "page": 0,
+            "snippet": "<bean id=\"callbackService\" class=\"com.callback.impl.CallbackServiceImpl\" />\n<dubbo:service interface=\"com.callback.CallbackService\" ref=\"callbackService\" connections=\"1\" callbacks=\"1000\">\n    <dubbo:m…",
+            "llm_context": "<bean id=\"callbackService\" class=\"com.callback.impl.CallbackServiceImpl\" />\n<dubbo:service interface=\"com.callback.CallbackService\" ref=\"callbackService\" connections=\"1\" callbacks=\"1000\">\n    <dubbo:method name=\"addListener\">\n        <dubbo:argument index=\"1\" callback=\"true\" />\n        <!--也可以通过指定类型的方式-->\n        <!--<dubbo:argument type=\"com.demo.CallbackListener\" callback=\"true\" />-->\n    </dubbo:method>\n</dubbo:service>\n",
+            "section_path": [
+              "服务提供者配置示例"
+            ]
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 16,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 RpcContext 进行隐式参数传递？",
+        "gold_answer": "在 Spring Cloud Alibaba 中，可通过 RpcContext.getContext().setAttachment() 设置隐式参数，远程调用时自动传递，服务端用 getAttachment() 获取。注意 path、group 等为保留字段，且不建议常规业务使用。",
+        "answer": "在 Spring Cloud Alibaba 中，可以通过 `RpcContext.getContext().setAttachment` 和 `getAttachment` 在服务消费方和提供方之间进行参数的隐式传递 [2]。在消费方使用 `RpcContext.getContext().setAttachment(\"index\", \"1\")` 设置隐式参数，这些参数会在后续的远程调用中自动发送到服务器端 [1]。在提供方可以通过 `RpcContext.getContext().getAttachment(\"index\")` 获取客户端隐式传入的参数 [3]。需要注意的是，path、group、version、dubbo、token、timeout 几个 key 是保留字段，应使用其他值作为参数名 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          11,
+          8,
+          12,
+          581,
+          2040
+        ],
+        "gold_chunk_ids": [
+          8
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 11,
+            "doc_id": 21,
+            "page": 0,
+            "snippet": "RpcContext.getContext().setAttachment(\"index\", \"1\"); // 隐式传参，后面的远程调用都会隐式将这些参数发送到服务器端，类似cookie，用于框架集成，不建议常规业务使用\nxxxService.xxx(); // 远程调用\n// ...\n",
+            "llm_context": "RpcContext.getContext().setAttachment(\"index\", \"1\"); // 隐式传参，后面的远程调用都会隐式将这些参数发送到服务器端，类似cookie，用于框架集成，不建议常规业务使用\nxxxService.xxx(); // 远程调用\n// ...\n",
+            "section_path": [
+              "在服务消费方端设置隐式参数"
+            ]
+          },
+          {
+            "chunk_id": 8,
+            "doc_id": 21,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/attachment/\ndescription: 通过 Dubbo 中的 Attachment 在服务消费方和提供方之间隐式传递参数\nlinkTitle: 隐式参数\ntitle: 隐式参数\ntype: docs\nweight: 20\n---\n\n \n\n可以通过 `RpcContext` 上的 `setAttachment` 和 `g…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/attachment/\ndescription: 通过 Dubbo 中的 Attachment 在服务消费方和提供方之间隐式传递参数\nlinkTitle: 隐式参数\ntitle: 隐式参数\ntype: docs\nweight: 20\n---\n\n \n\n可以通过 `RpcContext` 上的 `setAttachment` 和 `getAttachment` 在服务消费方和提供方之间进行参数的隐式传递。 \n\n \npath, group, version, dubbo, token, timeout 几个 key 是保留字段，请使用其它值。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 12,
+            "doc_id": 21,
+            "page": 0,
+            "snippet": "public class XxxServiceImpl implements XxxService {\n \n    public void xxx() {\n        // 获取客户端隐式传入的参数，用于框架集成，不建议常规业务使用\n        String index = RpcContext.getContext().getAttachment(\"index\"); \n    }\n}\n",
+            "llm_context": "public class XxxServiceImpl implements XxxService {\n \n    public void xxx() {\n        // 获取客户端隐式传入的参数，用于框架集成，不建议常规业务使用\n        String index = RpcContext.getContext().getAttachment(\"index\"); \n    }\n}\n",
+            "section_path": [
+              "在服务提供方端获取隐式参数"
+            ]
+          },
+          {
+            "chunk_id": 581,
+            "doc_id": 77,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/context/\ndescription: 通过上下文存放当前调用过程中所需的环境信息\nlinkTitle: 上下文信息\ntitle: 上下文信息\ntype: docs\nweight: 19\n---\n\n \n\n上下文中存放的是当前调用过程中所需的环境信息。所有配置信息都将转换为 URL 的参数，参见 [schema 配置参考手册](…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/context/\ndescription: 通过上下文存放当前调用过程中所需的环境信息\nlinkTitle: 上下文信息\ntitle: 上下文信息\ntype: docs\nweight: 19\n---\n\n \n\n上下文中存放的是当前调用过程中所需的环境信息。所有配置信息都将转换为 URL 的参数，参见 [schema 配置参考手册](../../references/xml) 中的**对应URL参数**一列。\n\nRpcContext 是一个 ThreadLocal 的临时状态记录器，当接收到 RPC 请求，或发起 RPC 请求时，RpcContext 的状态都会变化。比如：A 调 B，B 再调 C，则 B 机器上，在 B 调 C 之前，RpcContext 记录的是 A 调 B 的信息，在 B 调 C 之后，RpcContext 记录的是 B 调 C 的信息。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 17,
+        "question": "配置 Dubbo 端口时，可以在哪些配置文件中设置？",
+        "gold_answer": "可以在 Dubbo Spring 外部化配置文件和 Spring XML 配置文件中设置端口，推荐使用外部化配置。",
+        "answer": "根据检索到的片段，配置 Dubbo 端口可以在以下配置文件中设置：\n\n1. `dubbo-config.properties` 文件，其中存储了 Dubbo 外部化配置属性 [3][4]\n2. `consumer-config.properties` 文件，其中可以包含服务版本等配置信息 [5]\n3. Spring XML 配置文件，如 `/META-INF/spring/dubbo-provider-context.xml` 和 `/META-INF/spring/dubbo-consumer-context.xml` [6][8]",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1085,
+          761,
+          1086,
+          1087,
+          1108,
+          1114,
+          1090,
+          1117
+        ],
+        "gold_chunk_ids": [
+          1085
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1085,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "假设您 Dubbo 应用使用 Spring Framework 装配，将有两种配置方法可选，分别为：[Dubbo Spring 外部化配置]( )以及 Spring XML 配置文件以及，笔者强烈推荐前者。",
+            "llm_context": "假设您 Dubbo 应用使用 Spring Framework 装配，将有两种配置方法可选，分别为：[Dubbo Spring 外部化配置]( )以及 Spring XML 配置文件以及，笔者强烈推荐前者。",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "配置注册中心"
+            ]
+          },
+          {
+            "chunk_id": 761,
+            "doc_id": 92,
+            "page": 0,
+            "snippet": "配置Dubbo Consumer的Dubbo配置文件`consumer.yaml`，让客户端能够找到Nacos集群。",
+            "llm_context": "配置Dubbo Consumer的Dubbo配置文件`consumer.yaml`，让客户端能够找到Nacos集群。",
+            "section_path": [
+              "使用流程",
+              "开始迁移",
+              "Dubbo 客户端连接到 Nacos 注册中心",
+              "Dubbo Consumer客户端迁移"
+            ]
+          },
+          {
+            "chunk_id": 1086,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "Dubbo Spring 外部化配置是由 Dubbo `2.5.8` 引入的新特性，可通过 Spring `Environment` 属性自动地生成并绑定 Dubbo 配置 Bean，实现配置简化，并且降低微服务开发门槛。\n\n假设您 Dubbo 应用的使用 Nacos 作为注册中心，并且其服务器 IP 地址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `…",
+            "llm_context": "Dubbo Spring 外部化配置是由 Dubbo `2.5.8` 引入的新特性，可通过 Spring `Environment` 属性自动地生成并绑定 Dubbo 配置 Bean，实现配置简化，并且降低微服务开发门槛。\n\n假设您 Dubbo 应用的使用 Nacos 作为注册中心，并且其服务器 IP 地址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "Dubbo Spring 外部化配置"
+            ]
+          },
+          {
+            "chunk_id": 1087,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：",
+            "llm_context": "址为：`10.20.153.10`，同时，该注册地址作为 Dubbo 外部化配置属性存储在 `dubbo-config.properties` 文件，如下所示：",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "Dubbo Spring 外部化配置"
+            ]
+          },
+          {
+            "chunk_id": 1108,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "同样地，`@EnableDubbo` 注解激活 Dubbo 注解驱动和外部化配置，不过当前属于服务消费者，无需指定 Java 包名扫描标注 `@Service` 的服务实现。\n\n`@Reference` 是 Dubbo 远程服务的依赖注入注解，需要服务提供方和消费端约定接口（interface）、版本（version）以及分组（group）信息。在当前服务消费示例中，`DemoService` 的…",
+            "llm_context": "同样地，`@EnableDubbo` 注解激活 Dubbo 注解驱动和外部化配置，不过当前属于服务消费者，无需指定 Java 包名扫描标注 `@Service` 的服务实现。\n\n`@Reference` 是 Dubbo 远程服务的依赖注入注解，需要服务提供方和消费端约定接口（interface）、版本（version）以及分组（group）信息。在当前服务消费示例中，`DemoService` 的服务版本来源于属性配置文件 `consumer-config.properties`。\n\n`@PostConstruct` 部分代码则说明当 `DemoServiceConsumerBootstrap` Bean 初始化时，执行十次 Dubbo 远程方法调用。",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "完整示例",
+              "Spring 注解驱动示例",
+              "服务消费方注解驱动实现"
+            ]
+          },
+          {
+            "chunk_id": 1114,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "- 定义服务提供方 XML 上下文配置文件 - `/META-INF/spring/dubbo-provider-context.xml`",
+            "llm_context": "- 定义服务提供方 XML 上下文配置文件 - `/META-INF/spring/dubbo-provider-context.xml`",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "完整示例",
+              "Spring XML 配置驱动示例",
+              "服务提供方  XML 配置驱动"
+            ]
+          },
+          {
+            "chunk_id": 1090,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "68906.png | left | 747x437]( \"\")\n\n如果您正在使用 Spring XML 配置文件装配 Dubbo 注册中心的话，请参考下一节。",
+            "llm_context": "68906.png | left | 747x437]( \"\")\n\n如果您正在使用 Spring XML 配置文件装配 Dubbo 注册中心的话，请参考下一节。",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "快速上手",
+              "Dubbo Spring 外部化配置"
+            ]
+          },
+          {
+            "chunk_id": 1117,
+            "doc_id": 106,
+            "page": 0,
+            "snippet": "- 定义服务消费方 XML 上下文配置文件 - `/META-INF/spring/dubbo-consumer-context.xml`",
+            "llm_context": "- 定义服务消费方 XML 上下文配置文件 - `/META-INF/spring/dubbo-consumer-context.xml`",
+            "section_path": [
+              "Dubbo 融合 Nacos 成为注册中心",
+              "完整示例",
+              "Spring XML 配置驱动示例",
+              "服务消费方 XML 配置驱动"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 18,
+        "question": "Dubbo 微服务支持哪些部署架构？",
+        "gold_answer": "Dubbo 微服务支持 Kubernetes 和 Service Mesh 两种主要部署架构，其中 Service Mesh 又包括经典 Mesh 和 Proxyless Mesh 两种模式。",
+        "answer": "Dubbo 微服务支持三种部署架构：传统 SDK、基于 Sidecar 的 Service Mesh 和脱离 Sidecar 的 Proxyless Mesh [2]。Dubbo 微服务允许部署在物理机、容器和 Kubernetes 平台之上 [2][4]。在 Proxyless Mesh 架构中，Dubbo SDK 可以直接与控制面进行交互，而在经典 Mesh 架构中，独立的 sidecar 运行时接管所有流量 [2][8]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          115,
+          129,
+          79,
+          131,
+          123,
+          92,
+          103,
+          128
+        ],
+        "gold_chunk_ids": [
+          115
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native…",
+            "llm_context": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native Image 提高 Dubbo 的启动速度与资源消耗等。\n\n结合当前版本，本节主要从以下两点展开 Dubbo 的云原生特性\n* 容器调度平台（Kubernetes）\n* Service Mesh",
+            "section_path": [
+              "云原生友好"
+            ]
+          },
+          {
+            "chunk_id": 129,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "ent 主要来负责初始化和与控制面的通信。但是在 Dubbo Proxyless Mesh 架构中不是必须的，Dubbo SDK 可以直接与控制面进行交互。\n\n可以设想，在不同的组织、不同的发展阶段，未来以 Dubbo 构建的微服务将会允许有三种部署架构：传统 SDK、基于 Sidecar 的 Service Mesh、脱离 Sidecar 的 Proxyless Mesh。基于 Sidecar …",
+            "llm_context": "ent 主要来负责初始化和与控制面的通信。但是在 Dubbo Proxyless Mesh 架构中不是必须的，Dubbo SDK 可以直接与控制面进行交互。\n\n可以设想，在不同的组织、不同的发展阶段，未来以 Dubbo 构建的微服务将会允许有三种部署架构：传统 SDK、基于 Sidecar 的 Service Mesh、脱离 Sidecar 的 Proxyless Mesh。基于 Sidecar 的 Service Mesh，即经典的 Mesh 架构，独立的 sidecar 运行时接管所有的流量，脱离 Sidecar 的 Proxyless Mesh，富 SDK 直接通过 xDS 与控制面通信。Dubbo 微服务允许部署在物理机、容器、Kubernetes 平台之上，能做到以 Admin 为控制面，以统一的流量治理规则进行治理。",
+            "section_path": [
+              "云原生友好",
+              "Service Mesh"
+            ]
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富…",
+            "llm_context": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富的多语言客户端实现，其中 Java、Golang 版本是当前稳定性、活跃度最好的版本，其他多语言客户端正在持续建设中。\n\n自开源以来，Dubbo 就被一众大规模互联网、IT公司选型，经过多年企业实践积累了大量经验。Dubbo3 是站在巨人肩膀上的下一代产品，它汲取了上一代的优点并针对已知问题做了大量优化，因此，Dubbo 在解决业务落地与规模化实践方面有着无可比拟的优势：\n* 开箱即用\n * 易用性高，如 Java 版本的面向接口代理特性能实现本地透明调用\n * 功能丰富，基于原生库或轻量扩展即可实现绝大多数的微服务治理能力\n* 超大规模微服务集群实践\n * 高性能的跨进程通信协议\n * 地址发现、流量治理层面，轻松支持百万规模集群实例\n* 企业级微服务治理能力\n * 服务测试\n * 服务Mock\n\nDubbo3 是在云原生背景下诞生的，使用 Dubbo 构建的微服务遵循云原生思想，能更好的复用底层云原生基础设施、贴合云原生微服务架构。这体现在：\n* 服务支持部署在容器、Kubernetes平台，服务生命周期可实现与平台调度周期对齐；\n* 支持经典 Service Mesh 微服务架构，引入了 Proxyless Mesh 架构，进一步简化 Mesh 的落地与迁移成本，提供更灵活的选择；\n",
+            "section_path": [
+              "What Dubbo3 is"
+            ]
+          },
+          {
+            "chunk_id": 131,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": " xDS 与控制面通信。Dubbo 微服务允许部署在物理机、容器、Kubernetes 平台之上，能做到以 Admin 为控制面，以统一的流量治理规则进行治理。",
+            "llm_context": " xDS 与控制面通信。Dubbo 微服务允许部署在物理机、容器、Kubernetes 平台之上，能做到以 Admin 为控制面，以统一的流量治理规则进行治理。",
+            "section_path": [
+              "云原生友好",
+              "Service Mesh"
+            ]
+          },
+          {
+            "chunk_id": 123,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 微服务要支持 Kubernetes 平台调度，最基础的就是实现 dubbo 服务生命周期与容器生命周期的对齐，这包括 Dubbo 的启动、销毁、服务注册等生命周期事件。相比于以往 Dubbo 自行定义生命周期事件，并要求开发人员在运维实践过程中遵守约定，Kubernetes 底层基础设施定义了严格的组件生命周期事件(probe)，转而要求 Dubbo 去按约定适配。\n\nKubernet…",
+            "llm_context": "Dubbo 微服务要支持 Kubernetes 平台调度，最基础的就是实现 dubbo 服务生命周期与容器生命周期的对齐，这包括 Dubbo 的启动、销毁、服务注册等生命周期事件。相比于以往 Dubbo 自行定义生命周期事件，并要求开发人员在运维实践过程中遵守约定，Kubernetes 底层基础设施定义了严格的组件生命周期事件(probe)，转而要求 Dubbo 去按约定适配。\n\nKubernetes Service 是另一个层面的适配，这体现了服务定义与注册向云原生底层基础设施下沉的趋势。在这种模式下，用户不再需要搭建额外的注册中心组件，Dubbo 消费端节点能自动对接到 Kubernetes（API-Server 或 DNS），根据服务名（Kubernetes Service Name） 查询到实例列表（Kubernetes endpoints）。 此时服务是通过标准的 Kubernetes Service API 定义，并被调度到各个节点。",
+            "section_path": [
+              "云原生友好",
+              "Kubernetes"
+            ]
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "uest Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\nDubbo 的服务发现机制，让微服务组件之间可以独立演进并任意部署，消费端可以在无需感知对端部署位置与 IP 地址的情况下完成通信。Dubbo 提供的是 Client-Based 的服务发现机制，使用者可以有多种方式启用服务发现：\n* 使用…",
+            "llm_context": "uest Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\nDubbo 的服务发现机制，让微服务组件之间可以独立演进并任意部署，消费端可以在无需感知对端部署位置与 IP 地址的情况下完成通信。Dubbo 提供的是 Client-Based 的服务发现机制，使用者可以有多种方式启用服务发现：\n* 使用独立的注册中心组件，如 [Nacos]( )、Zookeeper、Consul、Etcd 等。\n* 将服务的组织与注册交给底层容器平台，如 Kubernetes，这被理解是一种更云原生的方式\n\n透明地址发现让 Dubbo 请求可以被发送到任意 IP 实例上，这个过程中流量被随机分配。当需要对流量进行更丰富、更细粒度的管控时，就可以用到 Dubbo 的流量管控策略，Dubbo 提供了包括负载均衡、流量路由、请求超时、流量降级、重试等策略，基于这些基础能力可以轻松的实现更多场景化的路由方案，包括金丝雀发布、A/B测试、权重路由、同区域优先等，更酷的是，Dubbo 支持流控策略在运行态动态生效，无需重新部署。\n\n",
+            "section_path": [
+              "一站式微服务解决方案"
+            ]
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着…",
+            "llm_context": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着非常大的规模与非常久的实践经验积累，是最具有企业规模化微服务实践话语权的框架之一。采用 Dubbo 的企业涵盖互联网、传统IT、金融、生产制造业多个领域，一些典型用户包括阿里巴巴、携程、工商银行、中国人寿、海尔、金蝶等。\n\n在企业大规模实践的过程中，Dubbo 的稳定性得到了验证，服务治理的易用性与丰富度也在不断提升，而也就是在这样的背景下催生了下一代的产品 - Dubbo3。Dubbo3 的整个设计与开发过程，始终有来自社区团队与众多企业用户的共同参与，因此 Dubbo3 的许多核心架构与功能都充分考虑了大规模微服务实践诉求。阿里巴巴是参与在 Dubbo3 中的核心力量之一，作为企业用户其主导了该版本许多核心功能的设计与开发，阿里巴巴把 Dubbo3 社区版本确定为其未来内部主推的服务框架，并选择将内部 HSF 通过 Dubbo3 的形式贡献到开源社区，在阿里巴巴内部，众多业务线包括电商系统的考拉、交易平台，以及饿了么、钉钉等都已经成功迁移到 Dubbo3 版本。同样全程参与在 Dubbo3 开发与验证试点过程中的企业用户包括工商银行、携程、斗鱼、小米等。\n \n Dubbo 的大规模实践经验主要体现在：\n * 高性能通信\n * 高可扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n",
+            "section_path": [
+              "大规模企业微服务实践沉淀"
+            ]
+          },
+          {
+            "chunk_id": 128,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Service Mesh 在业界得到了广泛的传播与认可，并被认为是下一代的微服务架构，这主要是因为它解决了很多棘手的问题，包括透明升级、多语言、依赖冲突、流量治理等。Service Mesh 的典型架构是通过部署独立的 Sidecar 组件来拦截所有的出口与入口流量，并在 Sidecar 中集成丰富的流量治理策略如负载均衡、路由等，除此之外，Service Mesh 还需要一个控制面（Contro…",
+            "llm_context": "Service Mesh 在业界得到了广泛的传播与认可，并被认为是下一代的微服务架构，这主要是因为它解决了很多棘手的问题，包括透明升级、多语言、依赖冲突、流量治理等。Service Mesh 的典型架构是通过部署独立的 Sidecar 组件来拦截所有的出口与入口流量，并在 Sidecar 中集成丰富的流量治理策略如负载均衡、路由等，除此之外，Service Mesh 还需要一个控制面（Control Panel）来实现对 Sidecar 流量的管控，即各种策略下发。我们在这里称这种架构为经典 Mesh。\n\n然而任何技术架构都不是完美的，经典 Mesh 在实施层面也面临成本过高的问题\n1. 需要运维控制面（Control Panel）\n2. 需要运维 Sidecar\n3. 需要考虑如何从原有 SDK 迁移到 Sidecar\n4. 需要考虑引入 Sidecar 后整个链路的性能损耗\n\n为了解决 Sidecar 引入的相关成本问题，Dubbo 引入了另一种变相的 Mesh 架构 - Proxyless Mesh，顾名思义，Proxyless Mesh 就是指没有 Sidecar 的部署，转而由 Dubbo SDK 直接与控制面交互，其架构图如下\n\n \n\n> 在 Istio Proxyless Mesh 架构中，agent 是必须的，agent 主要来负责初始化和与控制面的通信。但是在 Dubbo Proxyless Mesh 架构中不是必须的，Dubbo SDK 可以直接与控制面进行交互。\n\n",
+            "section_path": [
+              "云原生友好",
+              "Service Mesh"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 19,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 `force:` 和 `fail:` 来控制 Mock 行为？",
+        "gold_answer": "在 Spring Cloud Alibaba 中，可通过 `mock=force:return+null` 强制返回 null 来屏蔽服务，或使用 `fail:` 前缀（如 `mock=fail:return+null`）在调用失败时返回指定值，以控制 Mock 行为。",
+        "answer": "在 Spring Cloud Alibaba 中，`force:` 和 `fail:` 用于控制 Mock 行为，适用于 2.6.6 以上版本 [1]。`force:` 代表强制使用 Mock 行为，在这种情况下不会走远程调用 [1]。`fail:` 与默认行为一致，只有当远程调用发生错误时才使用 Mock 行为 [1][2]。`force:` 和 `fail:` 都支持与 `throw` 或者 `return` 组合使用，可以强制返回指定值 [1][2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1771,
+          1777
+        ],
+        "gold_chunk_ids": [
+          1771
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1771,
+            "doc_id": 187,
+            "page": 0,
+            "snippet": "在 `2.6.6` 以上的版本，可以开始在 Spring XML 配置文件中使用 `fail:` 和 `force:`。`force:` 代表强制使用 Mock 行为，在这种情况下不会走远程调用。`fail:` 与默认行为一致，只有当远程调用发生错误时才使用 Mock 行为。`force:` 和 `fail:` 都支持与 `throw` 或者 `return` 组合使用。\n\n强制返回指定值：",
+            "llm_context": "在 `2.6.6` 以上的版本，可以开始在 Spring XML 配置文件中使用 `fail:` 和 `force:`。`force:` 代表强制使用 Mock 行为，在这种情况下不会走远程调用。`fail:` 与默认行为一致，只有当远程调用发生错误时才使用 Mock 行为。`force:` 和 `fail:` 都支持与 `throw` 或者 `return` 组合使用。\n\n强制返回指定值：",
+            "section_path": [
+              "进阶用法",
+              "force 和 fail"
+            ]
+          },
+          {
+            "chunk_id": 1777,
+            "doc_id": 187,
+            "page": 0,
+            "snippet": "远程调用发生错误时才使用 Mock 行为。`force:` 和 `fail:` 都支持与 `throw` 或者 `return` 组合使用。\n\n强制返回指定值：",
+            "llm_context": "远程调用发生错误时才使用 Mock 行为。`force:` 和 `fail:` 都支持与 `throw` 或者 `return` 组合使用。\n\n强制返回指定值：",
+            "section_path": [
+              "进阶用法",
+              "force 和 fail"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 20,
+        "question": "如何指定 Dubbo 的线程堆栈导出路径？",
+        "gold_answer": "可以通过在 dubbo.properties 中设置 `dubbo.application.dump.directory` 属性，或在 XML 配置中使用 `<dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />` 来指定线程堆栈导出路径。",
+        "answer": "可以通过以下方式指定 Dubbo 的线程堆栈导出路径：\n\n1. 在 XML 配置中通过 dubbo:parameter 指定：`<dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />` [3]\n\n2. 在 dubbo.properties 文件中配置：`dubbo.application.dump.directory=/tmp` [5]\n\n3. 使用系统属性指定：`-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于其他配置 [2]",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          773,
+          964,
+          776,
+          774,
+          775,
+          382,
+          962
+        ],
+        "gold_chunk_ids": [
+          775,
+          776
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 773,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/dump/\ndescription: 在 Dubbo 自动导出线程堆栈来保留现场\nlinkTitle: 导出线程堆栈\ntitle: 导出线程堆栈\ntype: docs\nweight: 43\n---\n\n \n\n当业务线程池满时，我们需要知道线程都在等待哪些资源、条件，以找到系统的瓶颈点或异常点。dubbo 通过 Jstack 自动导出…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/dump/\ndescription: 在 Dubbo 自动导出线程堆栈来保留现场\nlinkTitle: 导出线程堆栈\ntitle: 导出线程堆栈\ntype: docs\nweight: 43\n---\n\n \n\n当业务线程池满时，我们需要知道线程都在等待哪些资源、条件，以找到系统的瓶颈点或异常点。dubbo 通过 Jstack 自动导出线程堆栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "llm_context": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "section_path": [
+              "通过文件映射"
+            ]
+          },
+          {
+            "chunk_id": 776,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "<dubbo:application ...>\n    <dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />\n</dubbo:application>\n",
+            "llm_context": "<dubbo:application ...>\n    <dubbo:parameter key=\"dump.directory\" value=\"/tmp\" />\n</dubbo:application>\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 774,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：",
+            "llm_context": "栈来保留现场，方便排查问题。\n\n默认策略:\n\n* 导出路径，user.home标识的用户主目录\n* 导出间隔，最短间隔允许每隔10分钟导出一次\n\n指定导出路径：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 775,
+            "doc_id": 98,
+            "page": 0,
+            "snippet": "# dubbo.properties\ndubbo.application.dump.directory=/tmp\n",
+            "llm_context": "# dubbo.properties\ndubbo.application.dump.directory=/tmp\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 382,
+            "doc_id": 35,
+            "page": 0,
+            "snippet": "参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "llm_context": "参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 962,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "java -Dcom.alibaba.xxx.XxxService=dubbo://localhost:20890\n",
+            "llm_context": "java -Dcom.alibaba.xxx.XxxService=dubbo://localhost:20890\n",
+            "section_path": [
+              "通过 -D 参数指定"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 21,
+        "question": "Dubbo 的扩展能力体现在哪些方面？",
+        "gold_answer": "Dubbo 的扩展能力体现在用户几乎可以在任意功能点定制自己的实现，以改变框架的默认行为来满足业务需求。",
+        "answer": "Dubbo 的扩展能力体现在 Filter、Router、Protocol 等关键流程上的扩展点定义，可以实现与其他微服务配套系统的对接 [1]。Dubbo 提供了丰富的服务治理能力，包括服务发现、流式通信、负载均衡、流量治理等 [2]。Dubbo 具有超大规模集群实例水平扩展能力和丰富的服务治理能力 [3][4]。通过 SPI 扩展，Dubbo 已经实现了 Transaction、Tracing 等功能方案 [1]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          95,
+          79,
+          110,
+          103,
+          113,
+          115,
+          88,
+          73
+        ],
+        "gold_chunk_ids": [
+          95
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "力可以轻松的实现更多场景化的路由方案，包括金丝雀发布、A/B测试、权重路由、同区域优先等，更酷的是，Dubbo 支持流控策略在运行态动态生效，无需重新部署。\n\nDubbo 强大的服务治理能力不仅体现在核心框架上，还包括其优秀的扩展能力以及周边配套设施的支持。通过 Filter、Router、Protocol 等几乎存在于每一个关键流程上的扩展点定义，我们可以丰富 Dubbo 的功能或实现与其他微服…",
+            "llm_context": "力可以轻松的实现更多场景化的路由方案，包括金丝雀发布、A/B测试、权重路由、同区域优先等，更酷的是，Dubbo 支持流控策略在运行态动态生效，无需重新部署。\n\nDubbo 强大的服务治理能力不仅体现在核心框架上，还包括其优秀的扩展能力以及周边配套设施的支持。通过 Filter、Router、Protocol 等几乎存在于每一个关键流程上的扩展点定义，我们可以丰富 Dubbo 的功能或实现与其他微服务配套系统的对接，包括 Transaction、Tracing 目前都有通过 SPI 扩展的实现方案，具体可以参见 Dubbo 扩展性的详情，也可以在 [apache/dubbo-spi-extensions]( ) 项目中发现与更多的扩展实现。",
+            "section_path": [
+              "一站式微服务解决方案"
+            ]
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富…",
+            "llm_context": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富的多语言客户端实现，其中 Java、Golang 版本是当前稳定性、活跃度最好的版本，其他多语言客户端正在持续建设中。\n\n自开源以来，Dubbo 就被一众大规模互联网、IT公司选型，经过多年企业实践积累了大量经验。Dubbo3 是站在巨人肩膀上的下一代产品，它汲取了上一代的优点并针对已知问题做了大量优化，因此，Dubbo 在解决业务落地与规模化实践方面有着无可比拟的优势：\n* 开箱即用\n * 易用性高，如 Java 版本的面向接口代理特性能实现本地透明调用\n * 功能丰富，基于原生库或轻量扩展即可实现绝大多数的微服务治理能力\n* 超大规模微服务集群实践\n * 高性能的跨进程通信协议\n * 地址发现、流量治理层面，轻松支持百万规模集群实例\n* 企业级微服务治理能力\n * 服务测试\n * 服务Mock\n\nDubbo3 是在云原生背景下诞生的，使用 Dubbo 构建的微服务遵循云原生思想，能更好的复用底层云原生基础设施、贴合云原生微服务架构。这体现在：\n* 服务支持部署在容器、Kubernetes平台，服务生命周期可实现与平台调度周期对齐；\n* 支持经典 Service Mesh 微服务架构，引入了 Proxyless Mesh 架构，进一步简化 Mesh 的落地与迁移成本，提供更灵活的选择；\n",
+            "section_path": [
+              "What Dubbo3 is"
+            ]
+          },
+          {
+            "chunk_id": 110,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "鱼、小米等。\n \n Dubbo 的大规模实践经验主要体现在：\n * 高性能通信\n * 高可扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n 关于 Dubbo 调用性能、支持超大规模集群地址方面的评测数据，将在随后发布，敬请期待。",
+            "llm_context": "鱼、小米等。\n \n Dubbo 的大规模实践经验主要体现在：\n * 高性能通信\n * 高可扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n 关于 Dubbo 调用性能、支持超大规模集群地址方面的评测数据，将在随后发布，敬请期待。",
+            "section_path": [
+              "大规模企业微服务实践沉淀"
+            ]
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着…",
+            "llm_context": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着非常大的规模与非常久的实践经验积累，是最具有企业规模化微服务实践话语权的框架之一。采用 Dubbo 的企业涵盖互联网、传统IT、金融、生产制造业多个领域，一些典型用户包括阿里巴巴、携程、工商银行、中国人寿、海尔、金蝶等。\n\n在企业大规模实践的过程中，Dubbo 的稳定性得到了验证，服务治理的易用性与丰富度也在不断提升，而也就是在这样的背景下催生了下一代的产品 - Dubbo3。Dubbo3 的整个设计与开发过程，始终有来自社区团队与众多企业用户的共同参与，因此 Dubbo3 的许多核心架构与功能都充分考虑了大规模微服务实践诉求。阿里巴巴是参与在 Dubbo3 中的核心力量之一，作为企业用户其主导了该版本许多核心功能的设计与开发，阿里巴巴把 Dubbo3 社区版本确定为其未来内部主推的服务框架，并选择将内部 HSF 通过 Dubbo3 的形式贡献到开源社区，在阿里巴巴内部，众多业务线包括电商系统的考拉、交易平台，以及饿了么、钉钉等都已经成功迁移到 Dubbo3 版本。同样全程参与在 Dubbo3 开发与验证试点过程中的企业用户包括工商银行、携程、斗鱼、小米等。\n \n Dubbo 的大规模实践经验主要体现在：\n * 高性能通信\n * 高可扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n",
+            "section_path": [
+              "大规模企业微服务实践沉淀"
+            ]
+          },
+          {
+            "chunk_id": 113,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n 关于 Dubbo 调用性能、支持超大规模集群地址方面的评测数据，将在随后发布，敬请期待。",
+            "llm_context": "扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n 关于 Dubbo 调用性能、支持超大规模集群地址方面的评测数据，将在随后发布，敬请期待。",
+            "section_path": [
+              "大规模企业微服务实践沉淀"
+            ]
+          },
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native…",
+            "llm_context": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native Image 提高 Dubbo 的启动速度与资源消耗等。\n\n结合当前版本，本节主要从以下两点展开 Dubbo 的云原生特性\n* 容器调度平台（Kubernetes）\n* Service Mesh",
+            "section_path": [
+              "云原生友好"
+            ]
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 提供了从服务定义、服务发现、服务通信到流量管控等几乎所有的服务治理能力，并且尝试从使用上对用户屏蔽底层细节，以提供更好的易用性。\n\n定义服务在 Dubbo 中非常简单与直观，可以选择使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），也可以使用 Protobuf IDL 语言中立的方式。无论选择哪种方式，站在服务消费方的视角，都可以通过 Dubbo 提供的透明代…",
+            "llm_context": "Dubbo 提供了从服务定义、服务发现、服务通信到流量管控等几乎所有的服务治理能力，并且尝试从使用上对用户屏蔽底层细节，以提供更好的易用性。\n\n定义服务在 Dubbo 中非常简单与直观，可以选择使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），也可以使用 Protobuf IDL 语言中立的方式。无论选择哪种方式，站在服务消费方的视角，都可以通过 Dubbo 提供的透明代理直接编码。\n>需要注意的是，在 Dubbo 中，我们提到服务时，通常是指 RPC 粒度的、提供某个具体业务增删改功能的接口或方法，与一些微服务概念书籍中泛指的服务并不是一个概念。\n\n点对点的服务通信是 Dubbo 提供的另一项基本能力，Dubbo 以 RPC 的方式将请求数据（Request）发送给后端服务，并接收服务端返回的计算结果（Response）。RPC 通信对用户来说是完全透明的，使用者无需关心请求是如何发出去的、发到了哪里，每次调用只需要拿到正确的调用结果就行。同步的 Request-Response 是默认的通信模型，它最简单但却不能覆盖所有的场景，因此，Dubbo 提供更丰富的通信模型：\n* 消费端异步请求(Client Side Asynchronous Request-Response)\n* 提供端异步执行（Server Side Asynchronous Request-Response）\n* 消费端请求流（Request Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\n",
+            "section_path": [
+              "一站式微服务解决方案"
+            ]
+          },
+          {
+            "chunk_id": 73,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/Introduction/\ndescription: 这篇文档是关于 Dubbo 的简单介绍，涵盖 Dubbo 的核心概念、基本使用方式以及 Dubbo3 核心功能，无论你是 Dubbo 的老用户还是新用户，都可以通过这篇 文档快速了解 Dubbo 及新版本带来的变化。\nlinkTitle: 简介\ntitle: Dubbo3 简介\ntype: do…",
+            "llm_context": "---\naliases:\n - /zh/docs/Introduction/\ndescription: 这篇文档是关于 Dubbo 的简单介绍，涵盖 Dubbo 的核心概念、基本使用方式以及 Dubbo3 核心功能，无论你是 Dubbo 的老用户还是新用户，都可以通过这篇 文档快速了解 Dubbo 及新版本带来的变化。\nlinkTitle: 简介\ntitle: Dubbo3 简介\ntype: docs\nweight: 1\n---\n\n \n\nApache Dubbo 是一款微服务开发框架，它提供了 RPC通信 与 微服务治理 两大关键能力。这意味着，使用 Dubbo 开发的微服务，将具备相互之间的远程发现与通信能力，\n同时利用 Dubbo 提供的丰富服务治理能力，可以实现诸如服务发现、负载均衡、流量调度等服务治理诉求。同时 Dubbo 是高度可扩展的，用户几乎可以在任意功能点去定制自己的实现，以改变框架的默认行为来满足自己的业务需求。\n\nDubbo3 基于 Dubbo2 演进而来，在保持原有核心功能特性的同时， Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。\n",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 22,
+        "question": "在Spring Cloud Alibaba中，如何使用异步方式进行Dubbo服务调用？",
+        "gold_answer": "在Dubbo中，从2.7.0版本开始，异步调用基于CompletableFuture实现，客户端可通过NIO非阻塞方式并行调用多个远程服务，无需启动多线程。",
+        "answer": "从 2.7.0 开始，Dubbo 的所有异步编程接口开始以 CompletableFuture 为基础 [4]。基于 NIO 的非阻塞实现并行调用，客户端不需要启动多线程即可完成并行调用多个远程服务，相对多线程开销较小 [4]。Provider 端异步执行将阻塞的业务从 Dubbo 内部线程池切换到业务自定义线程，避免 Dubbo 线程池的过度占用，有助于避免不同服务间的互相影响 [3]。Provider 端异步执行和 Consumer 端异步调用是相互独立的，你可以任意正交组合两端配置 [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          2040,
+          2069,
+          13,
+          60,
+          591,
+          382,
+          19,
+          381
+        ],
+        "gold_chunk_ids": [
+          60
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          },
+          {
+            "chunk_id": 2069,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置 -->\n    <dubbo:registry id=\"chinaRegistry\" address=\"10.20.141.150:9090\" />\n    <dubbo:registry id=\"intlRegistry\" address=\"10.20.154.177:9010\" default=\"false\" />\n    <!-- 向中文站注册中心注册 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" registry=\"chinaRegistry\" />\n    <!-- 向国际站注册中心注册 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" registry=\"intlRegistry\" />\n</beans>\n",
+            "section_path": [
+              "不同服务使用不同注册中心"
+            ]
+          },
+          {
+            "chunk_id": 13,
+            "doc_id": 16,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/async-execute-on-provider/\ndescription: Dubbo 服务提供方的异步执行\nlinkTitle: 异步执行\ntitle: 异步执行\ntype: docs\nweight: 21\n---\n\n \n\nProvider端异步执行将阻塞的业务从Dubbo内部线程池切换到业务自定义线程，避免Dubbo线程池…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/async-execute-on-provider/\ndescription: Dubbo 服务提供方的异步执行\nlinkTitle: 异步执行\ntitle: 异步执行\ntype: docs\nweight: 21\n---\n\n \n\nProvider端异步执行将阻塞的业务从Dubbo内部线程池切换到业务自定义线程，避免Dubbo线程池的过度占用，有助于避免不同服务间的互相影响。异步执行无异于节省资源或提升RPC响应性能，因为如果业务执行需要阻塞，则始终还是要有线程来负责执行。\n\n \nProvider 端异步执行和 Consumer 端异步调用是相互独立的，你可以任意正交组合两端配置\n- Consumer同步 - Provider同步\n- Consumer异步 - Provider同步\n- Consumer同步 - Provider异步\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 60,
+            "doc_id": 11,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/async-call/\ndescription: 在 Dubbo 中发起异步调用\nlinkTitle: 异步调用\ntitle: 异步调用\ntype: docs\nweight: 21\n---\n\n \n\n从 2.7.0 开始，Dubbo 的所有异步编程接口开始以 [CompletableFuture]( ) 为基础\n\n基于 NIO 的非…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/async-call/\ndescription: 在 Dubbo 中发起异步调用\nlinkTitle: 异步调用\ntitle: 异步调用\ntype: docs\nweight: 21\n---\n\n \n\n从 2.7.0 开始，Dubbo 的所有异步编程接口开始以 [CompletableFuture]( ) 为基础\n\n基于 NIO 的非阻塞实现并行调用，客户端不需要启动多线程即可完成并行调用多个远程服务，相对多线程开销较小。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 591,
+            "doc_id": 84,
+            "page": 0,
+            "snippet": "1. 强烈建议不要在服务的实现类中有 applicationContext.getBean() 的调用，全部采用 IoC 注入的方式使用 Spring的Bean。\n2. 如果实在要调 getBean()，可以将 Dubbo 的配置放在 Spring 的最后加载。\n3. 如果不想依赖配置顺序，可以使用 ` `，使 Dubbo 在 Spring 容器初始化完后，再暴露服务。\n4. 如果大量使用 get…",
+            "llm_context": "1. 强烈建议不要在服务的实现类中有 applicationContext.getBean() 的调用，全部采用 IoC 注入的方式使用 Spring的Bean。\n2. 如果实在要调 getBean()，可以将 Dubbo 的配置放在 Spring 的最后加载。\n3. 如果不想依赖配置顺序，可以使用 ` `，使 Dubbo 在 Spring 容器初始化完后，再暴露服务。\n4. 如果大量使用 getBean()，相当于已经把 Spring 退化为工厂模式在用，可以将 Dubbo 的服务隔离单独的 Spring 容器。\n\n[^1]: 基于 Spring 的 ContextRefreshedEvent 事件触发暴露",
+            "section_path": [
+              "Spring 2.x 初始化死锁问题",
+              "规避办法"
+            ]
+          },
+          {
+            "chunk_id": 382,
+            "doc_id": 35,
+            "page": 0,
+            "snippet": "参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "llm_context": "参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 19,
+            "doc_id": 16,
+            "page": 0,
+            "snippet": "Dubbo 提供了一个类似 Servlet 3.0 的异步接口`AsyncContext`，在没有 CompletableFuture 签名接口的情况下，也可以实现 Provider 端的异步执行。\n\n服务接口定义：",
+            "llm_context": "Dubbo 提供了一个类似 Servlet 3.0 的异步接口`AsyncContext`，在没有 CompletableFuture 签名接口的情况下，也可以实现 Provider 端的异步执行。\n\n服务接口定义：",
+            "section_path": [
+              "使用AsyncContext"
+            ]
+          },
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/callback-parameter/\ndescription: 通过参数回调从服务器端调用客户端逻辑\nlinkTitle: 参数回调\ntitle: 参数回调\ntype: docs\nweight: 23\n---\n\n \n\n参数回调方式与调用本地 callback 或 listener 相同，只需要在 Spring 的配置文件中声明哪…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/callback-parameter/\ndescription: 通过参数回调从服务器端调用客户端逻辑\nlinkTitle: 参数回调\ntitle: 参数回调\ntype: docs\nweight: 23\n---\n\n \n\n参数回调方式与调用本地 callback 或 listener 相同，只需要在 Spring 的配置文件中声明哪个参数是 callback 类型即可。Dubbo 将基于长连接生成反向代理，这样就可以从服务器端调用客户端逻辑。可以参考 [dubbo 项目中的示例代码]( )。",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 23,
+        "question": "Dubbo3 如何支持云原生微服务架构？",
+        "gold_answer": "Dubbo3 通过支持 Kubernetes 和 Service Mesh 等云原生基础设施，并升级 Triple 协议、统一路由规则等核心组件来支持云原生微服务架构。",
+        "answer": "Dubbo3 支持云原生微服务架构体现在多个方面，包括对 Kubernetes 平台调度的支持，实现 Dubbo 服务生命周期与容器生命周期的对齐，以及支持通过标准的 Kubernetes Service API 进行服务定义和注册 [2]。Dubbo3 引入了 Proxyless Mesh 架构，简化了 Service Mesh 的落地与迁移成本，同时支持将服务部署在容器和 Kubernetes 平台，使服务生命周期与平台调度周期对齐 [1]。此外，Dubbo3 的核心组件如 Triple 协议、统一路由规则和多语言支持都面向云原生进行了升级，并计划支持弹性伸缩的服务如 Serverless [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          79,
+          123,
+          115,
+          75,
+          76,
+          103,
+          73,
+          92
+        ],
+        "gold_chunk_ids": [
+          115
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富…",
+            "llm_context": "如开篇所述，Dubbo 提供了构建云原生微服务业务的一站式解决方案，可以使用 Dubbo 快速定义并发布微服务组件，同时基于 Dubbo 开箱即用的丰富特性及超强的扩展能力，构建运维整个微服务体系所需的各项服务治理能力，如 Tracing、Transaction 等，Dubbo 提供的基础能力包括：\n* 服务发现\n* 流式通信\n* 负载均衡\n* 流量治理\n* .....\n\nDubbo 计划提供丰富的多语言客户端实现，其中 Java、Golang 版本是当前稳定性、活跃度最好的版本，其他多语言客户端正在持续建设中。\n\n自开源以来，Dubbo 就被一众大规模互联网、IT公司选型，经过多年企业实践积累了大量经验。Dubbo3 是站在巨人肩膀上的下一代产品，它汲取了上一代的优点并针对已知问题做了大量优化，因此，Dubbo 在解决业务落地与规模化实践方面有着无可比拟的优势：\n* 开箱即用\n * 易用性高，如 Java 版本的面向接口代理特性能实现本地透明调用\n * 功能丰富，基于原生库或轻量扩展即可实现绝大多数的微服务治理能力\n* 超大规模微服务集群实践\n * 高性能的跨进程通信协议\n * 地址发现、流量治理层面，轻松支持百万规模集群实例\n* 企业级微服务治理能力\n * 服务测试\n * 服务Mock\n\nDubbo3 是在云原生背景下诞生的，使用 Dubbo 构建的微服务遵循云原生思想，能更好的复用底层云原生基础设施、贴合云原生微服务架构。这体现在：\n* 服务支持部署在容器、Kubernetes平台，服务生命周期可实现与平台调度周期对齐；\n* 支持经典 Service Mesh 微服务架构，引入了 Proxyless Mesh 架构，进一步简化 Mesh 的落地与迁移成本，提供更灵活的选择；\n",
+            "section_path": [
+              "What Dubbo3 is"
+            ]
+          },
+          {
+            "chunk_id": 123,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 微服务要支持 Kubernetes 平台调度，最基础的就是实现 dubbo 服务生命周期与容器生命周期的对齐，这包括 Dubbo 的启动、销毁、服务注册等生命周期事件。相比于以往 Dubbo 自行定义生命周期事件，并要求开发人员在运维实践过程中遵守约定，Kubernetes 底层基础设施定义了严格的组件生命周期事件(probe)，转而要求 Dubbo 去按约定适配。\n\nKubernet…",
+            "llm_context": "Dubbo 微服务要支持 Kubernetes 平台调度，最基础的就是实现 dubbo 服务生命周期与容器生命周期的对齐，这包括 Dubbo 的启动、销毁、服务注册等生命周期事件。相比于以往 Dubbo 自行定义生命周期事件，并要求开发人员在运维实践过程中遵守约定，Kubernetes 底层基础设施定义了严格的组件生命周期事件(probe)，转而要求 Dubbo 去按约定适配。\n\nKubernetes Service 是另一个层面的适配，这体现了服务定义与注册向云原生底层基础设施下沉的趋势。在这种模式下，用户不再需要搭建额外的注册中心组件，Dubbo 消费端节点能自动对接到 Kubernetes（API-Server 或 DNS），根据服务名（Kubernetes Service Name） 查询到实例列表（Kubernetes endpoints）。 此时服务是通过标准的 Kubernetes Service API 定义，并被调度到各个节点。",
+            "section_path": [
+              "云原生友好",
+              "Kubernetes"
+            ]
+          },
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native…",
+            "llm_context": "Dubbo 从设计上是完全遵循云原生微服务开发理念的，这体现在多个方面，首先是对云原生基础设施与部署架构的支持，包括 Kubernetes、Service Mesh 等，另一方面，Dubbo 众多核心组件都已面向云原生升级，包括 Triple 协议、统一路由规则、对多语言支持。值得一提的是，如何使用 Dubbo 支持弹性伸缩的服务如 Serverless 也在未来计划之中，这包括利用 Native Image 提高 Dubbo 的启动速度与资源消耗等。\n\n结合当前版本，本节主要从以下两点展开 Dubbo 的云原生特性\n* 容器调度平台（Kubernetes）\n* Service Mesh",
+            "section_path": [
+              "云原生友好"
+            ]
+          },
+          {
+            "chunk_id": 75,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": " Dubbo2 演进而来，在保持原有核心功能特性的同时， Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。\n以下文档都将基于 Dubbo3 展开。",
+            "llm_context": " Dubbo2 演进而来，在保持原有核心功能特性的同时， Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。\n以下文档都将基于 Dubbo3 展开。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 76,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "心功能特性的同时， Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。\n以下文档都将基于 Dubbo3 展开。",
+            "llm_context": "心功能特性的同时， Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。\n以下文档都将基于 Dubbo3 展开。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着…",
+            "llm_context": "Dubbo 最早诞生于阿里巴巴，随后加入 Apache 软件基金会，项目从设计之初就是为了解决企业的服务化问题，因此充分考虑了大规模集群场景下的服务开发与治理问题，如易用性、性能、流量管理、集群可伸缩性等。在 Dubbo 开源的将近 10 年时间内，Dubbo 几乎成为了国内微服务框架选型的首选框架，尤其受到大规模互联网、IT企业的认可，可以说作为开源服务框架，Dubbo 在支持微服务集群方面有着非常大的规模与非常久的实践经验积累，是最具有企业规模化微服务实践话语权的框架之一。采用 Dubbo 的企业涵盖互联网、传统IT、金融、生产制造业多个领域，一些典型用户包括阿里巴巴、携程、工商银行、中国人寿、海尔、金蝶等。\n\n在企业大规模实践的过程中，Dubbo 的稳定性得到了验证，服务治理的易用性与丰富度也在不断提升，而也就是在这样的背景下催生了下一代的产品 - Dubbo3。Dubbo3 的整个设计与开发过程，始终有来自社区团队与众多企业用户的共同参与，因此 Dubbo3 的许多核心架构与功能都充分考虑了大规模微服务实践诉求。阿里巴巴是参与在 Dubbo3 中的核心力量之一，作为企业用户其主导了该版本许多核心功能的设计与开发，阿里巴巴把 Dubbo3 社区版本确定为其未来内部主推的服务框架，并选择将内部 HSF 通过 Dubbo3 的形式贡献到开源社区，在阿里巴巴内部，众多业务线包括电商系统的考拉、交易平台，以及饿了么、钉钉等都已经成功迁移到 Dubbo3 版本。同样全程参与在 Dubbo3 开发与验证试点过程中的企业用户包括工商银行、携程、斗鱼、小米等。\n \n Dubbo 的大规模实践经验主要体现在：\n * 高性能通信\n * 高可扩展性\n * 超大规模集群实例水平扩展\n * 丰富的服务治理能力\n \n",
+            "section_path": [
+              "大规模企业微服务实践沉淀"
+            ]
+          },
+          {
+            "chunk_id": 73,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/Introduction/\ndescription: 这篇文档是关于 Dubbo 的简单介绍，涵盖 Dubbo 的核心概念、基本使用方式以及 Dubbo3 核心功能，无论你是 Dubbo 的老用户还是新用户，都可以通过这篇 文档快速了解 Dubbo 及新版本带来的变化。\nlinkTitle: 简介\ntitle: Dubbo3 简介\ntype: do…",
+            "llm_context": "---\naliases:\n - /zh/docs/Introduction/\ndescription: 这篇文档是关于 Dubbo 的简单介绍，涵盖 Dubbo 的核心概念、基本使用方式以及 Dubbo3 核心功能，无论你是 Dubbo 的老用户还是新用户，都可以通过这篇 文档快速了解 Dubbo 及新版本带来的变化。\nlinkTitle: 简介\ntitle: Dubbo3 简介\ntype: docs\nweight: 1\n---\n\n \n\nApache Dubbo 是一款微服务开发框架，它提供了 RPC通信 与 微服务治理 两大关键能力。这意味着，使用 Dubbo 开发的微服务，将具备相互之间的远程发现与通信能力，\n同时利用 Dubbo 提供的丰富服务治理能力，可以实现诸如服务发现、负载均衡、流量调度等服务治理诉求。同时 Dubbo 是高度可扩展的，用户几乎可以在任意功能点去定制自己的实现，以改变框架的默认行为来满足自己的业务需求。\n\nDubbo3 基于 Dubbo2 演进而来，在保持原有核心功能特性的同时， Dubbo3 在易用性、超大规模微服务实践、云原生基础设施适配、安全设计等几大方向上进行了全面升级。\n",
+            "section_path": []
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "uest Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\nDubbo 的服务发现机制，让微服务组件之间可以独立演进并任意部署，消费端可以在无需感知对端部署位置与 IP 地址的情况下完成通信。Dubbo 提供的是 Client-Based 的服务发现机制，使用者可以有多种方式启用服务发现：\n* 使用…",
+            "llm_context": "uest Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\nDubbo 的服务发现机制，让微服务组件之间可以独立演进并任意部署，消费端可以在无需感知对端部署位置与 IP 地址的情况下完成通信。Dubbo 提供的是 Client-Based 的服务发现机制，使用者可以有多种方式启用服务发现：\n* 使用独立的注册中心组件，如 [Nacos]( )、Zookeeper、Consul、Etcd 等。\n* 将服务的组织与注册交给底层容器平台，如 Kubernetes，这被理解是一种更云原生的方式\n\n透明地址发现让 Dubbo 请求可以被发送到任意 IP 实例上，这个过程中流量被随机分配。当需要对流量进行更丰富、更细粒度的管控时，就可以用到 Dubbo 的流量管控策略，Dubbo 提供了包括负载均衡、流量路由、请求超时、流量降级、重试等策略，基于这些基础能力可以轻松的实现更多场景化的路由方案，包括金丝雀发布、A/B测试、权重路由、同区域优先等，更酷的是，Dubbo 支持流控策略在运行态动态生效，无需重新部署。\n\n",
+            "section_path": [
+              "一站式微服务解决方案"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 24,
+        "question": "在 Nacos 中，配置变更历史和服务标签是如何关联的？",
+        "gold_answer": "在 Nacos 中，配置变更历史和服务标签通过 ID 关联，配置变更历史记录配置的修改，服务标签用于打标分类和索引，两者由 ID 关联。",
+        "answer": "在 Nacos 中，配置变更历史和服务标签通过 ID 关联 [1]。服务标签用于对配置进行打标分类，方便索引 [1]。Nacos 支持配置标签的能力，帮助用户更好、更灵活地基于标签进行配置分类及管理 [2][3][5][6]。同时，Nacos 支持对配置及其变更进行描述，方便多人或跨团队协作管理配置 [2][3][5][6]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          191,
+          2623,
+          1447,
+          569,
+          2619,
+          1445
+        ],
+        "gold_chunk_ids": [
+          191
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 191,
+            "doc_id": 2,
+            "page": 0,
+            "snippet": "围绕配置，主要有两个关联的实体，一个是配置变更历史，一个是服务标签（用于打标分类，方便索引），由 ID 关联。",
+            "llm_context": "围绕配置，主要有两个关联的实体，一个是配置变更历史，一个是服务标签（用于打标分类，方便索引），由 ID 关联。",
+            "section_path": [
+              "Nacos 架构",
+              "领域模型",
+              "配置领域模型"
+            ]
+          },
+          {
+            "chunk_id": 2623,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "llm_context": "风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.2. 配置管理",
+              "1.2.1. 多配置格式编辑器"
+            ]
+          },
+          {
+            "chunk_id": 1447,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "llm_context": "风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "配置管理",
+              "多配置格式编辑器"
+            ]
+          },
+          {
+            "chunk_id": 569,
+            "doc_id": 57,
+            "page": 0,
+            "snippet": "Nacos数据（如配置和服务）描述信息，如服务版本、权重、容灾策略、负载均衡策略、鉴权配置、各种自定义标签 (label)，从作用范围来看，分为服务级别的元信息、集群的元信息及实例的元信息。",
+            "llm_context": "Nacos数据（如配置和服务）描述信息，如服务版本、权重、容灾策略、负载均衡策略、鉴权配置、各种自定义标签 (label)，从作用范围来看，分为服务级别的元信息、集群的元信息及实例的元信息。",
+            "section_path": [
+              "Nacos 概念",
+              "元信息"
+            ]
+          },
+          {
+            "chunk_id": 2619,
+            "doc_id": 249,
+            "page": 0,
+            "snippet": "Nacos支持 YAML、Properties、TEXT、JSON、XML、HTML 等常见配置格式在线编辑、语法高亮、格式校验，帮助用户高效编辑的同时大幅降低格式错误带来的风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "llm_context": "Nacos支持 YAML、Properties、TEXT、JSON、XML、HTML 等常见配置格式在线编辑、语法高亮、格式校验，帮助用户高效编辑的同时大幅降低格式错误带来的风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "section_path": [
+              "控制台手册",
+              "1. 特性详解",
+              "1.2. 配置管理",
+              "1.2.1. 多配置格式编辑器"
+            ]
+          },
+          {
+            "chunk_id": 1445,
+            "doc_id": 155,
+            "page": 0,
+            "snippet": "Nacos支持 YAML、Properties、TEXT、JSON、XML、HTML 等常见配置格式在线编辑、语法高亮、格式校验，帮助用户高效编辑的同时大幅降低格式错误带来的风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "llm_context": "Nacos支持 YAML、Properties、TEXT、JSON、XML、HTML 等常见配置格式在线编辑、语法高亮、格式校验，帮助用户高效编辑的同时大幅降低格式错误带来的风险。\n\nNacos支持配置标签的能力，帮助用户更好、更灵活的做到基于标签的配置分类及管理。同时支持用户对配置及其变更进行描述，方便多人或者跨团队协作管理配置。",
+            "section_path": [
+              "控制台手册",
+              "特性详解",
+              "配置管理",
+              "多配置格式编辑器"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 25,
+        "question": "将 Dubbo 访问日志输出到指定文件的 protocol 配置示例是什么？",
+        "gold_answer": "将 dubbo:protocol 的 accesslog 属性设置为目标文件路径，例如 <dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />。",
+        "answer": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" /> [8]\n\n可以将访问日志输出到当前应用的log4j日志 [4]\n\n访问日志量比较大，请注意磁盘容量 [4]",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1993,
+          964,
+          1992,
+          770,
+          2040,
+          1591,
+          502,
+          772
+        ],
+        "gold_chunk_ids": [
+          770,
+          771,
+          772
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1993,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "llm_context": "2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "llm_context": "如果服务比较多，也可以用文件映射，用 `-Ddubbo.resolve.file` 指定映射文件路径，此配置优先级高于 ` ` 中的配置 [^3]，如：",
+            "section_path": [
+              "通过文件映射"
+            ]
+          },
+          {
+            "chunk_id": 1992,
+            "doc_id": 199,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/logger-strategy/\ndescription: 在 Dubbo 中适配日志框架\nlinkTitle: 日志适配\ntitle: 日志适配\ntype: docs\nweight: 38\n---\n\n \n\n自 `2.2.1` 开始，dubbo 开始内置 log4j、slf4j、jcl、jdk 这些日志框架的适配[1]，也可以通过以下方式显式配置日志输出策略：\n\n0. 命令行",
+            "section_path": []
+          },
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/accesslog/\ndescription: 配置 Dubbo 的访问日志\nlinkTitle: 访问日志\ntitle: 访问日志\ntype: docs\nweight: 39\n---\n\n \n\n如果你想记录每一次请求信息，可开启访问日志，类似于apache的访问日志。**注意**：此日志量比较大，请注意磁盘容量。\n\n将访问日志输出到当前应用的log4j日志：",
+            "section_path": []
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          },
+          {
+            "chunk_id": 1591,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          },
+          {
+            "chunk_id": 502,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": "其中：\n- `configVersion` 表示 dubbo 的版本\n- `scope`表示配置作用范围，分别是应用（application）或服务（service）粒度。**必填**。\n- `key` 指定规则体作用在哪个服务或应用。**必填**。\n - scope=service时，key取值为[{group}:]{service}[:{version}]的组合\n- scope=applica…",
+            "llm_context": "其中：\n- `configVersion` 表示 dubbo 的版本\n- `scope`表示配置作用范围，分别是应用（application）或服务（service）粒度。**必填**。\n- `key` 指定规则体作用在哪个服务或应用。**必填**。\n - scope=service时，key取值为[{group}:]{service}[:{version}]的组合\n- scope=application时，key取值为application名称\n- `enabled=true` 覆盖规则是否生效，可不填，缺省生效。\n- `configs` 定义具体的覆盖规则内容，可以指定n（n>=1）个规则体。**必填**。\n - side，\n - applications\n - services\n - parameters\n - addresses\n - providerAddresses\n\n**对于绝大多数配置场景，只需要理清楚以下问题基本就知道配置该怎么写了：**\n1. 要修改整个应用的配置还是某个服务的配置。\n - 应用：`scope: application, key: app-name`（还可使用`services`指定某几个服务）。\n - 服务：`scope: service, key:group+service+version `。\n\n2. 修改是作用到消费者端还是提供者端。\n - 消费者：`side: consumer` ，作用到消费端时（你还可以进一步使用`providerAddress`, `applications`选定特定的提供者示例或应用）。\n - 提供者：`side: provider`。\n\n3. 配置是否只对某几个特定实例生效。\n",
+            "section_path": [
+              "规则详解",
+              "配置模板"
+            ]
+          },
+          {
+            "chunk_id": 772,
+            "doc_id": 6,
+            "page": 0,
+            "snippet": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "llm_context": "<dubbo:protocol accesslog=\"http://10.20.160.198/wiki/display/dubbo/foo/bar.log\" />\n",
+            "section_path": []
+          }
+        ]
+      },
+      {
+        "__question_id": 26,
+        "question": "Seata XA 模式如何保证分支事务可回滚和持久化？",
+        "gold_answer": "业务 SQL 在 XA 分支中执行以保证可回滚，XA prepare 保证持久化；完成阶段再执行 XA commit 或 rollback。",
+        "answer": "Seata XA 模式通过 XA 协议的机制来管理分支事务，在执行阶段将业务 SQL 操作放在 XA 分支中进行，由资源对 XA 协议的支持保证可回滚 [1]。XA 分支完成后，执行 XA prepare，同样由资源对 XA 协议的支持保证持久化，确保之后任何意外都不会造成无法回滚的情况 [1]。在完成阶段，通过执行 XA commit 或 XA rollback 来完成分支事务的提交或回滚 [1][4]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          82,
+          111,
+          4,
+          101,
+          5,
+          2265,
+          2,
+          2319
+        ],
+        "gold_chunk_ids": [
+          82
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 82,
+            "doc_id": 23,
+            "page": 0,
+            "snippet": "在 Seata 定义的分布式事务框架内，利用事务资源（数据库、消息服务等）对 XA 协议的支持，以 XA 协议的机制来管理分支事务的一种 事务模式。\n\n \n\n- 执行阶段：\n\n- - 可回滚：业务 SQL 操作放在 XA 分支中进行，由资源对 XA 协议的支持来保证 *可回滚*\n - 持久化：XA 分支完成后，执行 XA prepare，同样，由资源对 XA 协议的支持来保证 *持久化*（即，之后…",
+            "llm_context": "在 Seata 定义的分布式事务框架内，利用事务资源（数据库、消息服务等）对 XA 协议的支持，以 XA 协议的机制来管理分支事务的一种 事务模式。\n\n \n\n- 执行阶段：\n\n- - 可回滚：业务 SQL 操作放在 XA 分支中进行，由资源对 XA 协议的支持来保证 *可回滚*\n - 持久化：XA 分支完成后，执行 XA prepare，同样，由资源对 XA 协议的支持来保证 *持久化*（即，之后任何意外都不会造成无法回滚的情况）\n\n- 完成阶段：\n\n- - 分支提交：执行 XA 分支的 commit\n - 分支回滚：执行 XA 分支的 rollback",
+            "section_path": [
+              "Seata XA 模式",
+              "整体机制"
+            ]
+          },
+          {
+            "chunk_id": 111,
+            "doc_id": 23,
+            "page": 0,
+            "snippet": "XA start 需要 Xid 参数。\n\n这个 Xid 需要和 Seata 全局事务的 XID 和 BranchId 关联起来，以便由 TC 驱动 XA 分支的提交或回滚。\n\n目前 Seata 的 BranchId 是在分支注册过程，由 TC 统一生成的，所以 XA 模式分支注册的时机需要在 XA start 之前。\n\n将来一个可能的优化方向：\n\n把分支注册尽量延后。类似 AT 模式在本地事务提交…",
+            "llm_context": "XA start 需要 Xid 参数。\n\n这个 Xid 需要和 Seata 全局事务的 XID 和 BranchId 关联起来，以便由 TC 驱动 XA 分支的提交或回滚。\n\n目前 Seata 的 BranchId 是在分支注册过程，由 TC 统一生成的，所以 XA 模式分支注册的时机需要在 XA start 之前。\n\n将来一个可能的优化方向：\n\n把分支注册尽量延后。类似 AT 模式在本地事务提交之前才注册分支，避免分支执行失败情况下，没有意义的分支注册。\n\n这个优化方向需要 BranchId 生成机制的变化来配合。BranchId 不通过分支注册过程生成，而是生成后再带着 BranchId 去注册分支。",
+            "section_path": [
+              "工作机制",
+              "3. 分支注册"
+            ]
+          },
+          {
+            "chunk_id": 4,
+            "doc_id": 3,
+            "page": 0,
+            "snippet": "如上图所示，Seata 中事务生命周期主要分为Begin(TM),Registry(RM),Commit/Rollback(TM&TC)这三部分。\n\n事务管理者(TM)通过rpc至事务协调者(TC)创建全局事务(Global Transaction)，将TC生成的XID传递至其TM所调用的任意资源管理者(RM)中，RM通过其接收到的XID,将其所管理的资源且被该调用锁使用到的资源注册为一个事务分支…",
+            "llm_context": "如上图所示，Seata 中事务生命周期主要分为Begin(TM),Registry(RM),Commit/Rollback(TM&TC)这三部分。\n\n事务管理者(TM)通过rpc至事务协调者(TC)创建全局事务(Global Transaction)，将TC生成的XID传递至其TM所调用的任意资源管理者(RM)中，RM通过其接收到的XID,将其所管理的资源且被该调用锁使用到的资源注册为一个事务分支(Branch Transaction),当该请求的调用链全部结束时TM将事务的决议结果(Commit/Rollback)通知TC,TC将协调所有RM进行事务的二阶段动作.\n\n**事务创建**\n\n事务管理者(TM)：\n\nSeata 中用于创建和决议事务结果的实体,一般集成于业务调用链路的上游.\n\n**分支事务**\n\n资源管理者(RM)：\n\nSeata 中用于管理资源的实体,一般情况下等同于微服务中的提供方(provider),管理其所在服务中的资源,如数据库资源等.\n\n**事务决议**\n\n事务协调者(TC)：\n\nSeata 中用于2pc方式的事务模式统一协调事务的实体(SAGA除外),其可由事务管理者驱动或自身驱动进行事务的二阶段行为.\n\n- Commit：\n\n Seata 中当事务管理器决议为提交时,TC才会进行对事务的二阶段提交行为下发,如TCC模式中的confirm,AT模式的undolog delete,XA模式的XA Commit。\n\n- Rollback：\n\n Seata 中当事务管理器决议为回滚时,TC会进行对事务的二阶段回滚行为下发,如TCC模式中的cancel,AT模式的undo,XA模式的XA Rollback。\n\n- TimeoutRollback：\n\n",
+            "section_path": [
+              "领域模型概述",
+              "Seata 领域模型"
+            ]
+          },
+          {
+            "chunk_id": 101,
+            "doc_id": 23,
+            "page": 0,
+            "snippet": "XA 模式 运行在 Seata 定义的事务框架内：\n\n \n\n- 执行阶段（E xecute）：\n\n- - XA start/XA end/XA prepare + SQL + 注册分支\n\n- 完成阶段（F inish）：\n\n- - XA commit/XA rollback",
+            "llm_context": "XA 模式 运行在 Seata 定义的事务框架内：\n\n \n\n- 执行阶段（E xecute）：\n\n- - XA start/XA end/XA prepare + SQL + 注册分支\n\n- 完成阶段（F inish）：\n\n- - XA commit/XA rollback",
+            "section_path": [
+              "工作机制",
+              "1. 整体运行机制"
+            ]
+          },
+          {
+            "chunk_id": 5,
+            "doc_id": 3,
+            "page": 0,
+            "snippet": "进行对事务的二阶段回滚行为下发,如TCC模式中的cancel,AT模式的undo,XA模式的XA Rollback。\n\n- TimeoutRollback：\n\n Seata 中当事务管理器创建事务时指定的Timeout时间到达后还未决议时,TC会主动将已超时的事务进行超时回滚,其超时行为等同上述Rollback行为.\n\n以上为TC涉及事务处理的三种情况,其三种状态会扩展出更多的事务状态,[具体可点…",
+            "llm_context": "进行对事务的二阶段回滚行为下发,如TCC模式中的cancel,AT模式的undo,XA模式的XA Rollback。\n\n- TimeoutRollback：\n\n Seata 中当事务管理器创建事务时指定的Timeout时间到达后还未决议时,TC会主动将已超时的事务进行超时回滚,其超时行为等同上述Rollback行为.\n\n以上为TC涉及事务处理的三种情况,其三种状态会扩展出更多的事务状态,[具体可点击此处查看](/docs/user/appendix/global-transaction-status/).\n\n**高可用**\n\n[事务分组](/docs/user/txgroup/transaction-group/)(tx-service-group)：\n\nseata的资源逻辑，可以按微服务的需要，在应用程序（客户端）对自行定义事务分组，每组取一个名字。\n\n[服务发现](/docs/user/registry/)：\n\n",
+            "section_path": [
+              "领域模型概述",
+              "Seata 领域模型"
+            ]
+          },
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "page": 0,
+            "snippet": " 后必须切换到 `fastjson2` 或 `jackson3` 吗？ \n \n\n 49. 什么场景下需要关注 JSON 反序列化 allowlist？ \n \n\n 50. 什么时候适合使用 `jackson3`？ \n \n\n---\n\n Q: 1.Seata 目前可以用于生产环境吗？ \n\n**A:**\n0.4.2 版本之后就可以上生产环境，欢迎已经在使用的企业参与此 issue:[who's using…",
+            "llm_context": " 后必须切换到 `fastjson2` 或 `jackson3` 吗？ \n \n\n 49. 什么场景下需要关注 JSON 反序列化 allowlist？ \n \n\n 50. 什么时候适合使用 `jackson3`？ \n \n\n---\n\n Q: 1.Seata 目前可以用于生产环境吗？ \n\n**A:**\n0.4.2 版本之后就可以上生产环境，欢迎已经在使用的企业参与此 issue:[who's using Seata]( )\n\n---\n\n Q: 2.Seata 目前支持高可用吗？ \n\n**A:**\n0.6 版本开始支持，tc 使用 db 模式共享全局事务会话信息，注册中心使用非 file 的 seata 支持的第三方注册中心\n\n---\n\n Q: 3.undo_log 表 log_status=1 的记录是做什么用的？ \n\n**A:**\n\n- 场景：分支事务 a 注册 TC 后，a 的本地事务提交前发生了全局事务回滚\n- 后果：全局事务回滚成功，a 资源被占用掉，产生了资源悬挂问题\n- 防悬挂措施：a 回滚时发现回滚 undo 还未插入，则插入一条 log_status=1 的 undo 记录，a 本地事务（业务写操作 sql 和对应 undo 为一个本地事务）提交时会因为 undo 表唯一索引冲突而提交失败。\n\n---\n\n Q: 4.怎么使用 Seata 框架，来保证事务的隔离性？ \n\n**A:**\n因 seata 一阶段本地事务已提交，为防止其他事务脏读脏写需要加强隔离。\n\n1. 脏读 select 语句加 for update，代理方法增加@GlobalLock+@Transactional 或@GlobalTransactional\n2. 脏写 必须使用@GlobalTransactional\n",
+            "section_path": [
+              "常见问题"
+            ]
+          },
+          {
+            "chunk_id": 2,
+            "doc_id": 3,
+            "page": 0,
+            "snippet": "本文为您介绍 Seata(Simpe Extensible Autonomous Transaction Architecture) 的领域模型。\n\nSeata 是一款针对分布式架构下产生的数据一致性问题而诞生的分布式事务产品，使用2pc或基于base理论的最终一致性来达成事务。事务模式的具体说明，请参考开发者指南中的事务模式介绍。 Seata 产品具备XA&AT无业务入侵的即插即用模式,TCC不…",
+            "llm_context": "本文为您介绍 Seata(Simpe Extensible Autonomous Transaction Architecture) 的领域模型。\n\nSeata 是一款针对分布式架构下产生的数据一致性问题而诞生的分布式事务产品，使用2pc或基于base理论的最终一致性来达成事务。事务模式的具体说明，请参考开发者指南中的事务模式介绍。 Seata 产品具备XA&AT无业务入侵的即插即用模式,TCC不与具体的服务框架耦合,与底层 RPC 协议无关,与底层存储介质无关性的优势,SAGA模式的高度自定义,最终一致性,高性能的优势,针对每个业务场景的不同可有效的基于Seata分布式事务平台,快速高效的建立安全的事务保障。",
+            "section_path": [
+              "领域模型概述"
+            ]
+          },
+          {
+            "chunk_id": 2319,
+            "doc_id": 215,
+            "page": 0,
+            "snippet": "com)]( ) 拉取此 plugin 代码，本地打包自行引入，也可直接拷贝代码进行 spi 扩展支持\n\n---\n\n Q: 42. 抛出异常后事务未回滚？ \n\n- 检查异常是否被捕获，没有抛至 tm 端，如 rm 存在全局异常捕获器，rm 将异常包装成了一个正常的 result 响应给了 tm，导致 seata 的事务拦截器无法发现事务出现了异常，此时自行在代码中根据 result 中的 code…",
+            "llm_context": "com)]( ) 拉取此 plugin 代码，本地打包自行引入，也可直接拷贝代码进行 spi 扩展支持\n\n---\n\n Q: 42. 抛出异常后事务未回滚？ \n\n- 检查异常是否被捕获，没有抛至 tm 端，如 rm 存在全局异常捕获器，rm 将异常包装成了一个正常的 result 响应给了 tm，导致 seata 的事务拦截器无法发现事务出现了异常，此时自行在代码中根据 result 中的 code 之类可判断业务出现异常的返回内容进行抛出异常，或者使用[Seata api](/docs/user/api/) 进行回滚，切记 api 回滚必须结束调用，假设 tm 调用了 rm1 就出现错误，进行了 api 回滚，那么不应该让这个调用链再走到 rm2 去，应该直接 return 结束方法调用\n- 检查是否 rm 服务抛出异常导致进行了熔断降级处理，如果是请参考方案上述方案进行处理\n- 如确认无上述可能，异常明确抛出，请通过相关的 xid 到 tc 端和 tm 和 rm 检索 xid 的决议结果和 rm 注册情况，当 rm 分支注册时，通过 xid 可以检索到 Register branch successfully, xid = 10.242.2.19:8094:[REDACTED_BANK_CARD] , branchId = xxxx 的日志，如果没有说明分支没有注册，如是 AT 或 XA 模式请检查数据源代理或 xid 传递问题，如分支已注册，那么检查决议结果，如事务提交，tm 端会有类似[10.242.2.",
+            "section_path": [
+              "常见问题"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 27,
+        "question": "RocketMQ 普通消息从发送到删除经历哪些主要生命周期状态？",
+        "gold_answer": "主要经历初始化、待消费、消费中、消费提交和消息删除；消费提交后先逻辑标记已消费，达到保存期限或空间条件后才物理删除。",
+        "answer": "普通消息的生命周期包括初始化、待消费、消费中和消费提交四个主要状态 [1]。消息被生产者构建并初始化后发送到服务端，进入待消费状态等待消费者处理 [1]。消费者获取消息后进入消费中状态，处理完成后向服务端提交消费结果，服务端标记消息已被处理 [1]。消息在保存时间到期或存储空间不足时才会被删除，在此之前即使已消费也会保留在系统中 [1][7]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          849,
+          1034,
+          992,
+          432,
+          1011,
+          1014,
+          1611,
+          1273
+        ],
+        "gold_chunk_ids": [
+          849
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 849,
+            "doc_id": 108,
+            "page": 0,
+            "snippet": "**什么是普通消息**\n\n定义：普通消息是Apache RocketMQ基本消息功能，支持生产者和消费者的异步解耦通信。\n \n\n**普通消息生命周期**\n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 待消费：消息被发送到服务端，对消费者可见，等待消费者消费的状态。\n\n* 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费…",
+            "llm_context": "**什么是普通消息**\n\n定义：普通消息是Apache RocketMQ基本消息功能，支持生产者和消费者的异步解耦通信。\n \n\n**普通消息生命周期**\n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 待消费：消息被发送到服务端，对消费者可见，等待消费者消费的状态。\n\n* 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，Apache RocketMQ会对消息进行重试处理。具体信息，请参见[消费重试](./10consumerretrypolicy.md)。\n\n* 消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理（包括消费成功和失败）。 Apache RocketMQ默认支持保留所有消息，此时消息数据并不会立即被删除，只是逻辑标记已消费。消息在保存时间到期或存储空间不足被删除前，消费者仍然可以回溯消息重新消费。\n\n",
+            "section_path": [
+              "普通消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 1034,
+            "doc_id": 122,
+            "page": 0,
+            "snippet": "**顺序消息生命周期**\n \n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 待消费：消息被发送到服务端，对消费者可见，等待消费者消费的状态。\n\n* 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，Apache RocketMQ会对消息进行重试处理。具体信息，请参见[消…",
+            "llm_context": "**顺序消息生命周期**\n \n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 待消费：消息被发送到服务端，对消费者可见，等待消费者消费的状态。\n\n* 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，Apache RocketMQ会对消息进行重试处理。具体信息，请参见[消费重试](./10consumerretrypolicy.md)。\n\n* 消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理（包括消费成功和失败）。 Apache RocketMQ 默认支持保留所有消息，此时消息数据并不会立即被删除，只是逻辑标记已消费。消息在保存时间到期或存储空间不足被删除前，消费者仍然可以回溯消息重新消费。\n\n* 消息删除：Apache RocketMQ按照消息保存机制滚动清理最早的消息数据，将消息从物理文件中删除。更多信息，请参见[消息存储和清理机制](./11messagestorepolicy.md)。\n\n:::note\n\n* 消息消费失败或消费超时，会触发服务端重试逻辑，重试消息属于新的消息，原消息的生命周期已结束。\n\n* 顺序消息消费失败进行消费重试时，为保障消息的顺序性，后续消息不可被消费，必须等待前面的消息消费完成后才能被处理。\n\n",
+            "section_path": [
+              "顺序消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 992,
+            "doc_id": 115,
+            "page": 0,
+            "snippet": ":00，转换为时间戳格式为1654770600000。\n\n**定时消息生命周期**\n\n \n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 定时中：消息被发送到服务端，和普通消息不同的是，服务端不会直接构建消息索引，而是会将定时消息单独存储在定时存储系统中，等待定时时刻到达。\n\n* 待消费：定时时刻到达后，服务端将消息重新写入普通存储引擎，对下游消费者可见，等待消费者消费的…",
+            "llm_context": ":00，转换为时间戳格式为1654770600000。\n\n**定时消息生命周期**\n\n \n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 定时中：消息被发送到服务端，和普通消息不同的是，服务端不会直接构建消息索引，而是会将定时消息单独存储在定时存储系统中，等待定时时刻到达。\n\n* 待消费：定时时刻到达后，服务端将消息重新写入普通存储引擎，对下游消费者可见，等待消费者消费的状态。\n\n* 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，Apache RocketMQ会对消息进行重试处理。具体信息，请参见[消费重试](./10consumerretrypolicy.md)。\n\n* 消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理（包括消费成功和失败）。 Apache RocketMQ 默认支持保留所有消息，此时消息数据并不会立即被删除，只是逻辑标记已消费。消息在保存时间到期或存储空间不足被删除前，消费者仍然可以回溯消息重新消费。\n\n",
+            "section_path": [
+              "定时/延时消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 432,
+            "doc_id": 45,
+            "page": 0,
+            "snippet": "如上图所示，Apache RocketMQ 中消息的生命周期主要分为消息生产、消息存储、消息消费这三部分。\n\n生产者生产消息并发送至 Apache RocketMQ 服务端，消息被存储在服务端的主题中，消费者通过订阅主题消费消息。\n\n**消息生产**\n\n[生产者（Producer）](../03-domainModel/05producer.md)：\n\nApache RocketMQ 中用于产生消…",
+            "llm_context": "如上图所示，Apache RocketMQ 中消息的生命周期主要分为消息生产、消息存储、消息消费这三部分。\n\n生产者生产消息并发送至 Apache RocketMQ 服务端，消息被存储在服务端的主题中，消费者通过订阅主题消费消息。\n\n**消息生产**\n\n[生产者（Producer）](../03-domainModel/05producer.md)：\n\nApache RocketMQ 中用于产生消息的运行实体，一般集成于业务调用链路的上游。生产者是轻量级匿名无身份的。\n\n**消息存储**\n\n* [主题（Topic）](../03-domainModel/02topic.md)：\n\n Apache RocketMQ 消息传输和存储的分组容器，主题内部由多个队列组成，消息的存储和水平扩展实际是通过主题内的队列实现的。\n\n* [队列（MessageQueue）](../03-domainModel/04messagequeue.md)：\n\n Apache RocketMQ 消息传输和存储的实际单元容器，类比于其他消息队列中的分区。 Apache RocketMQ 通过流式特性的无限队列结构来存储消息，消息在队列内具备顺序性存储特征。\n\n* [消息（Message）](../03-domainModel/05message.md)：\n\n Apache RocketMQ 的最小传输单元。消息具备不可变性，在初始化发送和完成存储后即不可变。\n\n**消息消费**\n\n* [消费者分组（ConsumerGroup）](../03-domainModel/08consumergroup.md)：\n\n",
+            "section_path": [
+              "领域模型概述",
+              "Apache RocketMQ领域模型"
+            ]
+          },
+          {
+            "chunk_id": 1011,
+            "doc_id": 129,
+            "page": 0,
+            "snippet": "二次确认，服务端仍按照步骤4对半事务消息进行处理。\n\n**事务消息生命周期**\n \n\n* 初始化：半事务消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 事务待提交：半事务消息被发送到服务端，和普通消息不同，并不会直接被服务端持久化，而是会被单独存储到事务存储系统中，等待第二阶段本地事务返回执行结果后再提交。此时消息对下游消费者不可见。\n\n* 消息回滚：第二阶段如果事务执行结果明确为回滚…",
+            "llm_context": "二次确认，服务端仍按照步骤4对半事务消息进行处理。\n\n**事务消息生命周期**\n \n\n* 初始化：半事务消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n* 事务待提交：半事务消息被发送到服务端，和普通消息不同，并不会直接被服务端持久化，而是会被单独存储到事务存储系统中，等待第二阶段本地事务返回执行结果后再提交。此时消息对下游消费者不可见。\n\n* 消息回滚：第二阶段如果事务执行结果明确为回滚，服务端会将半事务消息回滚，该事务消息流程终止。\n\n* 提交待消费：第二阶段如果事务执行结果明确为提交，服务端会将半事务消息重新存储到普通存储系统中，此时消息对下游消费者可见，等待被消费者获取并消费。\n\n* 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程。 此时服务端会等待消费者完成消费并提交消费结果，如果一定时间后没有收到消费者的响应，Apache RocketMQ会对消息进行重试处理。具体信息，请参见[消费重试](./10consumerretrypolicy.md)。\n\n* 消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理（包括消费成功和失败）。 Apache RocketMQ默认支持保留所有消息，此时消息数据并不会立即被删除，只是逻辑标记已消费。消息在保存时间到期或存储空间不足被删除前，消费者仍然可以回溯消息重新消费。\n\n",
+            "section_path": [
+              "事务消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 1014,
+            "doc_id": 129,
+            "page": 0,
+            "snippet": "**消息类型一致性**\n\n事务消息仅支持在 MessageType 为 Transaction 的主题内使用，即事务消息只能发送至类型为事务消息的主题中，发送的消息的类型必须和主题的类型一致。\n\n**消费事务性**\n\nApache RocketMQ 事务消息保证本地主分支事务和下游消息发送事务的一致性，但不保证消息消费结果和上游事务的一致性。因此需要下游业务分支自行保证消息正确处理，建议消费端做好…",
+            "llm_context": "**消息类型一致性**\n\n事务消息仅支持在 MessageType 为 Transaction 的主题内使用，即事务消息只能发送至类型为事务消息的主题中，发送的消息的类型必须和主题的类型一致。\n\n**消费事务性**\n\nApache RocketMQ 事务消息保证本地主分支事务和下游消息发送事务的一致性，但不保证消息消费结果和上游事务的一致性。因此需要下游业务分支自行保证消息正确处理，建议消费端做好[消费重试](./10consumerretrypolicy.md)，如果有短暂失败可以利用重试机制保证最终处理成功。\n\n**中间状态可见性**\n\nApache RocketMQ 事务消息为最终一致性，即在消息提交到下游消费端处理完成之前，下游分支和上游事务之间的状态会不一致。因此，事务消息仅适合接受异步执行的事务场景。\n\n**事务超时机制**\n\nApache RocketMQ 事务消息的生命周期存在超时机制，即半事务消息被生产者发送服务端后，如果在指定时间内服务端无法确认提交或者回滚状态，则消息默认会被回滚。事务超时时间，请参见[参数限制](../01-introduction/03limits.md)。",
+            "section_path": [
+              "事务消息",
+              "使用限制"
+            ]
+          },
+          {
+            "chunk_id": 1611,
+            "doc_id": 178,
+            "page": 0,
+            "snippet": "消息通过不同集群进行分离治理。\n:::\n\n**消息存储和消费状态关系说明**\n\nApache RocketMQ 统一管理消息的存储时长，无论消息是否被消费。\n\n当消费者不在线或消息消费异常时，会造成队列中大量消息堆积，且该现象暂时无法有效控制。若此时按照消费状态考虑将未消费的消息全部保留，则很容易导致存储空间不足，进而影响到新消息的读写速度。\n\n根据统一地存储时长管理消息，可以帮助消费者业务清晰地…",
+            "llm_context": "消息通过不同集群进行分离治理。\n:::\n\n**消息存储和消费状态关系说明**\n\nApache RocketMQ 统一管理消息的存储时长，无论消息是否被消费。\n\n当消费者不在线或消息消费异常时，会造成队列中大量消息堆积，且该现象暂时无法有效控制。若此时按照消费状态考虑将未消费的消息全部保留，则很容易导致存储空间不足，进而影响到新消息的读写速度。\n\n根据统一地存储时长管理消息，可以帮助消费者业务清晰地判断每条消息的生命周期。只要消息在有效期内可以随时被消费，或通过[重置消费位点](./09consumerprogress.md)功能使消息可被消费多次。\n\n**消息存储文件结构说明**\n Apache RocketMQ 消息默认存储在本地磁盘文件中，存储文件的根目录由配置参数 storePathRootDir 决定，存储结构如下图所示，其中 commitlog 文件夹存储消息物理文件，consumeCQueue文件夹存储逻辑队列索引，其他文件的详细作用可以参考代码解析。",
+            "section_path": [
+              "消息存储和清理机制",
+              "消息存储机制"
+            ]
+          },
+          {
+            "chunk_id": 1273,
+            "doc_id": 143,
+            "page": 0,
+            "snippet": "如上图所示， Apache RocketMQ 的消费者处理消息时主要经过以下阶段：消息获取---\\>消息处理---\\>消费状态提交。\n\n针对以上几个阶段，Apache RocketMQ 提供了不同的消费者类型： PushConsumer 、SimpleConsumer 和 PullConsumer。这几种类型的消费者通过不同的实现方式和接口可满足您在不同业务场景下的消费需求。具体差异如下：\n\n::…",
+            "llm_context": "如上图所示， Apache RocketMQ 的消费者处理消息时主要经过以下阶段：消息获取---\\>消息处理---\\>消费状态提交。\n\n针对以上几个阶段，Apache RocketMQ 提供了不同的消费者类型： PushConsumer 、SimpleConsumer 和 PullConsumer。这几种类型的消费者通过不同的实现方式和接口可满足您在不同业务场景下的消费需求。具体差异如下：\n\n:::info\n\n在实际使用场景中，PullConsumer 仅推荐在流处理框架中集成使用，大多数消息收发场景使用 PushConsumer 和 SimpleConsumer 就可以满足需求。 \n\n若您的业务场景发生变更，或您当前使用的消费者类型不适合当前业务，您可以选择在 PushConsumer 和SimpleConsumer 之间变更消费者类型。变更消费者类型不影响当前Apache RocketMQ 资源的使用和业务处理。\n\n:::\n\n:::danger\n生产环境中相同的 ConsumerGroup 下严禁混用 PullConsumer 和其他两种消费者，否则会导致消息消费异常。\n",
+            "section_path": [
+              "消费者分类",
+              "功能概述"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 28,
+        "question": "RocketMQ 定时消息的定时时间应如何设置，有哪些边界限制？",
+        "gold_answer": "定时时间要使用毫秒级 Unix 时间戳并晚于当前时间；超过支持范围或早于当前时间会立即投递，默认最大定时时长为 24 小时。",
+        "answer": "RocketMQ 定时消息的定时时间应设置为毫秒级的 Unix 时间戳，必须为当前时间之后的时间，且不能超过定时时长范围 [1][4]。定时时长最大值默认为 24 小时，不支持自定义修改 [1]。定时消息的定时时间精度默认为 1000ms，即秒级精度 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          991,
+          995,
+          288,
+          654,
+          289,
+          986,
+          988,
+          1610
+        ],
+        "gold_chunk_ids": [
+          991
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 991,
+            "doc_id": 115,
+            "page": 0,
+            "snippet": "**什么是定时消息**\n\n定时消息是 Apache RocketMQ 提供的一种高级消息类型，消息被发送至服务端后，在指定时间后才能被消费者消费。通过设置一定的定时时间可以实现分布式场景的延时调度触发效果。\n\n**定时时间设置原则**\n\n* Apache RocketMQ 定时消息设置的定时时间是一个预期触发的系统时间戳，延时时间也需要转换成当前系统时间后的某一个时间戳，而不是一段延时时长。\n\n*…",
+            "llm_context": "**什么是定时消息**\n\n定时消息是 Apache RocketMQ 提供的一种高级消息类型，消息被发送至服务端后，在指定时间后才能被消费者消费。通过设置一定的定时时间可以实现分布式场景的延时调度触发效果。\n\n**定时时间设置原则**\n\n* Apache RocketMQ 定时消息设置的定时时间是一个预期触发的系统时间戳，延时时间也需要转换成当前系统时间后的某一个时间戳，而不是一段延时时长。\n\n* 定时时间的格式为毫秒级的Unix时间戳，您需要将要设置的时刻转换成时间戳形式。具体方式，请参见[Unix时间戳转换工具]( )。\n\n* 定时时间必须设置在定时时长范围内，超过范围则定时不生效，服务端会立即投递消息。\n\n* 定时时长最大值默认为24小时，不支持自定义修改，更多信息，请参见[参数限制](../01-introduction/03limits.md)。\n\n* 定时时间必须设置为当前时间之后，若设置到当前时间之前，则定时不生效，服务端会立即投递消息。\n\n**示例如下：**\n\n* 定时消息：例如，当前系统时间为2022-06-09 17:30:00，您希望消息在下午19:20:00定时投递，则定时时间为2022-06-09 19:20:00，转换成时间戳格式为1654773600000。\n\n* 延时消息：例如，当前系统时间为2022-06-09 17:30:00，您希望延时1个小时后投递消息，则您需要根据当前时间和延时时长换算成定时时刻，即消息投递时间为2022-06-09 18:30:00，转换为时间戳格式为1654770600000。\n\n**定时消息生命周期**\n\n \n\n* 初始化：消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n",
+            "section_path": [
+              "定时/延时消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 995,
+            "doc_id": 115,
+            "page": 0,
+            "snippet": "**消息类型一致性**\n\n定时消息仅支持在 MessageType为Delay 的主题内使用，即定时消息只能发送至类型为定时消息的主题中，发送的消息的类型必须和主题的类型一致。\n\n**定时精度约束**\n\nApache RocketMQ 定时消息的定时时长参数精确到毫秒级，但是默认精度为1000ms，即定时消息为秒级精度。\n\nApache RocketMQ 定时消息的状态支持持久化存储，系统由于故障…",
+            "llm_context": "**消息类型一致性**\n\n定时消息仅支持在 MessageType为Delay 的主题内使用，即定时消息只能发送至类型为定时消息的主题中，发送的消息的类型必须和主题的类型一致。\n\n**定时精度约束**\n\nApache RocketMQ 定时消息的定时时长参数精确到毫秒级，但是默认精度为1000ms，即定时消息为秒级精度。\n\nApache RocketMQ 定时消息的状态支持持久化存储，系统由于故障重启后，仍支持按照原来设置的定时时间触发消息投递。若存储系统异常重启，可能会导致定时消息投递出现一定延迟。",
+            "section_path": [
+              "定时/延时消息",
+              "使用限制"
+            ]
+          },
+          {
+            "chunk_id": 288,
+            "doc_id": 9,
+            "page": 0,
+            "snippet": "定时/延时消息是Apache RocketMQ 提供的一种高级消息类型，消息被发送至服务端后，在指定时间后才能被消费者消费。通过设置一定的定时时间可以实现分布式场景的延时调度触发效果。",
+            "llm_context": "定时/延时消息是Apache RocketMQ 提供的一种高级消息类型，消息被发送至服务端后，在指定时间后才能被消费者消费。通过设置一定的定时时间可以实现分布式场景的延时调度触发效果。",
+            "section_path": [
+              "基本概念",
+              "定时/延时消息"
+            ]
+          },
+          {
+            "chunk_id": 654,
+            "doc_id": 73,
+            "page": 0,
+            "snippet": "义：当前消息存储在队列中的位置。更多信息，请参见[消费进度原理](../04-featureBehavior/09consumerprogress.md)。\n\n* 取值：由服务端指定并填充。取值范围：0\\~long.Max。\n\n**消息ID**\n\n* 定义：消息的唯一标识，集群内每条消息的ID全局唯一。\n\n* 取值：生产者客户端系统自动生成。固定为数字和大写字母组成的32位字符串。\n\n**索引Ke…",
+            "llm_context": "义：当前消息存储在队列中的位置。更多信息，请参见[消费进度原理](../04-featureBehavior/09consumerprogress.md)。\n\n* 取值：由服务端指定并填充。取值范围：0\\~long.Max。\n\n**消息ID**\n\n* 定义：消息的唯一标识，集群内每条消息的ID全局唯一。\n\n* 取值：生产者客户端系统自动生成。固定为数字和大写字母组成的32位字符串。\n\n**索引Key列表（可选）**\n\n* 定义：消息的索引键，可通过设置不同的Key区分消息和快速查找消息。\n\n* 取值：由生产者客户端定义。\n\n**过滤标签Tag（可选）**\n\n* 定义：消息的过滤标签。消费者可通过Tag对消息进行过滤，仅接收指定标签的消息。\n\n* 取值：由生产者客户端定义。\n\n* 约束：一条消息仅支持设置一个标签。\n\n**定时时间（可选）**\n\n* 定义：定时场景下，消息触发延时投递的毫秒级时间戳。更多信息，请参见[定时/延时消息](../04-featureBehavior/02delaymessage.md)。\n\n* 取值：由消息生产者定义。\n\n* 约束：最大可设置定时时长为40天。\n\n**消息发送时间**\n\n* 定义：消息发送时，生产者客户端系统的本地毫秒级时间戳。\n\n* 取值：由生产者客户端系统填充。\n\n* 说明：客户端系统时钟和服务端系统时钟可能存在偏差，消息发送时间是以客户端系统时钟为准。\n\n**消息保存时间戳**\n\n* 定义：消息在Apache RocketMQ 服务端完成存储时，服务端系统的本地毫秒级时间戳。 对于定时消息和事务消息，消息保存时间指的是消息生效对消费方可见的服务端系统时间。\n \n\n* 取值：由服务端系统填充。\n\n* 说明：客户端系统时钟和服务端系统时钟可能存在偏差，消息保留时间是以服务端系统时钟为准。\n\n**消费重试次数**\n\n",
+            "section_path": [
+              "消息（Message）",
+              "消息内部属性"
+            ]
+          },
+          {
+            "chunk_id": 289,
+            "doc_id": 9,
+            "page": 0,
+            "snippet": "he RocketMQ 提供的一种高级消息类型，消息被发送至服务端后，在指定时间后才能被消费者消费。通过设置一定的定时时间可以实现分布式场景的延时调度触发效果。",
+            "llm_context": "he RocketMQ 提供的一种高级消息类型，消息被发送至服务端后，在指定时间后才能被消费者消费。通过设置一定的定时时间可以实现分布式场景的延时调度触发效果。",
+            "section_path": [
+              "基本概念",
+              "定时/延时消息"
+            ]
+          },
+          {
+            "chunk_id": 986,
+            "doc_id": 115,
+            "page": 0,
+            "snippet": "定时/延时消息为 Apache RocketMQ 中的高级特性消息，本文为您介绍定时/延时消息的应用场景、功能原理、使用限制、使用方法和使用建议。\n:::note\n\n定时消息和延时消息本质相同，都是服务端根据消息设置的定时时间在某一固定时刻将消息投递给消费者消费。因此，下文统一用定时消息描述。\n\n:::",
+            "llm_context": "定时/延时消息为 Apache RocketMQ 中的高级特性消息，本文为您介绍定时/延时消息的应用场景、功能原理、使用限制、使用方法和使用建议。\n:::note\n\n定时消息和延时消息本质相同，都是服务端根据消息设置的定时时间在某一固定时刻将消息投递给消费者消费。因此，下文统一用定时消息描述。\n\n:::",
+            "section_path": [
+              "定时/延时消息"
+            ]
+          },
+          {
+            "chunk_id": 988,
+            "doc_id": 115,
+            "page": 0,
+            "snippet": "在分布式定时调度触发、任务超时处理等场景，需要实现精准、可靠的定时事件触发。使用 Apache RocketMQ 的定时消息可以简化定时调度任务的开发逻辑，实现高性能、可扩展、高可靠的定时触发能力。\n\n**典型场景一：分布式定时调度**\n \n\n在分布式定时调度场景下，需要实现各类精度的定时任务，例如每天5点执行文件清理，每隔2分钟触发一次消息推送等需求。传统基于数据库的定时调度方案在分布式场景下，…",
+            "llm_context": "在分布式定时调度触发、任务超时处理等场景，需要实现精准、可靠的定时事件触发。使用 Apache RocketMQ 的定时消息可以简化定时调度任务的开发逻辑，实现高性能、可扩展、高可靠的定时触发能力。\n\n**典型场景一：分布式定时调度**\n \n\n在分布式定时调度场景下，需要实现各类精度的定时任务，例如每天5点执行文件清理，每隔2分钟触发一次消息推送等需求。传统基于数据库的定时调度方案在分布式场景下，性能不高，实现复杂。基于 Apache RocketMQ 的定时消息可以封装出多种类型的定时触发器。\n\n**典型场景二：任务超时处理**\n \n\n以电商交易场景为例，订单下单后暂未支付，此时不可以直接关闭订单，而是需要等待一段时间后才能关闭订单。使用 Apache RocketMQ 定时消息可以实现超时任务的检查触发。\n\n基于定时消息的超时任务处理具备如下优势：\n\n* 精度高、开发门槛低：基于消息通知方式不存在定时阶梯间隔。可以轻松实现任意精度事件触发，无需业务去重。\n\n",
+            "section_path": [
+              "定时/延时消息",
+              "应用场景"
+            ]
+          },
+          {
+            "chunk_id": 1610,
+            "doc_id": 178,
+            "page": 0,
+            "snippet": "**原理机制**\n\nApache RocketMQ 使用存储时长作为消息存储的依据，即每个节点对外承诺消息的存储时长。在存储时长范围内的消息都会被保留，无论消息是否被消费；超过时长限制的消息则会被清理掉。\n\n消息存储机制主要定义以下关键问题：\n\n* 消息存储管理粒度：Apache RocketMQ 按存储节点管理消息的存储时长，并不是按照主题或队列粒度来管理。\n\n* 消息存储判断依据：消息存储按照…",
+            "llm_context": "**原理机制**\n\nApache RocketMQ 使用存储时长作为消息存储的依据，即每个节点对外承诺消息的存储时长。在存储时长范围内的消息都会被保留，无论消息是否被消费；超过时长限制的消息则会被清理掉。\n\n消息存储机制主要定义以下关键问题：\n\n* 消息存储管理粒度：Apache RocketMQ 按存储节点管理消息的存储时长，并不是按照主题或队列粒度来管理。\n\n* 消息存储判断依据：消息存储按照存储时间作为判断依据，相对于消息数量、消息大小等条件，使用存储时间作为判断依据，更利于业务方对消息数据的价值进行评估。\n\n* 消息存储和是否消费状态无关：Apache RocketMQ 的消息存储是按照消息的生产时间计算，和消息是否被消费无关。按照统一的计算策略可以有效地简化存储机制。\n\n消息在队列中的存储情况如下： \n\n:::note \n**消息存储管理粒度说明**\n\nApache RocketMQ 按照服务端节点粒度管理存储时长而非队列或主题，原因如下：\n\n* 消息存储优势权衡：Apache RocketMQ 基于统一的物理日志队列和轻量化逻辑队列的二级组织方式，管理物理数据。这种机制可以带来顺序读写、高吞吐、高性能等优势，但缺点是不支持按主题和队列单独管理。\n\n* 安全生产和容量保障风险要求：即使Apache RocketMQ 按照主题或者队列独立生成存储文件，但存储层本质还是共享存储介质。单独根据主题或队列控制存储时长，这种方式看似更灵活，但实际上整个集群仍然存在容量风险，可能会导致存储时长SLA被打破。从安全生产角度考虑，最合理的方式是将不同存储时长的消息通过不同集群进行分离治理。\n:::\n\n**消息存储和消费状态关系说明**\n\nApache RocketMQ 统一管理消息的存储时长，无论消息是否被消费。\n\n",
+            "section_path": [
+              "消息存储和清理机制",
+              "消息存储机制"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 29,
+        "question": "RocketMQ 事务消息在什么情况下会触发事务回查？",
+        "gold_answer": "服务端未收到二次确认，或收到 Unknown 状态时，会在固定时间后向生产者集群发起事务回查；生产者检查本地事务后再次提交 Commit 或 Rollback。",
+        "answer": "RocketMQ 事务消息在服务端未收到生产者提交的二次确认结果，或收到的二次确认结果为Unknown未知状态时，会触发事务回查 [2]。这种情况通常发生在断网或生产者应用重启的特殊场景下 [2]。回查的间隔时间和最大回查次数有参数限制 [2]。生产者收到消息回查后，需要检查对应消息的本地事务执行的最终结果，并再次提交二次确认 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1024,
+          1010,
+          1235,
+          268,
+          1245,
+          1014,
+          270,
+          988
+        ],
+        "gold_chunk_ids": [
+          1010
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1024,
+            "doc_id": 129,
+            "page": 0,
+            "snippet": "**避免大量未决事务导致超时**\n\nApache RocketMQ支持在事务提交阶段异常的情况下发起事务回查，保证事务一致性。但生产者应该尽量避免本地事务返回未知结果。大量的事务检查会导致系统性能受损，容易导致事务处理延迟。\n\n**正确处理\"进行中\"的事务**\n\n消息回查时，对于正在进行中的事务不要返回Rollback或Commit结果，应继续保持Unknown的状态。 一般出现消息回查时事务正在…",
+            "llm_context": "**避免大量未决事务导致超时**\n\nApache RocketMQ支持在事务提交阶段异常的情况下发起事务回查，保证事务一致性。但生产者应该尽量避免本地事务返回未知结果。大量的事务检查会导致系统性能受损，容易导致事务处理延迟。\n\n**正确处理\"进行中\"的事务**\n\n消息回查时，对于正在进行中的事务不要返回Rollback或Commit结果，应继续保持Unknown的状态。 一般出现消息回查时事务正在处理的原因为：事务执行较慢，消息回查太快。解决方案如下：\n\n* 将第一次事务回查时间设置较大一些，但可能导致依赖回查的事务提交延迟较大。\n\n* 程序能正确识别正在进行中的事务。",
+            "section_path": [
+              "事务消息",
+              "使用建议"
+            ]
+          },
+          {
+            "chunk_id": 1010,
+            "doc_id": 129,
+            "page": 0,
+            "snippet": "**什么是事务消息**\n\n事务消息是 Apache RocketMQ 提供的一种高级消息类型，支持在分布式场景下保障消息生产和本地事务的最终一致性。\n\n**事务消息处理流程**\n\n事务消息交互流程如下图所示。 \n\n1. 生产者将消息发送至Apache RocketMQ服务端。\n\n2. Apache RocketMQ服务端将消息持久化成功之后，向生产者返回Ack确认消息已经发送成功，此时消息被标记为…",
+            "llm_context": "**什么是事务消息**\n\n事务消息是 Apache RocketMQ 提供的一种高级消息类型，支持在分布式场景下保障消息生产和本地事务的最终一致性。\n\n**事务消息处理流程**\n\n事务消息交互流程如下图所示。 \n\n1. 生产者将消息发送至Apache RocketMQ服务端。\n\n2. Apache RocketMQ服务端将消息持久化成功之后，向生产者返回Ack确认消息已经发送成功，此时消息被标记为\"暂不能投递\"，这种状态下的消息即为半事务消息。\n\n3. 生产者开始执行本地事务逻辑。\n\n4. 生产者根据本地事务执行结果向服务端提交二次确认结果（Commit或是Rollback），服务端收到确认结果后处理逻辑如下：\n * 二次确认结果为Commit：服务端将半事务消息标记为可投递，并投递给消费者。\n \n * 二次确认结果为Rollback：服务端将回滚事务，不会将半事务消息投递给消费者。\n \n5. 在断网或者是生产者应用重启的特殊情况下，若服务端未收到发送者提交的二次确认结果，或服务端收到的二次确认结果为Unknown未知状态，经过固定时间后，服务端将对消息生产者即生产者集群中任一生产者实例发起消息回查。\n **说明** 服务端回查的间隔时间和最大回查次数，请参见[参数限制](../01-introduction/03limits.md)。\n\n6. 生产者收到消息回查后，需要检查对应消息的本地事务执行的最终结果。\n\n7. 生产者根据检查到的本地事务的最终状态再次提交二次确认，服务端仍按照步骤4对半事务消息进行处理。\n\n**事务消息生命周期**\n \n\n* 初始化：半事务消息被生产者构建并完成初始化，待发送到服务端的状态。\n\n",
+            "section_path": [
+              "事务消息",
+              "功能原理"
+            ]
+          },
+          {
+            "chunk_id": 1235,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "Apache RocketMQ 客户端连接服务端发起消息发送请求时，可能会因为网络故障、服务异常等原因导致调用失败。为保证消息的可靠性， Apache RocketMQ 在客户端SDK中内置请求重试逻辑，尝试通过重试发送达到最终调用成功的效果。\n\n同步发送和异步发送模式均支持消息发送重试。\n\n**重试触发条件**\n\n触发消息发送重试机制的条件如下：\n\n* 客户端消息发送请求调用失败或请求超时\n\n*…",
+            "llm_context": "Apache RocketMQ 客户端连接服务端发起消息发送请求时，可能会因为网络故障、服务异常等原因导致调用失败。为保证消息的可靠性， Apache RocketMQ 在客户端SDK中内置请求重试逻辑，尝试通过重试发送达到最终调用成功的效果。\n\n同步发送和异步发送模式均支持消息发送重试。\n\n**重试触发条件**\n\n触发消息发送重试机制的条件如下：\n\n* 客户端消息发送请求调用失败或请求超时\n\n* 网络异常造成连接失败或请求超时。\n \n* 服务端节点处于重启或下线等状态造成连接失败。\n \n* 服务端运行慢造成请求超时。\n\n* 服务端返回失败错误码\n * 系统逻辑错误：因运行逻辑不正确造成的错误。\n \n * 系统流控错误：因容量超限造成的流控错误。\n \n:::note\n对于事务消息，只会进行[透明重试（transparent retries）]( )，网络超时或异常等场景不会进行重试。\n:::",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息发送重试机制",
+              "重试基本概念"
+            ]
+          },
+          {
+            "chunk_id": 268,
+            "doc_id": 9,
+            "page": 0,
+            "snippet": "Apache RocketMQ 中生产者用来执行本地事务检查和异常事务恢复的监听器。事务检查器应该通过业务侧数据的状态来检查和判断事务消息的状态。更多信息，请参见[事务消息](../04-featureBehavior/04transactionmessage.md)。",
+            "llm_context": "Apache RocketMQ 中生产者用来执行本地事务检查和异常事务恢复的监听器。事务检查器应该通过业务侧数据的状态来检查和判断事务消息的状态。更多信息，请参见[事务消息](../04-featureBehavior/04transactionmessage.md)。",
+            "section_path": [
+              "基本概念",
+              "事务检查器（TransactionChecker）"
+            ]
+          },
+          {
+            "chunk_id": 1245,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "Apache RocketMQ 的消息流控触发条件如下：\n\n* 存储压力大：参考[消费进度管理](./09consumerprogress.md)的原理机制，消费者分组的初始消费位点为当前队列的最大消费位点。若某些场景例如业务上新等需要回溯到指定时刻前开始消费，此时队列的存储压力会瞬间飙升，触发消息流控。\n\n* 服务端请求任务排队溢出：若消费者消费能力不足，导致队列中有大量堆积消息，当堆积消息超过…",
+            "llm_context": "Apache RocketMQ 的消息流控触发条件如下：\n\n* 存储压力大：参考[消费进度管理](./09consumerprogress.md)的原理机制，消费者分组的初始消费位点为当前队列的最大消费位点。若某些场景例如业务上新等需要回溯到指定时刻前开始消费，此时队列的存储压力会瞬间飙升，触发消息流控。\n\n* 服务端请求任务排队溢出：若消费者消费能力不足，导致队列中有大量堆积消息，当堆积消息超过一定数量后会触发消息流控，减少下游消费系统压力。",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息流控机制",
+              "触发条件"
+            ]
+          },
+          {
+            "chunk_id": 1014,
+            "doc_id": 129,
+            "page": 0,
+            "snippet": "**消息类型一致性**\n\n事务消息仅支持在 MessageType 为 Transaction 的主题内使用，即事务消息只能发送至类型为事务消息的主题中，发送的消息的类型必须和主题的类型一致。\n\n**消费事务性**\n\nApache RocketMQ 事务消息保证本地主分支事务和下游消息发送事务的一致性，但不保证消息消费结果和上游事务的一致性。因此需要下游业务分支自行保证消息正确处理，建议消费端做好…",
+            "llm_context": "**消息类型一致性**\n\n事务消息仅支持在 MessageType 为 Transaction 的主题内使用，即事务消息只能发送至类型为事务消息的主题中，发送的消息的类型必须和主题的类型一致。\n\n**消费事务性**\n\nApache RocketMQ 事务消息保证本地主分支事务和下游消息发送事务的一致性，但不保证消息消费结果和上游事务的一致性。因此需要下游业务分支自行保证消息正确处理，建议消费端做好[消费重试](./10consumerretrypolicy.md)，如果有短暂失败可以利用重试机制保证最终处理成功。\n\n**中间状态可见性**\n\nApache RocketMQ 事务消息为最终一致性，即在消息提交到下游消费端处理完成之前，下游分支和上游事务之间的状态会不一致。因此，事务消息仅适合接受异步执行的事务场景。\n\n**事务超时机制**\n\nApache RocketMQ 事务消息的生命周期存在超时机制，即半事务消息被生产者发送服务端后，如果在指定时间内服务端无法确认提交或者回滚状态，则消息默认会被回滚。事务超时时间，请参见[参数限制](../01-introduction/03limits.md)。",
+            "section_path": [
+              "事务消息",
+              "使用限制"
+            ]
+          },
+          {
+            "chunk_id": 270,
+            "doc_id": 9,
+            "page": 0,
+            "snippet": "Apache RocketMQ 中事务消息发送过程中，事务提交的状态标识，服务端通过事务状态控制事务消息是否应该提交和投递。事务状态包括事务提交、事务回滚和事务未决。更多信息，请参见[事务消息](../04-featureBehavior/04transactionmessage.md)。",
+            "llm_context": "Apache RocketMQ 中事务消息发送过程中，事务提交的状态标识，服务端通过事务状态控制事务消息是否应该提交和投递。事务状态包括事务提交、事务回滚和事务未决。更多信息，请参见[事务消息](../04-featureBehavior/04transactionmessage.md)。",
+            "section_path": [
+              "基本概念",
+              "事务状态（TransactionResolution）"
+            ]
+          },
+          {
+            "chunk_id": 988,
+            "doc_id": 115,
+            "page": 0,
+            "snippet": "在分布式定时调度触发、任务超时处理等场景，需要实现精准、可靠的定时事件触发。使用 Apache RocketMQ 的定时消息可以简化定时调度任务的开发逻辑，实现高性能、可扩展、高可靠的定时触发能力。\n\n**典型场景一：分布式定时调度**\n \n\n在分布式定时调度场景下，需要实现各类精度的定时任务，例如每天5点执行文件清理，每隔2分钟触发一次消息推送等需求。传统基于数据库的定时调度方案在分布式场景下，…",
+            "llm_context": "在分布式定时调度触发、任务超时处理等场景，需要实现精准、可靠的定时事件触发。使用 Apache RocketMQ 的定时消息可以简化定时调度任务的开发逻辑，实现高性能、可扩展、高可靠的定时触发能力。\n\n**典型场景一：分布式定时调度**\n \n\n在分布式定时调度场景下，需要实现各类精度的定时任务，例如每天5点执行文件清理，每隔2分钟触发一次消息推送等需求。传统基于数据库的定时调度方案在分布式场景下，性能不高，实现复杂。基于 Apache RocketMQ 的定时消息可以封装出多种类型的定时触发器。\n\n**典型场景二：任务超时处理**\n \n\n以电商交易场景为例，订单下单后暂未支付，此时不可以直接关闭订单，而是需要等待一段时间后才能关闭订单。使用 Apache RocketMQ 定时消息可以实现超时任务的检查触发。\n\n基于定时消息的超时任务处理具备如下优势：\n\n* 精度高、开发门槛低：基于消息通知方式不存在定时阶梯间隔。可以轻松实现任意精度事件触发，无需业务去重。\n\n",
+            "section_path": [
+              "定时/延时消息",
+              "应用场景"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 30,
+        "question": "RocketMQ 因服务端流控错误触发发送重试时采用什么退避策略？",
+        "gold_answer": "采用指数退避并加入随机抖动；默认初始等待 1 秒、倍率 1.6、抖动因子 0.2、最大等待 120 秒。",
+        "answer": "RocketMQ 因服务端流控错误触发发送重试时采用指数退避策略 [1][2][6]。该策略通过 INITIAL_BACKOFF（默认1秒）、MULTIPLIER（默认1.6）、JITTER（默认0.2）、MAX_BACKOFF（默认120秒）和 MIN_CONNECT_TIMEOUT（默认20秒）参数控制重试行为 [1]。当客户端收到 reply-code 为 530 且 reply-text 为 TOO_MANY_REQUESTS 的系统流控错误时，会触发此退避重试机制 [2][6]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1239,
+          1247,
+          1243,
+          3006,
+          1235,
+          1248,
+          1242,
+          1244
+        ],
+        "gold_chunk_ids": [
+          1239
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1239,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "* 除服务端返回系统流控错误场景，其他触发条件触发重试后，均会立即进行重试，无等待间隔。\n\n* 若由于服务端返回流控错误触发重试，系统会按照指数退避策略进行延迟重试。指数退避算法通过以下参数控制重试行为：\n\n * INITIAL_BACKOFF： 第一次失败重试前后需等待多久，默认值：1秒。\n \n * MULTIPLIER ：指数退避因子，即退避倍率，默认值：1.6。\n \n * JITTER ：随…",
+            "llm_context": "* 除服务端返回系统流控错误场景，其他触发条件触发重试后，均会立即进行重试，无等待间隔。\n\n* 若由于服务端返回流控错误触发重试，系统会按照指数退避策略进行延迟重试。指数退避算法通过以下参数控制重试行为：\n\n * INITIAL_BACKOFF： 第一次失败重试前后需等待多久，默认值：1秒。\n \n * MULTIPLIER ：指数退避因子，即退避倍率，默认值：1.6。\n \n * JITTER ：随机抖动因子，默认值：0.2。\n \n * MAX_BACKOFF ：等待间隔时间上限，默认值：120秒\n \n * MIN_CONNECT_TIMEOUT ：最短重试间隔，默认值：20秒。\n \n\n**建议算法如下：**",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息发送重试机制",
+              "重试间隔"
+            ]
+          },
+          {
+            "chunk_id": 1247,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "当系统触发消息发送流控时，客户端会收到系统限流错误和异常，错误码信息如下：\n\n* reply-code：530\n\n* reply-text：TOO_MANY_REQUESTS\n\n客户端收到系统流控错误码后，会根据指数退避策略进行消息发送重试。",
+            "llm_context": "当系统触发消息发送流控时，客户端会收到系统限流错误和异常，错误码信息如下：\n\n* reply-code：530\n\n* reply-text：TOO_MANY_REQUESTS\n\n客户端收到系统流控错误码后，会根据指数退避策略进行消息发送重试。",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息流控机制",
+              "流控行为"
+            ]
+          },
+          {
+            "chunk_id": 1243,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "MQ客户端因请求超时触发消息发送重试流程，此时客户端无法感知服务端的处理结果，客户端进行的消息发送重试可能会产生消息重复问题，业务逻辑需要自行处理消息重复问题。",
+            "llm_context": "MQ客户端因请求超时触发消息发送重试流程，此时客户端无法感知服务端的处理结果，客户端进行的消息发送重试可能会产生消息重复问题，业务逻辑需要自行处理消息重复问题。",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息发送重试机制",
+              "功能约束"
+            ]
+          },
+          {
+            "chunk_id": 3006,
+            "doc_id": 216,
+            "page": 0,
+            "snippet": "Producer的send方法本身支持内部重试，5.x SDK的重试逻辑参考[发送重试策略](../04-featureBehavior/05sendretrypolicy.md)：\n\n以上策略也是在一定程度上保证了消息可以发送成功。如果业务要求消息发送不能丢，仍然需要对可能出现的异常做兜底，比如调用send同步方法发送失败时，则尝试将消息存储到db，然后由后台线程定时重试，确保消息一定到达Bro…",
+            "llm_context": "Producer的send方法本身支持内部重试，5.x SDK的重试逻辑参考[发送重试策略](../04-featureBehavior/05sendretrypolicy.md)：\n\n以上策略也是在一定程度上保证了消息可以发送成功。如果业务要求消息发送不能丢，仍然需要对可能出现的异常做兜底，比如调用send同步方法发送失败时，则尝试将消息存储到db，然后由后台线程定时重试，确保消息一定到达Broker。\n\n上述DB重试方式为什么没有集成到MQ客户端内部做，而是要求应用自己去完成，主要基于以下几点考虑：首先，MQ的客户端设计为无状态模式，方便任意的水平扩展，且对机器资源的消耗仅仅是cpu、内存、网络。其次，如果MQ客户端内部集成一个KV存储模块，那么数据只有同步落盘才能较可靠，而同步落盘本身性能开销较大，所以通常会采用异步落盘，又由于应用关闭过程不受MQ运维人员控制，可能经常会发生 kill -9 这样暴力方式关闭，造成数据没有及时落盘而丢失。第三，Producer所在机器的可靠性较低，一般为虚拟机，不适合存储重要数据。综上，建议重试过程交由应用来控制。",
+            "section_path": [
+              "基本最佳实践",
+              "生产者",
+              "消息发送失败处理方式"
+            ]
+          },
+          {
+            "chunk_id": 1235,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "Apache RocketMQ 客户端连接服务端发起消息发送请求时，可能会因为网络故障、服务异常等原因导致调用失败。为保证消息的可靠性， Apache RocketMQ 在客户端SDK中内置请求重试逻辑，尝试通过重试发送达到最终调用成功的效果。\n\n同步发送和异步发送模式均支持消息发送重试。\n\n**重试触发条件**\n\n触发消息发送重试机制的条件如下：\n\n* 客户端消息发送请求调用失败或请求超时\n\n*…",
+            "llm_context": "Apache RocketMQ 客户端连接服务端发起消息发送请求时，可能会因为网络故障、服务异常等原因导致调用失败。为保证消息的可靠性， Apache RocketMQ 在客户端SDK中内置请求重试逻辑，尝试通过重试发送达到最终调用成功的效果。\n\n同步发送和异步发送模式均支持消息发送重试。\n\n**重试触发条件**\n\n触发消息发送重试机制的条件如下：\n\n* 客户端消息发送请求调用失败或请求超时\n\n* 网络异常造成连接失败或请求超时。\n \n* 服务端节点处于重启或下线等状态造成连接失败。\n \n* 服务端运行慢造成请求超时。\n\n* 服务端返回失败错误码\n * 系统逻辑错误：因运行逻辑不正确造成的错误。\n \n * 系统流控错误：因容量超限造成的流控错误。\n \n:::note\n对于事务消息，只会进行[透明重试（transparent retries）]( )，网络超时或异常等场景不会进行重试。\n:::",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息发送重试机制",
+              "重试基本概念"
+            ]
+          },
+          {
+            "chunk_id": 1248,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "reply-code：530\n\n* reply-text：TOO_MANY_REQUESTS\n\n客户端收到系统流控错误码后，会根据指数退避策略进行消息发送重试。",
+            "llm_context": "reply-code：530\n\n* reply-text：TOO_MANY_REQUESTS\n\n客户端收到系统流控错误码后，会根据指数退避策略进行消息发送重试。",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息流控机制",
+              "流控行为"
+            ]
+          },
+          {
+            "chunk_id": 1242,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "* 链路耗时阻塞评估：从上述重试机制可以看出，在重试流程中生产者仅能控制最大重试次数。若由于系统异常触发了SDK内置的重试逻辑，则服务端需要等待最终重试结果，可能会导致消息发送请求链路被阻塞。对于某些实时调用类场景，您需要合理评估每次调用请求的超时时间以及最大重试次数，避免影响全链路的耗时。\n\n* 最终异常兜底： Apache RocketMQ 客户端内置的发送请求重试机制并不能保证消息发送一定成…",
+            "llm_context": "* 链路耗时阻塞评估：从上述重试机制可以看出，在重试流程中生产者仅能控制最大重试次数。若由于系统异常触发了SDK内置的重试逻辑，则服务端需要等待最终重试结果，可能会导致消息发送请求链路被阻塞。对于某些实时调用类场景，您需要合理评估每次调用请求的超时时间以及最大重试次数，避免影响全链路的耗时。\n\n* 最终异常兜底： Apache RocketMQ 客户端内置的发送请求重试机制并不能保证消息发送一定成功。当最终重试仍然失败时，业务方调用需要捕获异常，并做好冗余保护处理，避免消息发送结果不一致。\n\n* 消息重复问题：因远程调用的不确定性，当Apache RocketMQ客户端因请求超时触发消息发送重试流程，此时客户端无法感知服务端的处理结果，客户端进行的消息发送重试可能会产生消息重复问题，业务逻辑需要自行处理消息重复问题。",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息发送重试机制",
+              "功能约束"
+            ]
+          },
+          {
+            "chunk_id": 1244,
+            "doc_id": 136,
+            "page": 0,
+            "snippet": "消息流控指的是系统容量或水位过高， Apache RocketMQ 服务端会通过快速失败返回流控错误来避免底层资源承受过高压力。",
+            "llm_context": "消息流控指的是系统容量或水位过高， Apache RocketMQ 服务端会通过快速失败返回流控错误来避免底层资源承受过高压力。",
+            "section_path": [
+              "消息发送重试和流控机制",
+              "消息流控机制",
+              "消息流控基本概念"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 1,
+  "k": 8,
+  "timestamp": "2026-08-25T03:42:04.167064+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

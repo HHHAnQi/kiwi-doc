@@ -50,8 +50,21 @@ public class DefaultEvidenceGroundedAnswerComposer implements EvidenceGroundedAn
     @Override
     public GroundedAnswer compose(GroundedAnswerRequest request) throws Exception {
         List<String> context = buildPromptContext(request);
+        // PARTIAL 标注(2026-08-25): 部分覆盖时在 system prompt 中声明,
+        // 让 LLM 对未确认部分标注"根据现有证据"而非假装全知
+        String partialNote = "";
+        if (request.coverage() != null && !request.coverage().isEmpty()) {
+            long uncovered = request.coverage().stream()
+                    .filter(c -> c.status() != com.xxx.ragdoc.application.chat.sufficiency.CoverageStatus.COVERED)
+                    .count();
+            if (uncovered > 0) {
+                partialNote = "\n\n[注意: 本次检索覆盖了部分需求(" 
+                    + (request.coverage().size() - uncovered) + "/" + request.coverage().size()
+                    + ")。对于未完全覆盖的部分, 基于现有最相关证据回答, 如证据不足请如实说明。]";
+            }
+        }
         String text =
-                chatClient.chat(SYSTEM_PROMPT + "\n\n用户问题: " + request.originalQuery(), context);
+                chatClient.chat(SYSTEM_PROMPT + partialNote + "\n\n用户问题: " + request.originalQuery(), context);
         List<String> usedIds = collectUsedEvidenceIds(request);
         return new GroundedAnswer(text, usedIds);
     }

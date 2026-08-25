@@ -1,0 +1,171 @@
+{
+  "dataset_size": 20,
+  "metrics": {
+    "answer_correctness": 0.796,
+    "faithfulness": 0.9833333333333334,
+    "evidence_completeness": 0.9720238095238095
+  },
+  "confidence_intervals_95": {
+    "answer_correctness": {
+      "low": 0.692,
+      "high": 0.9,
+      "method": "query_bootstrap_percentile"
+    },
+    "faithfulness": {
+      "low": 0.95,
+      "high": 1.0,
+      "method": "query_bootstrap_percentile"
+    },
+    "evidence_completeness": {
+      "low": 0.9386904761904763,
+      "high": 1.0,
+      "method": "query_bootstrap_percentile"
+    }
+  },
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "source_report": "eval/runs/frozen80_v4_prompt_ab_complete20_old_answers.json",
+  "timestamp": "2026-08-25T03:29:34.620652+00:00",
+  "per_query": [
+    {
+      "question_id": 4,
+      "question": "Nacos2 三节点集群服务发现性能测试的容量和核心接口 TPS 达到了什么水平？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 6,
+      "question": "spring-cloud-alibaba-seata 以 2.2.0.RELEASE 为分界点，内部依赖发生了什么变化？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 20,
+      "question": "在注册动态配置覆盖规则时，`override://`的用途是什么？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8571428571428571
+    },
+    {
+      "question_id": 22,
+      "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 28,
+      "question": "在 Spring Cloud Alibaba 中，如何使用 XML 配置来创建服务消费者的示例？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 29,
+      "question": "在Spring Cloud Alibaba中，如何判断平滑加权轮询算法是否适合用户有加权轮询需求的情况？",
+      "answer_correctness": 1.0,
+      "faithfulness": 0.6666666666666666,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 34,
+      "question": "在 Spring Cloud Alibaba 中，如何配置远程服务的 Stub？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 42,
+      "question": "如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 45,
+      "question": "在Spring Cloud Alibaba中，如何配置一个服务提供端使其调用需要鉴权认证通过？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 47,
+      "question": "在Nacos中，如何使用配置订阅者来监听配置变更并检查变更是否已推送到客户端？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 49,
+      "question": "在生产环境中，使用 Spring Cloud Alibaba Nacos 时，建议采用哪种数据源配置？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 53,
+      "question": "Nacos支持哪些类型的构建物？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 54,
+      "question": "在 Spring Cloud Alibaba 中，如何确保配置集的 Data ID 具有全局唯一性？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 61,
+      "question": "Dubbo 如何支持 Kubernetes 平台调度？",
+      "answer_correctness": 0.75,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 65,
+      "question": "Seata AT 模式在提交本地事务前为什么必须获取全局锁？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 1,
+      "question": "Seata Saga 模式发生异常时如何执行补偿回滚？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 2,
+      "question": "Seata TCC 模式的一阶段和二阶段分别执行什么逻辑？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 72,
+      "question": "RocketMQ 顺序消息如何通过消息组保证顺序？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8333333333333334
+    },
+    {
+      "question_id": 76,
+      "question": "Sentinel 主要从哪些方面保障微服务的可靠性？",
+      "answer_correctness": 0.67,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 77,
+      "question": "Sentinel 的实时监控可以展示哪些范围的运行信息？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    }
+  ]
+}
