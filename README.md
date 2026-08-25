@@ -1,7 +1,7 @@
 # rag-doc-platform (kiwi-doc)
 
 > 企业级 RAG 文档问答平台。**核心方法论: 评测驱动开发** —— 每个能力先建评测、
-> 由评测暴露问题、修复后复测闭环(2026-08 累计定位并修复 16 个实测缺陷)。
+> 由评测暴露问题、修复后复测闭环；Classic RAG 已在 80 题冻结集与 G1-G5 门禁上形成可复现基线。
 
 ## 项目一句话
 
@@ -36,21 +36,31 @@ Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系�
 judge 治理: 异族 DeepSeek 与业务 GLM 物理隔离, 基线证书(题集 SHA256+commit 锁定),
 CI -3% 回归门禁, 曾自查出题集 100% 标注泄漏并判 FAIL。
 
-### 终版评测数据(2026-08-24, 100 题 × 3 轮, judge=DeepSeek)
+### 当前冻结基线（2026-08-25）
 
-| 指标 | rerank OFF | rerank ON | **终版 mean±std(全配置)** |
-|---|---|---|---|
-| faithfulness | 0.747 | 0.840 | **0.777 ± 0.003** |
-| context_precision | 0.506 | 0.562 | 0.556 ± 0.004 |
-| context_recall | 0.450 | 0.525 | 0.503 ± 0.012 |
-| refusal_rate | 4% | 4% | 6.3% ± 2.1% |
-| faith_on_answered | 0.768 | 0.854 | 0.804 ± 0.001 |
+检索使用 80 题 current-corpus 冻结集、3 次重复运行。旧 chunk-id 金标已因语料与索引漂移废止，
+当前金标以可审计 evidence/content hash 锁定。
 
-多轮 Gate: G1 单轮不退化 **PASS** · G2 指代消解 **18/20** · G3 抗污染 **9/10**
-· G4 压缩零丢失 **5/5** · G5 话题漂移 33-39/50(未校准, 如实标注)。
+| 检索指标 | 当前值 | 重复运行标准差 | 逐题 95% CI |
+|---|---:|---:|---:|
+| Hit / Recall@5 | **92.50%** | 0 | 84.59%–96.52% |
+| MRR@5 | **81.04%** | 0 | 73.44%–87.81% |
+| NDCG@5 | **83.92%** | 0 | 77.30%–89.96% |
+| Precision@5 | **19.00%** | 0 | 17.50%–20.25% |
+
+生成质量（同一 80 题冻结集）: Answer Correctness **0.8753** · Faithfulness **0.9705** ·
+Evidence Completeness **0.9230** · Citation Hit **1.0000** · Context Recall **0.9698**。
+严格逐字引用 Precision 为 **0.3219**，反映答案常引用正确片段但未逐字复述，单独保留为诊断指标，
+不与 citation hit 混报。
+
+多轮严格聚合门禁: G1 **PASS(80)** · G2 **PASS(19/20)** · G3 **PASS(10/10)** ·
+G4 **PASS(50/50，mean fidelity 0.995)** · G5 **PASS(50/50)**。所有 gate 的题集指纹一致；
+G2 尚余 1 个语义范围偏宽样本，因此不声称样本级 100%。
 
 Agentic 对照: Classic 36.7% vs Agentic 30.0%(五轮校准 11.7%→30%, 延迟×2.8)
-—— 数据结论: 当前语料保持默认关闭, 全程可追溯见
+—— 数据结论: 当前语料保持默认关闭。后续只在多文档比较、多约束排障、多步检索等复杂切片中
+做同题 A/B；必须同时证明质量增益、成本可接受和可回退，才允许灰度启用。协议见
+`docs/evaluation/agentic-incremental-value-protocol.md`，历史对照见
 `docs/evaluation/2026-08-23-agentic-phase1-report.md`。
 每个数字的完整出处(题集/协议/judge/原始文件): `docs/evaluation/evidence-provenance.md`。
 
