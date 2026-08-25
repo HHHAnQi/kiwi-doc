@@ -5,17 +5,10 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
 from pathlib import Path
 
-# 让 pytest 能找到 eval/planner
-HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
-
-import validate_dataset
-import run_planner_eval
-import aggregate_report
+from eval.planner import aggregate_report, run_planner_eval, validate_dataset
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> None:

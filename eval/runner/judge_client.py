@@ -11,8 +11,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 
 _PROVIDERS: list[dict] | None = None
 
@@ -39,9 +43,21 @@ def _load_providers() -> list[dict]:
     return provs
 
 
-def make_judge_fn(timeout: float = 60.0):
-    """返回 callable(prompt) -> raw_str。无可用 provider 时返回空串。"""
+def make_judge_fn(
+    timeout: float = 60.0,
+    provider_index: int | None = None,
+    max_tokens: int = 256,
+):
+    """返回 callable(prompt) -> raw_str。
+
+    provider_index 为 1-based；指定后只调用该 Judge，便于做真正的异源一致性复核。
+    默认仍按配置顺序失败回退，保持生产评测行为不变。
+    """
     provs = _load_providers()
+    if provider_index is not None:
+        if provider_index < 1 or provider_index > len(provs):
+            raise ValueError(f"judge provider {provider_index} 不存在；已配置 {len(provs)} 个")
+        provs = [provs[provider_index - 1]]
 
     def judge(prompt: str) -> str:
         last_exc: Exception | None = None
@@ -57,7 +73,7 @@ def make_judge_fn(timeout: float = 60.0):
                         "model": p["model"],
                         "messages": [{"role": "user", "content": prompt}],
                         "temperature": 0,
-                        "max_tokens": 256,
+                        "max_tokens": max_tokens,
                     },
                     timeout=timeout,
                 )
@@ -66,7 +82,7 @@ def make_judge_fn(timeout: float = 60.0):
             except Exception as e:
                 last_exc = e
                 continue
-        return "[judge error: all providers failed]"
+        raise RuntimeError(f"all judge providers failed: {last_exc}")
 
     return judge
 
@@ -75,3 +91,11 @@ def primary_judge_model() -> str:
     """供 eval_report.json 记录用。"""
     provs = _load_providers()
     return provs[0]["model"] if provs else "none"
+
+
+def judge_model(provider_index: int) -> str:
+    """返回指定 1-based provider 的模型名。"""
+    provs = _load_providers()
+    if provider_index < 1 or provider_index > len(provs):
+        return "none"
+    return provs[provider_index - 1]["model"]

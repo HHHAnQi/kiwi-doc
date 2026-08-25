@@ -2,13 +2,13 @@
   "question_id": "mt_g5_doc",
   "gate": "G5",
   "type": "topic_shift_eval_generator_template",
-  "description": "G5 评测: topic shift 后 retrieve 召回正确率 ≥ 0.80。本文件是模板; run_multi_turn_eval.py 用它生成具体 session。",
-  "expected_flow": "对话中后段切换话题 (cosine<0.5) → 验证 topic shift 后 query 用原 input, 但 retrieve 仍能召回正确 chunk (即不被前段话题污染)。",
+  "description": "G5 评测: topic shift 后实际检索问题保持新话题且不受旧话题污染，成功率 ≥ 0.80。本文件是模板; run_multi_turn_eval.py 用它生成具体 session。",
+  "expected_flow": "对话中后段切换话题 (cosine<0.5) → 验证 topic shift 后 effective query 与目标独立问题语义等价，且不混入前段话题；回答状态另作单轮质量诊断。",
   "recall_at_3_threshold": 0.80,
   "min_sessions": 50,
   "shift_position": "second_half",
   "scoring": {
-    "pass_per_session": "shift 后的回答包含 ground_truth_answer 关键 fact (≥50% 重叠)",
+    "pass_per_session": "shift 后 effective query 与目标独立问题语义等价，且无旧话题污染",
     "aggregated_pass": "50 session 中至少 40 个 pass (80% overall) = G5 通过"
   },
   "topic_pairs": [
@@ -28,5 +28,5 @@
       {"role": "user", "content": "Seata TCC 三个阶段是什么?"}, {"role": "user", "content": "Dubbo SPI 和 Java SPI 有什么区别?", "expect_standalone": "Dubbo SPI 和 Java SPI 有什么区别?"}
     ]}
   ],
-  "run_note": "run_multi_turn_eval.py 用 5 个 topic_pair × 10 个变体 = 50 个 session, 每 session 2 turn。判定: turn2 是否被 rewrite 成 standalone 且 retrieve 返回正确 chunk。"
+  "run_note": "run_multi_turn_eval.py 用 5 个 topic_pair × 10 次独立重复 = 50 个 session, 每 session 2 turn。硬门禁判定 turn2 的 effective query 是否保持新话题；回答 state_hint 仅作诊断，避免与单轮检索/生成能力重复计分。"
 }

@@ -2,14 +2,9 @@
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
-# resolve package path for "scripts" module import
-EVAL_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(EVAL_ROOT / "scripts"))
-
-import validate_dataset  # noqa: E402
+from eval.agentic.scripts import validate_dataset
 
 
 def _valid_base(case_id: str = "amh-100") -> dict:

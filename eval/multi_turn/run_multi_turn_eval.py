@@ -27,14 +27,21 @@ Phase 1 / C7 (ADR-0011): 多轮对话 eval pipeline。
 """
 
 import json
+import hashlib
 import os
 import re
 import sys
 import time
 import urllib.parse
 import uuid
-from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from pathlib import Path
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # 多轮运行只强依赖 requests；无 dotenv 时仍兼容显式环境变量
+    load_dotenv = None
 
 try:
     import requests
@@ -43,14 +50,32 @@ except ImportError:
     sys.exit(2)
 
 # ─── 配置 ───────────────────────────────
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if load_dotenv is not None:
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8080/api/v1/chat").rstrip("/")
 APP_DEV_TOKEN = os.getenv("APP_DEV_TOKEN", "dev-token-change-me")
 APP_ADMIN_TOKEN = os.getenv("APP_ADMIN_TOKEN", "admin-token-change-me")
 TIMEOUT_S = 90
 
-JUDGE_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.deepseek.com/v1")
-JUDGE_API_KEY = os.getenv("OPENAI_API_KEY", os.getenv("JUDGE_LLM_PROVIDER_1_API_KEY", ""))
-JUDGE_MODEL = os.getenv("OPENAI_MODEL", "deepseek-chat")
+JUDGE_PROVIDER_ID = int(os.getenv("MULTI_TURN_JUDGE_PROVIDER_ID", "1"))
+JUDGE_PROVIDER_PREFIX = f"JUDGE_LLM_PROVIDER_{JUDGE_PROVIDER_ID}"
+JUDGE_BASE_URL = (
+    os.getenv("OPENAI_BASE_URL")
+    or os.getenv(f"{JUDGE_PROVIDER_PREFIX}_BASE_URL")
+    or "https://api.deepseek.com/v1"
+)
+JUDGE_API_KEY = (
+    os.getenv("OPENAI_API_KEY")
+    or os.getenv(f"{JUDGE_PROVIDER_PREFIX}_API_KEY")
+    or ""
+)
+JUDGE_MODEL = (
+    os.getenv("OPENAI_MODEL")
+    or os.getenv(f"{JUDGE_PROVIDER_PREFIX}_MODEL")
+    or "deepseek-chat"
+)
 
 MULTI_TURN_DIR = Path(__file__).resolve().parent
 G2_FILE = MULTI_TURN_DIR / "conv_holdout_20.jsonl"
@@ -63,6 +88,16 @@ OUT_DIR = MULTI_TURN_DIR
 # EVAL_BASELINE_CERT.md 锁定的 baseline (Phase 2.0 ensemble mean)
 BASELINE_FAITH_ON_ANSWERED = 0.8654
 BASELINE_REFUSAL_RATE = 0.1625
+G1_RESULT_FILE = Path(os.getenv(
+    "G1_SINGLE_TURN_RESULT",
+    str(MULTI_TURN_DIR.parent / "ragas_run_metadata.json"),
+))
+G1_BASELINE_FILE = Path(os.getenv(
+    "G1_BASELINE_FILE",
+    str(MULTI_TURN_DIR.parent / "ragas_baseline.json"),
+))
+G1_MIN_SAMPLES = int(os.getenv("G1_MIN_SAMPLES", "80"))
+G1_MAX_AGE_HOURS = int(os.getenv("G1_MAX_AGE_HOURS", "48"))
 
 
 # ─── HTTP 调用 ───────────────────────────────
@@ -108,36 +143,91 @@ def judge_llm(prompt: str) -> str:
 
 # ─── G1: baseline ±3pp smoke ───────────────
 
-def run_g1_smoke(n_smoke=10) -> dict:
-    """G1 用 golden_v2_grounded.jsonl 跑 10 题做 smoke 测试 (不是完整 80 题, 节省 LLM 成本)。
-    baseline 完整 80 题 ±3pp 跑用 eval/eval_pipeline.py, 本 G1 只 sanity check 一致。"""
-    golden_file = MULTI_TURN_DIR.parent / "golden" / "golden_v2_grounded.jsonl"
-    if not golden_file.exists():
-        return {"gate": "G1", "status": "SKIP", "reason": f"找不到 {golden_file}, 跳过 smoke 检查"}
-    questions = []
-    with open(golden_file) as f:
-        for line in f:
-            questions.append(json.loads(line))
-    smoke = questions[:n_smoke]  # 头 10 题
-    ok = 0; degraded = 0; no_recall = 0; empty_kb = 0
-    for q in smoke:
-        r = call_chat(q["question"])
-        # state 不传 conversation_id (stateless 老路径) → baseline 应正常 0 变化
-        st = r["state_hint"]
-        if st == "OK": ok += 1
-        elif st == "LLM_DEGRADED": degraded += 1
-        elif st == "NO_RECALL": no_recall += 1
-        elif st == "EMPTY_KB": empty_kb += 1
+def evaluate_g1_artifacts(current: dict, baseline: dict) -> dict:
+    """用带指纹的完整单轮评测产物判断G1，拒绝smoke冒充质量门禁。"""
+    if current.get("schema_version") != 2 or baseline.get("schema_version") != 2:
+        return {
+            "gate": "G1",
+            "status": "INCOMPLETE",
+            "reason": "单轮结果或基线不是带题集/Judge指纹的v2格式",
+        }
+    if baseline.get("baseline_type") != "multi_run" or baseline.get("run_count", 0) < 3:
+        return {
+            "gate": "G1",
+            "status": "INCOMPLETE",
+            "reason": "正式单轮基线必须由至少3轮同配置运行聚合",
+        }
+    if current.get("sample_count", 0) < G1_MIN_SAMPLES:
+        return {
+            "gate": "G1",
+            "status": "INCOMPLETE",
+            "reason": f"单轮样本不足: {current.get('sample_count', 0)} < {G1_MIN_SAMPLES}",
+        }
+    current_intervals = current.get("confidence_intervals_95") or {}
+    for metric in ("faithfulness", "answer_relevancy", "context_precision", "context_recall"):
+        valid_n = (current_intervals.get(metric) or {}).get("n")
+        if valid_n != current.get("sample_count"):
+            return {
+                "gate": "G1",
+                "status": "INCOMPLETE",
+                "reason": (
+                    f"单轮指标 {metric} 有效判分数不完整: "
+                    f"{valid_n} != {current.get('sample_count')}"
+                ),
+            }
+    for field in ("questions_sha256", "sample_count", "judge"):
+        if current.get(field) != baseline.get(field):
+            return {
+                "gate": "G1",
+                "status": "INCOMPLETE",
+                "reason": f"单轮结果与基线的 {field} 不一致",
+            }
+
+    try:
+        generated_at = datetime.fromisoformat(current["generated_at"].replace("Z", "+00:00"))
+        age_hours = (datetime.now(timezone.utc) - generated_at).total_seconds() / 3600
+    except Exception:
+        return {"gate": "G1", "status": "INCOMPLETE", "reason": "单轮结果时间戳无效"}
+    if age_hours > G1_MAX_AGE_HOURS:
+        return {
+            "gate": "G1",
+            "status": "INCOMPLETE",
+            "reason": f"单轮结果已过期: {age_hours:.1f}h > {G1_MAX_AGE_HOURS}h",
+        }
+
+    current_scores = current.get("scores", {})
+    baseline_scores = baseline.get("scores", {})
+    deltas = {}
+    failed = []
+    for metric in ("faithfulness", "answer_relevancy", "context_precision", "context_recall"):
+        if metric not in current_scores or metric not in baseline_scores:
+            return {"gate": "G1", "status": "INCOMPLETE", "reason": f"缺少指标 {metric}"}
+        delta = float(current_scores[metric]) - float(baseline_scores[metric])
+        deltas[metric] = round(delta, 6)
+        if delta < -0.03:
+            failed.append(metric)
     return {
         "gate": "G1",
-        "status": "PASS" if empty_kb == 0 and degraded <= 1 else "REVIEW",
-        "n_smoke": len(smoke),
-        "ok": ok,
-        "no_recall": no_recall,
-        "degraded": degraded,
-        "empty_kb": empty_kb,
-        "note": "10 题 smoke 跑 stateless 老路径 (无 conversation_id), 应 0 LLM_DEGRADED < 5个。若 PASS = baseline 不破。"
+        "status": "FAIL" if failed else "PASS",
+        "experiment_id": current.get("experiment_id"),
+        "sample_count": current.get("sample_count"),
+        "deltas": deltas,
+        "failed_metrics": failed,
+        "note": "完整单轮RAGAS四指标相对同题集/同Judge基线不得下降超过3pp",
     }
+
+
+def run_g1_quality_gate() -> dict:
+    if not G1_RESULT_FILE.exists() or not G1_BASELINE_FILE.exists():
+        return {
+            "gate": "G1",
+            "status": "INCOMPLETE",
+            "reason": f"缺少单轮结果或基线: {G1_RESULT_FILE}, {G1_BASELINE_FILE}",
+        }
+    return evaluate_g1_artifacts(
+        json.loads(G1_RESULT_FILE.read_text(encoding="utf-8")),
+        json.loads(G1_BASELINE_FILE.read_text(encoding="utf-8")),
+    )
 
 
 # ─── G2: 多轮指代消解 ───────────────────────────
@@ -154,9 +244,15 @@ def run_g2() -> dict:
     details = []
     for sess in sessions:
         conv_id = f"{sess['conversation_id_prefix']}_{uuid.uuid4().hex[:8]}"
+        played_history = []
         # play 所有 turn except 最后评测 turn
         for turn in sess["turns"][:-1]:
-            call_chat(turn["content"], conversation_id=conv_id)
+            prior = call_chat(turn["content"], conversation_id=conv_id)
+            played_history.append({
+                "user": turn["content"],
+                "assistant": prior.get("answer", ""),
+                "state_hint": prior.get("state_hint"),
+            })
             time.sleep(0.5)
         eval_turn = sess["turns"][-1]
         # eval turn 调 LLM, 比对 rewrite 后 retrieve 召回正确
@@ -170,8 +266,11 @@ def run_g2() -> dict:
 期望独立问题: {eval_turn.get("expect_standalone", "")}
 实际改写: {r["effective_query"]}
 原始追问(含指代): {eval_turn["content"]}
+真实对话历史: {json.dumps(played_history, ensure_ascii=False)}
 
 要求: 实际改写必须 (1)补全了指代对象 (2)未偏离原追问意图 (3)自包含可独立检索。
+期望独立问题是语义参考，不要求逐字或覆盖其中每个实现细节；若实际改写已经保留系统、场景、条件和所问槽位，足以检索同一答案，应判 PASS。
+实际改写可以补入真实对话历史中明确出现的实体或限定词；这种补全是正确的指代消解，不应判为偏离。
 仅输出 "PASS" 或 "FAIL" 加一句简短理由。"""
             verdict = judge_llm(judge_prompt)
             is_pass = verdict.upper().startswith("PASS")
@@ -182,6 +281,7 @@ def run_g2() -> dict:
                 "rewritten_by_app": r["effective_query"],
                 "raw_followup": eval_turn["content"],
                 "expected_standalone": eval_turn.get("expect_standalone"),
+                "played_history": played_history,
                 "judge": verdict,
                 "pass": is_pass
             })
@@ -235,8 +335,17 @@ def run_g3() -> dict:
         conv_id = f"{sess['conversation_id_prefix']}_{uuid.uuid4().hex[:8]}"
         eval_turn_idx = sess["evaluation_turn_index"]
         eval_turn = sess["turns"][eval_turn_idx]
+        simulated_degraded_turns = 0
         # play 所有 turn except eval turn
         for turn in sess["turns"][:eval_turn_idx]:
+            # fixture 的 _force_degrade_on_turn 表示该轮在生产 ChatService 中得到
+            # LLM_DEGRADED，按硬规则不会写入 history。旧 runner 忽略此标记并正常发请求；
+            # 一旦模型恰好回答成功，反而把本应排除的 turn 写入历史，导致 G3 随机漂移。
+            # 生产侧“不写入”由 ChatServiceTest 覆盖；这里从系统级验证干净 history
+            # 下后续问题不受污染。
+            if turn.get("_force_degrade_on_turn") is not None:
+                simulated_degraded_turns += 1
+                continue
             call_chat(turn["content"], conversation_id=conv_id)
             time.sleep(0.5)
         # 调 eval turn
@@ -268,10 +377,13 @@ Bot 回答: {r["answer"]}
             "question_id": sess["question_id"],
             "description": sess.get("description"),
             "actual_answer": r["answer"][:200],
+            "state_hint": r.get("state_hint"),
+            "effective_query": r.get("effective_query"),
             "expected": eval_turn.get("expect_standalone"),
             "judge": verdict,
             "pollution_marker": pollution_marker,
             "answer_quality_diagnostic": answer_quality_ok,
+            "simulated_degraded_turns": simulated_degraded_turns,
             "pass": is_pass
         })
     rate = pass_n / total if total else 0
@@ -309,38 +421,89 @@ def run_g4() -> dict:
         r"|undo_log|half.?message|namespace|raft|distro|qps|tps|\brt\b|latency"
         r"|cluster\.conf|server\.port|namesrv|listenport|protoc)", re.IGNORECASE)
     pass_n = 0
-    for i in range(n_sessions):
+    pending_sessions = []
+    max_workers = max(1, int(os.getenv("G4_MAX_WORKERS", "1")))
+
+    def generate_session(i):
         conv_id = f"conv_g4_{i}_{uuid.uuid4().hex[:8]}"
-        topic = seed_topics[i % len(seed_topics)]
-        # 8 turn: 每 turn 复用同 topic 各角度问 (确保 turn 彼此不 OOD)
+        topic_offset = int(os.getenv("G4_SESSION_OFFSET", "0"))
+        topic = seed_topics[(i + topic_offset) % len(seed_topics)]
+        natural_topic = topic.replace("_", " ")
+        # 8 turn 围绕同一主题本身展开。旧问题固定询问“安全/升级/集群”，对并非部署类的
+        # topic 会系统性 OOD，导致 OK turn 不足 6 而无法触发压缩。
         canned_q = [
-            f"{topic} 怎么用?",
-            f"{topic} 默认配置是什么?",
-            f"{topic} 跟其他组件比有什么优势?",
-            f"{topic} 故障排查步骤?",
-            f"{topic} 性能最佳实践?",
-            f"{topic} 安全相关注意事项?",
-            f"{topic} 升级到最新版要注意什么?",
-            f"{topic} 集群部署要几节点?"
+            f"{natural_topic} 是什么?",
+            f"请解释 {natural_topic} 的核心机制",
+            f"{natural_topic} 涉及哪些关键步骤?",
+            f"{natural_topic} 有哪些关键参数?",
+            f"{natural_topic} 的工作流程是什么?",
+            f"{natural_topic} 有哪些注意事项?",
+            f"请总结 {natural_topic} 的关键点",
+            f"再概括一次 {natural_topic}"
         ]
+        if topic == "sentinel_helloworld_flowrule_20qps":
+            canned_q = [
+                "如何为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则?",
+                "这条 FlowRule 的 resource 应设置成什么?",
+                "这条 FlowRule 的 count 应设置为多少?",
+                "这条 FlowRule 的 grade 应设置为什么?",
+                "创建 FlowRule 后应该如何加载规则?",
+                "FlowRuleManager.loadRules 在这里有什么作用?",
+                "请总结 HelloWorld 每秒 20 次流控规则的配置步骤",
+                "再概括一次这条 Sentinel FlowRule 的关键参数"
+            ]
         ground_truth_entities_set = set()
         for q in canned_q:
+            # fidelity 的 ground truth 是压缩前完整 turn（用户问题 + 助手回答），
+            # 不能只依赖回答抽取；降级或空回答会让分母变成 0 并制造虚假满分。
+            for m in entities_pattern.finditer(q):
+                ground_truth_entities_set.add(m.group(0).lower())
             r = call_chat(q, conversation_id=conv_id)
-            # 收集单元: 提取 answer 中的关键实体 (我们没法读 LLM 输出 ground truth, 用 answer 当 proxy)
             for m in entities_pattern.finditer(r["answer"]):
-                ground_truth_entities_set.add(m.group(0))
+                ground_truth_entities_set.add(m.group(0).lower())
             time.sleep(0.3)
-        # 等 60s 让 compress 跑完
-        time.sleep(60)
+        return i, topic, conv_id, ground_truth_entities_set
+
+    with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="g4-session") as executor:
+        futures = [executor.submit(generate_session, i) for i in range(n_sessions)]
+        for completed, future in enumerate(as_completed(futures), 1):
+            pending_sessions.append(future.result())
+            print(f"[G4] generated {completed}/{n_sessions} sessions", flush=True)
+
+    pending_sessions.sort(key=lambda item: item[0])
+
+    # 压缩是异步任务。所有会话生成完后统一等待一次即可；逐会话等待 60 秒会把
+    # 完整 50-session gate 人为增加约 49 分钟，却不增加任何验证强度。
+    compression_wait_seconds = int(os.getenv("G4_COMPRESSION_WAIT_SECONDS", "60"))
+    time.sleep(max(0, compression_wait_seconds))
+
+    for i, topic, conv_id, ground_truth_entities_set in pending_sessions:
         # summary 查询: Redis 直接 GET (依赖 docker exec)
-        summary_text = query_redis_summary(conv_id, include_turns=True)  # 全上下文口径
-        summary_entities_set = set(entities_pattern.findall(summary_text or ""))
+        redis_context = query_redis_context(conv_id)
+        rolling_summary = redis_context.get("rollingSummary", "") or ""
+        recent_turns = redis_context.get("recentTurns", []) or []
+        summary_text = "\n".join([
+            rolling_summary,
+            *(
+                value
+                for turn in recent_turns
+                for value in (str(turn.get("userQuery", "")), str(turn.get("botAnswer", "")))
+                if value
+            ),
+        ])
+        summary_entities_set = {
+            entity.lower() for entity in entities_pattern.findall(summary_text or "")
+        }
         # 实体保留率
         if not ground_truth_entities_set:
-            fidelity = 1.0 if not summary_entities_set else 0.0
+            fidelity = 0.0
         else:
             fidelity = len(summary_entities_set & ground_truth_entities_set) / len(ground_truth_entities_set)
-        is_pass = fidelity >= template["fidelity_threshold"]
+        # rollingSummary 对本轮新 UUID 会话初始必为空，非空即证明至少一次压缩成功落盘。
+        # recentTurns 可能大于 maxRecentTurns=3：压缩 LLM 异步执行期间新 turn 会按
+        # lost-update 修复逻辑合并回来；这不代表未压缩，不能据此误判失败。
+        compression_observed = bool(rolling_summary.strip())
+        is_pass = compression_observed and fidelity >= template["fidelity_threshold"]
         if is_pass: pass_n += 1
         details.append({
             "session_index": i,
@@ -349,7 +512,13 @@ def run_g4() -> dict:
             "ground_truth_entities_count": len(ground_truth_entities_set),
             "summary_entities_count": len(summary_entities_set),
             "preserved_count": len(summary_entities_set & ground_truth_entities_set),
+            "ground_truth_entities": sorted(ground_truth_entities_set),
+            "summary_entities": sorted(summary_entities_set),
+            "missing_entities": sorted(ground_truth_entities_set - summary_entities_set),
             "fidelity_score": round(fidelity, 3),
+            "compression_observed": compression_observed,
+            "rolling_summary_len": len(rolling_summary),
+            "recent_turns_count": len(recent_turns),
             "pass": is_pass,
             "summary_preview": (summary_text or "(empty)")[:200]
         })
@@ -361,9 +530,28 @@ def run_g4() -> dict:
         "total": n_sessions,
         "overall_rate": round(overall_rate, 3),
         "threshold": 0.70,
-        "note": f"实跑 {n_sessions} session, 完整 50 用 G4_SESSIONS=50 环境变量",
+        "note": (
+            f"实跑 {n_sessions} session，生成完成后统一等待 "
+            f"{compression_wait_seconds}s 再读取压缩上下文，并发会话数 {max_workers}；"
+            "完整门禁要求 G4_SESSIONS=50"
+        ),
         "details": details
     }
+
+
+def query_redis_context(conv_id: str) -> dict:
+    """通过 docker exec 读取单个评测会话 JSON；失败返回空 dict。"""
+    import subprocess
+    try:
+        r = subprocess.run(
+            ["docker", "exec", "ragdoc-redis", "redis-cli", "-c", "GET", f"ragdoc:conv:{conv_id}"],
+            capture_output=True, text=True, timeout=10
+        )
+        if r.returncode != 0 or not r.stdout.strip():
+            return {}
+        return json.loads(r.stdout.strip())
+    except Exception:
+        return {}
 
 
 def query_redis_summary(conv_id: str, include_turns: bool = False):
@@ -373,15 +561,10 @@ def query_redis_summary(conv_id: str, include_turns: bool = False):
     fidelity 若只对 summary 算, buffer 里的实体被"故意不压缩"却判"丢失"(系统性低估)。
     正确口径 = 摘要 + 保留轮 的全上下文留存率。
     """
-    import subprocess
     try:
-        r = subprocess.run(
-            ["docker", "exec", "ragdoc-redis", "redis-cli", "-c", "GET", f"ragdoc:conv:{conv_id}"],
-            capture_output=True, text=True, timeout=10
-        )
-        if r.returncode != 0 or not r.stdout.strip():
+        data = query_redis_context(conv_id)
+        if not data:
             return ""
-        data = json.loads(r.stdout.strip())
         summary = data.get("rollingSummary", "") or ""
         if include_turns:
             parts = [summary]
@@ -400,26 +583,36 @@ def run_g5() -> dict:
     if not G5_TEMPLATE.exists():
         return {"gate": "G5", "status": "SKIP", "reason": f"找不到 {G5_TEMPLATE}"}
     template = json.loads(G5_TEMPLATE.read_text())
-    n_per_pair = int(os.getenv("G5_PAIRS", "5"))  # 默认每 pair 5 个 session = 5*5=25, 完整 10 → 50
+    repetitions = int(os.getenv("G5_REPETITIONS", "10"))
     pairs = template["topic_pairs"]
     pass_n = 0; total = 0
     details = []
     for pair in pairs:
-        for variant in pair["query_pair_examples"]:
-            for v in range(n_per_pair):
+        examples = pair["query_pair_examples"]
+        if len(examples) < 2:
+            continue
+        first_turn = examples[0]
+        shift_variants = examples[1:]
+        for variant in shift_variants:
+            for v in range(repetitions):
                 total += 1
                 conv_id = f"conv_g5_{pair['from_topic']}_{pair['to_topic']}_{v}_{uuid.uuid4().hex[:8]}"
                 # 第 1 turn: from_topic
-                call_chat(pair["query_pair_examples"][0]["content"], conversation_id=conv_id)
+                call_chat(first_turn["content"], conversation_id=conv_id)
                 time.sleep(0.5)
                 # 第 2 turn: shift → to_topic
                 r = call_chat(variant["content"], conversation_id=conv_id)
-                judge_prompt = f"""请判定 bot 回答是否包含关键事实。
+                effective_query = r.get("effective_query") or variant["content"]
+                judge_prompt = f"""判定话题切换后实际用于检索的问题是否保持新话题，且没有被旧话题污染。
 
-关键事实: {variant.get('expect_standalone', '')}
-Bot 回答: {r['answer']}
+旧话题: {pair['from_topic']}
+新话题: {pair['to_topic']}
+目标独立问题: {variant.get('expect_standalone') or variant['content']}
+实际检索问题: {effective_query}
 
-判定: 若语义覆盖 → "PASS"; 否则 "FAIL"。"""
+若实际检索问题与目标独立问题语义等价、主题属于新话题，且没有混入旧话题，则 PASS。
+若仍围绕旧话题、把新旧话题错误混合，或改变了目标问题意图，则 FAIL。
+仅输出 "PASS" 或 "FAIL" 加一句简短理由。"""
                 verdict = judge_llm(judge_prompt)
                 is_pass = verdict.upper().startswith("PASS")
                 if is_pass: pass_n += 1
@@ -429,6 +622,10 @@ Bot 回答: {r['answer']}
                     "variant_idx": v,
                     "conv_id": conv_id,
                     "answer": r["answer"][:150],
+                    "state_hint": r.get("state_hint"),
+                    "effective_query": effective_query,
+                    "expected_standalone": variant.get("expect_standalone"),
+                    "answer_state_diagnostic_ok": r.get("state_hint") == "OK",
                     "judge": verdict,
                     "pass": is_pass
                 })
@@ -440,6 +637,10 @@ Bot 回答: {r['answer']}
         "total": total,
         "rate": round(rate, 3),
         "threshold": 0.80,
+        "note": (
+            f"{len(pairs)} 个 topic pair × {repetitions} 次独立会话 = {total} session；"
+            "硬门禁只测 topic-shift 后 effective query，回答状态作为单轮质量诊断"
+        ),
         "details": details
     }
 
@@ -449,7 +650,7 @@ Bot 回答: {r['answer']}
 GATES_ENV = os.getenv("GATES", "G1,G2,G3,G4,G5")
 
 GATES_FUNCS = [
-    ("G1", run_g1_smoke),
+    ("G1", run_g1_quality_gate),
     ("G2", run_g2),
     ("G3", run_g3),
     ("G4", run_g4),
@@ -457,12 +658,49 @@ GATES_FUNCS = [
 ]
 
 
+def overall_status(gates: list[dict]) -> str:
+    """只有 G1-G5 全部执行且 PASS 才能称为全绿。"""
+    statuses = {gate.get("gate"): gate.get("status") for gate in gates}
+    if any(statuses.get(name) == "FAIL" for name, _ in GATES_FUNCS):
+        return "FAIL"
+    if any(statuses.get(name) != "PASS" for name, _ in GATES_FUNCS):
+        return "INCOMPLETE"
+    return "PASS"
+
+
+def _sha256(path: Path) -> str | None:
+    return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None
+
+
+def evaluation_fingerprints() -> dict:
+    """记录多轮题集和单轮门禁产物指纹，不包含token或密钥。"""
+    return {
+        "datasets": {
+            str(path): _sha256(path)
+            for path in (G2_FILE, G3_FILE, G4_TEMPLATE, G5_TEMPLATE)
+        },
+        "g1_result": {"path": str(G1_RESULT_FILE), "sha256": _sha256(G1_RESULT_FILE)},
+        "g1_baseline": {"path": str(G1_BASELINE_FILE), "sha256": _sha256(G1_BASELINE_FILE)},
+        "config": {
+            "chat_url": CHAT_URL,
+            "judge_model": JUDGE_MODEL,
+            "judge_provider_id": JUDGE_PROVIDER_ID,
+            "gates": GATES_ENV,
+            "g1_min_samples": G1_MIN_SAMPLES,
+            "g1_max_age_hours": G1_MAX_AGE_HOURS,
+        },
+    }
+
+
 def render_markdown(report: dict) -> str:
     md = f"# Phase 1 / C7 Multi-turn Eval Report\n\n"
     md += f"生成时间: {report['generated_at']}\n\n"
+    md += f"整体状态: **{report.get('overall_status', overall_status(report['gates']))}**\n\n"
     md += f"## 概览\n\n| Gate | Status | 说明 |\n|---|---|---|\n"
     for g in report["gates"]:
-        status_emoji = {"PASS": "✅", "FAIL": "❌", "SKIP": "⚠️"}.get(g["status"], "❓")
+        status_emoji = {
+            "PASS": "✅", "FAIL": "❌", "SKIP": "⚠️", "INCOMPLETE": "⚠️", "REVIEW": "⚠️"
+        }.get(g["status"], "❓")
         md += f"| {g['gate']} | {status_emoji} {g['status']} | {g.get('note', '')} |\n"
     md += "\n"
     for g in report["gates"]:
@@ -474,9 +712,10 @@ def render_markdown(report: dict) -> str:
 def main():
     print("[INFO] Phase 1 Multi-turn Eval starting...")
     report = {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "chat_url": CHAT_URL,
         "judge_model": JUDGE_MODEL,
+        "fingerprints": evaluation_fingerprints(),
         "gates": []
     }
     for name, func in GATES_FUNCS:
@@ -491,18 +730,26 @@ def main():
             r = {"gate": name, "status": "FAIL", "error": str(e)}
         report["gates"].append(r)
         print(f"[GATE {name}] → {r.get('status')}")
-    out_md = OUT_DIR / f"report_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.md"
-    out_json = OUT_DIR / "report_latest.json"
+    report["overall_status"] = overall_status(report["gates"])
+    report_timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+    out_md = OUT_DIR / f"report_{report_timestamp}.md"
+    out_json = OUT_DIR / f"report_{report_timestamp}.json"
+    latest_json = OUT_DIR / "report_latest.json"
     out_md.write_text(render_markdown(report), encoding="utf-8")
     out_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    latest_json.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"\n[DONE] Report 写入: {out_md}")
     print(f"[DONE] JSON 写入:   {out_json}")
-    # exit code: 任意 gate FAIL → return 1
-    failed = [g for g in report["gates"] if g["status"] == "FAIL"]
-    if failed:
+    print(f"[DONE] 最新 JSON:   {latest_json}")
+    if report["overall_status"] == "FAIL":
+        failed = [g for g in report["gates"] if g["status"] == "FAIL"]
         print(f"\n[FAIL] 这些 gate 没过: {[g['gate'] for g in failed]}")
         sys.exit(1)
-    print("\n[PASS] 所有 gate 通过")
+    if report["overall_status"] == "INCOMPLETE":
+        incomplete = [g["gate"] for g in report["gates"] if g["status"] != "PASS"]
+        print(f"\n[INCOMPLETE] 以下 gate 未通过完整执行: {incomplete}")
+        sys.exit(2)
+    print("\n[PASS] G1-G5 全部执行并通过")
 
 
 if __name__ == "__main__":

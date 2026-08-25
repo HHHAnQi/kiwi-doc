@@ -1,0 +1,62 @@
+{
+  "dataset_size": 80,
+  "answered": 80,
+  "generation_failures": 0,
+  "metrics": {
+    "citation_recall": 0.9697916666666668,
+    "citation_accuracy": 0.3218749999999996,
+    "answer_correctness": 0.87525,
+    "citation_hit_rate": 1.0,
+    "evidence_completeness": 0.9230220238095239,
+    "faithfulness": 0.9705
+  },
+  "confidence_intervals_95": {
+    "answer_correctness": {
+      "low": 0.828625,
+      "high": 0.9175000000000001,
+      "method": "query_bootstrap_percentile"
+    },
+    "faithfulness": {
+      "low": 0.9440000000000002,
+      "high": 0.99125,
+      "method": "query_bootstrap_percentile"
+    },
+    "evidence_completeness": {
+      "low": 0.8887142857142857,
+      "high": 0.9546071428571429,
+      "method": "query_bootstrap_percentile"
+    },
+    "citation_hit_rate": {
+      "low": 1.0,
+      "high": 1.0,
+      "method": "query_bootstrap_percentile"
+    },
+    "citation_recall": {
+      "low": 0.9416666666666667,
+      "high": 0.9916666666666668,
+      "method": "query_bootstrap_percentile"
+    },
+    "citation_accuracy": {
+      "low": 0.2793749999999997,
+      "high": 0.37083333333333307,
+      "method": "query_bootstrap_percentile"
+    }
+  },
+  "gate_thresholds": {
+    "answer_correctness": 0.8,
+    "faithfulness": 0.95,
+    "evidence_completeness": 0.9,
+    "citation_hit_rate": 0.99,
+    "citation_recall": 0.95
+  },
+  "gate_checks": {
+    "answer_correctness": true,
+    "faithfulness": true,
+    "evidence_completeness": true,
+    "citation_hit_rate": true,
+    "citation_recall": true,
+    "generation_failures_zero": true
+  },
+  "gate_pass": true,
+  "source_report": "eval/runs/frozen80_v4_generation_prompt_leadin_fix_qwen_8096_final.json"
+}

@@ -147,6 +147,14 @@ def test_citation_accuracy_none_in_gold():
     assert gm.citation_accuracy([9, 10], [1, 2]) == 0.0
 
 
+def test_citation_recall_and_hit_rate():
+    assert gm.citation_recall([1, 9], [1, 2]) == 0.5
+    assert gm.citation_recall([1, 1], [1]) == 1.0
+    assert gm.citation_recall([1], []) == 0.0
+    assert gm.citation_hit_rate([1, 9], [1, 2]) == 1.0
+    assert gm.citation_hit_rate([9], [1, 2]) == 0.0
+
+
 # ── judge_llm_score 归一化 ───────────────────────────────
 def test_judge_score_numeric():
     assert gm.judge_llm_score("Score: 0.85") == 0.85
@@ -217,11 +225,39 @@ def test_answer_correctness_with_mock_judge():
     assert "gold" in calls[0]
 
 
+def test_answer_correctness_judge_receives_question():
+    calls = []
+
+    def fake_judge(prompt: str) -> str:
+        calls.append(prompt)
+        return "1"
+
+    assert gm.answer_correctness("pred", "gold", fake_judge, question="what") == 1.0
+    assert "【问题】\nwhat" in calls[0]
+
+
 def test_faithfulness_with_mock_judge_keyword():
     def fake_judge(prompt: str) -> str:
         return "yes 完全由上下文支持"
 
     assert gm.faithfulness("ans", "ctx", judge_fn=fake_judge) == 1.0
+
+
+def test_evidence_completeness_with_judge_uses_gold_and_context():
+    seen = {}
+
+    def fake_judge(prompt):
+        seen["prompt"] = prompt
+        return "0.75"
+
+    assert gm.evidence_completeness("gold fact", "retrieved fact", fake_judge) == 0.75
+    assert "【标准答案】" in seen["prompt"]
+    assert "【检索上下文】" in seen["prompt"]
+
+
+def test_evidence_completeness_empty_input_is_zero():
+    assert gm.evidence_completeness("", "context") == 0.0
+    assert gm.evidence_completeness("gold", "") == 0.0
 
 
 def test_aggregate_generation_keys():

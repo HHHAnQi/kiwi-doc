@@ -22,6 +22,7 @@ V2 版本的痛点(badcase 分析 docs/v3/badcase-analysis.md §3):
   {"question":"...", "ground_truth":"<chunk 内原文>", "ground_truth_chunk_id":..., "ground_truth_doc_id":...}
 """
 import json
+import argparse
 import os
 import random
 import re
@@ -60,16 +61,30 @@ def fetch_chunks(sample_size, seed):
             # 避免 ORDER BY RAND() 在百万行表上的代价(本项目 2k 行其实用 RAND 也行, 但保持通用).
             # 同时拉 chunk_type 过滤掉 PARENT(整段太长 LLM gen 质量差) 仅保留 CHILD/TEXT.
             cur.execute(
-                "SELECT id, document_id, seq, chunk_type, content FROM chunks "
-                "WHERE LENGTH(content) >= 200 AND chunk_type IN ('CHILD', 'TEXT') "
-                "ORDER BY document_id, seq"
+                "SELECT c.id, c.document_id, c.seq, c.chunk_type, c.content, "
+                "c.content_hash AS chunk_content_hash, d.content_hash AS document_content_hash, "
+                "d.logical_document_key, d.original_filename, d.source, d.version "
+                "FROM chunks c JOIN documents d ON d.id = c.document_id "
+                "WHERE LENGTH(c.content) >= 200 AND c.chunk_type IN ('CHILD', 'TEXT') "
+                "AND d.status = 'INDEXED' AND d.deleted_at IS NULL "
+                "ORDER BY c.document_id, c.seq"
             )
             rows = cur.fetchall()
     finally:
         conn.close()
 
     rng = random.Random(seed)
-    rng.shuffle(rows)
+    # 每个 source 内固定随机，再轮询取样，避免大语料源淹没小语料源。
+    by_source = {}
+    for row in rows:
+        by_source.setdefault(row.get("source") or "unknown", []).append(row)
+    for group in by_source.values():
+        rng.shuffle(group)
+    rows = []
+    while any(by_source.values()):
+        for source in sorted(by_source):
+            if by_source[source]:
+                rows.append(by_source[source].pop())
     out = []
     for r in rows[:sample_size]:
         c = r["content"] or ""
@@ -158,8 +173,14 @@ def is_substring_of(answer, source):
 
 
 def main():
-    target = int(sys.argv[1]) if len(sys.argv) > 1 else 30
-    seed = int(sys.argv[2]) if len(sys.argv) > 2 else 42
+    parser = argparse.ArgumentParser(description="从当前索引语料生成可追溯的 extractive QA 金标")
+    parser.add_argument("target", nargs="?", type=int, default=30)
+    parser.add_argument("seed", nargs="?", type=int, default=42)
+    parser.add_argument("--output", default=str(OUT_FILE))
+    args = parser.parse_args()
+    target = args.target
+    seed = args.seed
+    out_file = Path(args.output)
 
     if not LLM_API_KEY:
         print("ERROR: LLM_API_KEY 未配置")
@@ -188,12 +209,21 @@ def main():
                 "ground_truth_chunk_id": chunk["id"],
                 "ground_truth_doc_id": chunk["document_id"],
                 "topic": f"gen-{chunk['document_id']}-{chunk['seq']}",
+                "source": chunk.get("source"),
+                "version": chunk.get("version"),
+                "original_filename": chunk.get("original_filename"),
+                "logical_document_key": chunk.get("logical_document_key"),
+                "ground_truth_chunk_content_hash": chunk.get("chunk_content_hash"),
+                "ground_truth_document_content_hash": chunk.get("document_content_hash"),
+                "generation_seed": seed,
+                "generation_model": LLM_MODEL,
             }
         )
         print(f"  [{len(all_qa)}/{target}] chunk_id={chunk['id']} ok")
 
-    print(f"[3/3] 写入 {len(all_qa)} 题 到 {OUT_FILE}")
-    with open(OUT_FILE, "w", encoding="utf-8") as f:
+    print(f"[3/3] 写入 {len(all_qa)} 题 到 {out_file}")
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_file, "w", encoding="utf-8") as f:
         for qa in all_qa:
             f.write(json.dumps(qa, ensure_ascii=False) + "\n")
 
