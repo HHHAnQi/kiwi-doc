@@ -130,3 +130,14 @@ echo "spawned $!"
 | 3 | 监听 6006 而非默认 8080 | Autodl "自定义服务" 默认抓 6006 → 公网; tensorboard 已占 6007 |
 | 4 | 模型 stays in `/root/autodl-tmp/` | Autodl 数据盘扩容便宜, 不占系统盘 |
 | 5 | 不 bake 进 git | `/root/autodl-tmp/rerank_svc.py` 是远程资产, 不入 repo; 项目内 `deploy/autodl/` 仅放文档 |
+
+---
+
+## 4090D 实例(2026-08-25)
+
+- **服务器**: `ssh -p 30442 root@121.48.170.6`(4090D, 24GB)
+- 已 ssh-copy-id 免密
+- 模型路径: `/root/autodl-tmp/hf_cache/models--BAAI--bge-reranker-v2-m3/snapshots/...`
+- 服务脚本: `/root/autodl-tmp/rerank_svc.py` + `start_rerank.sh`
+- 下载方式: `HF_ENDPOINT=https://hf-mirror.com HF_HUB_DISABLE_XET=1`(xet 协议需禁用)
+- 隧道: `ssh -p 30442 -N -L 8084:localhost:6006 root@121.48.170.6`
