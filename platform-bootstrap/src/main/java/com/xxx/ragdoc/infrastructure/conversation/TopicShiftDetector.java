@@ -62,6 +62,14 @@ public class TopicShiftDetector implements TopicShiftDetectorPort {
         if (ctx == null || ctx.recentTurns() == null || ctx.recentTurns().isEmpty()) {
             return false; // 第 1 turn 无对比基线
         }
+        // 含指代/省略的短追问不能先用原句向量判话题切换：
+        // “那它的默认端口呢？”与上一轮完整问题的 cosine 可能低于 0.5，
+        // 但这恰恰是必须交给 contextualizer 消解的场景。否则 detector 会跳过 rewrite，
+        // 形成“越需要上下文，越被判成新话题”的顺序悖论。
+        if (isContextDependentFollowup(currQuery)) {
+            metrics.incrementTopicShift("context_dependent");
+            return false;
+        }
         Turn lastTurn = ctx.recentTurns().get(ctx.recentTurns().size() - 1);
         String lastQuery = lastTurn.userQuery();
 
@@ -100,6 +108,17 @@ public class TopicShiftDetector implements TopicShiftDetectorPort {
             metrics.incrementTopicShift("detect_failed");
             return false;
         }
+    }
+
+    static boolean isContextDependentFollowup(String query) {
+        if (query == null) return false;
+        String normalized = query.trim();
+        if (normalized.isEmpty()) return false;
+        return normalized.matches("^(那|那么|然后|接下来|再说|还有).*" )
+                || normalized.matches(".*(它|它们|该配置|该参数|上述|前述|前者|后者|刚才).*" )
+                || normalized.matches(".*(重新回答|再回答|最开始的问题|一开始的问题|上一个问题).*" )
+                || normalized.matches(".*第[一二三四五六七八九十0-9]+(种|个|项|条).*" )
+                || normalized.matches(".*呢[？?]?$" );
     }
 
     /**

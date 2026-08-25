@@ -11,7 +11,12 @@ import com.xxx.ragdoc.infrastructure.metrics.RagdocMetrics;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
@@ -48,6 +53,18 @@ public class HistoryCompressor implements HistoryCompressorPort {
     /** 摘要 LLM 输出最小长度, 短于此视为 LLM 异常 → 拒收。 */
     private static final int MIN_SUMMARY_LEN = 10;
 
+    /**
+     * 摘要不可恢复实体。LLM 负责语义压缩；该规则负责把遗漏的组件、配置键、版本/端口和核心协议词确定性补回。
+     */
+    private static final Pattern CRITICAL_ENTITY_PATTERN =
+            Pattern.compile(
+                    "((?i:nacos|sentinel|dubbo|seata|rocketmq|hystrix)"
+                            + "|[A-Za-z][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9_-]+)+"
+                            + "|[a-z][A-Za-z0-9_-]*[A-Z][A-Za-z0-9_-]*"
+                            + "|\\d+\\.\\d+(?:\\.\\d+)?|\\b\\d{4,5}\\b"
+                            + "|(?i:undo_log|half.?message|namespace|raft|distro|qps|tps|\\brt\\b"
+                            + "|latency|namesrv|listenport|protoc|long.?polling))");
+
     private static final String SUMMARY_PROMPT_TEMPLATE =
             """
             你是 Spring Cloud Alibaba 中间件文档问答系统的多轮对话摘要助手。
@@ -82,15 +99,19 @@ public class HistoryCompressor implements HistoryCompressorPort {
             ConversationStore store,
             ConversationProperties props,
             RagdocMetrics metrics) {
-        // 走 fallback LLM (DeepSeek-V3 便宜); LlmRouter 没 fallback 时退到 primary (rare)
-        this.summaryClient = llmRouter.getRouteClient("fallback");
+        String summaryRoute =
+                props.getSummaryRoute() == null || props.getSummaryRoute().isBlank()
+                        ? "fallback"
+                        : props.getSummaryRoute();
+        this.summaryClient = llmRouter.getRouteClient(summaryRoute);
         // 单独 cb instance "summary-llm", 与主 LLM / rewrite-llm 完全隔离
         this.cb = cbRegistry.circuitBreaker("summary-llm");
         this.store = store;
         this.props = props;
         this.metrics = metrics;
         log.info(
-                "HistoryCompressor enabled, route=fallback, cb=summary-llm (state={}), threshold={}",
+                "HistoryCompressor enabled, route={}, cb=summary-llm (state={}), threshold={}",
+                summaryRoute,
                 cb.getState(),
                 props.getCompressThreshold());
     }
@@ -171,6 +192,13 @@ public class HistoryCompressor implements HistoryCompressorPort {
             return;
         }
 
+        // Quality gate 2: LLM 摘要有概率漏掉配置键、端口和协议名。压缩一旦覆盖旧 turns，
+        // 这些信息无法恢复，因此在 save 前做确定性实体补全，而不是只依赖提示词服从度。
+        String entitySource =
+                (ctx.rollingSummary() == null ? "" : ctx.rollingSummary() + "\n")
+                        + formatTurns(oldTurns);
+        newSummary = ensureCriticalEntities(newSummary.trim(), entitySource);
+
         // 保存: ctx replaced by withCompression (保留 totalTurnCount 审计用)
         // P0 修复(lost-update): load → LLM(数十秒) → save 期间, 用户新 turn 的 appendTurn+save
         // 会被本处的旧快照整体覆盖, 丢掉最新对话。save 前重新 load 一次做合并:
@@ -250,6 +278,22 @@ public class HistoryCompressor implements HistoryCompressorPort {
             sb.append("A: ").append(t.botAnswer() == null ? "" : t.botAnswer()).append("\n");
         }
         return sb.toString().trim();
+    }
+
+    static String ensureCriticalEntities(String summary, String source) {
+        if (summary == null || source == null || source.isBlank()) return summary;
+        String normalizedSummary = summary.toLowerCase(Locale.ROOT);
+        Map<String, String> missing = new LinkedHashMap<>();
+        Matcher matcher = CRITICAL_ENTITY_PATTERN.matcher(source);
+        while (matcher.find()) {
+            String original = matcher.group();
+            String normalized = original.toLowerCase(Locale.ROOT);
+            if (!normalizedSummary.contains(normalized)) {
+                missing.putIfAbsent(normalized, original);
+            }
+        }
+        if (missing.isEmpty()) return summary;
+        return summary + "\n关键实体：" + String.join("、", missing.values());
     }
 
     private static String rootCause(Throwable e) {

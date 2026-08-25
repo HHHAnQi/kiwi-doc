@@ -74,6 +74,13 @@ public class QueryContextualizer implements QueryContextualizerPort {
             后续问题: Seata 的 AT 模式怎么回滚?
             独立问题: Seata 的 AT 模式怎么回滚?
 
+            示例 4 (“X 呢”要继承上一轮正在询问的属性):
+            对话历史:
+            Q: seata-server 支持哪些环境变量?
+            A: SEATA_IP 指定地址；SEATA_PORT 指定端口，默认 8091。
+            后续问题: 那 SEATA_PORT 呢?
+            独立问题: SEATA_PORT 环境变量配置什么，默认值是多少?
+
             对话历史:
             %s
 
@@ -82,8 +89,9 @@ public class QueryContextualizer implements QueryContextualizerPort {
             要求:
             1. 输出 1 句中文, 不超过 60 字
             2. 保留后续问题的核心实体, 只补全指代和省略的成分
-            3. 不要回答问题, 只改写
-            4. 不要任何前缀、引号、解释, 直接输出改写后的独立问题
+            3. “那 X 呢”这类省略问句必须继承上一轮正在询问的属性，不能擅自改成另一个问题维度
+            4. 不要回答问题, 只改写
+            5. 不要任何前缀、引号、解释, 直接输出改写后的独立问题
 
             独立问题: """;
 
@@ -134,6 +142,16 @@ public class QueryContextualizer implements QueryContextualizerPort {
             long elapsed = System.currentTimeMillis() - t0;
             metrics.recordRewriteLatency(elapsed, "skip");
             return ContextualizeResult.skipped(currQuery, elapsed);
+        }
+
+        // 用户明确要求“重新回答”时，目标问题可由有效 history 确定，不应再交给 LLM 猜测。
+        // LLM_DEGRADED/NO_RECALL turn 本来就不会写入 recentTurns，因此这里天然只会恢复
+        // 最近一次成功业务问题，避免把错误文案当领域实体拼进检索 query。
+        String retryTarget = resolveExplicitRetry(currQuery, recentTurns);
+        if (retryTarget != null) {
+            long elapsed = System.currentTimeMillis() - t0;
+            metrics.recordRewriteLatency(elapsed, "ok");
+            return ContextualizeResult.success(currQuery, retryTarget, elapsed);
         }
 
         String prompt = buildPrompt(currQuery, recentTurns);
@@ -241,6 +259,21 @@ public class QueryContextualizer implements QueryContextualizerPort {
                 ? ""
                 : s.replaceAll("[\\s\\p{Punct}\\u3000-\\u303F\\uFF00-\\uFFEF]+", "")
                         .toLowerCase();
+    }
+
+    private static String resolveExplicitRetry(String query, List<Turn> recentTurns) {
+        if (query == null || recentTurns == null || recentTurns.isEmpty()) return null;
+        String normalized = query.replaceAll("\\s+", "");
+        boolean retry =
+                normalized.contains("重新回答")
+                        || normalized.contains("再回答")
+                        || normalized.contains("重试刚才")
+                        || normalized.contains("重试上一个");
+        if (!retry) return null;
+        if (normalized.contains("最开始") || normalized.contains("一开始")) {
+            return recentTurns.get(0).userQuery();
+        }
+        return recentTurns.get(recentTurns.size() - 1).userQuery();
     }
 
     private static String trimmed(String s) {

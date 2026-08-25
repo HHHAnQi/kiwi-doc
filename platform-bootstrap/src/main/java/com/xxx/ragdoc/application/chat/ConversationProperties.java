@@ -54,6 +54,12 @@ public class ConversationProperties {
      */
     private String rewriteRoute = "primary";
 
+    /**
+     * 历史摘要使用的 LLM route。默认 fallback 以控制成本；当 fallback 不可用时可临时切 primary，
+     * 避免压缩熔断后 recentTurns 无界增长。
+     */
+    private String summaryRoute = "fallback";
+
     /** G2 校准: 喂 rewrite LLM 的 history turn 数(原硬编码 3, 指代常跨更远轮次)。 */
     private int rewriteHistoryTurns = 5;
 

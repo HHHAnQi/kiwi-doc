@@ -172,6 +172,20 @@ class QueryContextualizerTest {
         assertThat(r.outcome()).isEqualTo("skip");
     }
 
+    @Test
+    void 明确要求重新回答最开始问题_应确定性恢复首个有效问题() {
+        ContextualizeResult r =
+                ctx.contextualize(
+                        "请重新回答最开始的问题",
+                        List.of(
+                                turn("RocketMQ 怎么保证不丢消息?", "通过持久化和重试"),
+                                turn("补充同步刷盘", "同步刷盘降低丢失风险")));
+
+        assertThat(r.outcome()).isEqualTo("ok");
+        assertThat(r.retrieveQuery()).isEqualTo("RocketMQ 怎么保证不丢消息?");
+        verifyNoInteractions(routeClient);
+    }
+
     // ────────────────── helpers ──────────────────
 
     private static Turn turn(String q, String a) {

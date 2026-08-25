@@ -53,6 +53,14 @@ public class JpaChunkRepository implements ChunkRepository {
     }
 
     @Override
+    public List<Chunk> findActiveNeighbors(List<Long> anchorIds, int window) {
+        if (anchorIds == null || anchorIds.isEmpty() || window <= 0) return List.of();
+        return jpa.findActiveNeighbors(anchorIds, window).stream()
+                .map(ChunkMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<Chunk> findByDocumentIdAndPageOrderBySeq(Long documentId, int page) {
         return jpa.findActiveByDocAndPage(documentId, page).stream()
                 .map(ChunkMapper::toDomain)

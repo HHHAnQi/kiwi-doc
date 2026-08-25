@@ -347,25 +347,28 @@ public class OpenAiCompatibleLlmClient implements com.xxx.ragdoc.application.cha
         boolean requireCitation = chatMessages != null ? chatMessages.isPromptV2Citation() : true;
         StringBuilder sb = new StringBuilder();
         sb.append("你是 Spring Cloud Alibaba 技术文档助手。我会按 [n] 标注检索片段。回答规则(严格遵守):\n");
-        sb.append("1. 直接答问, 2-4 句要点, 不复述问题, 不写教程;\n");
+        sb.append("1. 只回答问题明确询问的对象和范围，不复述问题，不补充相邻主题、背景、示例或建议;\n");
         sb.append(
-                "2. 仅说片段里明确写到的事实。版本号 / 数值 / 配置项名 / API 名 / 步骤"
-                        + " / 类名 / 方法名必须**逐字**来自片段, 不得改写、组合、推断;\n");
-        sb.append("3. 片段含答案但只覆盖部分角度时, 只答覆盖到的部分, 其余角度如实省略, 不补不猜;\n");
+                "2. 回答前先在内部拆解问题要求的全部要点（如对象、作用、步骤、边界、配置位置），"
+                        + "逐项检查片段；片段明确支持的所问要点必须全部覆盖，不能只答其中一项;\n");
+        sb.append(
+                "3. 仅说片段里明确写到或可直接语义归纳的事实。版本号 / 数值 / 配置项名 / API 名"
+                        + " / 类名 / 方法名必须逐字来自片段；允许简洁归纳，但不得拼接推断新事实;\n");
+        sb.append("4. 片段只覆盖部分所问角度时，只答覆盖到的部分；不要因缺少某一角度而整体拒答，也不补不猜;\n");
         if (requireCitation) {
             sb.append(
-                    "4. 任何非助词、非连接词的事实陈述, 末尾或自然停顿处必须文案 [n] (n = 出处片段序号)。"
+                    "5. 每个事实要点末尾必须标 [n] (n = 出处片段序号)。"
                             + " 一句话可叠 [1][3]; 不带 citation 的具体数值/版本号视为编造;\n");
         } else {
-            sb.append("4. 关键配置项 / 版本号 / API 名 后面宜标 [n] (n = 出处片段序号), 并非强制;\n");
+            sb.append("5. 关键配置项 / 版本号 / API 名 后面宜标 [n] (n = 出处片段序号), 并非强制;\n");
         }
-        sb.append("5. fallback 判定 —— 仅当满足以下任一才回答 \"知识库中没有相关内容\":\n");
+        sb.append("6. fallback 判定 —— 仅当满足以下任一才回答 \"知识库中没有相关内容\":\n");
         sb.append("   a. 所有 [n] 片段都在不同技术领域 (问 Nacos 但片段全讲 RocketMQ 那级);\n");
         sb.append("   b. 片段仅为目录页、版权页、纯空格式噪声 (无任何术语名词);\n");
         sb.append("   c. 片段无明显匹配关键词且无任何可识别的代码/配置/类名片段;\n");
-        sb.append("   不符合上述三条, 即使片段未逐字命中问题, 也基于片段语义给出 1-2 句最相关的对话;\n");
-        sb.append("6. 片段可能因 PDF 抽取含多余空行 — 这是格式噪声, 忽略它;\n");
-        sb.append("7. 严禁编造片段中未出现的: 版本号、数值、API、配置项名、类名. " + "若片段没有, 直接说 \"片段中未提及\" 并答 fallback 文案.");
+        sb.append("   不符合上述三条时，必须从片段中回答能够支持的所问要点;\n");
+        sb.append("7. 片段可能因 PDF 抽取含多余空行 — 这是格式噪声, 忽略它;\n");
+        sb.append("8. 严禁编造片段中未出现的版本号、数值、API、配置项名或类名。证据不足时只说明未覆盖的部分，不输出猜测。");
         return sb.toString();
     }
 }

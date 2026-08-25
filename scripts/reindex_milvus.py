@@ -1,39 +1,27 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""安全地将当前 MySQL corpus 重建到新的 Milvus collection（蓝绿模式）。
+
+默认仅 dry-run。本脚本从不删除、清空或覆盖 collection；目标已存在时直接拒绝。
 """
-C-3: 重灌 Milvus collection 数据(让 sparse_bm25 字段有真值)。
 
-背景:
-  V2-A 旧 collection schema 没有 text/BM25 Function 字段, sparse 都是占位 0L→0.0f。
-  C-2a 新 schema 用 BM25 Function 自动算 sparse, 需要:
-    1. 删旧 collection → 重启 app 时 MilvusCollectionInitializer 自动重建
-    2. 重新 upsert 每个 chunk (填 text 字段, sparse_bm25 由 Function 自动算)
-  本脚本完成第 2 步: 从 MySQL 拉 chunks → BGE-M3 embed → Milvus Python upsert。
+from __future__ import annotations
 
-用法(必须):
-  1. 确保 Java app 已重启(新 collection schema 已建好):
-     - 旧 collection 已被 MilvusCollectionInitializer 删除重建
-  2. 跑本脚本:
-     cd /Users/huanqi/RagDoc/rag-doc-platform
-     .venv/bin/python3 scripts/reindex_milvus.py
-
-依赖: pymysql + pymilvus 2.5.x + requests(已装)
-"""
+import argparse
+import hashlib
 import json
+import math
 import os
-import re
-import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pymysql
 import requests
 from dotenv import load_dotenv
-from pymilvus import MilvusClient, DataType
+from pymilvus import DataType, Function, FunctionType, MilvusClient
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_ROOT / ".env", override=False)
-
 MYSQL_CONFIG = {
     "host": os.getenv("MYSQL_HOST", "localhost"),
     "port": int(os.getenv("MYSQL_PORT", "3307")),
@@ -42,152 +30,229 @@ MYSQL_CONFIG = {
     "database": os.getenv("MYSQL_DATABASE", "ragdoc"),
     "charset": "utf8mb4",
 }
-
 MILVUS_URI = f"http://{os.getenv('MILVUS_HOST', 'localhost')}:{os.getenv('MILVUS_PORT', '19530')}"
-MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "documents_v1")
-
-EMBED_URL = os.getenv("EMBEDDING_BASE_URL", "http://localhost:8082") + "/v1/embeddings"
-TEXT_MAX_LENGTH = 4000
-BATCH_SIZE = 1  # TEI payload 413, 单条单条 embed 稳
-
-# ===== TextCleaner 复刻(与 Java TextCleaner 同规则, 必须保持一致) =====
-_RULES = [
-    # Hugo pageinfo 整段
-    re.compile(r"\{\{%[^%]*?pageinfo[^%]*?%\}\}[\s\S]*?\{\{%[^%]*?/pageinfo[^%]*?%\}\}", re.IGNORECASE),
-    # Hugo 任一 shortcode
-    re.compile(r"\{\{[<%][^>}]*?[>%]\}\}"),
-    # Markdown 图片
-    re.compile(r"!\[[^\]]*\]\([^)]+\)"),
-    # HTML 标签
-    re.compile(r"<[^>]+>"),
-    # UUID/traceId
-    re.compile(r"[0-9a-fA-F]{4,}-[0-9a-fA-F]{4,}(?:-[0-9a-fA-F]+){2,}"),
-    # 裸 URL
-    re.compile(r"https?://[^\s)\"'<>]+|ftp://[^\s)\"'<>]+"),
-]
+EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "http://localhost:8082").rstrip("/")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3")
+VECTOR_DIMENSION = 1024
+TEXT_MAX_BYTES = 4000
+CONTEXT_PREFIX_MAX_CHARS = 120
 
 
-def clean_text(text: str) -> str:
-    """复刻 Java TextCleaner.clean()。改这里时务必同步改 Java。"""
-    if not text:
-        return ""
-    t = text
-    for r in _RULES:
-        t = r.sub(" ", t)
-    # 代码围栏开闭标记(行首 ``` )
-    t = re.sub(r"(?m)^```[^\n]*$", "", t)
-    # Markdown 标题井号
-    t = re.sub(r"(?m)^#{1,6}\s+", "", t)
-    # HTML 实体
-    for ent, ch in [("&lt;", "<"), ("&gt;", ">"), ("&amp;", "&"),
-                    ("&quot;", '"'), ("&nbsp;", " "), ("&#39;", "'")]:
-        t = t.replace(ent, ch)
-    # 多余空白
-    t = re.sub(r"\n{3,}", "\n\n", t)
-    t = re.sub(r"[ \t]{2,}", " ", t)
-    return t.strip()
+def truncate_utf8_bytes(text: str, limit: int = TEXT_MAX_BYTES) -> str:
+    raw = (text or "").encode("utf-8")
+    return text or "" if len(raw) <= limit else raw[:limit].decode("utf-8", errors="ignore")
 
 
-def fetch_chunks():
-    """拉所有 chunks, 按 document_id 分组"""
+def contextual_input(row: dict) -> str:
+    title = row["original_filename"] or ""
+    dot = title.rfind(".")
+    if 0 < dot < len(title) - 1:
+        title = title[:dot]
+    parts = []
+    if row["source"] and row["source"] != "unknown":
+        parts.append(f"来源: {row['source'].strip()}")
+    if title.strip():
+        parts.append(f"文档: {title.strip()}")
+    section_path = row.get("section_path")
+    if section_path:
+        if isinstance(section_path, str):
+            try:
+                section_path = json.loads(section_path)
+            except json.JSONDecodeError:
+                section_path = []
+        if section_path:
+            parts.append("章节: " + " › ".join(str(item) for item in section_path))
+    prefix = ("[" + " | ".join(parts) + "]\n") if parts else ""
+    return prefix[:CONTEXT_PREFIX_MAX_CHARS] + (row["content"] or "")
+
+
+def fetch_chunks() -> list[dict]:
+    sql = """
+        SELECT c.id AS chunk_id, c.document_id, c.generation, c.page, c.content,
+               c.chunk_type, c.section_path, d.original_filename, d.source,
+               COALESCE(d.version, '') AS version, d.logical_document_key,
+               d.language, d.doc_type, d.tenant_id
+        FROM chunks c JOIN documents d ON d.id = c.document_id
+        WHERE d.deleted_at IS NULL AND d.status = 'INDEXED'
+          AND c.generation = d.active_generation
+        ORDER BY c.document_id, c.seq, c.id
+    """
     conn = pymysql.connect(**MYSQL_CONFIG)
     try:
-        with conn.cursor(pymysql.cursors.DictCursor) as cur:
-            cur.execute(
-                "SELECT id, document_id, seq, page, content FROM chunks "
-                "ORDER BY document_id, seq"
-            )
-            return cur.fetchall()
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(sql)
+            return list(cursor.fetchall())
     finally:
         conn.close()
 
 
-def embed_batch(texts):
-    """批量 embed, 返回 dense 向量列表(BGE-M3 1024 维)"""
-    r = requests.post(
-        EMBED_URL,
-        json={"input": texts},
-        timeout=90,
+def corpus_sha256(rows: list[dict]) -> str:
+    digest = hashlib.sha256()
+    for row in rows:
+        digest.update(f"{row['chunk_id']}\0{row['document_id']}\0".encode())
+        digest.update((row["content"] or "").encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def create_collection(client: MilvusClient, name: str) -> None:
+    schema = client.create_schema(
+        auto_id=True, enable_dynamic_field=False,
+        description="RAG doc chunks V3 blue-green rebuilt with verified BGE-M3 vectors",
     )
-    r.raise_for_status()
-    data = r.json()["data"]
-    return [d["embedding"] for d in data]
+    schema.add_field("id", DataType.INT64, is_primary=True, auto_id=True)
+    schema.add_field("dense_vector", DataType.FLOAT_VECTOR, dim=VECTOR_DIMENSION)
+    schema.add_field("text", DataType.VARCHAR, max_length=TEXT_MAX_BYTES,
+                     enable_analyzer=True, analyzer_params={"type": "chinese"})
+    schema.add_field("sparse_bm25", DataType.SPARSE_FLOAT_VECTOR)
+    schema.add_field("document_id", DataType.INT64)
+    schema.add_field("ingestion_generation", DataType.INT32)
+    schema.add_field("chunk_id", DataType.INT64)
+    schema.add_field("page", DataType.INT32)
+    schema.add_field("tenant_id", DataType.VARCHAR, max_length=32)
+    schema.add_field("source", DataType.VARCHAR, max_length=32)
+    schema.add_field("version", DataType.VARCHAR, max_length=16)
+    schema.add_field("logical_document_key", DataType.VARCHAR, max_length=128)
+    schema.add_field("language", DataType.VARCHAR, max_length=8)
+    schema.add_field("doc_type", DataType.VARCHAR, max_length=16)
+    schema.add_field("chunk_type", DataType.VARCHAR, max_length=16)
+    schema.add_function(Function(
+        name="text_to_bm25", function_type=FunctionType.BM25,
+        input_field_names=["text"], output_field_names=["sparse_bm25"],
+    ))
+    indexes = client.prepare_index_params()
+    indexes.add_index("dense_vector", index_name="dense_vector", index_type="HNSW",
+                      metric_type="IP", params={"M": 16, "efConstruction": 200})
+    indexes.add_index("sparse_bm25", index_name="sparse_bm25",
+                      index_type="SPARSE_INVERTED_INDEX", metric_type="BM25")
+    indexes.add_index("document_id", index_name="document_id", index_type="STL_SORT")
+    client.create_collection(name, schema=schema, index_params=indexes)
 
 
-def truncate(text, max_len):
-    return text[:max_len] if text and len(text) > max_len else (text or "")
+def embed(texts: list[str], retries: int = 3) -> list[list[float]]:
+    last_error = None
+    for attempt in range(1, retries + 1):
+        try:
+            response = requests.post(
+                f"{EMBEDDING_BASE_URL}/v1/embeddings",
+                json={"model": EMBEDDING_MODEL, "input": texts}, timeout=180,
+            )
+            response.raise_for_status()
+            vectors = [item["embedding"] for item in response.json()["data"]]
+            if len(vectors) != len(texts) or any(len(v) != VECTOR_DIMENSION for v in vectors):
+                raise ValueError("embedding 响应数量或维度不正确")
+            return vectors
+        except Exception as error:
+            last_error = error
+            if attempt < retries:
+                time.sleep(attempt * 2)
+    raise RuntimeError(f"embedding 连续失败 {retries} 次: {last_error}")
 
 
-def main():
-    print(f"[1/3] 从 MySQL 拉 chunks ...")
-    chunks = fetch_chunks()
-    print(f"  共 {len(chunks)} 条 chunk")
+def cosine(left: list[float], right: list[float]) -> float:
+    return sum(a * b for a, b in zip(left, right)) / math.sqrt(
+        sum(a * a for a in left) * sum(b * b for b in right))
 
-    docs = {}
-    for c in chunks:
-        docs.setdefault(c["document_id"], []).append(c)
-    print(f"  分布在 {len(docs)} 个文档")
+
+def verify(client: MilvusClient, name: str, rows: list[dict]) -> dict:
+    count = int(client.get_collection_stats(name)["row_count"])
+    sample = rows[::max(1, len(rows) // 10)][:10]
+    sample_ids = [int(row["chunk_id"]) for row in sample]
+    stored = {
+        int(item["chunk_id"]): item["dense_vector"]
+        for item in client.query(
+            name, filter=f"chunk_id in [{','.join(map(str, sample_ids))}]",
+            output_fields=["chunk_id", "dense_vector"], limit=len(sample_ids))
+    }
+    fresh = embed([contextual_input(row) for row in sample])
+    similarities = [cosine(stored[row["chunk_id"]], vector) for row, vector in zip(sample, fresh)]
+    return {
+        "expected_rows": len(rows), "actual_rows": count, "sample_size": len(sample),
+        "fresh_vs_stored_cosine_min": min(similarities),
+        "fresh_vs_stored_cosine_mean": sum(similarities) / len(similarities),
+        "passed": count == len(rows) and min(similarities) >= 0.999,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--target-collection", required=True)
+    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--confirm", action="store_true")
+    parser.add_argument("--resume", action="store_true", help="目标存在时跳过已写 chunk_id 并断点续建")
+    args = parser.parse_args()
+    if not 1 <= args.batch_size <= 32:
+        parser.error("--batch-size 必须在 1..32")
+    if args.target_collection == os.getenv("MILVUS_COLLECTION", "documents_current"):
+        parser.error("目标不得等于当前 collection；必须使用新的蓝绿 collection")
+
+    rows = fetch_chunks()
+    info = requests.get(f"{EMBEDDING_BASE_URL}/info", timeout=10).json()
+    summary = {
+        "target_collection": args.target_collection,
+        "chunk_count": len(rows),
+        "document_count": len({row["document_id"] for row in rows}),
+        "corpus_sha256": corpus_sha256(rows),
+        "embedding_model_config": EMBEDDING_MODEL,
+        "embedding_service": info,
+        "contextual_prefix_enabled": True,
+        "contextual_prefix_max_chars": CONTEXT_PREFIX_MAX_CHARS,
+    }
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if not args.confirm:
+        print("DRY-RUN 完成；未创建 collection。加 --confirm 才执行蓝绿重建。")
+        return 0
 
     client = MilvusClient(uri=MILVUS_URI)
-    if not client.has_collection(MILVUS_COLLECTION):
-        print(f"\n✗ collection '{MILVUS_COLLECTION}' 不存在!")
-        sys.exit(1)
+    target_exists = client.has_collection(args.target_collection)
+    if target_exists and not args.resume:
+        raise SystemExit(f"目标 collection 已存在，拒绝覆盖；确认是本次任务后可加 --resume: {args.target_collection}")
+    if not target_exists:
+        create_collection(client, args.target_collection)
+    existing_ids: set[int] = set()
+    if target_exists:
+        existing_ids = {
+            int(item["chunk_id"])
+            for item in client.query(
+                args.target_collection, filter="chunk_id >= 0",
+                output_fields=["chunk_id"], limit=16_384)
+        }
+    pending_rows = [row for row in rows if int(row["chunk_id"]) not in existing_ids]
+    print(f"resume_existing={len(existing_ids)} pending={len(pending_rows)}", flush=True)
+    started = time.time()
+    for offset in range(0, len(pending_rows), args.batch_size):
+        batch = pending_rows[offset:offset + args.batch_size]
+        vectors = embed([contextual_input(row) for row in batch])
+        payload = [{
+            "dense_vector": vector,
+            "text": truncate_utf8_bytes(row["content"] or ""),
+            "document_id": row["document_id"], "ingestion_generation": row["generation"],
+            "chunk_id": row["chunk_id"], "page": row["page"] or 0,
+            "tenant_id": row["tenant_id"] or "default", "source": row["source"] or "unknown",
+            "version": row["version"] or "", "logical_document_key": row["logical_document_key"] or "unknown",
+            "language": row["language"] or "zh", "doc_type": row["doc_type"] or "doc",
+            "chunk_type": row["chunk_type"] or "TEXT",
+        } for row, vector in zip(batch, vectors)]
+        client.insert(args.target_collection, payload)
+        done = len(existing_ids) + min(offset + len(batch), len(pending_rows))
+        if done == len(rows) or done % 80 < args.batch_size:
+            print(f"progress={done}/{len(rows)} elapsed_sec={time.time() - started:.1f}", flush=True)
 
-    # 清洗统计
-    total_before_chars = sum(len(c["content"] or "") for c in chunks)
-    cleaned_counter = 0
-
-    print(f"\n[2/3] 清洗 + 重新 embed + upsert (按文档分批, batch={BATCH_SIZE}) ...")
-    total_done = 0
-    for doc_id, doc_chunks in docs.items():
-        client.delete(
-            collection_name=MILVUS_COLLECTION,
-            filter=f"document_id == {doc_id}",
-        )
-        for i in range(0, len(doc_chunks), BATCH_SIZE):
-            batch = doc_chunks[i:i + BATCH_SIZE]
-            # 每条 chunk 跑清洗
-            cleaned_texts = []
-            skipped_empty = 0
-            for c in batch:
-                orig = c["content"] or ""
-                cleaned = clean_text(orig)
-                if len(cleaned) < len(orig):
-                    cleaned_counter += 1
-                # 关键: 清洗可能整段去成空(Hugo pageinfo 的 chunk 没有正文),
-                # 空 text TEI 会 413 "input cannot be empty"。空就用占位非空字符串。
-                if not cleaned.strip():
-                    cleaned = "内容为文档元数据(模板/导航), 无正文"
-                    skipped_empty += 1
-                cleaned_texts.append(cleaned)
-            if skipped_empty:
-                print(f"    [warn] chunk 清洗后变空 占位替代 {skipped_empty} 条")
-
-            texts = [truncate(t, TEXT_MAX_LENGTH) for t in cleaned_texts]
-            embeddings = embed_batch(texts)
-            rows = []
-            for c, text, dense in zip(batch, texts, embeddings):
-                rows.append({
-                    "dense_vector": dense,
-                    "text": text,
-                    "document_id": doc_id,
-                    "chunk_id": c["id"],
-                    "page": c["page"] or 0,
-                    "tenant_id": "default",
-                })
-            client.insert(collection_name=MILVUS_COLLECTION, data=rows)
-            total_done += len(rows)
-            print(f"  doc={doc_id}  done {total_done}/{len(chunks)}")
-            time.sleep(0.3)
-
-    total_after_chars = sum(len(clean_text(c["content"] or "")) for c in chunks)
-    print(f"\n[3/3] ✓ 重灌完成: {total_done} 条 chunk 已写入 Milvus (含清洗)")
-    print(f"  清洗统计: ")
-    print(f"    原始总字符数: {total_before_chars}")
-    print(f"    清洗后字符数: {total_after_chars} ({total_after_chars*100//total_before_chars}%)")
-    print(f"    有清洗动作的 chunk 数: {cleaned_counter}/{len(chunks)}")
-    print(f"\n下一步: 烟测 chat api 验证 hybrid search 工作, 然后 make eval-gate 跑 RAGAS 验收")
+    client.flush(args.target_collection)
+    client.load_collection(args.target_collection)
+    result = {
+        **summary, "created_at": datetime.now(timezone.utc).isoformat(),
+        "elapsed_sec": round(time.time() - started, 2),
+        "verification": verify(client, args.target_collection, rows),
+    }
+    manifest = args.manifest or PROJECT_ROOT / "eval" / "runs" / f"{args.target_collection}_manifest.json"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(result["verification"], ensure_ascii=False, indent=2))
+    print(f"manifest={manifest}")
+    return 0 if result["verification"]["passed"] else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

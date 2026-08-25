@@ -44,4 +44,25 @@ public class RerankProperties {
 
     /** rerank 后最终保留的 top-N。 */
     private int topN = 5;
+
+    /** 是否把高排名召回 chunk 的相邻切片加入 rerank 候选。 */
+    private boolean neighborExpansionEnabled = false;
+
+    /** 向前、向后各扩多少个同类型 chunk。 */
+    private int neighborWindow = 2;
+
+    /** 仅扩展召回序列前 N 个 seed，避免候选数量失控。 */
+    private int neighborSeedCount = 5;
+
+    /** 单次最多增加的邻居数量。 */
+    private int neighborMaxExtra = 20;
+
+    /** 精排后仅对“配置如下/示例:”类引导片段补入后续代码块；不参与 rerank 排序。 */
+    private boolean leadInContextExpansionEnabled = true;
+
+    /** 引导片段向后补入的相邻 chunk 数量。 */
+    private int leadInContextWindow = 2;
+
+    /** 单条 citation 扩展后的最大上下文字符数。 */
+    private int leadInContextMaxChars = 2400;
 }

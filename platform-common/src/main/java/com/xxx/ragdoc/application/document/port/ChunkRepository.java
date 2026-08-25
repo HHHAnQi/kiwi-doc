@@ -44,6 +44,11 @@ public interface ChunkRepository {
      */
     Optional<Chunk> findByDocumentIdAndSeq(Long documentId, int seq, ChunkType chunkType);
 
+    /** 批量拉多个 anchor 的同文档、同 generation、同类型相邻 chunk，避免 rerank 邻居扩展 N+1。 */
+    default List<Chunk> findActiveNeighbors(List<Long> anchorIds, int window) {
+        return List.of();
+    }
+
     /** 按 docId + page 拉取该页全部 chunk(seq 升序)。 */
     List<Chunk> findByDocumentIdAndPageOrderBySeq(Long documentId, int page);
 

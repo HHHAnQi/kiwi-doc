@@ -30,13 +30,13 @@ app: ## 构建应用 jar
 	$(GRADLE) :platform-bootstrap:bootJar
 
 run: ## 启动应用(Spring Boot, 默认 dev profile, 连 docker-compose 中间件)
-	@if [ -f .env ]; then \
-		set -a && . ./.env && set +a && \
-		echo "✓ 已加载 .env (LLM_MODEL=${LLM_MODEL:-未设})"; \
-	else echo "⚠ 无 .env, 走 application.yml 默认值"; fi
 	@#关键: Spring Boot 原生不读 .env(.env 是 docker-compose/make 的约定)，
 	@# application-*.yml 里 ${LLM_*:default} 占位符只有在环境变量已设时才生效，
-	@# 否则吃默认值(qwen-max + dashscope URL)导致 401。必须先 source .env 再跑 gradle。
+	@# 否则吃默认值(qwen-max + dashscope URL)导致 401。加载与 bootRun 必须在同一个 shell。
+	@if [ -f .env ]; then \
+		set -a; . ./.env; set +a; \
+		echo "✓ 已加载 .env (LLM_MODEL=$${LLM_MODEL:-未设})"; \
+	fi; \
 	$(GRADLE) :platform-bootstrap:bootRun --args="--spring.profiles.active=dev"
 
 test: ## 单元测试

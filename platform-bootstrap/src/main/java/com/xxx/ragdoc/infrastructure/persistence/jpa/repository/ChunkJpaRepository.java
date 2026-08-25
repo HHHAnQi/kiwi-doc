@@ -73,6 +73,23 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
             @Param("seq") int seq,
             @Param("chunkType") String chunkType);
 
+    @Query(
+            """
+            SELECT DISTINCT n FROM ChunkEntity n, ChunkEntity a
+            WHERE a.id IN :anchorIds
+              AND n.documentId = a.documentId
+              AND n.generation = a.generation
+              AND n.chunkType = a.chunkType
+              AND ABS(n.seq - a.seq) BETWEEN 1 AND :window
+              AND EXISTS (
+                SELECT 1 FROM DocumentEntity d
+                WHERE d.id = n.documentId AND d.deletedAt IS NULL
+                  AND n.generation = d.activeGeneration
+              )
+            """)
+    List<ChunkEntity> findActiveNeighbors(
+            @Param("anchorIds") List<Long> anchorIds, @Param("window") int window);
+
     /** 拉取某页全部 chunk: 校验父 doc 未软删, 按 seq 升序。 */
     @Query(
             """

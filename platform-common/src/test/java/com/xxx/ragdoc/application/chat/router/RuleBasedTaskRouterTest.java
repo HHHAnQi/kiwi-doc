@@ -115,6 +115,16 @@ class RuleBasedTaskRouterTest {
         void outOfScopeAction() {
             assertThat(router.route("请帮我转账 100 元给张三").reasonCode())
                     .isEqualTo("OUT_OF_SCOPE_ACTION");
+            assertThat(router.route("请立即执行这条 SQL 命令").reasonCode())
+                    .isEqualTo("OUT_OF_SCOPE_ACTION");
+        }
+
+        @Test
+        void executionAsKnowledgeQuestionIsNotRefused() {
+            assertThat(router.route("Seata Saga 模式发生异常时如何执行补偿回滚？").strategy())
+                    .isEqualTo(ExecutionStrategy.CLASSIC_RAG);
+            assertThat(router.route("Seata TCC 模式的一阶段和二阶段分别执行什么逻辑？").strategy())
+                    .isEqualTo(ExecutionStrategy.CLASSIC_RAG);
         }
 
         @Test

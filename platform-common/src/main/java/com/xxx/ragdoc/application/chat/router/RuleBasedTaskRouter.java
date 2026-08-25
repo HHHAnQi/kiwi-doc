@@ -60,7 +60,9 @@ public class RuleBasedTaskRouter implements TaskRouter {
             Pattern.compile("哪一节|哪个章节|哪份文档|在哪里|在哪个|哪一章|哪个文档|在第几|关于[^?？]{0,12}的(部分|章节|内容)");
 
     private static final List<String> OUT_OF_SCOPE_VERBS =
-            List.of("登录", "转账", "修改数据库", "执行", "画一只", "画一只猫", "帮我画");
+            List.of("登录", "转账", "修改数据库", "画一只", "画一只猫", "帮我画");
+    private static final Pattern IMPERATIVE_EXECUTION =
+            Pattern.compile("^(?:请|帮我|立即|现在).{0,8}(?:执行|运行).{0,8}(?:命令|脚本|sql|操作)");
     private static final Pattern IDENTITY_QUESTION =
             Pattern.compile("^你是谁|^你叫什么|训练数据|你的模型|你是什么模型|^你多少钱");
     private static final List<String> OUT_OF_DOMAIN =
@@ -278,6 +280,9 @@ public class RuleBasedTaskRouter implements TaskRouter {
         }
         if (IDENTITY_QUESTION.matcher(text).find()) {
             return new UnanswerableHit("IDENTITY_QUESTION", 0.9);
+        }
+        if (IMPERATIVE_EXECUTION.matcher(text).find()) {
+            return new UnanswerableHit("OUT_OF_SCOPE_ACTION", 0.9);
         }
         for (String v : OUT_OF_SCOPE_VERBS) {
             if (text.contains(v)) return new UnanswerableHit("OUT_OF_SCOPE_ACTION", 0.85);

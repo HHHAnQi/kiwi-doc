@@ -34,7 +34,7 @@ MYSQL_CONFIG = {
     "database": os.getenv("MYSQL_DATABASE", "ragdoc"),
 }
 MILVUS_URI = f"http://{os.getenv('MILVUS_HOST', 'localhost')}:{os.getenv('MILVUS_PORT', '19530')}"
-MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "documents_v1")
+MILVUS_COLLECTION = os.getenv("MILVUS_COLLECTION", "documents_current")
 
 
 def list_docs(conn, doc_ids):

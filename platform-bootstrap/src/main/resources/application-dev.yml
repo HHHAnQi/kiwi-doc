@@ -31,7 +31,8 @@ spring:
 milvus:
   host: ${MILVUS_HOST:localhost}
   port: ${MILVUS_PORT:19530}
-  collection: ${MILVUS_COLLECTION:documents_v1}
+  # 蓝绿索引通过 alias 切换；回滚只需把 documents_current 指回上一 collection。
+  collection: ${MILVUS_COLLECTION:documents_current}
   fail-on-schema-mismatch: ${MILVUS_FAIL_ON_SCHEMA_MISMATCH:true}
 
 minio:
@@ -171,12 +172,22 @@ rag:
     base-url: ${RAG_RERANK_BASE_URL:http://localhost:18080}
     model: ${RAG_RERANK_MODEL:BAAI/bge-reranker-v2-m3}
     timeout-ms: 30000
-    # Phase 2.A Upgrade A3 决议 (2026-08-03):
-    #   实测 pool 50 让 reranker 重新排序, top5 GT chunk 命中率反而从 83% 跌到 56%,
-    #   recall/precision 严重退步。**A3 不通过, 回退到 20**。
-    #   原因可能是: 当前 corpus 仅 100 docs, pool 50 引入太多干扰; 待 corpus 扩 500+ 再试。
-    candidate-pool: 20
+    # 2026-08-25 使用 current-corpus content-hash 金标 + 3090 v2-m3 复测:
+    #   pool 20 -> 50: Hit/Recall@5 66.7% -> 90.5%, MRR 66.7% -> 88.1%;
+    #   mean latency 642ms -> 954ms。旧版“pool 50 退化”结论来自已漂移的 chunk_id 金标。
+    #   pool 100 仅再提升 1/21 命中、mean 1271ms，默认取质量/延迟拐点 50。
+    candidate-pool: ${RAG_RERANK_CANDIDATE_POOL:50}
     top-n: 5
+    # 代码/配置常位于标题说明的相邻 chunk；只扩 top seed，再交给 cross-encoder 判相关。
+    neighbor-expansion-enabled: ${RAG_RERANK_NEIGHBOR_EXPANSION_ENABLED:true}
+    neighbor-window: ${RAG_RERANK_NEIGHBOR_WINDOW:2}
+    neighbor-seed-count: ${RAG_RERANK_NEIGHBOR_SEED_COUNT:5}
+    neighbor-max-extra: ${RAG_RERANK_NEIGHBOR_MAX_EXTRA:20}
+    # 精排完成后，若问题询问配置/示例且命中片段以“如下/示例/:”结尾，补入后续代码块。
+    # 2026-08-25 冻结集 A/B：配置坏例 Correctness ~0.42→~0.88；20题回归 0.809→0.888，默认开启。
+    lead-in-context-expansion-enabled: ${RAG_RERANK_LEAD_IN_CONTEXT_EXPANSION_ENABLED:true}
+    lead-in-context-window: ${RAG_RERANK_LEAD_IN_CONTEXT_WINDOW:2}
+    lead-in-context-max-chars: ${RAG_RERANK_LEAD_IN_CONTEXT_MAX_CHARS:2400}
 
   # ─── Phase 1 多轮对话 / 压缩 (ADR-0011) ─────────────────────────
   # enabled=false (默认) 时 ConversationStore=NoOp, ChatService 完全 stateless (baseline 不变)
@@ -187,6 +198,7 @@ rag:
   conversation:
     enabled: ${RAG_CONVERSATION_ENABLED:false}
     compress: ${RAG_CONVERSATION_COMPRESS:false}        # 异步压缩 master switch (C6 才生效)
+    summary-route: ${RAG_CONVERSATION_SUMMARY_ROUTE:fallback} # fallback 不可用时可临时切 primary
     compress-threshold: 6                                # buffer ≥6 turn 触发压缩
     topic-shift-detect: ${RAG_TOPIC_SHIFT_DETECT:false}  # C5 才生效
     topic-shift-threshold: 0.5                           # BGE-M3 cosine 阈值 (中文经验)
