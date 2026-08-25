@@ -439,15 +439,15 @@ public class PlannedAgentExecutionCoordinator {
         String reason = "INSUFFICIENT_AFTER_REPLAN_FALLBACK";
         boolean hasAnyEvidence = !phase1.accumulatedEvidence().isEmpty();
         if (hasAnyEvidence) {
-            // 有部分证据 → 降级为带证据的 Composer 回答
-            runFinalizer.finalize(
-                    phase1.runId(),
-                    phase1.latestRunVersion(),
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentRunStatus.READY_TO_ANSWER,
-                    reason,
-                    phase1.usage(),
-                    phase1.reservation());
+            PlannedAgentRunFinalizer.FinalizeOutcome fo =
+                    runFinalizer.finalize(
+                            phase1.runId(),
+                            phase1.latestRunVersion(),
+                            Set.of(AgentRunStatus.EXECUTING),
+                            AgentRunStatus.READY_TO_ANSWER,
+                            reason,
+                            phase1.usage(),
+                            phase1.reservation());
             SufficiencyDecision fallbackSuff =
                     SufficiencyDecision.rule(
                             SufficiencyStatus.PARTIAL,
@@ -460,7 +460,7 @@ public class PlannedAgentExecutionCoordinator {
                     phase1,
                     fallbackSuff,
                     frozenRequirements,
-                    phase1.latestRunVersion(),
+                    fo.newVersion(),
                     1 /* replanCount */,
                     cancellation);
         }
@@ -490,14 +490,18 @@ public class PlannedAgentExecutionCoordinator {
             CancellationTokenSource.CancellationToken cancellation,
             String reason) {
         if (!phase.accumulatedEvidence().isEmpty()) {
-            runFinalizer.finalize(
-                    phase.runId(),
-                    phase.latestRunVersion(),
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentRunStatus.READY_TO_ANSWER,
-                    reason + "_FALLBACK",
-                    phase.usage(),
-                    phase.reservation());
+            // 注意: finalize 会递增 version, 必须用 FinalizeOutcome.newVersion()
+            // 而非 phase.latestRunVersion()(是 finalize 前的旧值, 会导致后续
+            // ANSWERED CAS 必然 affected=0 → "已被取消或终止")
+            PlannedAgentRunFinalizer.FinalizeOutcome fo =
+                    runFinalizer.finalize(
+                            phase.runId(),
+                            phase.latestRunVersion(),
+                            Set.of(AgentRunStatus.EXECUTING),
+                            AgentRunStatus.READY_TO_ANSWER,
+                            reason + "_FALLBACK",
+                            phase.usage(),
+                            phase.reservation());
             SufficiencyDecision fallbackSuff =
                     SufficiencyDecision.rule(
                             SufficiencyStatus.PARTIAL,
@@ -510,7 +514,7 @@ public class PlannedAgentExecutionCoordinator {
                     phase,
                     fallbackSuff,
                     frozenRequirements,
-                    phase.latestRunVersion(),
+                    fo.newVersion(),
                     1,
                     cancellation);
         }
