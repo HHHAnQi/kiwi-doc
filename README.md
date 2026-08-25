@@ -29,6 +29,13 @@ Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系�
 当前语料(3074 chunks)+规则 Planner 下, agentic 未超 Classic 且延迟×5 ——
 按预设"不达标出口"保持默认关闭。这正是"何时不需要 Agent"的实证, 与业界共识一致。
 
+**Paired A/B 终版结论(2026-08-25)**: 80 题冻结集(4 切片×20)× 配对盲评(位置互换),
+四轮根因修复(Sufficiency 三档 → 版本 CAS → Replan 降级 → 原查询锚定)将差距从
+-45pp 缩小到 **-24pp**, Agentic 准确率 0.263→**0.497**(+23.4pp), 盲评胜率
+7.5%→**23.8%**。**准确率未达启用门槛(+5pp), 保持默认关闭**; 但盲评 67.6%
+不输 Classic(简单题胜率 50% 反超), 表明剩余差距部分来自 judge 格式偏好而非
+信息质量。详见 `docs/evaluation/2026-08-25-agentic-paired-ab-final-report.md`。
+
 ## 评测体系(四层)
 
 检索侧(Recall@K/MRR/NDCG) · 生成侧(RAGAS 四件套) · **拒答分离**(自研: 把诚实拒答
