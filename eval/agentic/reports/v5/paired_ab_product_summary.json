@@ -1,0 +1,286 @@
+{
+  "budget_mode": "product",
+  "runs": 1,
+  "slices": {
+    "all": {
+      "classic": {
+        "correctness": {
+          "mean": 0.49375,
+          "std": 0.4305850450406496
+        },
+        "evidence_completeness": {
+          "mean": 0.487125,
+          "std": 0.4379994617359851
+        },
+        "latency_ms": {
+          "mean": 5152.1875,
+          "std": 2297.8650801176404
+        },
+        "citations": {
+          "mean": 4.7,
+          "std": 0.8479312128776437
+        }
+      },
+      "agentic": {
+        "correctness": {
+          "mean": 0.47,
+          "std": 0.4026494533443216
+        },
+        "evidence_completeness": {
+          "mean": 0.44775,
+          "std": 0.43038097635714173
+        },
+        "latency_ms": {
+          "mean": 18165.9,
+          "std": 10384.285292105957
+        },
+        "citations": {
+          "mean": 11.3125,
+          "std": 5.152346767754464
+        }
+      },
+      "delta": {
+        "correctness": {
+          "mean": -0.02375,
+          "ci_lo": -0.11500000000000002,
+          "ci_hi": 0.07
+        },
+        "evidence_completeness": {
+          "mean": -0.039375,
+          "ci_lo": -0.134625,
+          "ci_hi": 0.05650000000000001
+        }
+      },
+      "pairwise": {
+        "B": 0.3125,
+        "A": 0.2125,
+        "TIE": 0.475
+      }
+    },
+    "C_multi_step": {
+      "classic": {
+        "correctness": {
+          "mean": 0.705,
+          "std": 0.43100250335089335
+        },
+        "evidence_completeness": {
+          "mean": 0.7035,
+          "std": 0.44192491622327357
+        },
+        "latency_ms": {
+          "mean": 5121.65,
+          "std": 1612.7656296919865
+        },
+        "citations": {
+          "mean": 4.5,
+          "std": 0.9459053029269173
+        }
+      },
+      "agentic": {
+        "correctness": {
+          "mean": 0.525,
+          "std": 0.4153311931459037
+        },
+        "evidence_completeness": {
+          "mean": 0.516,
+          "std": 0.4289693891667624
+        },
+        "latency_ms": {
+          "mean": 13983.3,
+          "std": 5120.187518153279
+        },
+        "citations": {
+          "mean": 9.25,
+          "std": 5.618344015248996
+        }
+      },
+      "delta": {
+        "correctness": {
+          "mean": -0.18,
+          "ci_lo": -0.38,
+          "ci_hi": 0.020000000000000018
+        },
+        "evidence_completeness": {
+          "mean": -0.1875,
+          "ci_lo": -0.39249999999999996,
+          "ci_hi": 0.016499999999999994
+        }
+      },
+      "pairwise": {
+        "TIE": 0.45,
+        "B": 0.25,
+        "A": 0.3
+      }
+    },
+    "S_simple_control": {
+      "classic": {
+        "correctness": {
+          "mean": 0.58,
+          "std": 0.48406176204456
+        },
+        "evidence_completeness": {
+          "mean": 0.575,
+          "std": 0.4940434670840422
+        },
+        "latency_ms": {
+          "mean": 3844.05,
+          "std": 1380.2920543360228
+        },
+        "citations": {
+          "mean": 5,
+          "std": 0.0
+        }
+      },
+      "agentic": {
+        "correctness": {
+          "mean": 0.62,
+          "std": 0.4514304749174678
+        },
+        "evidence_completeness": {
+          "mean": 0.6,
+          "std": 0.5026246899500346
+        },
+        "latency_ms": {
+          "mean": 18386.3,
+          "std": 15950.581270055069
+        },
+        "citations": {
+          "mean": 9.45,
+          "std": 2.235479461111784
+        }
+      },
+      "delta": {
+        "correctness": {
+          "mean": 0.039999999999999994,
+          "ci_lo": -0.16,
+          "ci_hi": 0.225
+        },
+        "evidence_completeness": {
+          "mean": 0.025,
+          "ci_lo": -0.2,
+          "ci_hi": 0.225
+        }
+      },
+      "pairwise": {
+        "B": 0.4,
+        "TIE": 0.4,
+        "A": 0.2
+      }
+    },
+    "B_multi_constraint": {
+      "classic": {
+        "correctness": {
+          "mean": 0.49,
+          "std": 0.35673962198603176
+        },
+        "evidence_completeness": {
+          "mean": 0.475,
+          "std": 0.36831765466352834
+        },
+        "latency_ms": {
+          "mean": 6662.1,
+          "std": 3164.8101281701593
+        },
+        "citations": {
+          "mean": 4.6,
+          "std": 1.0462967275611939
+        }
+      },
+      "agentic": {
+        "correctness": {
+          "mean": 0.35,
+          "std": 0.3379504790879715
+        },
+        "evidence_completeness": {
+          "mean": 0.305,
+          "std": 0.35905577927611604
+        },
+        "latency_ms": {
+          "mean": 20528.55,
+          "std": 10051.764890725462
+        },
+        "citations": {
+          "mean": 13.2,
+          "std": 6.057618083215981
+        }
+      },
+      "delta": {
+        "correctness": {
+          "mean": -0.13999999999999999,
+          "ci_lo": -0.30999999999999994,
+          "ci_hi": 0.025000000000000005
+        },
+        "evidence_completeness": {
+          "mean": -0.16999999999999998,
+          "ci_lo": -0.345,
+          "ci_hi": 8.326672684688674e-18
+        }
+      },
+      "pairwise": {
+        "TIE": 0.5,
+        "A": 0.25,
+        "B": 0.25
+      }
+    },
+    "A_multi_doc_compare": {
+      "classic": {
+        "correctness": {
+          "mean": 0.19999999999999998,
+          "std": 0.27909628596974423
+        },
+        "evidence_completeness": {
+          "mean": 0.195,
+          "std": 0.27429335045761344
+        },
+        "latency_ms": {
+          "mean": 4980.95,
+          "std": 1788.6431339220005
+        },
+        "citations": {
+          "mean": 4.7,
+          "std": 0.9233805168766387
+        }
+      },
+      "agentic": {
+        "correctness": {
+          "mean": 0.385,
+          "std": 0.3660241579602722
+        },
+        "evidence_completeness": {
+          "mean": 0.37,
+          "std": 0.38402302562545165
+        },
+        "latency_ms": {
+          "mean": 19765.45,
+          "std": 6296.773396581359
+        },
+        "citations": {
+          "mean": 13.35,
+          "std": 4.568484719420537
+        }
+      },
+      "delta": {
+        "correctness": {
+          "mean": 0.185,
+          "ci_lo": 0.06000000000000001,
+          "ci_hi": 0.325
+        },
+        "evidence_completeness": {
+          "mean": 0.175,
+          "ci_lo": 0.05000000000000001,
+          "ci_hi": 0.315
+        }
+      },
+      "pairwise": {
+        "B": 0.35,
+        "A": 0.1,
+        "TIE": 0.55
+      }
+    }
+  },
+  "fingerprint": {
+    "dataset_sha256": "13e45a392bf2b2229bfcbb02243c88996e93e8b7c0e4d1980347606450f0087c",
+    "corpus": "3076\t6509769196700",
+    "rerank": "DOWN"
+  }
+}

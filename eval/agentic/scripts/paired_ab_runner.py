@@ -28,6 +28,9 @@ load_dotenv(PROJECT / ".env", override=False)
 CHAT_URL = os.getenv("CHAT_URL", "http://localhost:8080/api/v1/chat")
 TOKEN = os.getenv("TEST_AUTH_TOKEN", "dev-token-change-me")
 JUDGE_URL = os.getenv("JUDGE_LLM_PROVIDER_1_BASE_URL", "https://api.deepseek.com/v1") + "/chat/completions"
+JUDGE2_URL = os.getenv("JUDGE_LLM_PROVIDER_2_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1") + "/chat/completions"
+JUDGE2_KEY = os.getenv("JUDGE_LLM_PROVIDER_2_API_KEY", "")
+JUDGE2_MODEL = os.getenv("JUDGE_LLM_PROVIDER_2_MODEL", "qwen-max")
 JUDGE_KEY = os.getenv("JUDGE_LLM_PROVIDER_1_API_KEY", "")
 JUDGE_MODEL = os.getenv("JUDGE_LLM_PROVIDER_1_MODEL", "deepseek-chat")
 AGENT_RUN_URL = os.getenv("AGENT_RUN_URL", "http://localhost:8080/api/v1/agent/runs")
@@ -79,15 +82,28 @@ def judge(prompt, temperature=0.1):
         except: time.sleep(3)
     return "ERROR"
 
+def normalize_format(text):
+    """格式归一化(Phase1-②): 去掉 Markdown 格式标记, 消除 judge 对
+    结构化 Markdown vs 简洁段落的格式偏好(实测 -6.3pp 偏差)。"""
+    import re as _re
+    t = _re.sub(r'^#{1,6}\s+', '', text, flags=_re.M)   # 标题
+    t = _re.sub(r'^\s*[-*]\s+', '', t, flags=_re.M)     # 列表
+    t = _re.sub(r'\*\*?([^*]+)\*\*?', r'\1', t)       # 粗体/斜体
+    t = _re.sub(r'`([^`]+)`', r'\1', t)                   # 行内代码
+    t = _re.sub(r'\n{3,}', '\n\n', t)                   # 多余空行
+    return t.strip()
+
 def judge_absolute(question, gold_answer, answer):
-    """Score single answer on correctness + evidence coverage (0-1 each)."""
+    """Score single answer on correctness + evidence coverage (0-1 each).
+    Phase1-②: 评分前对 answer 做格式归一化(去 Markdown), 消除格式偏好。"""
     if not answer.strip() or "证据不足" in answer or "无法回答" in answer:
         return {"correctness": 0.0, "evidence_completeness": 0.0, "refused": True}
-    prompt = f"""评分以下回答(JSON)。标准答案提供事实基准。
+    normalized = normalize_format(answer)  # 格式归一化
+    prompt = f"""评分以下回答(JSON)。标准答案提供事实基准。忽略格式和表达方式, 只评信息覆盖。
 
 问题: {question}
 标准答案: {gold_answer[:500]}
-待评回答: {answer[:800]}
+待评回答: {normalized[:800]}
 
 评分标准:
 - correctness: 回答与标准答案在事实层面的吻合度(0-1)。核心事实都覆盖=1.0, 大部分覆盖=0.7, 部分覆盖=0.4, 错误或遗漏大部分=0.1
@@ -106,9 +122,44 @@ def judge_absolute(question, gold_answer, answer):
     except: pass
     return {"correctness": 0.5, "evidence_completeness": 0.5, "refused": False}
 
+def judge2_score(prompt):
+    """Phase3-⑦: Qwen 第二 judge(异族交叉验证)."""
+    for _ in range(2):
+        try:
+            r = requests.post(JUDGE2_URL, headers={"Authorization": f"Bearer {JUDGE2_KEY}"},
+                              json={"model": JUDGE2_MODEL, "temperature": 0.1,
+                                    "messages": [{"role": "user", "content": prompt}]}, timeout=90)
+            return r.json()["choices"][0]["message"]["content"].strip()
+        except: time.sleep(3)
+    return "ERROR"
+
+def judge_absolute_dual(question, gold_answer, answer):
+    """Phase3-⑦: 双 judge(DeepSeek + Qwen)评分, 报告一致性与偏差."""
+    d1 = judge_absolute(question, gold_answer, answer)  # DeepSeek
+    # Qwen judge
+    normalized = normalize_format(answer)
+    if not normalized.strip() or "证据不足" in normalized or "无法回答" in normalized:
+        return {**d1, "qwen_correctness": 0.0, "judge_agree": True}
+    qwen_prompt = f"""评分回答的信息覆盖度(忽略格式)。
+问题: {question}
+标准答案: {gold_answer[:400]}
+回答: {normalized[:600]}
+只输出 JSON: {{"correctness": 0.0}}"""
+    raw = judge2_score(qwen_prompt)
+    try:
+        import re as _re
+        m = _re.search(r'\{[^}]+\}', raw)
+        q_score = float(json.loads(m.group(0)).get("correctness", 0.5)) if m else 0.5
+    except: q_score = 0.5
+    agree = abs(d1["correctness"] - q_score) < 0.3  # 一致性: 差距<0.3
+    return {**d1, "qwen_correctness": q_score, "judge_agree": agree}
+
 def judge_pairwise(question, gold_answer, ans_a, ans_b):
-    """Blind pairwise: which answer is better? Random position + swap re-judge."""
-    prompt_tpl = f"""对比以下两个回答, 哪个更好地回答了问题?
+    """Blind pairwise: which answer is better? Random position + swap re-judge.
+    Phase1-②: 双侧格式归一化后比较, 消除格式偏好。"""
+    ans_a = normalize_format(ans_a)
+    ans_b = normalize_format(ans_b)
+    prompt_tpl = f"""对比以下两个回答, 哪个更好地回答了问题? 只评信息覆盖, 忽略格式。
 
 问题: {question}
 标准答案要点: {gold_answer[:300]}
@@ -189,8 +240,8 @@ def run_experiment(dataset_path, budget_mode="product", run_id=1):
         ag_metrics = fetch_agent_metrics(agentic.get("agent_run_id"))
 
         # Absolute scoring (blind: judge doesn't know which system)
-        c_scores = judge_absolute(q, gold, classic["answer"])
-        a_scores = judge_absolute(q, gold, agentic["answer"])
+        c_scores = judge_absolute_dual(q, gold, classic["answer"])
+        a_scores = judge_absolute_dual(q, gold, agentic["answer"])
 
         # Pairwise preference (blind, position-swapped)
         pref = judge_pairwise(q, gold, classic["answer"], agentic["answer"])
