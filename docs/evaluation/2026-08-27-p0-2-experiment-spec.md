@@ -52,7 +52,7 @@ MODEL=glm-4-plus (Zhipu compatible-mode; LlmRouter primary route, 复用主 chat
   temperature=0.3 (注意: planner 无独立 route — javadoc 声称 temp=0 与实际不符, 按实际值冻结)
   max_tokens=1024, timeout=10s
 调用链= ChatOrchestrator → PlannedAgentPipeline → Coordinator → HarnessAware(LIVE直通)
-  → FallbackPlannerProvider → ModelPlannerProvider → LlmRouter(primary) → qwen-max
+  → FallbackPlannerProvider → ModelPlannerProvider → LlmRouter(primary) → glm-4-plus
 ```
 
 ## 5. Fallback Handling（评测隔离，P0-2 修复后）

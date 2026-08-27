@@ -2,6 +2,19 @@
 
 > 2026-08-27 | 基于深度代码审计，从大厂Agent架构面试官视角修复
 > 原则: 不删功能、闭环逻辑、量化取舍、区分Demo与生产
+>
+> **⚠ P0-3 修订注记（2026-08-27，以 50 题 LLM Planner pilot 为准）**：
+> 本文档写于 LLM Planner 评测之前，其中三处结论已被实测推翻或需按新口径表述——
+> ① "规则版与 LLM 版差距<3pp"：**已被证伪**。pilot 实测 LLM Planner 多跳 slice 0.830 vs
+> 规则版 0.624（+21pp），LLM 版大幅更优（但仍低于 Classic 0.926）。
+> ② 本文档引用的 200题×3轮 数字（-15.5pp/0.528/延迟×4）测的是**规则 Planner**，且与
+> 08-25 正式报告（V4=0.497, Δ-24pp）存在出入——正式口径以
+> `docs/evaluation/2026-08-25-agentic-paired-ab-final-report.md` 与
+> `docs/evaluation/2026-08-27-p0-2-pilot-report.md` 为准。
+> ③ "checkpoint 支持中断恢复/自动恢复 stale run"：resume 执行器未接线，实际语义是
+> stale 检测 + 安全终止（SYSTEM_FAILED），checkpoint 现值是诊断与审计。
+> ④ "5 类 agent 域指标+告警"：指标方法已注册但**无调用方（未接线）**，已接线的只有
+> planner 降级指标。以下正文保留原方案文本作为决策记录，不再逐处改写。
 
 ---
 
@@ -191,7 +204,7 @@ rag.agent:
   recovery:
     # 单机dev: 禁用
     enabled: ${RAG_AGENT_RECOVERY_ENABLED:false}
-    # 多机prod: 启用(自动恢复stale run)
+    # 多机prod: 启用(检测stale run并安全终止; resume续跑未接线)
 ```
 
 **面试答辩口径**:
@@ -199,7 +212,7 @@ rag.agent:
 
 **量化证据**:
 - 单机禁用时: 零线程开销、零DB额外写入
-- 多机启用时: lease防跨实例重复执行、checkpoint支持中断恢复
+- 多机启用时: lease防跨实例重复执行、checkpoint每步落库(诊断/审计; resume续跑未接线, stale run安全终止)
 
 ---
 
@@ -365,17 +378,15 @@ rag.agent:
 
 ---
 
-## 总结: 面试核心叙事（修复后的完整版）
+## 总结: 面试核心叙事（P0-3 修订版，口径=08-25 正式报告 + 08-27 LLM pilot）
 
-> "我做了一个企业RAG平台，核心方法论是**评测驱动开发**。Classic路径经多轮调优达到企业级水准(faith 0.971, Hit@5 92.5%)。Agentic路径做了完整实现和200题×3轮对照，结论是**在3076 chunks的结构化语料上，Agentic不敌Classic的单次精排**(Δ-15.5pp, 延迟×4)——但这个'负结果'正是最有价值的发现:
+> "我做了一个企业RAG平台，核心方法论是**评测驱动开发**。Classic路径经多轮调优达到企业级水准(faith 0.971, Hit@5 92.5%)。Agentic做了完整实现和两轮对照：规则Planner轮(200题×3轮)五轮修复从0.263提到0.497但差距仍有-24pp；随后我发现**评测对象配置漂移**(测的是规则版而非LLM版)，补了50题LLM Planner pilot——LLM版多跳slice大幅改善(0.624→0.830)但仍不及Classic(0.926)，全集-8.1pp显著，延迟×3.1，且**分解粒度与答案质量负相关**(2步/3步显著恶化)、replan 0/47从未触发。
 >
-> 1. **五轮系统性修复**将Agentic从0.263提升到0.528(+26.5pp)，每一轮都有根因归因
-> 2. **三方交叉验证**(LLM×2+人工)发现了LLM-as-Judge的系统性格式偏见——两个不同族judge一致率91%但与人工仅62-75%
-> 3. **人工盲评**显示信息质量实质等同，剩余差距主要来自judge评分偏好
-> 4. **架构判断**: 这个语料规模不需要Agent; >10k chunks/多源异构才是Agentic的甜区
-> 5. **工程教训**: 原查询锚定(+9.7pp)证明混合架构优于纯分解——Classic保底+Agent增量
->
-> 如果要启用Agentic, 我的数据支撑从Slice B(多约束排障,TIE 75%)开始canary。"
+> 1. **评测对象核验**是这个项目最重要的工程教训——评测结论的可信度取决于"你确定测的是你以为的东西"
+> 2. **三方交叉验证**(LLM×2+人工)发现LLM-as-Judge系统性格式偏见——judge间一致率91%但与人工仅62-75%
+> 3. **负结果的机制解释**: 子查询分解引入检索漂移+碎片证据稀释合成质量; 本语料整句hybrid+rerank已可单次命中
+> 4. **架构判断**: 当前语料默认Classic; Planner降级链(Model→retry→Rule→Classic)保证未来启用时有兜底且可观测
+> 5. Agentic的适用边界是待验证命题——'整句检索已判不足'是下一个实验的候选触发条件"
 
 ---
 
@@ -383,7 +394,7 @@ rag.agent:
 
 | # | 死亡问题 | 30秒应答 |
 |---|---|---|
-| 1 | Planner和if-else的区别? | 分层设计: 80%流量走规则路由(确定性/零LLM成本), 20%走LLM规划(语义分解)。当前语料下两者差距<3pp, 规则版是最优ROI |
+| 1 | Planner和if-else的区别? | 分层设计: 80%流量走规则路由(确定性/零LLM成本), 多跳走LLM规划。pilot实测LLM版多跳比规则版+21pp(0.830 vs 0.624)但仍低于Classic(0.926)——生产默认Classic, Planner链价值=能力+降级兜底 |
 | 2 | Replan为什么只有1次? | 边际收益<2pp但成本+30%。基于uncovered需求生成补充查询(与原查询天然不同), 不需要人工制造签名差异 |
 | 3 | Sufficiency被架空? | 修复为三档分离: SUFFICIENT(判定)/DEGRADED_PARTIAL(兜底)/INSUFFICIENT(拒绝), 可统计各自占比 |
 | 4 | Token预算死代码? | 已实现TokenEstimator估算+settle路径写入; API精确值提取是下一步; 生产设maxTotalTokens>0即激活 |
@@ -391,5 +402,5 @@ rag.agent:
 | 6 | 盲评16题够吗? | 不够推翻600题judge——它揭示的是direction而非proof。扩大到40题是修复方向 |
 | 7 | 为什么不直接用Classic? | 数据说话: 我做了完整对照。结论是当前语料保持Classic, 这就是架构判断力 |
 | 8 | Agentic不支持多轮? | 已识别gap, 修复是复用QueryContextualizer(30行代码), 非架构限制 |
-| 9 | 怎么监控Agent? | 新增5类agent域指标+告警规则(sufficiency拒答率>20%/budget拒绝>5%告警) |
+| 9 | 怎么监控Agent? | 已接线: trace_id贯穿+Langfuse+/agent/runs审计API+planner降级指标(逐样本planner_source可核验)。5个agent域指标已注册但调用方未接线(已知欠账) |
 | 10 | 评测配置≠生产配置? | 设计意图: 评测开/生产关是因为评测结论说当前不该开。两套标准profile替代4个flag |

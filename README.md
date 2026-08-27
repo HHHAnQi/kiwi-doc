@@ -8,7 +8,8 @@
 Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系统:
 混合检索(dense+BM25 RRF) → cross-encoder 重排 → Contextual Retrieval 前缀 →
 引用可溯源生成; 多轮对话(SSE 贯通 + 异步历史压缩); Agentic RAG 路径
-(Plan-Execute + Sufficiency Judge + 预算/检查点)已通电并完成对照评测;
+(Plan-Execute + Sufficiency Judge + 预算/检查点 + Planner 运行时降级链
+LLM→重试→规则→Classic)已通电并完成两轮对照评测;
 平台能力经 MCP Server 对外暴露; 四层评测体系全程守护。
 
 ## 评测驱动的修复闭环(本项目的主线叙事)
@@ -35,6 +36,16 @@ Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系�
 7.5%→**23.8%**。**准确率未达启用门槛(+5pp), 保持默认关闭**; 但盲评 67.6%
 不输 Classic(简单题胜率 50% 反超), 表明剩余差距部分来自 judge 格式偏好而非
 信息质量。详见 `docs/evaluation/2026-08-25-agentic-paired-ab-final-report.md`。
+
+**⚠ 评测对象勘误 + LLM Planner Pilot(2026-08-27)**: 上述两轮实验的 Agentic 侧
+实际生效的是**规则模板 Planner**(`model-enabled` 在评测后才切换)——其结论不能
+代表 LLM Planner。补测的 50 题 pilot(25 多跳 + 25 单跳, MODEL 样本 47/50 逐条
+经 `planner_version` 核验, 降级零污染): LLM Planner 多跳 slice 较规则版大幅改善
+(0.624→**0.830**, +21pp) 但整体仍不及 Classic(全集 **-8.1pp** 显著, 延迟×3.1),
+且**分解粒度与答案质量负相关**(1步 -2.7pp / 2步 -18pp / 3步 -11.8pp),
+replan 0/47 未触发。**结论维持: 当前语料默认 Classic**; 详见
+`docs/evaluation/2026-08-27-p0-2-pilot-report.md`(含冻结 spec 与逐样本
+planner_source 隔离机制)。
 
 ## 评测体系(四层)
 
