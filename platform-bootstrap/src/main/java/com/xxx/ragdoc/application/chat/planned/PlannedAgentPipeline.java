@@ -63,6 +63,23 @@ public class PlannedAgentPipeline implements ChatPipeline {
 
     @Override
     public ChatResult execute(ChatCommand command, ChatExecutionContext context) {
+        // P1-B: e2e 指标 — 同步路径每请求恰一次(成功/失败均计)
+        long startedAt = System.currentTimeMillis();
+        try {
+            return doExecute(command, context);
+        } finally {
+            recordE2E(startedAt);
+        }
+    }
+
+    /** P1-B: Agent pipeline 端到端耗时单一记录辅助(同步 finally + 流式 doFinally 共用)。 */
+    private void recordE2E(long startedAt) {
+        if (metricsPort != null) {
+            metricsPort.recordAgentE2ELatency(System.currentTimeMillis() - startedAt);
+        }
+    }
+
+    private ChatResult doExecute(ChatCommand command, ChatExecutionContext context) {
         if (!plannerProperties.isEnabled()) {
             // 能力关闭属于部署配置错误，不能伪装成“没有召回”。
             throw new DomainException(
@@ -147,9 +164,12 @@ public class PlannedAgentPipeline implements ChatPipeline {
         CancellationTokenSource cts = new CancellationTokenSource();
         // prepare 包含 Planner/检索/工具远程 IO，必须延迟到订阅并移出 WebFlux 事件循环。
         // doOnCancel 把断连传播到每个 Step 前置关口；具体远程客户端仍需各自超时兜底。
+        // P1-B: doFinally 保证流式 E2E 每请求恰一次(complete/error/cancel 均计)。
+        long startedAt = System.currentTimeMillis();
         return Flux.defer(() -> streamPrepared(command, context, cts))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
-                .doOnCancel(cts::cancel);
+                .doOnCancel(cts::cancel)
+                .doFinally(signal -> recordE2E(startedAt));
     }
 
     private Flux<ChatStreamEvent> streamPrepared(

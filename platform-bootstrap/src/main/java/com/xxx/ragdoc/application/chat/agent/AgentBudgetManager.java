@@ -29,6 +29,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class AgentBudgetManager {
 
+    /** P1-B: budget_denied 指标单一权威记录点 — evaluate() 的 Denied 出口。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
     /**
      * 联合预算判断。返回 Allowed(新 reservation) 或 Denied(dimension)。
      *
@@ -55,6 +63,20 @@ public class AgentBudgetManager {
         if (usage == null) usage = AgentUsage.zero();
         if (reservation == null) reservation = AgentBudgetReservation.zero();
         if (request == null) throw new IllegalArgumentException("request");
+        BudgetDecision decision =
+                doEvaluate(budget, usage, reservation, request);
+        if (metricsPort != null) {
+            decision.deniedDimension()
+                    .ifPresent(d -> metricsPort.recordAgentBudgetDenied(d.name()));
+        }
+        return decision;
+    }
+
+    private BudgetDecision doEvaluate(
+            AgentBudget budget,
+            AgentUsage usage,
+            AgentBudgetReservation reservation,
+            ReservationRequest request) {
 
         long steps =
                 (long) usage.usedSteps() + reservation.reservedSteps() + request.requiredSteps();

@@ -44,12 +44,21 @@ public class ModelSufficiencyJudge implements EvidenceSufficiencyJudge {
     private final ObjectMapper mapper;
     private final SufficiencyProperties properties;
 
+    /** P1-B: agent llm_calls 指标 — 真实 LLM 调用点(component=sufficiency)。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
     @Override
     public SufficiencyDecision evaluate(SufficiencyRequest request) {
         if (request == null) throw new IllegalArgumentException("request");
         String prompt = buildPrompt(request);
         String raw;
         try {
+            if (metricsPort != null) metricsPort.recordAgentLlmCall("sufficiency");
             raw = chatClient.chat(prompt, List.of());
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();

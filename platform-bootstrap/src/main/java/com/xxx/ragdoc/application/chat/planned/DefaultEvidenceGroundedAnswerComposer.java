@@ -47,6 +47,18 @@ public class DefaultEvidenceGroundedAnswerComposer implements EvidenceGroundedAn
 
     private final ChatClient chatClient;
 
+    /** P1-B: agent llm_calls 指标 — 真实 LLM 调用点(component=composer), 同步/流式各记一次。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
+    private void recordLlmCall() {
+        if (metricsPort != null) metricsPort.recordAgentLlmCall("composer");
+    }
+
     @Override
     public GroundedAnswer compose(GroundedAnswerRequest request) throws Exception {
         List<String> context = buildPromptContext(request);
@@ -58,11 +70,12 @@ public class DefaultEvidenceGroundedAnswerComposer implements EvidenceGroundedAn
                     .filter(c -> c.status() != com.xxx.ragdoc.application.chat.sufficiency.CoverageStatus.COVERED)
                     .count();
             if (uncovered > 0) {
-                partialNote = "\n\n[注意: 本次检索覆盖了部分需求(" 
+                partialNote = "\n\n[注意: 本次检索覆盖了部分需求("
                     + (request.coverage().size() - uncovered) + "/" + request.coverage().size()
                     + ")。对于未完全覆盖的部分, 基于现有最相关证据回答, 如证据不足请如实说明。]";
             }
         }
+        recordLlmCall();
         String text =
                 chatClient.chat(SYSTEM_PROMPT + partialNote + "\n\n用户问题: " + request.originalQuery(), context);
         List<String> usedIds = collectUsedEvidenceIds(request);
@@ -73,6 +86,7 @@ public class DefaultEvidenceGroundedAnswerComposer implements EvidenceGroundedAn
     public Flux<ChatStreamEvent> stream(GroundedAnswerRequest request) {
         List<String> context = buildPromptContext(request);
         String fullQ = SYSTEM_PROMPT + "\n\n用户问题: " + request.originalQuery();
+        recordLlmCall();
         return chatClient
                 .chatStream(fullQ, context)
                 .map(token -> (ChatStreamEvent) new ChatStreamEvent.DeltaEvent(token));

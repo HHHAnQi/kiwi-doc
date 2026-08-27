@@ -121,4 +121,15 @@ class ModelPlannerProviderTest {
                 .doesNotContain("rawtoken=")
                 .doesNotContain("tenantoverride="); // 不含身份 Literal
     }
+
+    @Test
+    @DisplayName("P1-B: LLM 真实调用点 → llm_calls{component=planner}(调用失败也计)")
+    void plannerLlmCallMetric() throws Exception {
+        com.xxx.ragdoc.application.metrics.MetricsPort m =
+                org.mockito.Mockito.mock(com.xxx.ragdoc.application.metrics.MetricsPort.class);
+        provider.setMetricsPort(m);
+        when(chatClient.chat(anyString(), anyList())).thenThrow(new RuntimeException("llm down"));
+        assertThatThrownBy(() -> provider.plan(request())).isInstanceOf(PlannerException.class);
+        org.mockito.Mockito.verify(m).recordAgentLlmCall("planner");
+    }
 }

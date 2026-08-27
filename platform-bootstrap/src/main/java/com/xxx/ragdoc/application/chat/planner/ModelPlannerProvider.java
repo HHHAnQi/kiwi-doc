@@ -40,6 +40,14 @@ public class ModelPlannerProvider implements PlannerProvider {
     private final ObjectMapper mapper;
     private final PlannerProperties properties;
 
+    /** P1-B: agent llm_calls 指标 — 真实 LLM 调用点(component=planner), 每次调用恰一笔。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
     @Override
     public PlannerResponse plan(PlannerRequest request) {
         if (request == null) throw new IllegalArgumentException("request");
@@ -51,6 +59,7 @@ public class ModelPlannerProvider implements PlannerProvider {
         String raw;
         try {
             // 注: ChatClient.chat 抛 checked Exception
+            if (metricsPort != null) metricsPort.recordAgentLlmCall("planner");
             raw = chatClient.chat(prompt, List.of());
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();

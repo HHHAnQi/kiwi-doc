@@ -52,7 +52,41 @@ public class ReplanDecisionCoordinator {
 
     private final AgentProgressDetector progressDetector;
 
+    /** P1-B: replan 指标单一权威记录点 — decide() 是 replan 决策的唯一出口。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
     public ReplanDecision decide(
+            PhaseExecutionResult phaseResult,
+            SufficiencyDecision sufficiency,
+            Set<String> priorAccumulatedEvidenceIds,
+            EvidenceCoverageSummary priorCoverage,
+            int replanCount,
+            int maxReplans,
+            boolean cancellationRequested,
+            AgentBudget remainingBudget) {
+        ReplanDecision decision =
+                doDecide(
+                        phaseResult,
+                        sufficiency,
+                        priorAccumulatedEvidenceIds,
+                        priorCoverage,
+                        replanCount,
+                        maxReplans,
+                        cancellationRequested,
+                        remainingBudget);
+        if (metricsPort != null) {
+            metricsPort.recordAgentReplan(
+                    decision.allowed() ? "ALLOWED" : decision.reasonIfRefused());
+        }
+        return decision;
+    }
+
+    private ReplanDecision doDecide(
             PhaseExecutionResult phaseResult,
             SufficiencyDecision sufficiency,
             Set<String> priorAccumulatedEvidenceIds,
