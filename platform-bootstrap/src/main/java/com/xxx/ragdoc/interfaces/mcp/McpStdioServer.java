@@ -152,8 +152,16 @@ public class McpStdioServer implements CommandLineRunner {
         return r;
     }
 
+    // P1-⑦修复: MCP 限流(Guava RateLimiter, 10 QPS)
+    private final com.google.common.util.concurrent.RateLimiter mcpRateLimiter =
+            com.google.common.util.concurrent.RateLimiter.create(10.0);
+
     /** tools/call: 以最小权限服务主体执行, AuthContext 用完即清防串号。 */
     private ObjectNode toolsCall(JsonNode params) {
+        // P1-⑦: 限流防MCP被滥用烧LLM账单
+        if (!mcpRateLimiter.tryAcquire()) {
+            return errorTool("RATE_LIMITED: MCP调用超过10 QPS限制");
+        }
         String tool = params.path("name").asText("");
         JsonNode args = params.path("arguments");
         AuthContext.set(servicePrincipal());

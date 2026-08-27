@@ -81,6 +81,8 @@ rag:
     # P0-3 修复: 执行预算此前硬编码 pr6Default(maxReplans=0!) → Replan 必 BUDGET_ZERO。
     # 默认值给 Replan 留足空间: 3 步初始 + 2 步 replan 余量。
     budget:
+      # P1-⑤修复: token预算(0=不限; 生产设具体值如50000激活denied分支)
+      max-total-tokens: ${RAG_AGENT_BUDGET_MAX_TOTAL_TOKENS:0}
       max-steps: ${RAG_AGENT_BUDGET_MAX_STEPS:5}
       max-tool-calls: ${RAG_AGENT_BUDGET_MAX_TOOL_CALLS:10}
       max-replans: ${RAG_AGENT_BUDGET_MAX_REPLANS:1}

@@ -93,17 +93,41 @@ def normalize_format(text):
     t = _re.sub(r'\n{3,}', '\n\n', t)                   # 多余空行
     return t.strip()
 
+# P0-③修复: 统一截断长度(消除对长答案的系统性偏差)
+MAX_GOLD_CHARS = 800   # 原500, Agentic引用更多时金标也被截
+MAX_ANSWER_CHARS = 1200 # 原800, Classic/Agentic统一
+
+def is_explicit_refusal(answer):
+    """P0-③修复: 精确拒答检测(区分'诚实拒答'和'部分覆盖带标注')"""
+    t = answer.strip()
+    if not t:
+        return True
+    # 只有答案主体就是拒答文案(而非正文含标注)才算拒答
+    refusal_patterns = [
+        "^证据不足", "^无法回答", "^知识库中没有相关内容",
+        "^未找到相关", "^处理失败", "^无法处理", "^Agent 运行状态",
+    ]
+    import re as _re
+    for p in refusal_patterns:
+        if _re.match(p, t):
+            return True
+    # 短答案(≤30字)且含拒答关键词
+    if len(t) <= 30 and any(k in t for k in ["证据不足", "无法回答", "没有相关", "未找到"]):
+        return True
+    return False
+
 def judge_absolute(question, gold_answer, answer):
     """Score single answer on correctness + evidence coverage (0-1 each).
-    Phase1-②: 评分前对 answer 做格式归一化(去 Markdown), 消除格式偏好。"""
-    if not answer.strip() or "证据不足" in answer or "无法回答" in answer:
-        return {"correctness": 0.0, "evidence_completeness": 0.0, "refused": True}
-    normalized = normalize_format(answer)  # 格式归一化
+    P0-③修复: 拒答分离(不再子串判0) + 统一截断 + judge故障标INVALID。"""
+    if is_explicit_refusal(answer):
+        return {"correctness": 0.0, "evidence_completeness": 0.0,
+                "refused": True, "valid": True}
+    normalized = normalize_format(answer)
     prompt = f"""评分以下回答(JSON)。标准答案提供事实基准。忽略格式和表达方式, 只评信息覆盖。
 
 问题: {question}
-标准答案: {gold_answer[:500]}
-待评回答: {normalized[:800]}
+标准答案: {gold_answer[:MAX_GOLD_CHARS]}
+待评回答: {normalized[:MAX_ANSWER_CHARS]}
 
 评分标准:
 - correctness: 回答与标准答案在事实层面的吻合度(0-1)。核心事实都覆盖=1.0, 大部分覆盖=0.7, 部分覆盖=0.4, 错误或遗漏大部分=0.1
@@ -118,9 +142,11 @@ def judge_absolute(question, gold_answer, answer):
             d = json.loads(m.group(0))
             return {"correctness": float(d.get("correctness", 0)),
                     "evidence_completeness": float(d.get("evidence_completeness", 0)),
-                    "refused": False}
+                    "refused": False, "valid": True}
     except: pass
-    return {"correctness": 0.5, "evidence_completeness": 0.5, "refused": False}
+    # P0-③修复: judge解析失败不再兜底0.5, 标记INVALID(聚合时排除)
+    return {"correctness": None, "evidence_completeness": None,
+            "refused": False, "valid": False}
 
 def judge2_score(prompt):
     """Phase3-⑦: Qwen 第二 judge(异族交叉验证)."""
