@@ -86,6 +86,8 @@ public class FallbackPlannerProvider implements PlannerProvider {
     private final PlannerProperties properties;
     private final MetricsPort metrics;
 
+    // 多构造器必须显式指定装配用例(否则 Spring 找 default ctor 失败)
+    @org.springframework.beans.factory.annotation.Autowired
     public FallbackPlannerProvider(
             ObjectProvider<ModelPlannerProvider> modelProvider,
             RuleTemplatePlannerProvider ruleProvider,
