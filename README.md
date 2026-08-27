@@ -1,491 +1,270 @@
 # rag-doc-platform (kiwi-doc)
 
-> 企业级 RAG 文档问答平台。**核心方法论: 评测驱动开发** —— 每个能力先建评测、
-> 由评测暴露问题、修复后复测闭环；Classic RAG 已在 80 题冻结集与 G1-G5 门禁上形成可复现基线。
+> **An evaluation-driven Agentic RAG system** with hybrid retrieval, bounded Plan–Execute–Replan,
+> semantic sufficiency control, durable execution state, runtime fallback, and end-to-end observability.
 
-## 项目一句话
+![Java](https://img.shields.io/badge/JDK-17-blue) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green) ![React](https://img.shields.io/badge/React-19-61dafb) ![Milvus](https://img.shields.io/badge/Milvus-2.5-00a1ea) ![CI](https://img.shields.io/badge/CI-tests%20%2B%20ArchUnit%20%2B%20eval--gate-success)
 
-Java/Kotlin 多模块(Spring Boot 3 + DDD 六边形)的私有知识库问答系统:
-混合检索(dense+BM25 RRF) → cross-encoder 重排 → Contextual Retrieval 前缀 →
-引用可溯源生成; 多轮对话(SSE 贯通 + 异步历史压缩); Agentic RAG 路径
-(Plan-Execute + Sufficiency Judge + 预算/检查点 + Planner 运行时降级链
-LLM→重试→规则→Classic)已通电并完成两轮对照评测;
-平台能力经 MCP Server 对外暴露; 四层评测体系全程守护。
+评测驱动开发的私有知识库问答系统。与"直接拼装 RAG/Agent Demo"的区别在于：本项目**测量了
+Agentic 控制环什么时候真正提升检索质量、什么时候其延迟与 LLM 成本不划算**——并用数据做出了
+默认执行模式的架构决策。
 
-## 评测驱动的修复闭环(本项目的主线叙事)
+[Architecture](#system-architecture) · [Evaluation](#evaluation) · [Quick Start](#quick-start) · [中文文档入口](#documentation)
 
-不是"功能清单"驱动, 是"评测暴露 → 根因定位 → 修复 → 复测"驱动。
-每一条都有 commit 和评测报告可查(`docs/evaluation/`):
+---
 
-| 评测暴露的问题 | 根因 | 修复 | 复测结果 |
-|---|---|---|---|
-| rerank 对照全指标差 5-9pp | 本地 Rosetta 跑不动 reranker | 迁 GPU + 隧道 | faith +9.2pp / recall +7.5pp |
-| 拒答率 16.25% | 评测配置与线上默认漂移 | hybrid 设默认 + contextual 前缀 | 拒答 4% |
-| 引用编号错位 | history 块占 [1] + 截断后 citations 不对齐 | marker 隔离 + 双闸门预算器 | 引用一一对齐 |
-| 多轮 gate 全 FAIL | SSE 丢 conversationId + 鹦鹉误杀 + 压缩丢写 | 三连修复 | G1 保持 PASS, G5 +14pp |
-| 索引 4 小时跑不完 | embed 并发风暴→熔断→DLQ | 信号量 + CB 阈值 + 云 embed | 6 分钟零失败 |
-| agentic 有证据仍拒答 63% | 判定器把"跨版本证据"误判为冲突终态 | 冲突语义修正 | 拒答 63%→18%, acc 11.7%→25% |
+## Why This Project
 
-**Agentic RAG 的诚实结论**(docs/evaluation/2026-08-23-agentic-phase1-report.md):
-当前语料(3074 chunks)+规则 Planner 下, agentic 未超 Classic 且延迟×5 ——
-按预设"不达标出口"保持默认关闭。这正是"何时不需要 Agent"的实证, 与业界共识一致。
+```text
+Classic RAG:   Query → Retrieve → Rerank → Generate
 
-**Paired A/B 终版结论(2026-08-25)**: 80 题冻结集(4 切片×20)× 配对盲评(位置互换),
-四轮根因修复(Sufficiency 三档 → 版本 CAS → Replan 降级 → 原查询锚定)将差距从
--45pp 缩小到 **-24pp**, Agentic 准确率 0.263→**0.497**(+23.4pp), 盲评胜率
-7.5%→**23.8%**。**准确率未达启用门槛(+5pp), 保持默认关闭**; 但盲评 67.6%
-不输 Classic(简单题胜率 50% 反超), 表明剩余差距部分来自 judge 格式偏好而非
-信息质量。详见 `docs/evaluation/2026-08-25-agentic-paired-ab-final-report.md`。
+Agentic RAG:   Query → Plan → Execute → Semantic Sufficiency
+                        ↑                    ↓
+                        └── Replan (if insufficient) ──→ Answer / Abstain / Fallback
+```
 
-**⚠ 评测对象勘误 + LLM Planner Pilot(2026-08-27)**: 上述两轮实验的 Agentic 侧
-实际生效的是**规则模板 Planner**(`model-enabled` 在评测后才切换)——其结论不能
-代表 LLM Planner。补测的 50 题 pilot(25 多跳 + 25 单跳, MODEL 样本 47/50 逐条
-经 `planner_version` 核验, 降级零污染): LLM Planner 多跳 slice 较规则版大幅改善
-(0.624→**0.830**, +21pp) 但整体仍不及 Classic(全集 **-8.1pp** 显著, 延迟×3.1),
-且**分解粒度与答案质量负相关**(1步 -2.7pp / 2步 -18pp / 3步 -11.8pp),
-replan 0/47 未触发。**结论维持: 当前语料默认 Classic**; 详见
-`docs/evaluation/2026-08-27-p0-2-pilot-report.md`(含冻结 spec 与逐样本
-planner_source 隔离机制)。
+核心问题：
 
-## 评测体系(四层)
+> **When does the additional Agentic control loop actually improve retrieval,
+> and when is Classic RAG the better engineering choice?**
 
-检索侧(Recall@K/MRR/NDCG) · 生成侧(RAGAS 四件套) · **拒答分离**(自研: 把诚实拒答
-与幻觉分开计量) · 多轮 gate(G1-G5) + agentic 对照(pass^k + 延迟/引用三维)。
-judge 治理: 异族 DeepSeek 与业务 GLM 物理隔离, 基线证书(题集 SHA256+commit 锁定),
-CI -3% 回归门禁, 曾自查出题集 100% 标注泄漏并判 FAIL。
+回答这个问题需要的不是更大的 Demo，而是：可逐样本核验的评测、机制级的调试、
+以及一个诚实的默认决策。本项目的答案浓缩在 [Evaluation](#evaluation) 一节。
 
-### 当前冻结基线（2026-08-25）
+---
 
-检索使用 80 题 current-corpus 冻结集、3 次重复运行。旧 chunk-id 金标已因语料与索引漂移废止，
-当前金标以可审计 evidence/content hash 锁定。
+## System Architecture
 
-| 检索指标 | 当前值 | 重复运行标准差 | 逐题 95% CI |
-|---|---:|---:|---:|
-| Hit / Recall@5 | **92.50%** | 0 | 84.59%–96.52% |
-| MRR@5 | **81.04%** | 0 | 73.44%–87.81% |
-| NDCG@5 | **83.92%** | 0 | 77.30%–89.96% |
-| Precision@5 | **19.00%** | 0 | 17.50%–20.25% |
+```mermaid
+flowchart TB
+    U[Client / React SPA] --> R{Execution Mode}
+    R -->|Classic 默认| CR[Classic RAG Pipeline]
+    R -->|Agentic| AR[Agent Runtime]
 
-生成质量（同一 80 题冻结集）: Answer Correctness **0.8753** · Faithfulness **0.9705** ·
-Evidence Completeness **0.9230** · Citation Hit **1.0000** · Context Recall **0.9698**。
-严格逐字引用 Precision 为 **0.3219**，反映答案常引用正确片段但未逐字复述，单独保留为诊断指标，
-不与 citation hit 混报。
+    subgraph Retrieval [Shared Retrieval]
+        HR[Milvus Hybrid<br/>dense BGE-M3 + BM25] --> RRF[RRF Fusion]
+        RRF --> RR[Cross-Encoder Reranker<br/>bge-reranker-v2-m3]
+        RR --> CB[Token-Budget Context Builder<br/>citation-aligned]
+    end
+    CR --> HR
 
-多轮严格聚合门禁: G1 **PASS(80)** · G2 **PASS(19/20)** · G3 **PASS(10/10)** ·
-G4 **PASS(50/50，mean fidelity 0.995)** · G5 **PASS(50/50)**。所有 gate 的题集指纹一致；
-G2 尚余 1 个语义范围偏宽样本，因此不声称样本级 100%。
+    subgraph Agent [Agent Runtime]
+        P[LLM Planner<br/>query decomposition] --> X[Tool Execution<br/>semantic/keyword/metadata/fetch]
+        X --> S{Semantic Sufficiency<br/>Rule guards + LLM judge}
+        S -->|insufficient| RP[Bounded Replan]
+        RP --> X
+    end
+    AR --> P
+    X --> HR
 
-Agentic 对照: Classic 36.7% vs Agentic 30.0%(五轮校准 11.7%→30%, 延迟×2.8)
-—— 数据结论: 当前语料保持默认关闭。后续只在多文档比较、多约束排障、多步检索等复杂切片中
-做同题 A/B；必须同时证明质量增益、成本可接受和可回退，才允许灰度启用。协议见
-`docs/evaluation/agentic-incremental-value-protocol.md`，历史对照见
-`docs/evaluation/2026-08-23-agentic-phase1-report.md`。
-每个数字的完整出处(题集/协议/judge/原始文件): `docs/evaluation/evidence-provenance.md`。
+    S -->|sufficient| G[Grounded Composer]
+    S -->|conflict| A[Abstain]
+    CB --> G
 
-## 架构图(Mermaid, GitHub 原生渲染)
+    subgraph Runtime [Runtime Infrastructure]
+        ST[agent_run / agent_step<br/>+ decision_summary]
+        CAS[CAS state machine]
+        LS[DB lease]
+        ID[step idempotency<br/>+ signature dedup]
+        OBS[traceId / Prometheus<br/>/ run audit API]
+    end
+```
 
-### 系统总览
+- **MySQL 为事实源，Milvus 为派生索引**（召回后逐条回库校验租户/软删/generation）
+- 异步索引链路：outbox → RocketMQ → parser-service（租约 + visibility timeout + 对账，kill -9 演练验证）
+- 安全：Deny-by-Default 认证 + 文档/块双层 ACL + prompt 注入双层防御
+
+## Agent Runtime
+
+```mermaid
+flowchart TD
+    Q[Request] --> P[LLM Planner]
+    P --> X0[Execute Phase 0]
+    X0 --> S0{Semantic Sufficiency}
+    S0 -->|sufficient| C[Compose with citations]
+    S0 -->|conflict| R[Refuse / Abstain]
+    S0 -->|insufficient| B{Replan Budget?}
+    B -->|yes| RP[Replan<br/>sees attempted queries]
+    RP --> X1[Execute Phase 1]
+    X1 --> S1{Semantic Sufficiency}
+    S1 -->|sufficient| C
+    S1 -->|conflict| R
+    S1 -->|still insufficient| F[Bounded Fallback<br/>partial answer]
+    B -->|no| F
+```
+
+Bounded by: **step budget · replan budget (1) · token budget · deadline**。
+每一次终止都能事后重建：`agent_run.decision_summary` 区分
+`INITIAL_SUFFICIENT / REPLAN_SUFFICIENT / REPLAN_EXHAUSTED_FALLBACK / REFUSED_CONFLICT / TOOL_FAILURE`。
+
+## Runtime Degradation
 
 ```mermaid
 flowchart LR
-    subgraph FE["前端 React 19"]
-        UI["SSE 流式对话<br/>引用卡片/会话管理<br/>Agent 执行可视化"]
-    end
-    subgraph APP["chat-app (Spring Boot 3, DDD 六边形)"]
-        ORCH["ChatOrchestrator<br/>+ TaskRouter 路由"]
-        CLA["ClassicRagPipeline"]
-        PLN["PlannedAgentPipeline<br/>(Agentic)"]
-        RET["RetrieveService<br/>hybrid+RRF+rerank+score gate"]
-        CHAT["ChatService<br/>多轮改写/历史压缩/引用对齐"]
-        MCP["MCP Server<br/>(rag_search/rag_ask)"]
-    end
-    subgraph STORE["存储层"]
-        MY[("MySQL<br/>事实源 SoT")]
-        MV[("Milvus<br/>派生索引<br/>dense+BM25")]
-        RD[("Redis<br/>会话/短期记忆")]
-        MIN[("MinIO<br/>原始文件")]
-    end
-    subgraph INGEST["异步索引链路 parser-service"]
-        MQ{{"RocketMQ<br/>outbox+租约"}}
-        PARSE["Tika 解析→脱敏→注入扫描<br/>→切块→Contextual 前缀→Embedding"]
-    end
-    subgraph EXT["外部依赖"]
-        LLM["GLM-4-plus / DeepSeek<br/>(主备双路由+熔断)"]
-        EMB["Embedding API"]
-        RER["bge-reranker-v2-m3<br/>(GPU, 经健康检测)"]
-        JDG["DeepSeek Judge<br/>(评测, 物理隔离)"]
-    end
-
-    FE -->|SSE / REST| ORCH
-    ORCH --> CLA & PLN
-    CLA --> CHAT --> RET
-    PLN --> RET
-    RET --> MV & MY & RER
-    CHAT --> RD & LLM
-    MCP --> RET
-    MQ --> PARSE --> MY & MV
-    PARSE --> EMB & MIN
+    M[Model Planner] -->|failure| RT[Retry ×1]
+    RT -->|failure| RP[Rule Planner]
+    RP -->|failure| C[Classic RAG]
+    C -->|failure| F[Graceful Failure]
 ```
 
-### 读路径: RAG 检索与生成
-
-```mermaid
-flowchart TD
-    Q[用户 query] --> RW{"多轮?<br/>conversation_id"}
-    RW -->|是| CTX["QueryContextualizer<br/>指代消解改写(G2 18/20)"]
-    RW -->|否| EXP["Query Expansion<br/>多路查询扩展"]
-    CTX --> HYB
-    EXP --> HYB["混合检索<br/>dense ANN + BM25 → RRF 融合"]
-    HYB --> ACL["ACL 双层校验<br/>Milvus 预过滤 + MySQL 回库<br/>(租户/软删/generation)"]
-    ACL --> RR["cross-encoder 重排<br/>(GPU, faith +9.2pp)"]
-    RR --> GATE{"score gate<br/>rerank 分 < 0.3 过滤"}
-    GATE --> CTXASS["上下文组装<br/>history 块隔离标记<br/>+ token/char 双闸门预算<br/>+ citations 对齐"]
-    CTXASS --> LLM["LLM 生成<br/>带 n 引用 + 注入隔离标签"]
-    LLM --> VER["citation verifier<br/>(NLI 核验, WARN_ONLY)"]
-    VER --> ANS["答案 + 引用卡片"]
-```
-
-### 写路径: 异步索引链路(可靠性)
-
-```mermaid
-flowchart TD
-    UP["上传(MIME 白名单+SHA256 幂等)"] --> DB1[("documents<br/>status=UPLOADED")]
-    DB1 --> OBX["parse_tasks 账本<br/>+ Outbox Relay(租约)"]
-    OBX -->|RocketMQ| CS["ParseTaskConsumer<br/>lease CAS 抢占"]
-    CS --> P1["Tika 抽文→PiiSanitizer 脱敏<br/>→ RegexSecurityScanner 注入扫描"]
-    P1 --> P2["结构感知切块<br/>(flat / parent-child)"]
-    P2 --> P3["Contextual Retrieval 前缀<br/>(来源|文档|章节) + Embedding"]
-    P3 --> P4["MySQL chunks + Milvus upsert<br/>(delete+insert, generation 隔离)"]
-    P4 --> OK["INDEXED ✓"]
-    CS -.崩溃兜底.-> VT["VisibilityTimeout<br/>回收过期 RUNNING"]
-    P3 -.失败.-> RT["重试 x3 → DLQ"]
-    style OK fill:#dfd
-```
-
-### Agentic 执行循环(对照评测后默认关闭, 详见报告)
-
-```mermaid
-flowchart TD
-    IN["多跳 query"] --> RT{"TaskRouter<br/>MULTI_HOP 且 conf≥0.80?"}
-    RT -->|否| CL["Classic RAG"]
-    RT -->|是| REQ["需求冻结<br/>(Requirement 抽取)"]
-    REQ --> PLAN["Planner 规划<br/>(LLM 查询分解: 每子题一步)"]
-    PLAN --> EXE["工具执行循环<br/>semantic/keyword/metadata_search<br/>+ document_fetch(预算内)"]
-    EXE --> SUF{"Sufficiency Judge<br/>证据充分?"}
-    SUF -->|"不足(≤1次)"| RP["增量 Replan<br/>(需求聚焦+视角切换)"]
-    RP --> EXE
-    SUF -->|充分| CMP["Grounded Composer<br/>带 n 引用成文"]
-    CMP --> AUD["agent_run/agent_step 落库<br/>+ 审计端点 + 前端步骤可视化"]
-    style CL fill:#dfd
-```
-
-## 架构要点
-
-- **MySQL 为事实源, Milvus 为派生索引**(召回后逐条回库校验租户/软删/generation)
-- **异步索引链路**: outbox → RocketMQ → parser-service, 租约 + visibility timeout + 对账, kill -9 演练验证
-- **安全**: Deny-by-Default 认证 + 文档/块双层 ACL 守门 + prompt 注入双层防御(ingress 扫描 + 上下文隔离标签)
-- **Agent 执行**: 六维预算(步数/工具/LLM/token/成本/时长) + CAS 状态机 + checkpoint + 只读审计端点
-- **12 篇 ADR** 记录全部关键取舍(docs/adr/), 含 Agentic RAG 升级方案(ADR-0012)
-
-> V3 spec / runbook / 验收报告见 `docs/v3/`; 评测报告见 `docs/evaluation/`;
-> Agentic 调研见 `docs/research/`。
+每一级降级可观测：`reasonCode` · `planner_source`（逐样本落库）· `traceId` · Prometheus 指标。
+评测（REPLAY）模式下夹具缺失严格失败、**不降级**——防止评测对象漂移。
 
 ---
 
-## 5 分钟启动
+## Key Engineering Highlights
 
-前置依赖:
-- JDK 17 (V3 暂用 17,V4 接虚拟线程后切 21)
-- Docker 24+ 与 Docker Compose v2
-- (可选) GNU Make
-- (V3-W3 后) Autodl GPU 服务器(BGE-M3 / Reranker) 或本地 docker 起同等容器
+- **Hybrid Retrieval & Context Construction** — dense(BGE-M3)+BM25 RRF 融合 → cross-encoder
+  GPU 重排 → token/字符双闸门预算装填 + 引用编号对齐；Contextual Retrieval 入库前缀。
+- **Bounded Plan–Execute–Replan** — LLM 查询分解、需求冻结、语义充分性判定（Rule 确定性守卫 +
+  LLM 语义判定）、有界 replan（能看到已尝试的查询）、四重预算终止。
+- **Failure-aware Runtime** — Planner 四级降级链（上图）；每级有独立 reasonCode/日志/指标，零静默降级。
+- **Durable Execution** — `agent_run`/`agent_step` 持久化 + CAS 状态机 + DB lease +
+  checkpoint 落库 + 步级幂等（sha256 幂等键 + 工具签名去重）。resume 续跑未接线（stale run
+  安全终止），不声称 automatic resume。
+- **Semantic Control** — 修复后的 Sufficiency 分层：Rule 只判 NO_EVIDENCE/实体过滤不匹配/
+  版本冲突三类确定性事实，语义充分性归 LLM judge（holdout 实测 human agreement
+  42%→**96%**，false-sufficient 100%→**4%**）；矛盾证据保守 abstain。
+- **Evaluation Infrastructure** — 配对评测 + 逐样本 planner_source 隔离 + 盲评换位双 judge +
+  bootstrap CI + common-cohort 固定分母 + 有效性门槛（MODEL 样本 <80% 禁止下结论）。
+- **Observability** — traceId/requestId/runId 三级关联（sync 头与 SSE 终态事件同语义、
+  从不伪造 runId）；Prometheus agent 域指标（每指标单一权威记录点）；
+  `GET /api/v1/agent/runs/{id}` 全步骤审计 API。
+
+---
+
+## Evaluation
+
+Classic 与 Agentic 共享同一 retrieval / reranker / generator / judge 基础；配对评测、
+逐样本 planner_source 核验、盲评位置互换、bootstrap 95% CI、固定共同 cohort（46 题）。
+
+### 冻结结果（common-cohort audit，2026-08-27）
+
+| System | Overall vs Classic | Multi-hop vs Classic | Relative Latency |
+|---|---:|---:|---:|
+| Classic RAG | baseline | baseline | 1.0× |
+| Pre-fix Agentic (LLM Planner) | **-8.3pp** * | -10.0pp * | ~2.7× |
+| Post-fix Agentic | **-0.2pp** (n.s.) | +2.3pp (n.s.) | ~2.8× |
+
+\* 95% CI 不含 0（Pre-fix: [-16.7, -1.5]pp）；Post-fix CI [-8.9, +8.9]pp。
+修复本身：Post-fix − Pre-fix = **+5.7pp**，CI [+0.9, +11.7]pp，显著。
+
+- 语义 replan 在 **21%（10/48）** 的样本上触发——恰好是证据真正不足处（该子集 Classic 仅 0.79），
+  并在其中有正向信号（n=10，方向真实、个体不显著）；其余 79% 正确地不触发。
+- 成本：约 **2.8× 延迟**、**3.4 次 LLM 调用/run**。
+- Classic 自身基线（80 题冻结集）：faithfulness **0.885** / recall **0.90**。
+
+> **After fixing the Agentic control loop, quality recovered from a significant deficit
+> to statistical parity with Classic RAG. However, the additional latency and LLM cost
+> still do not justify enabling Agentic mode by default.**
+
+**Default execution mode: Classic RAG** —— 这是数据驱动的工程判断，不是失败。
+
+## What We Learned
+
+1. **Evaluation identity matters** —— 第一轮 200 题×3 轮实验实际生效的是规则模板 Planner
+   而非 LLM Planner（配置漂移）。为此建立了 `planner_source` 逐样本核验、REPLAY 严格失败、
+   有效性门槛与 common-cohort 分析——评测结论的可信度取决于"你确定测的是你以为的东西"。
+2. **Agentic failures were mechanism failures** —— 三个被实测定位并修复的结构缺陷：
+   D1 Model replan step-id 命名空间冲突（replan 100% 失效）、D2 replan 看不到已尝试的查询、
+   D3 Rule sufficiency 存在性检查造成构造性 false-sufficient（47/47 零 replan 根因）。
+   → [Full mechanism audit](docs/evaluation/2026-08-27-postd3-residual-audit.md)
+3. **More agentic is not automatically better** —— 修复后整体平手、多跳出现正向信号，
+   但 ×2.8 延迟与 3.4 次 LLM 调用/run 的成本在当前语料不划算，因此默认保持 Classic。
+
+## Design Decisions
+
+- **Why Classic is still the default** — 质量统计平手，成本显著更高（~2.8× 延迟、~3.4 LLM
+  calls/run）。开启 Agentic 需要的正向收益证据尚未出现。
+- **Why no query-level Agentic router** — 当前不存在稳定的 query 级 pre-routing 特征；
+  semantic insufficiency 是 **post-execution / escalation 信号**而非 query 特征。
+  唯一证据对齐的形态是 retrieval-first escalation，其收益上限（+0.6pp）未证明值得成本，故不实现。
+- **Why no long-term memory** — 当前业务不依赖跨会话用户记忆。已有的是会话级管理
+  （contextualization / history compression / topic-shift detection / Redis TTL），
+  不声称完整 Long-term Memory。
+
+## Reliability & Observability
+
+| Concern | Implementation |
+|---|---|
+| State transition | CAS (version + expected-status) |
+| Execution ownership | DB lease (claim / heartbeat / release) |
+| Duplicate execution | step idempotency key + tool signature dedup |
+| Planner failure | Model → Retry → Rule → Classic → graceful failure |
+| Semantic insufficiency | bounded replan (1), then partial-answer fallback |
+| Evidence conflict | conservative abstain (REFUSED_CONFLICT) |
+| Durable audit | agent_run / agent_step / decision_summary |
+| Correlation | traceId / requestId / runId (sync headers ⇄ SSE parity) |
+| Metrics | Prometheus agent domain (single authoritative site per metric) |
+
+---
+
+## Quick Start
+
+前置：JDK 17、Docker 24+（compose v2）。所有命令见 [Makefile](Makefile)。
 
 ```bash
-# 1. 准备本地环境变量
-make env                      # 从 .env.example 复制 .env
+# 1. 配置
+make env                      # 从 .env.example 复制 .env（填 LLM_API_KEY 等）
 
-# 2. 启动中间件(MySQL / Redis / MinIO / Milvus / RocketMQ / BGE-M3 / Reranker)
-make up                       # 首次拉镜像约 8-12 分钟(BGE/Reranker 大)
+# 2. 起中间件（MySQL/Redis/MinIO/Milvus/RocketMQ）
+make up && make ps
 
-# 3. 等待 Milvus + BGE 健康(约 1-3 分钟, BGE start_period 240s)
-make ps
-
-# 4. 启 chat-app(默认 sync 模式, 不依赖 RocketMQ+parser-service 也跑通)
-make run
-
-# 5. (V3-W1 起的 async 路径) 切 async + 启 parser-service
-#    RAG_PARSER_MODE=async ./gradlew :platform-bootstrap:bootRun
-#    ./gradlew :parser-service:bootJar
-#    java -jar parser-service/build/libs/parser-service.jar --spring.profiles.active=dev --server.port=8093
-
-# 6. (V3-W3 起) Langfuse trace 接入(可选)
-#    docker run langfuse/langfuse:latest 或 docker compose langfuse 主仓 compose
-#    export LANGFUSE_ENABLED=true LANGFUSE_PUBLIC_KEY=... LANGFUSE_SECRET_KEY=...
+# 3. 起 chat-app
+make run                      # http://localhost:8080
 ```
 
-启动后:
-- chat-app 健康检查: http://localhost:8080/actuator/health
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- parser-service 健康检查(V3 async 时): http://localhost:8093/actuator/health
-- MinIO 控制台: http://localhost:9001 (用户 `minio` / 密码 `minio123`)
-- Langfuse 控制台(V3-W3, enabled 时): http://localhost:3000
+### 两种检索模式（真实配置，无漂移）
 
-### 前端 SPA(可选,V3 已落地)
+```text
+Minimal Mode（无 GPU）: RAG_RERANK_ENABLED=false        → hybrid 检索，功能完整
+Full Mode:              reranker 服务 + 隧道 18080       → 见 docs/operations/autodl-reranker-sop.md
+```
+
+### 发一个请求并检查一次 Agent run
 
 ```bash
-cd frontend
-npm install
-npm run dev     # http://localhost:5173(被占用则自动落到 5174)
+# Classic（默认）
+curl -s localhost:8080/api/v1/chat -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"Seata AT 模式回滚依赖什么表","mode":"RAG","top_k":5}'
+
+# Agentic（需显式开启: RAG_AGENT_PLANNER_ENABLED=true
+#          RAG_AGENT_PLANNED_PIPELINE_ENABLED=true, 默认均为 false）
+curl -s -D headers.txt localhost:8080/api/v1/chat -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"...","mode":"AGENTIC","top_k":5}'
+grep X-Agent headers.txt     # X-Agent-Run-Id / Terminal-Status / Decision-Summary
+
+# 审计这次运行（步骤/状态/耗时/planner来源/决策摘要）
+curl -s -H "Authorization: Bearer $TOKEN" \
+  localhost:8080/api/v1/agent/runs/$RUN_ID
 ```
 
-dev 模式下 `vite.config.ts` 把 `/api/*` 反向代理到 `http://localhost:8080`,
-因此**不需要**在后端额外开 CORS。前置条件:chat-app 已 `make run` 起来。
-打开浏览器即可:左侧上传/选择文档 → 右侧输入问题 → SSE 流式回答 → 引用卡片 → 👍/👎 反馈。
-细节见 [`frontend/README.md`](frontend/README.md)。
+前端 SPA：`cd frontend && npm install && npm run dev`（Vite 代理到 8080，详见
+[frontend/README.md](frontend/README.md)）。异步解析模式、Langfuse、CI/评测门禁见 docs。
 
 ---
 
-## 项目结构
+## Project Structure
 
-```
-rag-doc-platform/
-├── platform-common/             # 共享层(domain / port / chunking / 异常 / DTO / TraceObserver 端口)
-├── platform-bootstrap/          # chat-app: Spring Boot 主模块
-│   └── src/main/java/com/xxx/ragdoc/
-│       ├── interfaces/rest/     # Controller / DTO / Filter / 异常处理
-│       ├── application/         # 应用服务(DocumentUpload/Chat/Retrieve/Feedback)
-│       ├── infrastructure/      # JPA / MinIO / Milvus / DashScope / Tika / MQ producer / Langfuse trace
-│       └── event/               # 领域事件发布
-├── parser-service/              # V3-W1 独立异步解析服务(RocketMQ 驱动, 已落地 DoD-1/2/4)
-│   └── src/main/java/com/xxx/ragdoc/parser/
-│       ├── application/         # ParseTaskService(状态机) / ParseWorker(Tika+checkpoint)
-│       └── infrastructure/      # ParseTaskConsumer(RocketMQListener) / Visibility Timeout Scheduler
-├── frontend/                    # V3 前端 SPA(React 19 + Vite 8 + Tailwind v4 + Zustand 5)
-│   ├── src/
-│   │   ├── api/                 # client/documents/chat(SSE)/chunks/feedback
-│   │   ├── components/          # Sidebar/ChatWindow/ChatMessage/CitationCard/FeedbackBar
-│   │   │                        # + StateBanner/StatusBadge/UploadDropzone/Toaster
-│   │   │                        # + TokenEditor/ErrorBoundary
-│   │   ├── store/               # useDocStore / useChatStore(persist) / useToastStore / useUIStore
-│   │   └── types/api.ts         # 与后端 DTO 对齐的 TS 类型
-│   ├── Dockerfile               # 多阶段构建(node:20 build → nginx:alpine serve)
-│   ├── vitest.config.ts         # jsdom + globals, 与 vite.config.ts 分离
-│   └── nginx 反代规则见 ../deploy/nginx.conf
-├── deploy/
-│   ├── docker-compose.yml       # 本地中间件 + RocketMQ broker 一键起(含 frontend profile)
-│   └── nginx.conf               # prod 部署: 静态托管 + SSE buffer off + 安全头 + /healthz
-├── docs/adr/                    # 架构决策记录(ADR-0001 ~ 0010)
-├── docs/v3/                     # V3 spec / kill-9 runbook / 验收报告 / P0 runbook(待加)
-├── docs/operations/             # Autodl reranker SOP / eval-regression SOP
-├── eval/                        # RAGAS 评测脚本 + 真实 baseline 报告(ADR-0008)
-├── scripts/                     # 工具脚本 + v3-kill-9-drill.sh
-├── .github/workflows/           # CI(Java lint+test) + frontend-ci(vitest+tsc+build) + eval-regression
-├── Makefile                     # 常用命令封装
-└── .env.example                 # 本地配置模板
+```text
+platform-common/      共享层（domain / ports / chunking）
+platform-bootstrap/   chat-app 主模块（interfaces / application / infrastructure）
+parser-service/       异步解析服务（RocketMQ + chunk 级 checkpoint）
+frontend/             React 19 SPA（SSE 流式 / 引用卡片 / Agent 步骤可视化）
+deploy/               docker-compose（中间件 + RocketMQ）+ nginx
+eval/                 评测脚本 + 冻结基线（agentic/ 下含 paired A/B runner 与报告）
+docs/                 adr(15) / architecture / evaluation / operations / v3 / research
 ```
 
----
+## Documentation
 
-## 实现进度(V3 主验收门槛已命中 ✨, 2026-08-02)
-
-### RAG 质量真值(P0 run final)
-
-✨ **V3 验收门槛已命中**: faith 0.88 / precision 0.87 / recall 0.90 远超设计目标(faith ≥0.75 / recall ≥0.65)。
-
-详见 [eval/baseline_v3_judge_plus.md](eval/baseline_v3_judge_plus.md) + [docs/v3/v3-acceptance-report.md §4](docs/v3/v3-acceptance-report.md)。
-
-### 已落地能力
-
-| 能力 | 状态 | 说明 |
-|---|---|---|
-| 上传 `POST /api/v1/documents` | ✅ | SHA256 幂等 + 类型/大小白名单 + MinIO 落盘 |
-| 解析索引(同步 sync 模式) | ✅ | Tika + Parent-Child 切片 + BGE-M3 embed + Milvus + 状态机 |
-| 解析索引(异步 async 模式) | ✅ **V3-W1** | MQ producer + parser-service consumer + chunk-level 续点 |
-| Chunk 切片 | ✅ | flat / parent_child 双模式 + Markdown 结构感知 + child overlap |
-| 向量检索 | ✅ | Milvus hybrid(dense BGE-M3 + sparse BM25) + RRF 融合 + 业务元数据过滤 |
-| Reranker | ✅ | bge-reranker-v2-m3(Autodl 部署, SOP 见 docs/operations) |
-| Chat | ✅ | 4 档降级(EMPTY_KB/NO_RECALL/LLM_DEGRADED/OK) + trace_id 贯穿 |
-| Chat SSE 流式 | ✅ | Flux<ChatStreamEvent> 首token <1.5s |
-| Feedback + trace | ✅ | feedbacks 软引用 chat_traces.trace_id(ADR-0003) |
-| parser-service kill -9 故障韧性 | ✅ **V3-W1** | 心跳 job + 续点 + 演练脚本(实跑 log 待 mac 窗口) |
-| Langfuse trace 接入(同步 chat 路径) | ✅ **V3-W3** | No-op 兜底 + HTTP ingestion client, enabled=false 零开销 |
-| RAGAS CI 门禁(nightly + label-gate) | ✅ **V3-W3** | ADR-0008 D3 落地, PR 带 eval-impact label 触发, regression 自动开 issue |
-
-### 未做 / 推后项(诚实标注)
-
-| 项 | 推到哪 | 原因 |
-|---|---|---|
-| Langfuse SSE(chatStream) 路径接入 | V3.5 / V4 | Flux 流式 token 完成 endTrace 设计复杂度高于同步 |
-| DoD-2 端到端集成测试(poison msg → DLQ) | V3.5 | 单测覆盖了状态机, 端到端 IT 推后 |
-| kill -9 演练实跑 PASS log | mac/Autodl 窗口 | 跑 5-10min 出截图入验收报告(不阻塞 Accepted) |
-| noise 校准(nightly 跑 ≥3 次 mean ± std) | V3 末 nightly | 当前 baseline 单跑, threshold 临时 5pp buffer |
-| corpus 扩到 500+ docs | V4 | V3 已跨过验收门槛, 大 corpus 是 V4 RAG 调优主线 |
-| 真实用户 query 流量校准 | V4 | extractive GT 是 LLM 生成题, 真实 query 才是真验收 |
-| docker-compose Locust 100 并发压测 | V4 + 真流量 | ADR-0010 砍掉, 0 用户场景演不出 HP 价值 |
-| k3s / K8s | V4 + 真流量 | ADR-0007 Superseded, 同上 |
-
-V3 范围与砍项理由详见 `docs/adr/adr-0010-v3-rebalance-cut-rag-llm-k8s.md`。
-V3 真实完成度 / 进 V4 启动门槛判据见 `docs/v3/v3-acceptance-report.md`。
-
----
-
-## V3 DoD 验收对照(spec §9)
-
-| DoD | 状态 | 验证 |
-|---|---|---|
-| **DoD-1** kill -9 优雅降级 | ✅ 代码 | `scripts/v3-kill-9-drill.sh` + runbook; 🟡 实跑 PASS log 待 |
-| **DoD-2** 重试续解析 + DLQ | 🟡 单测 cover 状态机 | 端到端 IT 推 V3-W3 末 |
-| **DoD-3** p95 < 2s | ❌ | Locust 100 推 V4(0 用户场景演不出) |
-| **DoD-4** 中断续点 | ✅ 代码 | `ParseWorker.checkpointProgress` 每 10 chunks flush; 🟡 实跑 PASS log 待 |
-| **DoD-5** trace(Langfuse) | 🟡 同步路径接入 | SSE 路径 + ChatStreamEvent 五点接入推 V3-W3 末 |
-| **DoD-6** 灰度降级(sync↔async) | ✅ 代码 | `@ConditionalOnProperty` + DocumentUploadService 端口零改动 |
-
----
-
-## 常用命令
-
-```bash
-make help           # 列所有目标
-make up             # 起中间件(含 RocketMQ)
-make down           # 停中间件
-make run            # 启动 chat-app(默认 sync)
-make test           # 跑单测 + ArchUnit
-make lint           # Spotless 格式检查
-make app            # 打 jar
-
-# 异步路径启动(V3-W1)
-RAG_PARSER_MODE=async ./gradlew :platform-bootstrap:bootRun
-./gradlew :parser-service:bootJar && java -jar parser-service/build/libs/parser-service.jar
-
-# V3-W1 DoD 演练
-./scripts/v3-kill-9-drill.sh
-```
-
----
-
-## 资源画像(最低)
-
-| 组件 | 内存 | 磁盘 |
-|---|---|---|
-| chat-app + 中间件 + RocketMQ | 5GB | 35GB |
-| + Autodl Reranker / BGE | 需独立 GPU(≥ 16GB 显存) | - |
-| + Langfuse(自部署) | + 0.5GB | + 1GB |
-
----
-
-## 评价与数据(诚实)
-
-详见 `eval/` 目录, 这里只放对外 baseline:
-
-| 配置 | faith | precision | recall | 备注 |
-|---|---|---|---|---|
-| **V3 P0 run final ✨ (100 docs, 30 题 extractive GT, rerank ON)** | **0.8849** | **0.8661** | **0.9000** | `glm-4-plus` judge, 跨过 V3 合格线 |
-| V3 P0 run1 (100 docs, 80 题, rerank OFF, 改写 GT) | 0.6072 | 0.4968 | 0.3486 | 历史过程数字, 跑前配置错(rerank OFF + GT 模板污染) |
-| V2-P4 +reranker (50 docs, flat) | 0.6711 | 0.7193 | 0.5711 | `glm-4-flash` judge, 与 P0 +plus judge 不可直比 |
-
-**V3 验收门槛 已命中**: ADR-0008 设计目标 faith ≥0.75 / recall ≥0.65, P0 run final **远超**(faith +13.5pp / recall +25pp)。
-
-corpus 完整性是 RAG 数字最大杠杆: 50 docs → 100 docs 后 recall +23pp; reranker ON 净增 ≈ +50pp across metrics(V3-W3 extractive GT 让增益更显性)。
-**V4 主线候选**: 真实用户 query 流量校准 + HyDE / query rewrite 二阶优化 + corpus 扩 500+。
-
----
-
-## CI / 评测门禁
-
-| Workflow | 触发 | 用途 |
-|---|---|---|
-| `.github/workflows/ci.yml` | 每个 PR / push | spotless + test + ArchUnit 守护 |
-| `.github/workflows/frontend-ci.yml` | 每个 PR / push (frontend/**) | npm ci + **vitest + tsc + vite build**, ~40s |
-| `.github/workflows/eval-regression.yml` | nightly + PR 带 `eval-impact` label + 手动 | RAGAS 30 题评测 + baseline 对比, regression 自动开 issue |
-
-eval-regression 详见 `docs/operations/eval-regression-sop.md`。
-
-**必须打 `eval-impact` label 的 PR**: 改切片 / 检索 / embedding / corpus / reranker / prompt。
-
----
-
-## 前端 SPA (V3 已落地)
-
-V3 第二交付主线 — 把 chat-app 的 REST + SSE 后端能力翻译成产品级浏览器体验。
-脚手架→主链路→反馈闭环→bug 修复→prod 部署套件→引用卡片升级→测试基础设施, 8 个 commit 全在 `frontend/` 下。
-
-### 技术栈 + 选型理由
-
-| 关注点 | 选型 | 选型理由(不是盲目跟风) |
-|---|---|---|
-| 构建 | Vite 8 | dev proxy 反代 8080, 避开 CORS 这个永远坑的关口 |
-| UI | React 19 + TypeScript 6 + Tailwind v4 | 函数组件 + 类型契约 + utility classes, 不引 UI kit |
-| 状态 | Zustand 5 | 比 Redux 模板代码少 80%, 比 Context 不触发全树重渲染 |
-| 路由 | ❌ 无 | 一个问答框 + 一个列表不需要 router |
-| SSE | fetch + ReadableStream (非 EventSource) | 后端 chat/sse 是 POST+JSON body, EventSource 只支持 GET |
-| Markdown | react-markdown 9 + remark-gfm | lazy import 拆 bundle, 首屏不必加载 |
-
-### 已落地能力(对应后端契约)
-
-| 模块 | 后端 | 前端 | 价值 |
-|---|---|---|---|
-| 文档列表 + 状态轮询 | `GET /documents` | Sidebar + DocItem | PARSING/UPLOADED 5s poll, 5min 上限 |
-| 上传 | `POST /documents` (multipart) | UploadDropzone (拖拽 + 串行) | 防 embed 单线程被并发打爆 |
-| 删除 / 重解析 | `DELETE /{id}` / `POST /{id}/retry` | Sidebar 操作菜单 ⋯ | 解决 FAILED 假死场景 |
-| SSE 流式问答 | `POST /chat/sse` | fetch ReadableStream + 单帧 30s 看门狗 | 流式 token + abort 后恢复 |
-| 引用卡片(主) | (SSE citations, 含 chunkId) | CitationCard | markdown 答案下方 [1][2] 对齐 |
-| 引用源出处(PM-F1) | `GET /chunks/{id}` | 同组件并发拉 document_filename | 不再"文档 #97 是什么看不懂" |
-| 引用上下文(ARCH-F5) | `GET /chunks/{id}/neighbors` | 同时拉 prev/next 嵌展开区 | LLM 用的 chunks 让用户前后扫一眼 |
-| 反馈 | `POST /feedback` (rating=like/dislike) | FeedbackBar | NO_RECALL/LLM_DEGRADED 也能反馈 |
-| 4 级降级提示 | SSE done.state_hint | StateBanner | EMPTY_KB/NO_RECALL/LLM_DEGRADED 友好文案 + trace_id |
-| token 编辑 | Authorization header | TokenEditor | localStorage 持久 + 状态点(绿=默认/黄=自定义) |
-
-### 生产部署套件 (prod 必修)
-
-```
-deploy/nginx.conf                # 静态托管 + 反代 chat-app:8080
-frontend/Dockerfile              # 多阶段: node:20-alpine build → nginx:alpine serve
-deploy/docker-compose.yml        # 加 frontend service (profile=gated, prod 烟测触发)
-.github/workflows/frontend-ci.yml # PR 守门: vitest + tsc + vite build
-```
-
-**关键坑(不修上线 SSE 必坏)**: `location = /api/v1/chat/sse` 必须显式
-```nginx
-proxy_buffering        off;
-proxy_cache            off;
-chunked_transfer_encoding on;
-gzip                   off;
-proxy_read_timeout     300s;
-```
-否则 nginx 默认 buffering 把流式变批量, 体验直接死。
-
-### 工程质量护栏
-
-- **类型**: 全 DTO 手写 (`types/api.ts`), Jackson SNAKE_CASE 与 SSE record 原名双兼容
-- **单测**: vitest 27 cases, SSE 帧解析(4 事件 × 双命名 × 4 类畸形帧) + formatBytes 边界 + formatRelativeTime + uid
-- **CI 守门**: PR 必跑 vitest, 退出码非 0 即 fail
-- **韧性**: 全局 ErrorBoundary 防白屏, SSE 30s 单帧 abort, persist rehydrate 兜底孤儿 streaming
-- **bundle**: ChatMessage lazy 拆 159KB(48KB gzip), 首屏 main 仅 70KB gzip
-- **a11y**: ⋯ 菜单走 role=menu/menuitem + aria-haspopup, 不再用 button-in-button 非法嵌套
-
-### start / 测试
-
-```bash
-cd frontend
-npm install
-npm run dev        # http://localhost:5173(被占则自动 5174), 依赖本地 8080 chat-app
-npm run test       # vitest 单测 (CI 用)
-npm run test:watch # 监听模式
-npm run build      # dist/ 产物, ~70KB gzip main + 48KB lazy ChatMessage
-```
-
-详见 [`frontend/README.md`](frontend/README.md)。
-
----
-
-## 设计文档导航
-
-```
-../企业私有多模态RAG智能中台-设计文档/       # 原始设计(架构 / 数据 / 13 维度框架)
-docs/adr/                                    # ADR-0001 ~ 0010 (含 Superseded 决策, 供回溯)
-docs/v3/                                     # V3 spec(parser-service-spec.md) / kill-9 runbook / V3 验收报告
-docs/operations/                             # Autodl reranker SOP / eval-regression SOP
-eval/                                        # RAGAS 评测脚本 + baseline 报告
-scripts/v3-kill-9-drill.sh                   # V3-W1 DoD-1 硬资产演练
-.github/workflows/                           # CI + eval-regression(ADR-0008 D3)
-```
+| 主题 | 入口 |
+|---|---|
+| Architecture / 机制审计 | `docs/architecture/` · `docs/adr/` |
+| 评测方法与全部报告 | `docs/evaluation/`（P0-2 spec/pilot、Post-D3 验证、E1/E2 残差审计） |
+| 可靠性 runbook | `docs/operations/`（reranker SOP / eval 回归 SOP / prod runbook） |
+| 修复闭环全记录 | `docs/architecture/agent-architecture-fix-plan.md`（含 P0-3 修订注记） |
+| V3 spec / 验收 | `docs/v3/` |
+| 前端 | `frontend/README.md` |
