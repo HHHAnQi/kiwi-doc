@@ -59,6 +59,9 @@ rag:
       enabled: false
       model-enabled: false
       planned-pipeline-enabled: false
+      # P0-1(降级链): 未来打开 model-enabled 时降级链默认生效(重试1次+Rule兜底+Classic兜底)
+      model-retry-attempts: 1
+      rule-fallback-enabled: true
     sufficiency:
       enabled: true  # 保留(即使planner关闭, 不影响)
     recovery:

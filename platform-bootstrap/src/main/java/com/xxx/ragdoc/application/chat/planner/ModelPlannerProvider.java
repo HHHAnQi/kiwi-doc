@@ -28,10 +28,10 @@ import org.springframework.stereotype.Component;
  * <p>PR-7a 仅实现核心 plan(); 完整 function-call schema + few-shot 由 PR-7c评测时调优。
  */
 @Slf4j
-// P1 修复(装配冲突): 底层 planner 按 rag.agent.planner.model-enabled 二选一
-// (PlannerProperties 语义), 与 RuleTemplatePlannerProvider 互斥; bean 名固定
-// basePlannerProvider 供 HarnessAwarePlannerProvider 装饰器限定注入。
-@Component("basePlannerProvider")
+// P0-1(降级链): 底层实现之一, 仅 model-enabled=true 时装配; 不再直接占用
+// basePlannerProvider — 该 bean 名由 FallbackPlannerProvider 固定持有
+// (Model→retry→Rule 运行时降级链), 供 HarnessAwarePlannerProvider 装饰器限定注入。
+@Component("modelPlannerProvider")
 @ConditionalOnProperty(prefix = "rag.agent.planner", name = "model-enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class ModelPlannerProvider implements PlannerProvider {

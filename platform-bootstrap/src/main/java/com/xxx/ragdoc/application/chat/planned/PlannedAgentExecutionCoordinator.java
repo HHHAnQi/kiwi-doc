@@ -70,6 +70,7 @@ public class PlannedAgentExecutionCoordinator {
 
     private final RuleTemplateRequirementExtractor requirementExtractor;
     private final PlannerProvider plannerProvider;
+    private final com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProperties;
     private final PlannerPlanAssembler planAssembler;
     private final AgentRunFactory runFactory;
     private final AgentRunPhaseExecutor phaseExecutor;
@@ -137,7 +138,7 @@ public class PlannedAgentExecutionCoordinator {
                             principal,
                             requestId,
                             "PLANNED_AGENT",
-                            "rule-based-v1",
+                            resolvePlannerVersionTag(plannerResp0),
                             "toolset-v1",
                             "default",
                             "LIVE");
@@ -257,6 +258,20 @@ public class PlannedAgentExecutionCoordinator {
                         cancellation,
                         reqIdToStepId);
         return replanResult;
+    }
+
+    /**
+     * P0-1(降级链): agent_run 的 planner 版本标记按实际来源写 — 替换原硬编码 "rule-based-v1"
+     * (model-enabled=true 后该硬编码与事实不符, trace 无法分辨哪个 planner 产出了 plan)。
+     */
+    private String resolvePlannerVersionTag(
+            com.xxx.ragdoc.application.chat.planner.PlannerResponse resp) {
+        if (resp != null
+                && com.xxx.ragdoc.application.chat.planner.FallbackPlannerProvider.REASON_RULE_FALLBACK
+                        .equals(resp.reasonCode())) {
+            return "rule-fallback-v1"; // Model 重试耗尽后 Rule 兜底 — 降级路径可追溯
+        }
+        return plannerProperties.isModelEnabled() ? "model-llm-v1" : "rule-based-v1";
     }
 
     private PrepareResult runReplanPhase(

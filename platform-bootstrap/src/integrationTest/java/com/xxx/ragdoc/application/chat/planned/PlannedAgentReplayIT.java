@@ -136,6 +136,8 @@ class PlannedAgentReplayIT {
                 new PlannedAgentExecutionCoordinator(
                         requirementExtractor,
                         plannerProvider,
+                        // P0-1: planner 版本 trace 标记所需 (resolvePlannerVersionTag)
+                        new com.xxx.ragdoc.application.chat.planner.PlannerProperties(),
                         planAssembler,
                         runFactory,
                         phaseExecutor,

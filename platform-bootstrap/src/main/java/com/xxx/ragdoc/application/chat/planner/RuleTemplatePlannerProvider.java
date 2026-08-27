@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -40,13 +39,11 @@ import org.springframework.stereotype.Component;
  * <p>返回<b>稳定</b> stepId: {@code plan-step-{N}} / {@code replan-{replanIndex}-step-{N}}。
  */
 @Slf4j
-// P1 修复(装配冲突): model-enabled=false(默认) 时的底层 planner, 与 ModelPlannerProvider 互斥。
-@Component("basePlannerProvider")
-@ConditionalOnProperty(
-        prefix = "rag.agent.planner",
-        name = "model-enabled",
-        havingValue = "false",
-        matchIfMissing = true)
+// P0-1(降级链): 常驻底层实现(不再按 model-enabled 互斥装配) — 兼任
+// (a) model-enabled=false 时 FallbackPlannerProvider 的纯转发委托 (zero-diff);
+// (b) model-enabled=true 时 Model Planner 重试耗尽后的运行时兜底。
+// bean 名 basePlannerProvider 由 FallbackPlannerProvider 固定持有。
+@Component("ruleTemplatePlannerProvider")
 @RequiredArgsConstructor
 public class RuleTemplatePlannerProvider implements PlannerProvider {
 

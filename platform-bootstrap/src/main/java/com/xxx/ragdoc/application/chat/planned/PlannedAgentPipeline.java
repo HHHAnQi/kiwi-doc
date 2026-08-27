@@ -7,6 +7,7 @@ import com.xxx.ragdoc.application.chat.command.ChatResult;
 import com.xxx.ragdoc.application.chat.command.ChatStreamEvent;
 import com.xxx.ragdoc.application.chat.pipeline.ChatExecutionContext;
 import com.xxx.ragdoc.application.chat.pipeline.ChatPipeline;
+import com.xxx.ragdoc.application.chat.pipeline.ClassicRagPipeline;
 import com.xxx.ragdoc.application.chat.router.RouterDecision;
 import com.xxx.ragdoc.common.exception.DomainException;
 import com.xxx.ragdoc.common.exception.ErrorCode;
@@ -45,6 +46,15 @@ public class PlannedAgentPipeline implements ChatPipeline {
      * MultiQueryRetriever), 即使所有子查询跑偏, 原查询结果保证相关证据存在。
      */
     private final com.xxx.ragdoc.application.chat.RetrieveService retrieveService;
+    /**
+     * P0-1(降级链)第 2 层: Model→retry→Rule 全部失败 (INITIAL_PLANNER_FAILED) 时降级
+     * Classic RAG。Planner 是 Agent 链路里唯一无替代物的组件, 但检索+生成底座 (Classic)
+     * 不依赖 Planner — 整题单次 hybrid 检索仍可给出有引用的回答 (质量降、可用性保)。
+     */
+    private final ClassicRagPipeline classicRagPipeline;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
 
     @Override
     public PipelineType type() {
@@ -71,6 +81,9 @@ public class PlannedAgentPipeline implements ChatPipeline {
                         allowedToolDescriptors(),
                         buildAgenticPolicy());
         if (!prepared.ok()) {
+            if (isInitialPlannerFailure(prepared)) {
+                return classicFallback(command, context);
+            }
             return ChatResult.of(StateHint.NO_RECALL, humanizeFailure(prepared), context.traceId());
         }
         PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
@@ -164,6 +177,9 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                     "PLANNED_PREPARE_FAILED:" + ex.getMessage()));
         }
         if (!prepared.ok()) {
+            if (isInitialPlannerFailure(prepared)) {
+                return classicFallbackStream(command, context);
+            }
             return Flux.just(
                     (ChatStreamEvent)
                             new ChatStreamEvent.ErrorEvent(
@@ -373,6 +389,57 @@ public class PlannedAgentPipeline implements ChatPipeline {
     private static String safeSnippet(String content) {
         if (content == null) return "";
         return content.length() <= 120 ? content : content.substring(0, 120) + "...";
+    }
+
+    /** P0-1: 仅 Planner 链全灭 (Model→retry→Rule 均失败) 走 Classic 兜底; 其余结构性失败保持原语义。 */
+    private static boolean isInitialPlannerFailure(
+            PlannedAgentExecutionCoordinator.PrepareResult r) {
+        return r.failureReason() != null && r.failureReason().startsWith("INITIAL_PLANNER_FAILED");
+    }
+
+    private ChatResult classicFallback(ChatCommand command, ChatExecutionContext context) {
+        log.warn(
+                "planned.classic_fallback req={} trace={} reason=ALL_PLANNERS_FAILED",
+                context.requestId(),
+                context.traceId());
+        if (metricsPort != null) metricsPort.incrementPlannerDegradation("classic_fallback");
+        try {
+            return classicRagPipeline.execute(command, context);
+        } catch (RuntimeException ex) {
+            log.warn("planned.classic_fallback_failed req={} err={}", context.requestId(), ex.toString());
+            return ChatResult.of(StateHint.NO_RECALL, "无法处理: 检索通道不可用", context.traceId());
+        }
+    }
+
+    private Flux<ChatStreamEvent> classicFallbackStream(
+            ChatCommand command, ChatExecutionContext context) {
+        log.warn(
+                "planned.classic_fallback(stream) req={} trace={} reason=ALL_PLANNERS_FAILED",
+                context.requestId(),
+                context.traceId());
+        if (metricsPort != null) metricsPort.incrementPlannerDegradation("classic_fallback");
+        String trace = context.traceId() == null ? "" : context.traceId().value();
+        try {
+            return classicRagPipeline
+                    .stream(command, context)
+                    .onErrorResume(
+                            err -> {
+                                log.warn(
+                                        "planned.classic_fallback_stream_failed req={} err={}",
+                                        context.requestId(),
+                                        err.toString());
+                                return Flux.just(
+                                        (ChatStreamEvent)
+                                                new ChatStreamEvent.ErrorEvent(
+                                                        trace, "基础检索通道处理失败"));
+                            });
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "planned.classic_fallback_stream_failed req={} err={}",
+                    context.requestId(),
+                    ex.toString());
+            return Flux.just((ChatStreamEvent) new ChatStreamEvent.ErrorEvent(trace, "基础检索通道处理失败"));
+        }
     }
 
     private static String humanizeFailure(PlannedAgentExecutionCoordinator.PrepareResult r) {

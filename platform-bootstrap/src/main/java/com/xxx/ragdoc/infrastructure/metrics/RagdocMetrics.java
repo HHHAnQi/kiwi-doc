@@ -204,4 +204,10 @@ public class RagdocMetrics implements MetricsPort {
     public void recordAgentLlmCall(String component) {
         registry.counter("ragdoc.agent.llm_calls_total", "component", component).increment();
     }
+
+    /** P0-1(降级链): {@inheritDoc} — 实际接线方为 FallbackPlannerProvider / PlannedAgentPipeline。 */
+    @Override
+    public void incrementPlannerDegradation(String stage) {
+        registry.counter("ragdoc.agent.planner_degradation_total", "stage", stage).increment();
+    }
 }

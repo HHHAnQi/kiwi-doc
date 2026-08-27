@@ -72,6 +72,10 @@ rag:
       max-plan-steps: ${RAG_AGENT_MAX_PLAN_STEPS:3}
       max-replans: ${RAG_AGENT_MAX_REPLANS:1}
       min-router-confidence: ${RAG_AGENT_MIN_ROUTER_CONFIDENCE:0.80}
+      # P0-1(降级链): Model 失败 → 重试 → RuleTemplate → (Pipeline层) Classic RAG。
+      # FIXTURE_* 确定性失败不重试(REPLAY 评测语义保护)。
+      model-retry-attempts: ${RAG_AGENT_PLANNER_MODEL_RETRY_ATTEMPTS:1}
+      rule-fallback-enabled: ${RAG_AGENT_PLANNER_RULE_FALLBACK:true}
     # P0-1 修复: sufficiency 开关此前完全不在 yml → 恒 disabled → Planned run 必然拒答
     # (DispatchingSufficiencyJudge disabled 时恒返 UNDETERMINED, Guard 全拒)。
     # rule 兜底 + LLM fallback 双开: rule 按 requirementIds 精确判, 语义级留给 model。
