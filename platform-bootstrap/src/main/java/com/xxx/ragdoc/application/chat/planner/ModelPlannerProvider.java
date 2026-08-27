@@ -88,7 +88,7 @@ public class ModelPlannerProvider implements PlannerProvider {
         }
         String parsed = extractJson(raw);
         try {
-            PlannerResponse decoded = decode(parsed);
+            PlannerResponse decoded = decode(parsed, request.replanIndex());
             if (decoded.steps() == null) {
                 throw new PlannerException(
                         PlannerException.Reason.SCHEMA_VIOLATION,
@@ -110,7 +110,7 @@ public class ModelPlannerProvider implements PlannerProvider {
      * 直接 readValue 必失败("no Creators") — Model Planner 此前从未对真实 LLM 输出跑通过。
      * 两段式: 先树解析, 再按 step.toolName 把 input node 转具体 Input record。
      */
-    private PlannerResponse decode(String json) throws Exception {
+    private PlannerResponse decode(String json, int replanIndex) throws Exception {
         com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
         List<PlannedToolStep> steps = new ArrayList<>();
         java.util.Map<String, String> stepIdRemap = new java.util.HashMap<>();
@@ -146,8 +146,14 @@ public class ModelPlannerProvider implements PlannerProvider {
                                         "planner unknown tool in plan: " + toolName);
                     };
             // P1: LLM 生成的 stepId 常过长/含非法字符(PlanValidator 拒绝) → 确定性重命名
-            // 并重映射 dependsOn(stepId 是内部标识, 规则版本来就是 plan-step-{N})
-            String canonicalId = "plan-step-" + steps.size();
+            // 并重映射 dependsOn(stepId 是内部标识)。
+            // P2-D1(命名空间修复): canonical id 必须按 replanIndex 进入独立命名空间 —
+            // 此前恒为 plan-step-{N} 重新编号, 与 Phase-0 已完成步在 Assembler 的
+            // seenStepIds 必然碰撞(DUPLICATE_STEP_ID) → Model replan 100% 失效。
+            // 与 RuleTemplatePlannerProvider 的 replan-{i}-step-{N} 方案对齐。
+            String canonicalId =
+                    (replanIndex > 0 ? "replan-" + replanIndex + "-step-" : "plan-step-")
+                            + steps.size();
             stepIdRemap.put(st.path("stepId").asText(canonicalId), canonicalId);
             List<String> deps = new ArrayList<>();
             st.path("dependsOn").forEach(d -> deps.add(d.asText()));
@@ -277,11 +283,13 @@ public class ModelPlannerProvider implements PlannerProvider {
             sb.append("Previously completed steps:\n");
             for (CompletedStepSummary s : request.completedSteps()) {
                 sb.append("- tool=").append(s.toolName())
+                        .append(" attempted_query=\"").append(s.attemptedQuery()).append("\"")
                         .append(" evidence_found=").append(s.evidenceCount())
                         .append(" outcome=").append(s.outcome()).append('\n');
             }
             sb.append("\nIMPORTANT: Your new plan must target the UNCOVERED requirements with DIFFERENT "
-                    + "queries than what was already tried. Focus on what's missing, not what's found.\n");
+                    + "queries than the attempted_query values listed above (identical tool+query is "
+                    + "deterministically rejected). Focus on what's missing, not what's found.\n");
         }
 
         sb.append("\nAllowed tools:\n");

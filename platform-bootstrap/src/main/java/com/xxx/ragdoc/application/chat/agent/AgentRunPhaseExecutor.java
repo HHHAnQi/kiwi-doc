@@ -322,6 +322,7 @@ public class AgentRunPhaseExecutor {
                             stepEvidence.size(),
                             targetReqIds,
                             terminal.name(),
+                            attemptedQueryOf(planStep),
                             Map.of()));
 
             AgentStepUpdate stepUpdate =
@@ -446,8 +447,21 @@ public class AgentRunPhaseExecutor {
         return TokenEstimator.estimate(String.valueOf(o));
     }
 
-    private static String signatureOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {
-        return s.toolName()
+    /** P2-D2: 提取 step 实际尝试的检索 query(截断由 CompletedStepSummary ctor 统一保证)。 */
+    private static String attemptedQueryOf(
+            com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {
+        try {
+            if (s.input()
+                    instanceof com.xxx.ragdoc.application.chat.tool.SearchInput si) {
+                return si.query() == null ? "" : si.query();
+            }
+        } catch (Exception ignored) {
+            // 非 Search 型工具(DocumentFetch/CitationVerify)无 query 概念 → 空串
+        }
+        return "";
+    }
+
+    private static String signatureOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {        return s.toolName()
                 + "|"
                 + s.toolVersion()
                 + "|"

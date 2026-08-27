@@ -21,6 +21,12 @@ public record CompletedStepSummary(
         java.util.List<String> targetedRequirementIds,
         /** "SUCCEEDED" / "EMPTY" / "FAILED_TERMINAL" 等; 用字符串避免泄漏 AgentStepStatus enum。 */
         String outcome,
+        /**
+         * P2-D2: 该 step 实际尝试的检索 query(截断≤80字符, 只含查询文本不含 payload)。
+         * Replan prompt 据此让 LLM 生成<b>不同</b>的查询 — 签名 hash 对生成新 query 无语义价值。
+         * 非 Search 型工具为空串。
+         */
+        String attemptedQuery,
         Map<String, Object> safeMetadata) {
 
     public CompletedStepSummary {
@@ -31,6 +37,8 @@ public record CompletedStepSummary(
             throw new IllegalArgumentException("toolSignatureHash");
         }
         if (outcome == null) outcome = "UNKNOWN";
+        if (attemptedQuery == null) attemptedQuery = "";
+        if (attemptedQuery.length() > 80) attemptedQuery = attemptedQuery.substring(0, 80);
         targetedRequirementIds =
                 targetedRequirementIds == null
                         ? java.util.List.of()
