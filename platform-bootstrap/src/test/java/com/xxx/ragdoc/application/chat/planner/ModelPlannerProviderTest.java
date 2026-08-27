@@ -113,7 +113,7 @@ class ModelPlannerProviderTest {
     @Test
     @DisplayName("buildPrompt: 包含 allowedTools + 安全警告 + 不含 token")
     void promptSafer() {
-        String prompt = ModelPlannerProvider.buildPrompt(request());
+        String prompt = ModelPlannerProvider.buildPrompt(request(), props.getMaxPlanSteps());
         assertThat(prompt)
                 .contains("allowedTools", "semantic_search")
                 .contains("UNTRUSTED"); // 安全警告

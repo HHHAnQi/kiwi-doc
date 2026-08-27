@@ -43,7 +43,11 @@ public class ModelPlannerProvider implements PlannerProvider {
     @Override
     public PlannerResponse plan(PlannerRequest request) {
         if (request == null) throw new IllegalArgumentException("request");
-        String prompt = buildPrompt(request);
+        // P1-A(契约对齐): prompt 声明的步数上限必须与 PlannerPlanAssembler 的 cap 公式
+        // 逐字一致(min(maxPlanSteps, remainingSteps))。此前只注入 remainingSteps(较松口径),
+        // LLM 合法产出 4 步却被 cap=3 确定性拒绝(pilot 2/50 用户直败)。
+        // LLM 仍越界时 Assembler 保持 reject — 不 truncate、不放宽。
+        String prompt = buildPrompt(request, properties.getMaxPlanSteps());
         String raw;
         try {
             // 注: ChatClient.chat 抛 checked Exception
@@ -183,7 +187,7 @@ public class ModelPlannerProvider implements PlannerProvider {
                 root.path("reasonCode").asText(""));
     }
 
-    static String buildPrompt(PlannerRequest request) {
+    static String buildPrompt(PlannerRequest request, int plannerMaxPlanSteps) {
         StringBuilder sb = new StringBuilder();
         sb.append("You are a strategic Planner for a multi-step RAG system. Your job is to decompose "
                 + "the user's question into targeted search steps that TOGETHER cover all information needs.\n\n");
@@ -234,7 +238,10 @@ public class ModelPlannerProvider implements PlannerProvider {
         sb.append("- Use ONLY tools in allowedTools list.\n");
         sb.append("- DO NOT include tenant/user/token/role/permission fields.\n");
         sb.append("- Output ONLY the JSON object, no explanation.\n");
-        sb.append("- max ").append(request.remainingBudget().remainingSteps()).append(" steps.\n\n");
+        // P1-A: 与 PlannerPlanAssembler 的 cap 公式逐字对齐
+        int effectiveMaxSteps =
+                Math.min(plannerMaxPlanSteps, request.remainingBudget().remainingSteps());
+        sb.append("- max ").append(effectiveMaxSteps).append(" steps.\n\n");
 
         // ── 输入 ──
         sb.append("== INPUT ==\n");
