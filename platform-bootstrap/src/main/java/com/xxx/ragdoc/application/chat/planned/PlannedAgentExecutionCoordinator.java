@@ -173,7 +173,7 @@ public class PlannedAgentExecutionCoordinator {
         }
 
         // 5. Initial Sufficiency
-        SufficiencyDecision suff0 = callSufficiency(phase0, frozenRequirements, policy);
+        SufficiencyDecision suff0 = callSufficiency(phase0, frozenRequirements, policy, normalizedQuery);
         SufficiencyDecisionGuard.GuardResult guard0 =
                 sufficiencyGuard.validateForAnswer(
                         suff0, frozenRequirements, phase0.accumulatedEvidence());
@@ -397,7 +397,7 @@ public class PlannedAgentExecutionCoordinator {
                     phase1.runId(), phase1.prematureTerminal(), phase1.failureReasonCode());
         }
 
-        SufficiencyDecision suff1 = callSufficiency(phase1, frozenRequirements, policy);
+        SufficiencyDecision suff1 = callSufficiency(phase1, frozenRequirements, policy, normalizedQuery);
         SufficiencyDecisionGuard.GuardResult guard1 =
                 sufficiencyGuard.validateForAnswer(
                         suff1, frozenRequirements, phase1.accumulatedEvidence());
@@ -533,7 +533,8 @@ public class PlannedAgentExecutionCoordinator {
     private SufficiencyDecision callSufficiency(
             PhaseExecutionResult phase,
             List<EvidenceRequirement> requirements,
-            AgentExecutionPolicy policy) {
+            AgentExecutionPolicy policy,
+            String normalizedQuery) {
         Set<String> completedRequired = new HashSet<>();
         for (CompletedStepSummary s : phase.completedSteps()) {
             // PR-7c.3c 简化: 标记 SUCCEEDED/EMPTY 为 completed required
@@ -542,7 +543,9 @@ public class PlannedAgentExecutionCoordinator {
         SufficiencyRequest req =
                 new SufficiencyRequest(
                         phase.runId(),
-                        "" /* normalizedQuery 不进 Sufficiency */,
+                        // P0修复: 传入原始查询——判定器需要知道问题才能判断"证据是否充分"
+                        // (原传空串, 判定器盲判, 多跳题100%走LLM fallback)
+                        normalizedQuery,
                         requirements,
                         phase.accumulatedEvidence(),
                         completedRequired,

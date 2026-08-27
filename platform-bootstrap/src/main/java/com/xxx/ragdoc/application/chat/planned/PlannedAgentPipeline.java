@@ -58,10 +58,12 @@ public class PlannedAgentPipeline implements ChatPipeline {
             throw new DomainException(
                     ErrorCode.AGENTIC_MODE_UNAVAILABLE, "Planned Agent pipeline 未启用");
         }
+        // P1修复(短板8): 多轮改写 — 有 conversationId 时先做指代消解
+        String effectiveQuery = resolveEffectiveQuery(command);
         RouterDecision decision = context.routerDecision();
         var prepared =
                 coordinator.prepare(
-                        command.query(),
+                        effectiveQuery,
                         decision,
                         context.requestId(),
                         context.principal(),
@@ -314,6 +316,27 @@ public class PlannedAgentPipeline implements ChatPipeline {
         } catch (Exception e) {
             log.warn("planned.anchor_failed: {}", e.getMessage());
             return agenticEvidence;
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort queryContextualizer;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
+
+    private String resolveEffectiveQuery(ChatCommand command) {
+        if (command.conversationId() == null || command.conversationId().isBlank()) return command.query();
+        if (queryContextualizer == null || conversationStore == null) return command.query();
+        try {
+            var ctx = conversationStore.findById(command.conversationId()).orElse(null);
+            if (ctx == null || !ctx.isEnabled() || ctx.recentTurns().isEmpty()) return command.query();
+            var result = queryContextualizer.contextualize(command.query(), ctx.recentTurns());
+            log.info("planned.multi_turn_rewrite conv_id={}, rewritten='{}'", command.conversationId(), result.retrieveQuery().substring(0, Math.min(40, result.retrieveQuery().length())));
+            return result.retrieveQuery();
+        } catch (Exception e) {
+            log.warn("planned.multi_turn_rewrite_failed: {}", e.getMessage());
+            return command.query();
         }
     }
 
