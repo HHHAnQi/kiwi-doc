@@ -67,7 +67,7 @@ rag:
       heartbeat-seconds: ${RAG_AGENT_LEASE_HEARTBEAT_SECONDS:10}
     planner:
       enabled: ${RAG_AGENT_PLANNER_ENABLED:false}
-      model-enabled: ${RAG_AGENT_MODEL_PLANNER_ENABLED:false}
+      model-enabled: ${RAG_AGENT_MODEL_PLANNER_ENABLED:true}
       planned-pipeline-enabled: ${RAG_AGENT_PLANNED_PIPELINE_ENABLED:false}
       max-plan-steps: ${RAG_AGENT_MAX_PLAN_STEPS:3}
       max-replans: ${RAG_AGENT_MAX_REPLANS:1}
