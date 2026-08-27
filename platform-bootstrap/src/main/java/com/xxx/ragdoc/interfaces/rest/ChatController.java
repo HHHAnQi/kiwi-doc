@@ -90,10 +90,23 @@ public class ChatController {
         // Agent 过程可视化: AGENTIC 路径透出 runId(ASCII, 无需编码)
         String agentRunId = org.slf4j.MDC.get("rag.agentRunId");
         if (agentRunId != null) {
-            builder = org.springframework.http.ResponseEntity.ok()
-                    .header("X-Agent-Run-Id", agentRunId)
-                    .body(ChatResponse.from(result, includeEvidence));
+            // P2-D5(C): 与 SSE DoneEvent 同语义的 correlation 头(terminalStatus/decisionSummary
+            // 可空 — 仅 Agent 路径且值真实存在时携带)
+            String terminalStatus = org.slf4j.MDC.get("rag.agentTerminalStatus");
+            String decisionSummary = org.slf4j.MDC.get("rag.agentDecisionSummary");
+            org.springframework.http.ResponseEntity.BodyBuilder headers =
+                    org.springframework.http.ResponseEntity.ok()
+                            .header("X-Agent-Run-Id", agentRunId);
+            if (terminalStatus != null) {
+                headers.header("X-Agent-Terminal-Status", terminalStatus);
+            }
+            if (decisionSummary != null) {
+                headers.header("X-Agent-Decision-Summary", decisionSummary);
+            }
+            builder = headers.body(ChatResponse.from(result, includeEvidence));
             org.slf4j.MDC.remove("rag.agentRunId");
+            org.slf4j.MDC.remove("rag.agentTerminalStatus");
+            org.slf4j.MDC.remove("rag.agentDecisionSummary");
         }
         if (effectiveQuery != null) {
             // HTTP 头只允许 ISO-8859-1, 中文会被 Spring 静默丢弃(实测) → URL 编码传输

@@ -56,6 +56,29 @@ public class PlannedAgentPipeline implements ChatPipeline {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
 
+    /** P2-D5: 读 process decision summary(终态暴露/事件携带用; 缺失时字段为空)。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.chat.agent.AgentRunRepository agentRunRepository;
+
+    private String decisionSummaryOf(String runId) {
+        if (runId == null || agentRunRepository == null) return null;
+        try {
+            return agentRunRepository.findDecisionSummary(runId).orElse(null);
+        } catch (RuntimeException ex) {
+            return null; // 诊断字段读取失败不阻塞主流程
+        }
+    }
+
+    /**
+     * P2-D5(B/C): correlation contract — runId 只在真实存在时暴露(不造 fake);
+     * ChatController 从 MDC 读出转 X-Agent-* 响应头(与 SSE DoneEvent 字段同语义)。
+     */
+    private static void exposeCorrelation(String runId, String terminalStatus, String decisionSummary) {
+        if (runId != null) org.slf4j.MDC.put("rag.agentRunId", runId);
+        if (terminalStatus != null) org.slf4j.MDC.put("rag.agentTerminalStatus", terminalStatus);
+        if (decisionSummary != null) org.slf4j.MDC.put("rag.agentDecisionSummary", decisionSummary);
+    }
+
     @Override
     public PipelineType type() {
         return PipelineType.PLANNED_AGENT;
@@ -98,8 +121,17 @@ public class PlannedAgentPipeline implements ChatPipeline {
                         allowedToolDescriptors(),
                         buildAgenticPolicy());
         if (!prepared.ok()) {
+            // P2-D5(B): run已创建的失败/拒答 → 响应携带真实runId(run未创建保持null, 不造fake)
+            if (prepared.failureRunId() != null) {
+                exposeCorrelation(
+                        prepared.failureRunId(),
+                        prepared.failureTerminal() == null
+                                ? null
+                                : prepared.failureTerminal().name(),
+                        decisionSummaryOf(prepared.failureRunId()));
+            }
             if (isInitialPlannerFailure(prepared)) {
-                return classicFallback(command, context);
+                return classicFallback(command, context); // runId=null(创建前失败), 靠traceId关联日志
             }
             return ChatResult.of(StateHint.NO_RECALL, humanizeFailure(prepared), context.traceId());
         }
@@ -133,7 +165,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
                     AgentRunStatus.SYSTEM_FAILED,
                     "ANSWER_COMPOSER_FAILED",
                     p.usage(),
-                    p.reservation());
+                    p.reservation(),
+                        null);
             return ChatResult.of(StateHint.NO_RECALL, "答案生成失败", context.traceId());
         }
         // Final Answer Cas ANSWERED
@@ -144,7 +177,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
                 AgentRunStatus.ANSWERED,
                 "PLANNED_ANSWER_READY",
                 p.usage(),
-                p.reservation());
+                p.reservation(),
+                        null);
         if (!outcome.written() && !outcome.idempotent()) {
             log.warn(
                     "planned.answer_finalize_conflict run={} winner={} conflict={}",
@@ -153,6 +187,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
                     outcome.conflict());
             return ChatResult.of(StateHint.NO_RECALL, "Agent 运行状态已被取消或终止", context.traceId());
         }
+        // P2-D5(C): 同步终态暴露(与SSE DoneEvent同语义)
+        exposeCorrelation(p.runId(), AgentRunStatus.ANSWERED.name(), decisionSummaryOf(p.runId()));
         // Citation (PR-7c.3c 简化: 用 evidenceIds 直接转 Citation, disabled verifier 走安全 skip)
         var citations = buildCitations(p);
         return new ChatResult(
@@ -197,14 +233,17 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                     "PLANNED_PREPARE_FAILED:" + ex.getMessage()));
         }
         if (!prepared.ok()) {
+            // P2-D5(B/C): 已创建run的失败 → ErrorEvent携带真实runId(未创建保持null)
+            String failureRunId = prepared.failureRunId();
             if (isInitialPlannerFailure(prepared)) {
-                return classicFallbackStream(command, context);
+                return classicFallbackStream(command, context); // runId=null, traceId关联日志
             }
             return Flux.just(
                     (ChatStreamEvent)
                             new ChatStreamEvent.ErrorEvent(
                                     context.traceId() == null ? "" : context.traceId().value(),
-                                    humanizeFailure(prepared)));
+                                    humanizeFailure(prepared),
+                                    failureRunId));
         }
         PlannedAgentExecutionCoordinator.PreparedGroundedAnswer p = prepared.prepared();
         // Agent 过程可视化: 透出 runId(前端据此拉 /agent/runs/{id} 渲染执行步骤面板)
@@ -219,7 +258,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
                     AgentRunStatus.CANCELLED,
                     "USER_CANCELLED",
                     p.usage(),
-                    p.reservation());
+                    p.reservation(),
+                        null);
             return Flux.just(
                     (ChatStreamEvent)
                             new ChatStreamEvent.ErrorEvent(
@@ -248,7 +288,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                             AgentRunStatus.ANSWERED,
                                             "PLANNED_ANSWER_STREAMED",
                                             p.usage(),
-                                            p.reservation());
+                                            p.reservation(),
+                        null);
                                     if (!outcome.written() && !outcome.idempotent()) {
                                         throw new IllegalStateException(
                                                 "Agent 终态已被抢占: "
@@ -259,7 +300,11 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                                     context.traceId() == null
                                                             ? ""
                                                             : context.traceId().value(),
-                                                    "OK");
+                                                    "OK",
+                                                    null,
+                                                    p.runId(),
+                                                    AgentRunStatus.ANSWERED.name(),
+                                                    decisionSummaryOf(p.runId()));
                                 }))
                 .onErrorResume(
                         err -> {
@@ -274,7 +319,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                     AgentRunStatus.SYSTEM_FAILED,
                                     "ANSWER_STREAM_FAILED",
                                     p.usage(),
-                                    p.reservation());
+                                    p.reservation(),
+                        null);
                             return reactor.core.publisher.Flux.just(
                                     (ChatStreamEvent)
                                             new ChatStreamEvent.ErrorEvent(

@@ -170,7 +170,7 @@ class D3SemanticReplanBehaviorTest {
                         anyString(), anyString(), anyString()))
                 .thenReturn(new InitializedRun(run, List.of()));
         when(runFinalizer.finalize(
-                        anyString(), anyLong(), anySet(), any(), anyString(), any(), any()))
+                        anyString(), anyLong(), anySet(), any(), anyString(), any(), any(), any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
                                 RUN_ID, 6L, AgentRunStatus.READY_TO_ANSWER));
@@ -318,9 +318,12 @@ class D3SemanticReplanBehaviorTest {
         verify(persistence, never()).appendReplanSteps(anyString(), anyList());
         assertThat(modelVerdicts).containsExactly("SUFFICIENT");
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> summary = ArgumentCaptor.forClass(String.class);
         verify(runFinalizer).finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
-                any(), any());
+                any(), any(), summary.capture());
         assertThat(reason.getValue()).isEqualTo("PLANNED_INITIAL_SUFFICIENT");
+        // P2-D5 T1: 过程决策摘要(独立于生命周期reason, 不被终态覆盖)
+        assertThat(summary.getValue()).isEqualTo("INITIAL_SUFFICIENT");
     }
 
     // ─── T2+T3: SHOULD_REPLAN → REPLAN → Phase-1 真实检索 → 恢复 ──
@@ -348,9 +351,12 @@ class D3SemanticReplanBehaviorTest {
                 .containsExactly("replan-1-step-0");
         assertThat(modelVerdicts).containsExactly("INSUFFICIENT", "SUFFICIENT");
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> summary = ArgumentCaptor.forClass(String.class);
         verify(runFinalizer).finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
-                any(), any());
+                any(), any(), summary.capture());
         assertThat(reason.getValue()).isEqualTo("PLANNED_REPLAN_SUFFICIENT");
+        // P2-D5 T2/T3: replan补齐后的过程决策
+        assertThat(summary.getValue()).isEqualTo("REPLAN_SUFFICIENT");
     }
 
     // ─── T4: Phase-1 仍不足 → bounded fallback ───────────────────
@@ -365,8 +371,66 @@ class D3SemanticReplanBehaviorTest {
         assertThat(toolQueries).hasSize(2); // bounded: maxReplans=1, 无 Phase-2
         assertThat(modelVerdicts).containsExactly("INSUFFICIENT", "INSUFFICIENT");
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> summary = ArgumentCaptor.forClass(String.class);
         verify(runFinalizer).finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
-                any(), any());
+                any(), any(), summary.capture());
         assertThat(reason.getValue()).isEqualTo("INSUFFICIENT_AFTER_REPLAN_FALLBACK");
+        // P2-D5 T4(旧T4): replan耗尽的有界降级 — 与 REPLAN_SUFFICIENT 可区分
+        assertThat(summary.getValue()).isEqualTo("REPLAN_EXHAUSTED_FALLBACK");
+    }
+
+    // ── D5 T4: CONFLICTED → REFUSED_CONFLICT + summary ──
+
+    @Test
+    @DisplayName("D5-T4: 语义判定CONFLICTED → REFUSED_CONFLICT, summary=REFUSED_CONFLICT")
+    void d5_t4_conflictRefuseSummary() {
+        semanticJudge =
+                (n, req) ->
+                        com.xxx.ragdoc.application.chat.sufficiency.SufficiencyDecision.model(
+                                com.xxx.ragdoc.application.chat.sufficiency.SufficiencyStatus
+                                        .CONFLICTED,
+                                List.of(), List.of(),
+                                List.of(new com.xxx.ragdoc.application.chat.sufficiency
+                                        .EvidenceConflict(
+                                        "REQ-1",
+                                        com.xxx.ragdoc.application.chat.sufficiency
+                                                .EvidenceConflict.ConflictType
+                                                .VERSION_VALUE_MISMATCH,
+                                        List.of("ev-0", "ev-1"), "scripted")),
+                                com.xxx.ragdoc.application.chat.sufficiency.RecommendedAction
+                                        .REFUSE_CONFLICT,
+                                "SCRIPTED");
+        var prepared = run();
+        assertThat(prepared.ok()).isFalse();
+        assertThat(prepared.failureTerminal())
+                .isEqualTo(com.xxx.ragdoc.application.chat.agent.AgentRunStatus.REFUSED_CONFLICT);
+        ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> summary = ArgumentCaptor.forClass(String.class);
+        verify(runFinalizer).finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
+                any(), any(), summary.capture());
+        assertThat(summary.getValue()).isEqualTo("REFUSED_CONFLICT");
+    }
+
+    // ── D5 T5: Tool failure → TOOL_FAILURE ──
+
+    @Test
+    @DisplayName("D5-T5: Phase-0工具终态失败 → TOOL_FAILED, summary=TOOL_FAILURE")
+    void d5_t5_toolFailureSummary() {
+        when(toolExecutor.execute(anyString(), anyString(), any(), any()))
+                .thenReturn(
+                        com.xxx.ragdoc.application.chat.tool.ToolResult.failure(
+                                "c-1", "semantic_search", "v1",
+                                com.xxx.ragdoc.application.chat.tool.ToolStatus.TERMINAL_ERROR,
+                                com.xxx.ragdoc.application.chat.tool.ToolError.of(
+                                        "TOOL_TERMINAL", "tool crashed"),
+                                5L, java.util.Map.of()));
+        var prepared = run();
+        assertThat(prepared.ok()).isFalse();
+        assertThat(prepared.failureTerminal())
+                .isEqualTo(com.xxx.ragdoc.application.chat.agent.AgentRunStatus.TOOL_FAILED);
+        ArgumentCaptor<String> summary = ArgumentCaptor.forClass(String.class);
+        verify(runFinalizer).finalize(anyString(), anyLong(), anySet(), any(), any(),
+                any(), any(), summary.capture());
+        assertThat(summary.getValue()).isEqualTo("TOOL_FAILURE");
     }
 }

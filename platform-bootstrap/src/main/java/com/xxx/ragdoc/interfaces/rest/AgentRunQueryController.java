@@ -49,7 +49,8 @@ public class AgentRunQueryController {
         }
         List<StepView> steps =
                 stepRepository.findByRunId(runId).stream().map(StepView::from).toList();
-        return AgentRunDetailResponse.from(run, steps);
+        return AgentRunDetailResponse.from(
+                run, runRepository.findDecisionSummary(run.runId()).orElse(null), steps);
     }
 
     // ─── DTO(view 层, 不暴露 planJson/usage 原始 JSON) ────────────────
@@ -62,6 +63,7 @@ public class AgentRunQueryController {
             String terminalReasonCode,
             String planId,
             String plannerVersion,
+            String decisionSummary,
             int evidenceCount,
             int stepCount,
             String createdAt,
@@ -69,7 +71,9 @@ public class AgentRunQueryController {
             List<StepView> steps) {
 
         static AgentRunDetailResponse from(
-                com.xxx.ragdoc.application.chat.agent.AgentRunRecord run, List<StepView> steps) {
+                com.xxx.ragdoc.application.chat.agent.AgentRunRecord run,
+                String decisionSummary,
+                List<StepView> steps) {
             return new AgentRunDetailResponse(
                     run.runId(),
                     run.requestId(),
@@ -81,6 +85,7 @@ public class AgentRunQueryController {
                     // rule-based-v1) — 评测 runner 据此逐样本判定 planner_source, 防止降级样本
                     // 静默混入 LLM Planner 实验组。
                     run.routerVersion(),
+                    decisionSummary,
                     run.evidenceCount(),
                     steps.size(),
                     run.createdAt() == null ? null : run.createdAt().toString(),

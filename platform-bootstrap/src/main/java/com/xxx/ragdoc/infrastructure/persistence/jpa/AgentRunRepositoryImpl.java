@@ -110,6 +110,24 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
         jpa.releaseLease(runId, ownerId);
     }
 
+    /**
+     * P2-D5(A): 过程决策摘要 — 只在为空时写入(见 JPA 查询守卫), 失败静默(诊断字段不阻塞主流程)。
+     * @Transactional: @Modifying 查询需要线程持有事务(Finalizer 调用点无外层事务,
+     * 实测无注解会抛 No EntityManager with actual transaction — 同 JpaChunkRepository:80 坑)。
+     */
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void updateDecisionSummary(String runId, String decisionSummary) {
+        if (runId == null || decisionSummary == null || decisionSummary.isBlank()) return;
+        jpa.updateDecisionSummary(runId, decisionSummary);
+    }
+
+    @Override
+    public java.util.Optional<String> findDecisionSummary(String runId) {
+        if (runId == null) return java.util.Optional.empty();
+        return jpa.findDecisionSummary(runId);
+    }
+
     private static Set<String> nonTerminalStatusNames() {
         return java.util.Arrays.stream(AgentRunStatus.values()).filter(s -> !s.isTerminal())
                 .map(AgentRunStatus::name).collect(Collectors.toSet());

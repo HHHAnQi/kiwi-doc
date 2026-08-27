@@ -33,7 +33,14 @@ import org.springframework.stereotype.Component;
 public class PlannedAgentRunFinalizer {
 
     private final AgentPersistenceCoordinator coordinator;
+    /** P2-D5(A): 过程决策摘要直写 run(只在为空时写, 不随终态覆盖)。 */
+    private final com.xxx.ragdoc.application.chat.agent.AgentRunRepository runRepository;
 
+    /**
+     * P2-D5(A): decisionSummary = "为什么得到最终结果"(过程决策), 与 reasonCode(生命周期原因,
+     * 会被 Pipeline 最终 ANSWERED 覆盖为 PLANNED_ANSWER_READY)分离。null = 本次转换不携带
+     * 过程决策(如 Pipeline 的终态收尾), 已写入的摘要保持不变。
+     */
     public FinalizeOutcome finalize(
             String runId,
             long expectedVersion,
@@ -41,7 +48,8 @@ public class PlannedAgentRunFinalizer {
             AgentRunStatus target,
             String reasonCode,
             AgentUsage usage,
-            AgentBudgetReservation reservation) {
+            AgentBudgetReservation reservation,
+            String decisionSummary) {
         boolean ok =
                 coordinator.transitionRun(
                         runId,
@@ -52,6 +60,9 @@ public class PlannedAgentRunFinalizer {
                         usage,
                         reservation);
         if (ok) {
+            if (decisionSummary != null && !decisionSummary.isBlank()) {
+                runRepository.updateDecisionSummary(runId, decisionSummary);
+            }
             return FinalizeOutcome.written(runId, expectedVersion + 1, target);
         }
         Optional<com.xxx.ragdoc.application.chat.agent.AgentRunRecord> reloaded =

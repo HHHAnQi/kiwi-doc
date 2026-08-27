@@ -331,7 +331,7 @@ class ForcedModelReplanIntegrationTest {
 
     private void stubFinalizer() {
         when(runFinalizer.finalize(
-                        anyString(), anyLong(), anySet(), any(), anyString(), any(), any()))
+                        anyString(), anyLong(), anySet(), any(), anyString(), any(), any(), any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
                                 RUN_ID, 6L, AgentRunStatus.READY_TO_ANSWER));
@@ -393,7 +393,7 @@ class ForcedModelReplanIntegrationTest {
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
         verify(runFinalizer)
                 .finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
-                        any(), any());
+                        any(), any(), any());
         assertThat(reason.getValue()).isEqualTo("PLANNED_REPLAN_SUFFICIENT");
 
         // 7) 两个 requirement 的证据都进入了最终回答基座

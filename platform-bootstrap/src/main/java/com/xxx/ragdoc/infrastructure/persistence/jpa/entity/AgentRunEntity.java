@@ -67,6 +67,10 @@ public class AgentRunEntity {
     @Column(name = "terminal_reason_code", length = 64)
     private String terminalReasonCode;
 
+    /** P2-D5(A): 过程决策摘要 — 写入后不被终态覆盖(语义见 V24 迁移注释)。 */
+    @Column(name = "decision_summary", length = 64)
+    private String decisionSummary;
+
     @Column(name = "router_version", length = 64)
     private String routerVersion;
 
@@ -228,6 +232,14 @@ public class AgentRunEntity {
 
     public void setTerminalReasonCode(String terminalReasonCode) {
         this.terminalReasonCode = terminalReasonCode;
+    }
+
+    public String getDecisionSummary() {
+        return decisionSummary;
+    }
+
+    public void setDecisionSummary(String decisionSummary) {
+        this.decisionSummary = decisionSummary;
     }
 
     public String getRouterVersion() {

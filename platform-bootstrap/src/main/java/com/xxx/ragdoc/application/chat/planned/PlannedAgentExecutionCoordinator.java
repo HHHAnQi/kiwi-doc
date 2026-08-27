@@ -189,7 +189,8 @@ public class PlannedAgentExecutionCoordinator {
                             AgentRunStatus.READY_TO_ANSWER,
                             "PLANNED_INITIAL_SUFFICIENT",
                             phase0.usage(),
-                            phase0.reservation());
+                            phase0.reservation(),
+                            "INITIAL_SUFFICIENT");
             return buildPrepared(
                     phase0,
                     suff0,
@@ -239,7 +240,8 @@ public class PlannedAgentExecutionCoordinator {
                     rd.terminalStatusIfRefused(),
                     rd.reasonIfRefused(),
                     phase0.usage(),
-                    phase0.reservation());
+                    phase0.reservation(),
+                    null);
             return PrepareResult.prematureFailure(
                     phase0.runId(), rd.terminalStatusIfRefused(), rd.reasonIfRefused());
         }
@@ -373,7 +375,8 @@ public class PlannedAgentExecutionCoordinator {
                     com.xxx.ragdoc.application.chat.agent.AgentRunStatus.SYSTEM_FAILED,
                     "REPLAN_APPEND_FAILED",
                     phase0.usage(),
-                    phase0.reservation());
+                    phase0.reservation(),
+                    null);
             return PrepareResult.prematureFailure(
                     phase0.runId(),
                     com.xxx.ragdoc.application.chat.agent.AgentRunStatus.SYSTEM_FAILED,
@@ -438,7 +441,8 @@ public class PlannedAgentExecutionCoordinator {
                             AgentRunStatus.READY_TO_ANSWER,
                             "PLANNED_REPLAN_SUFFICIENT",
                             phase1.usage(),
-                            phase1.reservation());
+                            phase1.reservation(),
+                            "REPLAN_SUFFICIENT");
             return buildPrepared(
                     phase1,
                     suff1,
@@ -474,7 +478,8 @@ public class PlannedAgentExecutionCoordinator {
                             AgentRunStatus.READY_TO_ANSWER,
                             reason,
                             phase1.usage(),
-                            phase1.reservation());
+                            phase1.reservation(),
+                            "REPLAN_EXHAUSTED_FALLBACK");
             SufficiencyDecision fallbackSuff =
                     SufficiencyDecision.rule(
                             SufficiencyStatus.PARTIAL,
@@ -499,7 +504,8 @@ public class PlannedAgentExecutionCoordinator {
                 AgentRunStatus.REFUSED_NO_EVIDENCE,
                 "INSUFFICIENT_AFTER_REPLAN_NO_EVIDENCE",
                 phase1.usage(),
-                phase1.reservation());
+                phase1.reservation(),
+                        null);
         return PrepareResult.prematureFailure(
                 phase1.runId(),
                 AgentRunStatus.REFUSED_NO_EVIDENCE,
@@ -528,7 +534,8 @@ public class PlannedAgentExecutionCoordinator {
                             AgentRunStatus.READY_TO_ANSWER,
                             reason + "_FALLBACK",
                             phase.usage(),
-                            phase.reservation());
+                            phase.reservation(),
+                        null);
             SufficiencyDecision fallbackSuff =
                     SufficiencyDecision.rule(
                             SufficiencyStatus.PARTIAL,
@@ -552,7 +559,8 @@ public class PlannedAgentExecutionCoordinator {
                 AgentRunStatus.REFUSED_NO_EVIDENCE,
                 reason + "_NO_EVIDENCE",
                 phase.usage(),
-                phase.reservation());
+                phase.reservation(),
+                        null);
         return PrepareResult.prematureFailure(
                 phase.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, reason + "_NO_EVIDENCE");
     }
@@ -614,6 +622,11 @@ public class PlannedAgentExecutionCoordinator {
             String reasonCode,
             AgentUsage usage,
             AgentBudgetReservation reservation) {
+        // P2-D5(A): 过程决策摘要按终态派生(仅5类语义值, 其余不写)
+        String summary =
+                target == AgentRunStatus.REFUSED_CONFLICT
+                        ? "REFUSED_CONFLICT"
+                        : target == AgentRunStatus.TOOL_FAILED ? "TOOL_FAILURE" : null;
         runFinalizer.finalize(
                 runId,
                 runVersion,
@@ -621,7 +634,8 @@ public class PlannedAgentExecutionCoordinator {
                 target,
                 reasonCode,
                 usage,
-                reservation);
+                reservation,
+                summary);
     }
 
     private void persistenceCoordinatorAppend(

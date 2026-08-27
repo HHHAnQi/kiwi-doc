@@ -3,6 +3,7 @@ package com.xxx.ragdoc.infrastructure.persistence.jpa.repository;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.AgentRunEntity;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.time.Instant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -139,4 +140,17 @@ public interface AgentRunJpaRepository extends JpaRepository<AgentRunEntity, Str
     @Query("UPDATE AgentRunEntity e SET e.ownerId=NULL, e.leaseUntil=NULL "
             + "WHERE e.runId=:runId AND e.ownerId=:ownerId")
     int releaseLease(@Param("runId") String runId, @Param("ownerId") String ownerId);
+
+    /** P2-D5(A): 写入过程决策摘要(只在为空时写 — "一经写入不再覆盖"语义)。 */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+            "UPDATE AgentRunEntity e SET e.decisionSummary=:summary, "
+                    + "e.updatedAt=CURRENT_TIMESTAMP "
+                    + "WHERE e.runId=:runId AND e.decisionSummary IS NULL")
+    int updateDecisionSummary(
+            @Param("runId") String runId, @Param("summary") String summary);
+
+    /** P2-D5(A): 读取过程决策摘要(run API 透出用)。 */
+    @Query("SELECT e.decisionSummary FROM AgentRunEntity e WHERE e.runId=:runId")
+    Optional<String> findDecisionSummary(@Param("runId") String runId);
 }

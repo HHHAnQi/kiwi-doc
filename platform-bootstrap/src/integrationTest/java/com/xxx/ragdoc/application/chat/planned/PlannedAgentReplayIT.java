@@ -279,7 +279,7 @@ class PlannedAgentReplayIT {
                         any(AgentRunStatus.class),
                         anyString(),
                         any(AgentUsage.class),
-                        any(AgentBudgetReservation.class)))
+                        any(AgentBudgetReservation.class), any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
                                 RUN_ID, 6L, AgentRunStatus.READY_TO_ANSWER));
@@ -362,6 +362,7 @@ class PlannedAgentReplayIT {
                         anySet(),
                         eq(AgentRunStatus.READY_TO_ANSWER),
                         anyString(),
+                        any(),
                         any(),
                         any());
     }
@@ -568,6 +569,7 @@ class PlannedAgentReplayIT {
                         eq(AgentRunStatus.REFUSED_NO_EVIDENCE),
                         anyString(),
                         any(),
+                        any(),
                         any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
@@ -666,6 +668,7 @@ class PlannedAgentReplayIT {
                         eq(AgentRunStatus.REFUSED_CONFLICT),
                         anyString(),
                         any(),
+                        any(),
                         any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
@@ -736,6 +739,7 @@ class PlannedAgentReplayIT {
                         anySet(),
                         eq(AgentRunStatus.TOOL_FAILED),
                         anyString(),
+                        any(),
                         any(),
                         any()))
                 .thenReturn(
