@@ -159,20 +159,31 @@ def judge_pairwise(question, gold_answer, ans_a, ans_b):
     Phase1-②: 双侧格式归一化后比较, 消除格式偏好。"""
     ans_a = normalize_format(ans_a)
     ans_b = normalize_format(ans_b)
-    prompt_tpl = f"""对比以下两个回答, 哪个更好地回答了问题? 只评信息覆盖, 忽略格式。
+    # 修复: 用 .format() 替代 %s（避免答案中的 % 字符导致 TypeError）
+    prompt_a = f"""对比以下两个回答, 哪个更好地回答了问题? 只评信息覆盖, 忽略格式。
 
 问题: {question}
 标准答案要点: {gold_answer[:300]}
 
-回答 {chr(65)}: %s
+回答 A: {ans_a[:500]}
 
-回答 {chr(66)}: %s
+回答 B: {ans_b[:500]}
+
+只输出 "A" 或 "B" 或 "TIE"。"""
+    prompt_b = f"""对比以下两个回答, 哪个更好地回答了问题? 只评信息覆盖, 忽略格式。
+
+问题: {question}
+标准答案要点: {gold_answer[:300]}
+
+回答 A: {ans_b[:500]}
+
+回答 B: {ans_a[:500]}
 
 只输出 "A" 或 "B" 或 "TIE"。"""
     # Round 1: original order
-    r1 = judge(prompt_tpl % (ans_a[:500], ans_b[:500]))
+    r1 = judge(prompt_a)
     # Round 2: swapped order (position bias check)
-    r2 = judge(prompt_tpl % (ans_b[:500], ans_a[:500]))
+    r2 = judge(prompt_b)
     a_win, b_win = 0, 0
     if "A" in r1[:3]: a_win += 1
     elif "B" in r1[:3]: b_win += 1
