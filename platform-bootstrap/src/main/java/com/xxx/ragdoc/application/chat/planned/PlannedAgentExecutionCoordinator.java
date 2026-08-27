@@ -261,17 +261,29 @@ public class PlannedAgentExecutionCoordinator {
     }
 
     /**
-     * P0-1(降级链): agent_run 的 planner 版本标记按实际来源写 — 替换原硬编码 "rule-based-v1"
-     * (model-enabled=true 后该硬编码与事实不符, trace 无法分辨哪个 planner 产出了 plan)。
+     * P0-1/P0-2: agent_run 的 planner 版本标记按实际来源写 — 替换原硬编码 "rule-based-v1"。
+     * 评测 runner 通过 /agent/runs/{id}.plannerVersion 逐样本判定 planner_source:
+     * model-llm-v1[:retry] / rule-fallback-v1:REASON / rule-based-v1。
      */
     private String resolvePlannerVersionTag(
             com.xxx.ragdoc.application.chat.planner.PlannerResponse resp) {
-        if (resp != null
-                && com.xxx.ragdoc.application.chat.planner.FallbackPlannerProvider.REASON_RULE_FALLBACK
-                        .equals(resp.reasonCode())) {
-            return "rule-fallback-v1"; // Model 重试耗尽后 Rule 兜底 — 降级路径可追溯
+        String reason = resp == null ? "" : resp.reasonCode() == null ? "" : resp.reasonCode();
+        if (reason.startsWith(
+                com.xxx.ragdoc.application.chat.planner.FallbackPlannerProvider
+                        .REASON_RULE_FALLBACK)) {
+            // "RULE_FALLBACK_AFTER_MODEL_FAILURE:TIMEOUT:att2" → "rule-fallback-v1:TIMEOUT"
+            String[] parts = reason.split(":");
+            return "rule-fallback-v1:" + (parts.length > 1 ? parts[1] : "UNKNOWN");
         }
-        return plannerProperties.isModelEnabled() ? "model-llm-v1" : "rule-based-v1";
+        if (!plannerProperties.isModelEnabled()) {
+            return "rule-based-v1";
+        }
+        if (reason.startsWith(
+                com.xxx.ragdoc.application.chat.planner.FallbackPlannerProvider
+                        .REASON_MODEL_RETRY)) {
+            return "model-llm-v1:retry";
+        }
+        return "model-llm-v1";
     }
 
     private PrepareResult runReplanPhase(

@@ -106,7 +106,9 @@ class FallbackPlannerProviderTest {
         PlannerResponse out = chain.plan(request());
         assertThat(out.planId()).isEqualTo("rule-plan");
         assertThat(out.reasonCode())
-                .isEqualTo(FallbackPlannerProvider.REASON_RULE_FALLBACK);
+                .startsWith(FallbackPlannerProvider.REASON_RULE_FALLBACK)
+                .contains("PROVIDER_ERROR") // 失败原因可追溯
+                .contains("att2"); // Model 尝试次数可追溯
         verify(modelProvider, times(2)).plan(any()); // 1 + retry 1
         verify(metrics).incrementPlannerDegradation("rule_fallback");
     }
@@ -147,16 +149,37 @@ class FallbackPlannerProviderTest {
     }
 
     @Test
-    @DisplayName("FIXTURE_UNAVAILABLE (REPLAY 夹具缺失) → 不重试, Model 恰好 1 次调用")
-    void fixtureFailureNoRetry() {
+    @DisplayName("重试成功 → reasonCode 带 MODEL_RETRY_SUCCESS:attN 标记 (仍为 MODEL 来源)")
+    void retrySuccessMarker() {
+        AtomicInteger calls = new AtomicInteger();
+        when(modelProvider.plan(any()))
+                .thenAnswer(
+                        inv -> {
+                            if (calls.incrementAndGet() == 1) {
+                                throw new PlannerException(
+                                        PlannerException.Reason.TIMEOUT, "transient");
+                            }
+                            return resp("model-plan");
+                        });
+        PlannerResponse out = chain.plan(request());
+        assertThat(out.reasonCode())
+                .startsWith(FallbackPlannerProvider.REASON_MODEL_RETRY)
+                .contains("att2");
+    }
+
+    @Test
+    @DisplayName("FIXTURE_UNAVAILABLE (REPLAY 夹具缺失) → 严格失败: 不重试不降级Rule, Model 恰好 1 次调用")
+    void fixtureFailureStrictFail() {
         when(modelProvider.plan(any()))
                 .thenThrow(
                         new PlannerException(
                                 PlannerException.Reason.FIXTURE_UNAVAILABLE, "fixture missing"));
         when(ruleProvider.plan(any())).thenReturn(resp("rule-plan"));
-        PlannerResponse out = chain.plan(request());
-        assertThat(out.reasonCode()).isEqualTo(FallbackPlannerProvider.REASON_RULE_FALLBACK);
+        assertThatThrownBy(() -> chain.plan(request()))
+                .isInstanceOf(PlannerException.class)
+                .hasMessageContaining("PLANNER_FIXTURE_STRICT_FAIL");
         verify(modelProvider, times(1)).plan(any()); // 关键断言: 确定性失败零重试
+        verify(ruleProvider, never()).plan(any()); // 关键断言: 评测隔离, 不降级 Rule
     }
 
     @Test

@@ -19,11 +19,11 @@ import org.springframework.stereotype.Component;
  *   <li>{@code model-enabled=false} (ModelPlannerProvider bean 不存在) → 纯转发 Rule,
  *       行为与旧互斥装配 zero-diff
  *   <li>Model 失败 → 重试 {@link PlannerProperties#getModelRetryAttempts()} 次 (默认 1);
- *       {@code FIXTURE_*} 确定性失败<b>不</b>重试 — REPLAY 评测语义: 夹具缺失严格失败,
- *       重试可能掩盖评测对象漂移 (P0-2 防线)
+ *       {@code FIXTURE_*} 确定性失败<b>不</b>重试也<b>不</b>降级 Rule — REPLAY 评测语义:
+ *       夹具缺失即严格失败, 降级链不得静默污染实验组 (P0-2 评测隔离防线)
  *   <li>重试耗尽且 {@code rule-fallback-enabled=true} → Rule 生成, response.reasonCode 标记
- *       {@link #REASON_RULE_FALLBACK} (coordinator 据此把 agent_run.plannerVersion 写为
- *       rule-fallback-v1, trace 可辨)
+ *       {@link #REASON_RULE_FALLBACK}:REASON:attN (coordinator 据此把 agent_run.plannerVersion
+ *       写为 rule-fallback-v1:REASON, 评测 runner 逐样本可辨降级来源)
  *   <li>Rule 也失败/返回 null (无 allowed tool) → 抛 {@link PlannerException}
  *       (PROVIDER_ERROR, ALL_PLANNERS_FAILED) — 由 Pipeline 层降级 Classic (见
  *       PlannedAgentPipeline)
@@ -37,8 +37,11 @@ import org.springframework.stereotype.Component;
 @Component("basePlannerProvider")
 public class FallbackPlannerProvider implements PlannerProvider {
 
-    /** PlannerResponse.reasonCode 标记: 本链路 Model 重试耗尽后由 Rule 兜底生成。 */
+    /** PlannerResponse.reasonCode 标记前缀: 本链路 Model 重试耗尽后由 Rule 兜底生成。 */
     public static final String REASON_RULE_FALLBACK = "RULE_FALLBACK_AFTER_MODEL_FAILURE";
+
+    /** PlannerResponse.reasonCode 标记前缀: Model 非首次尝试成功 (仍是 MODEL 来源, 但需可追溯)。 */
+    public static final String REASON_MODEL_RETRY = "MODEL_RETRY_SUCCESS";
 
     /** MetricsPort 缺失 (单测/最小装配) 时的空实现。 */
     private static final MetricsPort NO_METRICS =
@@ -114,6 +117,7 @@ public class FallbackPlannerProvider implements PlannerProvider {
         }
 
         RuntimeException lastModelFailure = null;
+        String lastModelFailureReason = "UNKNOWN";
         int attempts = 1 + Math.max(0, properties.getModelRetryAttempts());
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
@@ -128,10 +132,13 @@ public class FallbackPlannerProvider implements PlannerProvider {
                             attempt,
                             attempts);
                     metrics.incrementPlannerDegradation("model_retry_success");
+                    // 逐样本可追溯: planner 仍为 MODEL, 但 response 标记重试次数
+                    return withMarker(resp, REASON_MODEL_RETRY + ":att" + attempt);
                 }
                 return resp;
             } catch (RuntimeException ex) {
                 lastModelFailure = ex;
+                lastModelFailureReason = failureReasonCode(ex);
                 log.warn(
                         "planner.model_attempt_failed run={} attempt={}/{} err={}",
                         request.runId(),
@@ -139,7 +146,10 @@ public class FallbackPlannerProvider implements PlannerProvider {
                         attempts,
                         ex.toString());
                 if (isDeterministicFailure(ex)) {
-                    break; // FIXTURE_*: 重试无意义且可能掩盖评测夹具问题
+                    // P0-2(评测隔离): REPLAY 夹具缺失/冲突 = 评测环境错误, 严格失败 —
+                    // 不重试也<b>不</b>降级 Rule, 防止降级链静默污染实验组。
+                    throw asPlannerException(
+                            "PLANNER_FIXTURE_STRICT_FAIL run=" + request.runId(), ex);
                 }
             }
         }
@@ -157,12 +167,10 @@ public class FallbackPlannerProvider implements PlannerProvider {
                         ruleResp.steps().size(),
                         ruleResp.planId());
                 metrics.incrementPlannerDegradation("rule_fallback");
-                return new PlannerResponse(
-                        ruleResp.planId(),
-                        ruleResp.planVersion(),
-                        ruleResp.steps(),
-                        ruleResp.targetedRequirementIds(),
-                        REASON_RULE_FALLBACK);
+                // 逐样本可追溯: 来源=Rule 兜底 + 失败原因 + Model 尝试次数
+                return withMarker(
+                        ruleResp,
+                        REASON_RULE_FALLBACK + ":" + lastModelFailureReason + ":att" + attempts);
             }
             log.warn("planner.rule_fallback_empty run={}", request.runId());
         } catch (RuntimeException ex) {
@@ -170,6 +178,19 @@ public class FallbackPlannerProvider implements PlannerProvider {
         }
         throw asPlannerException(
                 "ALL_PLANNERS_FAILED run=" + request.runId() + " ruleExhausted", lastModelFailure);
+    }
+
+    private static PlannerResponse withMarker(PlannerResponse resp, String marker) {
+        return new PlannerResponse(
+                resp.planId(),
+                resp.planVersion(),
+                resp.steps(),
+                resp.targetedRequirementIds(),
+                marker);
+    }
+
+    private static String failureReasonCode(RuntimeException ex) {
+        return ex instanceof PlannerException pe ? pe.reason.name() : "RUNTIME";
     }
 
     private static boolean isDeterministicFailure(RuntimeException ex) {

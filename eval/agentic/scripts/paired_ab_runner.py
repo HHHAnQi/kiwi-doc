@@ -59,16 +59,44 @@ def call_chat(query, mode, timeout=180):
                 "agent_run_id": None, "pipeline": mode}
 
 def fetch_agent_metrics(run_id):
-    if not run_id: return {"llm_calls": 0, "tool_calls": 0, "tokens": 0, "steps": 0}
+    empty = {"llm_calls": 0, "tool_calls": 0, "tokens": 0, "steps": 0,
+             "planner_version": None, "decomposition_steps": 0, "replan_count": 0}
+    if not run_id: return dict(empty)
     try:
         r = requests.get(f"{AGENT_RUN_URL}/{run_id}",
                         headers={"Authorization": f"Bearer {TOKEN}"}, timeout=10)
         d = r.json()
+        steps = d.get("steps") or []
+        # P0-2: 初始plan步(plan-step-*)即 planner decomposition; replan-* 即重规划轮次
+        plan_steps = [s for s in steps if str(s.get("step_id", "")).startswith("plan-step-")]
+        replan_steps = [s for s in steps if str(s.get("step_id", "")).startswith("replan-")]
+        executed = [s for s in steps if s.get("status") not in (None, "PENDING", "SKIPPED_BUDGET")]
         return {"llm_calls": d.get("step_count", 0),
-                "tool_calls": d.get("step_count", 0),
+                "tool_calls": len(executed),
                 "tokens": 0, "steps": d.get("step_count", 0),
-                "status": d.get("status"), "evidence": d.get("evidence_count", 0)}
-    except: return {"llm_calls": 0, "tool_calls": 0, "tokens": 0, "steps": 0}
+                "status": d.get("status"), "evidence": d.get("evidence_count", 0),
+                "planner_version": d.get("planner_version"),
+                "decomposition_steps": len(plan_steps),
+                "replan_count": len(replan_steps)}
+    except: return dict(empty)
+
+def classify_planner_source(agentic):
+    """P0-2(评测隔离): 逐样本判定 Agentic 臂的真实 planner 来源。
+    主实验结论只能基于 planner_source=MODEL 的样本; 任何 fallback 单独计数, 不得静默混入。
+    判定依据: 响应 pipeline_type + /agent/runs/{id} 的 planner_version。"""
+    if agentic.get("error"):
+        return "FAILED"
+    if (agentic.get("pipeline") or "").upper() in ("CLASSIC_RAG", "CLASSIC"):
+        # mode=AGENTIC 但走了 Classic — P0-1 降级链第2层触发(Planner 链全灭)
+        return "CLASSIC_FALLBACK"
+    pv = agentic.get("planner_version") or ""
+    if pv.startswith("rule-fallback"):
+        return "RULE_FALLBACK"
+    if pv.startswith("model-llm-v1"):
+        return "MODEL"  # 含 :retry 后缀 — 重试后仍由 MODEL 完成, 算有效样本
+    if pv.startswith("rule-based"):
+        return "RULE_ONLY_MISCONFIG"  # model-enabled=false — 实验配置错误, 必须停止
+    return "NO_RUN"  # 无 run 详情 — 人工检查
 
 # ─── Judge calls ─────────────────────────────────────
 
@@ -274,7 +302,13 @@ def run_experiment(dataset_path, budget_mode="product", run_id=1):
         classic = call_chat(q, "RAG")
         # Agentic
         agentic = call_chat(q, "AGENTIC")
-        ag_metrics = fetch_agent_metrics(agentic.get("agent_run_id"))
+        agentic_all = {**agentic, **fetch_agent_metrics(agentic.get("agent_run_id"))}
+        # P0-2(评测隔离): 逐样本记录真实 planner 来源 — fallback 样本不得静默混入 MODEL 组
+        planner_source = classify_planner_source(agentic_all)
+        agentic_all["planner_source"] = planner_source
+        if planner_source not in ("MODEL",):
+            print(f"    [fallback] id={case.get('id','?')} planner_source={planner_source} "
+                  f"planner_version={agentic_all.get('planner_version')}")
 
         # Absolute scoring (blind: judge doesn't know which system)
         c_scores = judge_absolute_dual(q, gold, classic["answer"])
@@ -288,7 +322,7 @@ def run_experiment(dataset_path, budget_mode="product", run_id=1):
             "slice": case.get("slice", "unknown"),
             "question": q,
             "classic": {**classic, **c_scores},
-            "agentic": {**agentic, **a_scores, **ag_metrics},
+            "agentic": {**agentic_all, **a_scores},
             "pairwise_pref": pref,
         })
 
@@ -308,6 +342,28 @@ def aggregate_results(all_runs, budget_mode):
     slices = ["all"] + list(set(r["slice"] for run in all_runs for r in run))
 
     summary = {"budget_mode": budget_mode, "runs": len(all_runs), "slices": {}}
+
+    # P0-2(评测隔离): planner_source 分布 + MODEL-only 有效样本视图。
+    # 主结论只看 model_only; fallback/failed 只作可靠性报告。
+    src_counts = defaultdict(int)
+    for run in all_runs:
+        for r in run:
+            src_counts[r["agentic"].get("planner_source", "MISSING")] += 1
+    summary["planner_source_counts"] = dict(src_counts)
+    model_runs = [[r for r in run if r["agentic"].get("planner_source") == "MODEL"]
+                  for run in all_runs]
+    model_runs = [run for run in model_runs if run]
+    if model_runs:
+        summary["model_only"] = aggregate_model_only(model_runs)
+    n_total = sum(src_counts.values())
+    n_model = src_counts.get("MODEL", 0)
+    summary["pilot_validity"] = {
+        "n_total": n_total,
+        "n_model": n_model,
+        "model_ratio": round(n_model / n_total, 4) if n_total else 0.0,
+        # 门槛: MODEL 样本占比 < 0.8 → 实验解释力不足, 不得直接给 Agentic vs Classic 结论
+        "valid": n_total > 0 and n_model / n_total >= 0.8,
+    }
 
     for sl in slices:
         sl_data = {"classic": {}, "agentic": {}, "delta": {}, "pairwise": {}}
@@ -339,6 +395,38 @@ def aggregate_results(all_runs, budget_mode):
         summary["slices"][sl] = sl_data
 
     return summary
+
+def aggregate_model_only(model_runs):
+    """P0-2: 只统计 planner_source=MODEL 的有效样本 (per-slice correctness/pairwise/cost)。"""
+    out = {"slices": {}}
+    slices = ["all"] + list(set(r["slice"] for run in model_runs for r in run))
+    for sl in slices:
+        rows = [r for run in model_runs for r in run if sl == "all" or r["slice"] == sl]
+        if not rows: continue
+        d = {
+            "n": len(rows),
+            "classic_correctness": statistics.mean(r["classic"]["correctness"] for r in rows),
+            "agentic_correctness": statistics.mean(r["agentic"]["correctness"] for r in rows),
+            "agentic_evidence_completeness": statistics.mean(
+                r["agentic"]["evidence_completeness"] for r in rows),
+            "classic_evidence_completeness": statistics.mean(
+                r["classic"]["evidence_completeness"] for r in rows),
+            "classic_latency_ms": statistics.mean(r["classic"]["latency_ms"] for r in rows),
+            "agentic_latency_ms": statistics.mean(r["agentic"]["latency_ms"] for r in rows),
+            "decomposition_steps_mean": statistics.mean(
+                r["agentic"].get("decomposition_steps", 0) for r in rows),
+            "replan_count_mean": statistics.mean(
+                r["agentic"].get("replan_count", 0) for r in rows),
+        }
+        deltas = [r["agentic"]["correctness"] - r["classic"]["correctness"] for r in rows]
+        d_mean, d_lo, d_hi = paired_bootstrap_ci(deltas)
+        d["correctness_delta"] = {"mean": d_mean, "ci_lo": d_lo, "ci_hi": d_hi}
+        prefs = defaultdict(int)
+        for r in rows: prefs[r["pairwise_pref"]] += 1
+        tp = sum(prefs.values())
+        if tp: d["pairwise"] = {k: v / tp for k, v in prefs.items()}
+        out["slices"][sl] = d
+    return out
 
 def main():
     p = argparse.ArgumentParser()
@@ -382,10 +470,22 @@ def main():
 
     # Aggregate
     summary = aggregate_results(all_runs, args.budget)
-    summary["fingerprint"] = {"dataset_sha256": ds_sha, "corpus": corpus_fp, "rerank": r_health}
+    summary["fingerprint"] = {
+        "dataset_sha256": ds_sha, "corpus": corpus_fp, "rerank": r_health,
+        # P0-2: seed 显式入指纹, 保证可复现
+        "seed": {"sampling": "random.seed(42+run_id)", "bootstrap": 42, "n_boot": 5000},
+    }
     sum_path = Path(args.output) / f"paired_ab_{args.budget}_summary.json"
     json.dump(summary, open(sum_path, "w"), ensure_ascii=False, indent=2)
     print(f"\n  Summary → {sum_path}")
+
+    # P0-2: 评测隔离门 — fallback 比例高到破坏解释力时, 明确声明不可下结论
+    pv = summary.get("pilot_validity", {})
+    print(f"\n  PILOT VALIDITY: model={pv.get('n_model')}/{pv.get('n_total')} "
+          f"({pv.get('model_ratio', 0):.1%}) → {'VALID' if pv.get('valid') else 'INVALID'}")
+    print(f"  planner_source: {summary.get('planner_source_counts', {})}")
+    if not pv.get("valid"):
+        print("  !! MODEL 样本占比 <80% — 不得直接给出 Agentic vs Classic 结论, 先排查降级原因")
 
     # Print key results
     for sl, data in sorted(summary["slices"].items()):

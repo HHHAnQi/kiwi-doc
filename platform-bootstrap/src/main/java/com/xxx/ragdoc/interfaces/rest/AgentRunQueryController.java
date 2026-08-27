@@ -61,6 +61,7 @@ public class AgentRunQueryController {
             String status,
             String terminalReasonCode,
             String planId,
+            String plannerVersion,
             int evidenceCount,
             int stepCount,
             String createdAt,
@@ -76,6 +77,10 @@ public class AgentRunQueryController {
                     run.status() == null ? null : run.status().name(),
                     run.terminalReasonCode(),
                     run.planId(),
+                    // P0-2(评测隔离): planner 实际来源(model-llm-v1 / rule-fallback-v1:REASON /
+                    // rule-based-v1) — 评测 runner 据此逐样本判定 planner_source, 防止降级样本
+                    // 静默混入 LLM Planner 实验组。
+                    run.routerVersion(),
                     run.evidenceCount(),
                     steps.size(),
                     run.createdAt() == null ? null : run.createdAt().toString(),
