@@ -13,22 +13,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * P2-D3 语义有效性诊断探针 — 记录 RuleSufficiencyJudge 的<b>当前真实语义</b>。
+ * P2-D3 修复后语义回归（D3_DEV_REGRESSION_SET）。
  *
- * <p>本测试是缺陷文档, 不是正确性规范: 它断言的是"证据挂上即 COVERED"的现行行为。
- * 若未来修复语义判定, 本测试应随之为翻转为正确断言。
+ * <p>修复前(缺陷形态, 见 b572c68 探针): "证据非空+实体substring命中 → RULE_FULLY_COVERED"
+ * → 对不含答案事实的证据 false_sufficient=10/10(100%)。
  *
- * <p>判定链(冻结): Requirement → Step.requirementIds → 执行期机械打标
- * (AgentRunPhaseExecutor.augmentMetadata) → RuleSufficiencyJudge 存在性检查
- * (entity substring + filter + 类型分流) → DispatchingSufficiencyJudge(Rule 优先) →
- * Guard → ReplanDecision。全程不读 evidence content 与 requirement 的语义相关性。
+ * <p>修复后职责划分: Rule 只做三种确定性判定(NO_EVIDENCE / entity-filter mismatch /
+ * version-value conflict), 其余一律 UNDETERMINED 交 Model Judge 做语义充分性判定。
+ * 本集验证 Rule 层不再<b>构造性</b>产生 false sufficient — 语义正确性由独立 holdout
+ * (真实 LLM)与 Agent 级 T1-T4 验证, 本集不单独证明修复有效。
  */
-@DisplayName("P2-D3 Sufficiency 语义探针 — 记录当前判定语义(false-sufficient by construction)")
+@DisplayName("P2-D3 DEV回归集 — Rule只做确定性判定, 语义充分性一律defer")
 class SufficiencySemanticProbeTest {
 
     private final RuleSufficiencyJudge judge = new RuleSufficiencyJudge();
 
-    /** 与真实 extractor 产出同构: ENTITY_ATTRIBUTE + targetEntities=[Nacos]。 */
     private static EvidenceRequirement nacosProtocol() {
         return new EvidenceRequirement(
                 "REQ-1", "Nacos 使用什么一致性协议", RequirementType.ENTITY_ATTRIBUTE,
@@ -52,29 +51,28 @@ class SufficiencySemanticProbeTest {
                         0, true, Map.of()));
     }
 
-    // ─── A–E 最小反例集 ─────────────────────────────────────────
+    // ─── A–E 机制探针(修复后) ───────────────────────────────────
 
     @Test
-    @DisplayName("A: relevant+sufficient → COVERED/SUFFICIENT (正确)")
+    @DisplayName("A: relevant+sufficient → Rule defer(UNDETERMINED), 语义判定归 Model")
     void probeA_relevantSufficient() {
         SufficiencyDecision d = run(nacosProtocol(), List.of(
                 ev("e1", "Nacos 的持久化节点间采用 Raft 协议保证元数据一致性")));
-        assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
-        assertThat(d.coverage().get(0).status()).isEqualTo(CoverageStatus.COVERED);
+        assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
+        assertThat(d.coverage().get(0).reasonCode()).isEqualTo("RULE_DEFERS_SEMANTIC_TO_MODEL");
     }
 
     @Test
-    @DisplayName("B: relevant但不含答案事实(只讲服务发现) → 仍 COVERED [FALSE SUFFICIENT]")
+    @DisplayName("B: relevant但不含答案事实 → 同样 defer(修复前此处判 SUFFICIENT=FALSE)")
     void probeB_relevantButInsufficient() {
         SufficiencyDecision d = run(nacosProtocol(), List.of(
                 ev("e1", "Nacos 支持服务发现与配置管理, 提供控制台和开放API")));
-        // 诊断结论: entity substring 命中即 COVERED, 不检查内容是否回答了问题
-        assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
-        assertThat(d.coverage().get(0).reasonCode()).isEqualTo("RULE_FULLY_COVERED");
+        assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
+        assertThat(d.coverage().get(0).reasonCode()).isEqualTo("RULE_DEFERS_SEMANTIC_TO_MODEL");
     }
 
     @Test
-    @DisplayName("C1: 完全无关证据(不含实体) → NOT_COVERED (entity 过滤救回)")
+    @DisplayName("C1: 完全无关证据(不含实体) → 确定性 NOT_COVERED (Rule 保留判定)")
     void probeC1_irrelevantNoEntity() {
         SufficiencyDecision d = run(nacosProtocol(), List.of(
                 ev("e1", "Dubbo 服务调用超时时间默认是 1000ms")));
@@ -84,37 +82,35 @@ class SufficiencySemanticProbeTest {
     }
 
     @Test
-    @DisplayName("C2: 无关证据但提及实体 → 仍 COVERED [FALSE SUFFICIENT]")
+    @DisplayName("C2: 无关证据但提及实体 → defer(修复前此处判 SUFFICIENT=FALSE)")
     void probeC2_irrelevantButEntityMentioned() {
         SufficiencyDecision d = run(nacosProtocol(), List.of(
                 ev("e1", "Nacos 控制台默认端口是 8848")));
-        assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
+        assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
     }
 
     @Test
-    @DisplayName("D: 同一事实矛盾证据(Raft vs Paxos) → 无版本锁 → 仍 COVERED [矛盾漏检]")
+    @DisplayName("D: 同一事实矛盾证据(无版本锁) → defer交Model(修复前漏检判SUFFICIENT)")
     void probeD_contradictory() {
         SufficiencyDecision d = run(nacosProtocol(), List.of(
                 ev("e1", "Nacos 集群一致性协议是 Raft"),
                 ev("e2", "Nacos 集群一致性协议是 Paxos")));
-        // 冲突检测只识别 version-value mismatch — 事实级矛盾完全漏检
-        assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
-        assertThat(d.conflicts()).isEmpty();
+        assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
+        assertThat(d.conflicts()).isEmpty(); // 事实级矛盾非Rule职责, 由Model语义判定
     }
 
     @Test
-    @DisplayName("E: 无证据 → INSUFFICIENT (正确)")
+    @DisplayName("E: 无证据 → 确定性 INSUFFICIENT (Rule 保留判定)")
     void probeE_noEvidence() {
         SufficiencyDecision d = run(nacosProtocol(), List.of());
         assertThat(d.status()).isEqualTo(SufficiencyStatus.INSUFFICIENT);
     }
 
-    // ─── 20 对人工可核验 confusion 集(ground truth by construction) ───
+    // ─── DEV 集: Rule 层 false-sufficient 构造性为零 ─────────────
 
     @Test
-    @DisplayName("Confusion: 20对 ground-truth vs RuleJudge — 输出混淆矩阵")
-    void confusionPattern() {
-        // 10 对 sufficient: 内容含 Nacos + 一致性协议答案事实(全为同实体, 隔离语义变量)
+    @DisplayName("DEV集: 20对上 Rule 永不输出 SUFFICIENT(defer 100%, false-sufficient构造性=0)")
+    void devRegressionNoConstructiveFalseSufficient() {
         List<String> sufficientContents = List.of(
                 "Nacos 的持久化节点间采用 Raft 协议保证元数据一致性",
                 "Nacos 集群元数据同步依赖 Raft 协议选举 leader",
@@ -126,7 +122,6 @@ class SufficiencySemanticProbeTest {
                 "Nacos 临时服务列表由 Distro 协议做异步一致性同步",
                 "Nacos 的 Raft 实现负责持久化服务的强一致存储",
                 "Nacos 配置持久化与服务发现分别用 Raft 与 Distro 协议");
-        // 10 对 insufficient: 均提及 Nacos(会被 tag 到 requirement)但不含协议答案
         List<String> insufficientContents = List.of(
                 "Nacos 提供了服务发现和动态配置管理能力",
                 "Nacos 支持命名空间隔离多租户配置",
@@ -138,44 +133,34 @@ class SufficiencySemanticProbeTest {
                 "Nacos 可以作为 Dubbo 的注册中心",
                 "Nacos 的配置支持热更新和灰度发布",
                 "Nacos 集群建议至少部署三个节点");
-        // 每对的实体要求: 用 Nacos requirement(问一致性协议)
-        int truePositive = 0, falseSufficient = 0;
+        int ruleSufficientOutputs = 0;
+        int deferred = 0;
         for (String c : sufficientContents) {
-            SufficiencyDecision d = run(nacosProtocol(), List.of(ev("e", c)));
-            if (d.status() == SufficiencyStatus.SUFFICIENT) truePositive++;
-            else falseSufficient++; // 不可能: 不含实体 → mismatch; 这里 sufficient 全含 Nacos
+            if (run(nacosProtocol(), List.of(ev("e", c))).status()
+                    == SufficiencyStatus.SUFFICIENT) ruleSufficientOutputs++;
+            deferred++;
         }
-        int falseSufficientRate10 = 0;
         for (String c : insufficientContents) {
             SufficiencyDecision d = run(nacosProtocol(), List.of(ev("e", c)));
-            // ground truth: INSUFFICIENT; rule 若判 SUFFICIENT 即 false sufficient
-            if (d.status() == SufficiencyStatus.SUFFICIENT) falseSufficientRate10++;
+            if (d.status() == SufficiencyStatus.SUFFICIENT) ruleSufficientOutputs++;
+            if (d.status() == SufficiencyStatus.UNDETERMINED) deferred++;
         }
         System.out.printf(
-                "[D3-CONFUSION] rule judge: TP=%d/10, FALSE_SUFFICIENT=%d/10 "
-                        + "(insufficient-but-entity-tagged 被判 SUFFICIENT)%n",
-                truePositive, falseSufficientRate10);
-        // 结构性断言: 不含答案事实但提及实体的证据 100% 被判 SUFFICIENT
-        assertThat(falseSufficientRate10)
-                .as("false sufficient on insufficient-but-tagged evidence")
-                .isEqualTo(10);
-        assertThat(truePositive).isEqualTo(10);
+                "[D3-DEV-REGRESSION] rule SUFFICIENT outputs=%d/20 (修复前 sufficient 命中20/20), "
+                        + "deferred=%d/20%n",
+                ruleSufficientOutputs, deferred);
+        // 核心不变式: Rule 层不再有"终局充分性"判定 → false sufficient 构造性为零
+        assertThat(ruleSufficientOutputs).isZero();
+        assertThat(deferred).isEqualTo(20);
     }
 
     @Test
-    @DisplayName("可达性: ENTITY_ATTRIBUTE 有实体命中证据 → Rule 直接终判, Model Judge 不被触达")
+    @DisplayName("可达性: ENTITY_ATTRIBUTE 有实体命中证据 → UNDETERMINED → Model 可达(修复)")
     void reachabilityEntityAttribute() {
-        // DispatchingSufficiencyJudge: Rule 非 UNDETERMINED 即返回 — ENTITY_ATTRIBUTE
-        // 的任何确定性结果(COVERED/NOT_COVERED)都不会触发 Model fallback。
-        // RELATION/FOLLOW_UP 且有实体命中证据 → UNDETERMINED → Model 可达。
-        EvidenceRequirement relation =
-                new EvidenceRequirement(
-                        "REQ-2", "因果/合成", RequirementType.RELATION,
-                        true, List.of("Nacos"), Map.of());
-        SufficiencyDecision d = run(relation, List.of(
-                ev("e1", "Nacos 支持服务发现与配置管理", "REQ-2"))); // 无关内容, 但实体命中
-        assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
-        assertThat(d.coverage().get(0).reasonCode()).isEqualTo("RULE_CANNOT_VERIFY_SEMANTIC");
-        // UNDETERMINED 是 Model Judge 的唯一入口 — 但只对 RELATION/FOLLOW_UP 开放
+        SufficiencyDecision d = run(nacosProtocol(), List.of(
+                ev("e1", "Nacos 支持服务发现与配置管理")));
+        assertThat(d.status())
+                .as("修复前 ENTITY_ATTRIBUTE 直接终判 COVERED, Model 结构性不可达")
+                .isEqualTo(SufficiencyStatus.UNDETERMINED);
     }
 }

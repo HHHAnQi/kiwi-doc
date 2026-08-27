@@ -100,6 +100,7 @@ class ForcedModelReplanIntegrationTest {
 
     private final List<String> llmPrompts = new ArrayList<>();
     private final List<String> toolQueries = new ArrayList<>();
+    private final List<String> modelJudgeVerdicts = new ArrayList<>();
 
     private PlannedAgentExecutionCoordinator coordinator;
 
@@ -146,6 +147,88 @@ class ForcedModelReplanIntegrationTest {
         stubFinalizer();
         stubScriptedLlm();
         stubScriptedTools();
+        stubScriptedModelJudge();
+    }
+
+    /**
+     * P2-D3 修复后 Rule 对"有证据+实体命中"一律 defer → Model Judge 每次判定都会被调用。
+     * 脚本化语义判定(模拟真实 LLM 的语义判别力, D3 holdout 实测 glm-4-plus false_sufficient=0):
+     * 第1次(Phase-0后): REQ-1 有相关证据 COVERED, REQ-2/REQ-3 无证据 → INSUFFICIENT → replan;
+     * 第2次(Phase-1后): REQ-1/REQ-2 均有证据, REQ-3 合成可答 → SUFFICIENT → 最终回答。
+     */
+    private void stubScriptedModelJudge() {
+        java.util.concurrent.atomic.AtomicInteger call = new java.util.concurrent.atomic.AtomicInteger();
+        when(modelJudge.evaluate(any()))
+                .thenAnswer(
+                        inv -> {
+                            com.xxx.ragdoc.application.chat.sufficiency.SufficiencyRequest req =
+                                    inv.getArgument(0);
+                            int n = call.incrementAndGet();
+                            List<com.xxx.ragdoc.application.chat.sufficiency.RequirementCoverage>
+                                    covs = new ArrayList<>();
+                            List<String> missing = new ArrayList<>();
+                            for (var r : req.requirements()) {
+                                List<Evidence> hits =
+                                        req.evidence().stream()
+                                                .filter(
+                                                        e -> {
+                                                            Object ids =
+                                                                    e.metadata() == null
+                                                                            ? null
+                                                                            : e.metadata()
+                                                                                    .get(
+                                                                                            "requirementIds");
+                                                            return ids instanceof List<?> l
+                                                                    && l.contains(
+                                                                            r.requirementId());
+                                                        })
+                                                .toList();
+                                // REQ-3(RELATION合成)第2次判可由已有两事实合成
+                                boolean covered =
+                                        n == 1
+                                                ? r.requirementId().equals("REQ-1")
+                                                        && !hits.isEmpty()
+                                                : !hits.isEmpty()
+                                                        || r.requirementId().equals("REQ-3");
+                                if (covered && !req.evidence().isEmpty()) {
+                                    String evId =
+                                            hits.isEmpty()
+                                                    ? req.evidence()
+                                                            .get(0)
+                                                            .evidenceId()
+                                                    : hits.get(0).evidenceId();
+                                    covs.add(
+                                            com.xxx.ragdoc.application.chat.sufficiency
+                                                    .RequirementCoverage.covered(
+                                                    r.requirementId(), List.of(evId),
+                                                    "SCRIPTED_SEMANTIC"));
+                                } else {
+                                    covs.add(
+                                            com.xxx.ragdoc.application.chat.sufficiency
+                                                    .RequirementCoverage.notCovered(
+                                                    r.requirementId(), "SCRIPTED_SEMANTIC_MISSING"));
+                                    if (r.required()) missing.add(r.requirementId());
+                                }
+                            }
+                            boolean sufficient = missing.isEmpty();
+                            modelJudgeVerdicts.add(sufficient ? "SUFFICIENT" : "INSUFFICIENT");
+                            return com.xxx.ragdoc.application.chat.sufficiency.SufficiencyDecision
+                                    .model(
+                                            sufficient
+                                                    ? com.xxx.ragdoc.application.chat.sufficiency
+                                                            .SufficiencyStatus.SUFFICIENT
+                                                    : com.xxx.ragdoc.application.chat.sufficiency
+                                                            .SufficiencyStatus.INSUFFICIENT,
+                                            covs,
+                                            missing,
+                                            List.of(),
+                                            sufficient
+                                                    ? com.xxx.ragdoc.application.chat.sufficiency
+                                                            .RecommendedAction.ANSWER
+                                                    : com.xxx.ragdoc.application.chat.sufficiency
+                                                            .RecommendedAction.REFUSE_NO_EVIDENCE,
+                                            "SCRIPTED");
+                        });
     }
 
     // ── 脚本化组件 ──────────────────────────────────────────────
@@ -304,12 +387,14 @@ class ForcedModelReplanIntegrationTest {
                 .extracting(AgentStepRecord::stepId)
                 .containsExactly("replan-1-step-0");
 
-        // 6) 终态经 INSUFFICIENT_AFTER_REPLAN_FALLBACK (REQ-3 RELATION 无步覆盖→PARTIAL 降级)
+        // 6) 语义判定链: Model Judge 被调用 2 次(Phase-0 INSUFFICIENT → replan;
+        //    Phase-1 SUFFICIENT → 最终回答) — D3 修复后 Rule defer, Model 可达
+        assertThat(modelJudgeVerdicts).containsExactly("INSUFFICIENT", "SUFFICIENT");
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
         verify(runFinalizer)
                 .finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
                         any(), any());
-        assertThat(reason.getValue()).isEqualTo("INSUFFICIENT_AFTER_REPLAN_FALLBACK");
+        assertThat(reason.getValue()).isEqualTo("PLANNED_REPLAN_SUFFICIENT");
 
         // 7) 两个 requirement 的证据都进入了最终回答基座
         assertThat(prepared.prepared().evidence()).hasSize(2);

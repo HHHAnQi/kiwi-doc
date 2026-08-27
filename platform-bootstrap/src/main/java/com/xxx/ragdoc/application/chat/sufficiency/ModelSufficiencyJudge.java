@@ -244,12 +244,17 @@ public class ModelSufficiencyJudge implements EvidenceSufficiencyJudge {
         sb.append("}\n\n");
         sb.append("Requirements:\n");
         for (var r : request.requirements()) {
+            // P2-D3: 显式携带 targetEntities/expectedFilters(此前仅经由description间接可见)
             sb.append("- ")
                     .append(r.requirementId())
                     .append(" | type=")
                     .append(r.type())
                     .append(" | required=")
                     .append(r.required())
+                    .append(" | entities=")
+                    .append(r.targetEntities())
+                    .append(" | filters=")
+                    .append(r.expectedFilters())
                     .append(" | ")
                     .append(r.description())
                     .append('\n');

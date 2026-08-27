@@ -2,7 +2,6 @@ package com.xxx.ragdoc.application.chat.sufficiency;
 
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.chat.planner.EvidenceRequirement;
-import com.xxx.ragdoc.application.chat.planner.RequirementType;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,15 +15,16 @@ import org.springframework.stereotype.Component;
 /**
  * PR-7b / EMS-PR7 §6.4: 确定性规则优先 Judge。
  *
- * <p>规则集 (Revision §6.4):
+ * <p>规则集 (P2-D3 语义职责修复后):
  *
  * <ol>
- *   <li>每个 required Requirement 是否至少关联一条已授权 Evidence (按 sourceStepId / requirementIds)
- *   <li>指定 entity / filter 的 Requirement, Evidence metadata.targetEntities / version 是否匹配
- *   <li>required Tool Step 全部 REQUIRED_SUCCEEDED (来自 request.completedRequiredStepIds)
- *   <li>是否存在 duplicate-Evidence-only (多 Evidence 但 contentHash 相同 → 算 1 条覆盖)
- *   <li>是否存在 explicit version-value conflict (两条 Evidence 同字段不同 version 互相矛盾)
- *   <li>UNDETERMINED: 复杂语义覆盖 / RELATION / FOLLOW_UP_ENTITY 无法 100% 规则判定 (留 Model fallback)
+ *   <li>每个 required Requirement 是否至少关联一条已授权 Evidence (按 requirementIds)
+ *       — 无 → NOT_COVERED (确定性)
+ *   <li>指定 entity / filter 的 Requirement, Evidence 是否匹配 — 不匹配 → NOT_COVERED (确定性)
+ *   <li>显式 version-value conflict (requirement 锁定版本且证据不符) → CONFLICTED (确定性)
+ *   <li>其余一律 UNDETERMINED → Model Judge 做语义充分性判定
+ *       (此前此处对"证据非空+实体命中"直接判 COVERED, 是 47/47 零 replan 的根因)
+ *   <li>duplicate-Evidence-only (同 contentHash 多 Evidence) 算一条覆盖
  * </ol>
  *
  * <p>规则优先原则: 规则可判定时不调 Model (Revision §6.4)。返回 {@code source="RULE"}。
@@ -96,27 +96,20 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
                 continue;
             }
 
-            // 类型映射: FACT/ENTITY_ATTRIBUTE/TEMPORAL/COMPARISON_SIDE → 规则可判;
-            // RELATION/FOLLOW_UP_ENTITY → 复杂语义
-            if (req.type() == RequirementType.RELATION
-                    || req.type() == RequirementType.FOLLOW_UP_ENTITY) {
-                // 规则只能判"有证据"; 不判语义充分; 标 UNDETERMINED 让 Model 决策 (若启用)
-                coverages.add(
-                        RequirementCoverage.notCovered(
-                                req.requirementId(), "RULE_CANNOT_VERIFY_SEMANTIC"));
-                anyUndeterminable = true;
-                if (req.required()) {
-                    // 不立即标 missing — Pipeline 调 Model 后再决策
-                    missing.add(req.requirementId());
-                }
-                continue;
-            }
-
+            // P2-D3(语义职责修复): Rule 只保留三种确定性判定 —
+            // NO_EVIDENCE / entity-filter mismatch / version-value conflict。
+            // 其余(有证据且结构匹配)一律 UNDETERMINED, 交 Model Judge 做语义充分性判定。
+            // 已删除"证据非空+实体substring命中 → RULE_FULLY_COVERED"的终局充分性语义
+            // (D3探针实锤: 对不含答案事实的证据 false_sufficient=100%;
+            //  同prompt的 glm-4-plus Model Judge 同集 false_sufficient=0%)。
             coverages.add(
-                    RequirementCoverage.covered(
-                            req.requirementId(),
-                            distinct.stream().map(Evidence::evidenceId).toList(),
-                            "RULE_FULLY_COVERED"));
+                    RequirementCoverage.notCovered(
+                            req.requirementId(), "RULE_DEFERS_SEMANTIC_TO_MODEL"));
+            anyUndeterminable = true;
+            if (req.required()) {
+                // 不立即终局 — Pipeline 调 Model 后再决策
+                missing.add(req.requirementId());
+            }
         }
 
         // 1. CONFLICTED 优先
