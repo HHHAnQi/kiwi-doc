@@ -51,3 +51,19 @@ llm:
 embedding:
   api-key: ${EMBEDDING_API_KEY:}
   base-url: ${EMBEDDING_BASE_URL:}  # 无默认 — 不允许静默回落本地 8082
+
+rag:
+  agent:
+    # 补③修复: prod 全关(A/B评测结论: 当前语料Agentic不敌Classic)
+    planner:
+      enabled: false
+      model-enabled: false
+      planned-pipeline-enabled: false
+    sufficiency:
+      enabled: true  # 保留(即使planner关闭, 不影响)
+    recovery:
+      enabled: true  # prod启用(多实例需要)
+    lease:
+      enabled: true  # prod启用(多实例需要)
+    budget:
+      max-total-tokens: ${RAG_AGENT_BUDGET_MAX_TOTAL_TOKENS:50000}

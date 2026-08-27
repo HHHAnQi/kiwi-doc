@@ -61,6 +61,8 @@ rag:
     timeout-ms: ${RAG_ONLINE_TIMEOUT_MS:60000}
   agent:
     lease:
+      # 补②修复: 分环境禁用(dev单机零开销, prod多实例启用)
+      enabled: ${RAG_AGENT_LEASE_ENABLED:true}
       ttl-seconds: ${RAG_AGENT_LEASE_TTL_SECONDS:30}
       heartbeat-seconds: ${RAG_AGENT_LEASE_HEARTBEAT_SECONDS:10}
     planner:
