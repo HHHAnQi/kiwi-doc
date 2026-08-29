@@ -186,8 +186,25 @@ jobs:
       # ────────────────────────────────────────────────────────────
       # Phase 0.3 / phase 0 STOP (only if JUDGE_PROVIDER_2 secret set)
       # ────────────────────────────────────────────────────────────
+      # ─── Phase 2(Release Closure): secret-checkpoint → env-gated step ───
+      # GitHub Actions 合法结构: step.if 不能直接访问 secrets context
+      # (fork PR 时会报 Unrecognized named-value: 'secrets'),
+      # 先在 env 中映射 secret, 再用 env.* 做条件。
+      - name: Secret checkpoint (judge provider 2)
+        id: judge2_check
+        env:
+          HAS_JUDGE2: ${{ secrets.JUDGE_PROVIDER_2_API_KEY }}
+        run: |
+          if [ -n "$HAS_JUDGE2" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "Judge provider 2 configured — live ensemble will run."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Judge provider 2 secret not set — ensemble step will skip (deterministic Phase 0.1 eval above already ran)."
+          fi
+
       - name: Judge ensemble (Phase 0.3, requires judge provider 2 configured)
-        if: ${{ secrets.JUDGE_PROVIDER_2_API_KEY != '' }}
+        if: steps.judge2_check.outputs.available == 'true'
         env:
           CHAT_URL: http://localhost:8080
           TEST_AUTH_TOKEN: ci-token

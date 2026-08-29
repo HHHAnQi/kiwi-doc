@@ -2,7 +2,7 @@
 
 **Reliable RAG Infrastructure for Knowledge Applications**
 
-KiwiRAG（仓库 `rag-doc-platform`）是一个面向知识密集型 AI 应用的 production-oriented RAG 平台：
+KiwiRAG 是一个面向知识密集型 AI 应用的 production-oriented RAG 平台：
 覆盖可靠知识接入（Durable Ingestion）、Hybrid Retrieval、Context Engineering、可信引用生成
 （Grounded Generation）与系统化评测（Evaluation Harness），并通过可重复实验决定每个能力
 是否进入默认执行路径——包括**否决更复杂的 Agentic 路径**。
