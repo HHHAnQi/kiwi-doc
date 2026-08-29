@@ -6,7 +6,7 @@
 #   证明 parser-service 进程被 kill -9 后:
 #   1) chat-app 上传仍 202 返回(异步链路)
 #   2) 重启 parser-service 后, parse_tasks 同一 task 续点完成 (chunks_written > 0, status=PARSED)
-#   3) doc 状态最终为 READY
+#   3) doc 状态最终为 INDEXED(可检索终态; 旧版状态名 READY, 生命周期重命名后为 INDEXED)
 #
 # 设计参考: docs/v3/parser-service-spec.md §4.2 / §7.3
 #
@@ -231,7 +231,7 @@ log "  documents.status=$DOC_STATUS"
 assert '[ "$CHK_AFTER" -gt 0 ]' "chunks_written > 0 (ParseTaskService.markParsed 守卫命中)"
 assert '[ "$CHUNK_ROWS" -gt 0 ]' "chunks 表有该 doc 的行"
 assert '[ "$CHUNK_ROWS" = "$CHK_AFTER" ]' "chunks_written 与 chunks 表行数一致(无中途漏写)"
-assert '[ "$DOC_STATUS" = "READY" ]' "documents.status = READY (markReady 命中)"
+assert '[ "$DOC_STATUS" = "INDEXED" ]' "documents.status = INDEXED (可检索终态命中)"
 
 # ============================================================
 # PASS
