@@ -9,9 +9,7 @@ import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.TraceId;
 import java.time.Instant;
 
-/**
- * 同步与 SSE 共用的在线执行快照。安全身份、路由、预算和截止时间均由服务端一次生成。
- */
+/** 同步与 SSE 共用的在线执行快照。安全身份、路由、预算和截止时间均由服务端一次生成。 */
 public record OnlineExecutionContext(
         String requestId,
         Principal principal,
@@ -26,7 +24,8 @@ public record OnlineExecutionContext(
         Instant deadline) {
 
     public OnlineExecutionContext {
-        if (requestId == null || requestId.isBlank()) throw new IllegalArgumentException("requestId 必填");
+        if (requestId == null || requestId.isBlank())
+            throw new IllegalArgumentException("requestId 必填");
         if (principal == null) throw new IllegalArgumentException("principal 必须来自 AuthContext");
         if (requestedMode == null) requestedMode = ChatMode.AUTO;
         if (route == null) throw new IllegalArgumentException("route 必填");
@@ -45,8 +44,15 @@ public record OnlineExecutionContext(
     }
 
     public ChatExecutionContext toLegacyContext() {
-        if (effectivePipeline == null) throw new IllegalStateException("REFUSE 无 legacy pipeline context");
+        if (effectivePipeline == null)
+            throw new IllegalStateException("REFUSE 无 legacy pipeline context");
         return new ChatExecutionContext(
-                requestId, principal, requestedMode, effectivePipeline, traceId, executionPolicy, routerDecision);
+                requestId,
+                principal,
+                requestedMode,
+                effectivePipeline,
+                traceId,
+                executionPolicy,
+                routerDecision);
     }
 }

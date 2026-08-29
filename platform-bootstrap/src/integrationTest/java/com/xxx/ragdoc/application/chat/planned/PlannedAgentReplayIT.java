@@ -279,7 +279,8 @@ class PlannedAgentReplayIT {
                         any(AgentRunStatus.class),
                         anyString(),
                         any(AgentUsage.class),
-                        any(AgentBudgetReservation.class), any()))
+                        any(AgentBudgetReservation.class),
+                        any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
                                 RUN_ID, 6L, AgentRunStatus.READY_TO_ANSWER));

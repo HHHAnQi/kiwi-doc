@@ -48,15 +48,13 @@ public class ConversationProperties {
     private int maxRecentTurns = 3;
 
     /**
-     * G2 校准: rewrite 用的 LLM route。默认 primary(主 GLM) — fallback(DeepSeek) 的
-     * condense 改写质量是 G2 2/20 的主要瓶颈; 主 route 每次多花 ~200 token,
-     * 可用 rag.conversation.rewrite-route=fallback 切回省钱模式。
+     * G2 校准: rewrite 用的 LLM route。默认 primary(主 GLM) — fallback(DeepSeek) 的 condense 改写质量是 G2 2/20
+     * 的主要瓶颈; 主 route 每次多花 ~200 token, 可用 rag.conversation.rewrite-route=fallback 切回省钱模式。
      */
     private String rewriteRoute = "primary";
 
     /**
-     * 历史摘要使用的 LLM route。默认 fallback 以控制成本；当 fallback 不可用时可临时切 primary，
-     * 避免压缩熔断后 recentTurns 无界增长。
+     * 历史摘要使用的 LLM route。默认 fallback 以控制成本；当 fallback 不可用时可临时切 primary， 避免压缩熔断后 recentTurns 无界增长。
      */
     private String summaryRoute = "fallback";
 

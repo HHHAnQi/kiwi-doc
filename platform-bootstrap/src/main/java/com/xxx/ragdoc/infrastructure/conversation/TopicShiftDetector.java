@@ -114,11 +114,11 @@ public class TopicShiftDetector implements TopicShiftDetectorPort {
         if (query == null) return false;
         String normalized = query.trim();
         if (normalized.isEmpty()) return false;
-        return normalized.matches("^(那|那么|然后|接下来|再说|还有).*" )
-                || normalized.matches(".*(它|它们|该配置|该参数|上述|前述|前者|后者|刚才).*" )
-                || normalized.matches(".*(重新回答|再回答|最开始的问题|一开始的问题|上一个问题).*" )
-                || normalized.matches(".*第[一二三四五六七八九十0-9]+(种|个|项|条).*" )
-                || normalized.matches(".*呢[？?]?$" );
+        return normalized.matches("^(那|那么|然后|接下来|再说|还有).*")
+                || normalized.matches(".*(它|它们|该配置|该参数|上述|前述|前者|后者|刚才).*")
+                || normalized.matches(".*(重新回答|再回答|最开始的问题|一开始的问题|上一个问题).*")
+                || normalized.matches(".*第[一二三四五六七八九十0-9]+(种|个|项|条).*")
+                || normalized.matches(".*呢[？?]?$");
     }
 
     /**

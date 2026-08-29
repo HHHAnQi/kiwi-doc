@@ -117,8 +117,8 @@ public class AgentRunFactory {
         int seq = 0;
         for (AgentToolStep s : plan.steps()) {
             String inputHash = sha256(inputForHash(s.input()));
-            String idempotencyKey = sha256(
-                    runId + ":" + s.stepId() + ":" + s.toolVersion() + ":" + inputHash);
+            String idempotencyKey =
+                    sha256(runId + ":" + s.stepId() + ":" + s.toolVersion() + ":" + inputHash);
             boolean recoverable = isReadOnlyRecoverableTool(s.toolName());
             result.add(
                     new AgentStepRecord(
@@ -151,8 +151,11 @@ public class AgentRunFactory {
 
     private static boolean isReadOnlyRecoverableTool(String toolName) {
         return java.util.Set.of(
-                        "semantic_search", "keyword_search", "metadata_search",
-                        "document_fetch", "citation_verify")
+                        "semantic_search",
+                        "keyword_search",
+                        "metadata_search",
+                        "document_fetch",
+                        "citation_verify")
                 .contains(toolName);
     }
 

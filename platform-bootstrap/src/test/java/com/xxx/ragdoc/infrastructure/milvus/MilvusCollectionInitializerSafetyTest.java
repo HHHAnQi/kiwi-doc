@@ -24,8 +24,7 @@ class MilvusCollectionInitializerSafetyTest {
         when(response.getFieldNames()).thenReturn(List.of("id", "dense_vector"));
         when(client.describeCollection(any())).thenReturn(response);
 
-        assertThatThrownBy(
-                        () -> new MilvusCollectionInitializer(client, props).run(null))
+        assertThatThrownBy(() -> new MilvusCollectionInitializer(client, props).run(null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("schema 不兼容");
 

@@ -53,9 +53,7 @@ public class HistoryCompressor implements HistoryCompressorPort {
     /** 摘要 LLM 输出最小长度, 短于此视为 LLM 异常 → 拒收。 */
     private static final int MIN_SUMMARY_LEN = 10;
 
-    /**
-     * 摘要不可恢复实体。LLM 负责语义压缩；该规则负责把遗漏的组件、配置键、版本/端口和核心协议词确定性补回。
-     */
+    /** 摘要不可恢复实体。LLM 负责语义压缩；该规则负责把遗漏的组件、配置键、版本/端口和核心协议词确定性补回。 */
     private static final Pattern CRITICAL_ENTITY_PATTERN =
             Pattern.compile(
                     "((?i:nacos|sentinel|dubbo|seata|rocketmq|hystrix)"
@@ -210,7 +208,8 @@ public class HistoryCompressor implements HistoryCompressorPort {
         try {
             ConversationContext updated =
                     ctx.withCompression(newSummary.trim(), keepTurns, Instant.now());
-            ConversationContext toSave = mergeWithLatest(conversationId, ctx, updated, keepTurns, newSummary.trim());
+            ConversationContext toSave =
+                    mergeWithLatest(conversationId, ctx, updated, keepTurns, newSummary.trim());
             if (toSave == null) {
                 metrics.incrementCompression("superseded");
                 log.info("compress.superseded id={} — 并发压缩已生效, 跳过", conversationId);
@@ -234,8 +233,8 @@ public class HistoryCompressor implements HistoryCompressorPort {
     /**
      * 把压缩结果与 save 前的最新 ctx 合并; 返 null 表示本次压缩已被并发任务取代应放弃。
      *
-     * <p>{@code baseTurns} 是压缩发起时的 recentTurns 快照 — latest 以它为前缀追加的 append-only
-     * 假设由 ChatService.appendTurn 保证(只在尾部追加)。
+     * <p>{@code baseTurns} 是压缩发起时的 recentTurns 快照 — latest 以它为前缀追加的 append-only 假设由
+     * ChatService.appendTurn 保证(只在尾部追加)。
      */
     private ConversationContext mergeWithLatest(
             String conversationId,
@@ -248,7 +247,10 @@ public class HistoryCompressor implements HistoryCompressorPort {
             latest = store.findById(conversationId).orElse(null);
         } catch (Exception e) {
             // re-load 失败: 退回直接存压缩结果(旧快照), 不比直接放弃好但也不更坏
-            log.warn("compress.recheck_load_failed id={}, reason={}", conversationId, e.getMessage());
+            log.warn(
+                    "compress.recheck_load_failed id={}, reason={}",
+                    conversationId,
+                    e.getMessage());
             return compressed;
         }
         if (latest == null || latest.recentTurns() == null) {

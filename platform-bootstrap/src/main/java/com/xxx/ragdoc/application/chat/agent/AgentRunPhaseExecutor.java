@@ -448,11 +448,9 @@ public class AgentRunPhaseExecutor {
     }
 
     /** P2-D2: 提取 step 实际尝试的检索 query(截断由 CompletedStepSummary ctor 统一保证)。 */
-    private static String attemptedQueryOf(
-            com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {
+    private static String attemptedQueryOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {
         try {
-            if (s.input()
-                    instanceof com.xxx.ragdoc.application.chat.tool.SearchInput si) {
+            if (s.input() instanceof com.xxx.ragdoc.application.chat.tool.SearchInput si) {
                 return si.query() == null ? "" : si.query();
             }
         } catch (Exception ignored) {
@@ -461,7 +459,8 @@ public class AgentRunPhaseExecutor {
         return "";
     }
 
-    private static String signatureOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {        return s.toolName()
+    private static String signatureOf(com.xxx.ragdoc.application.chat.agent.AgentToolStep s) {
+        return s.toolName()
                 + "|"
                 + s.toolVersion()
                 + "|"

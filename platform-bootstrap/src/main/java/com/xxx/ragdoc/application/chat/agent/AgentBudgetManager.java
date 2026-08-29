@@ -63,8 +63,7 @@ public class AgentBudgetManager {
         if (usage == null) usage = AgentUsage.zero();
         if (reservation == null) reservation = AgentBudgetReservation.zero();
         if (request == null) throw new IllegalArgumentException("request");
-        BudgetDecision decision =
-                doEvaluate(budget, usage, reservation, request);
+        BudgetDecision decision = doEvaluate(budget, usage, reservation, request);
         if (metricsPort != null) {
             decision.deniedDimension()
                     .ifPresent(d -> metricsPort.recordAgentBudgetDenied(d.name()));

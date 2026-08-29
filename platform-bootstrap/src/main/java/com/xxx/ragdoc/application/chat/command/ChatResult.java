@@ -106,7 +106,15 @@ public record ChatResult(
             VerificationResult verification,
             EvidenceSnapshot evidenceSnapshot,
             PipelineType pipelineType) {
-        this(answer, citations, stateHint, traceId, verification, evidenceSnapshot, pipelineType, null);
+        this(
+                answer,
+                citations,
+                stateHint,
+                traceId,
+                verification,
+                evidenceSnapshot,
+                pipelineType,
+                null);
     }
 
     /**
@@ -128,7 +136,8 @@ public record ChatResult(
     }
 
     public ChatResult withReasonCode(String reasonCode) {
-        if (reasonCode == null || reasonCode.isBlank() || reasonCode.equals(this.reasonCode)) return this;
+        if (reasonCode == null || reasonCode.isBlank() || reasonCode.equals(this.reasonCode))
+            return this;
         return new ChatResult(
                 answer,
                 citations,

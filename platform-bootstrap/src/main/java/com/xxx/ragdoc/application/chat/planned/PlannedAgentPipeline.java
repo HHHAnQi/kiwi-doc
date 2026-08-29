@@ -37,19 +37,20 @@ public class PlannedAgentPipeline implements ChatPipeline {
     private final DefaultEvidenceGroundedAnswerComposer answerComposer;
     private final PlannedAgentRunFinalizer runFinalizer;
     private final com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProperties;
+
     /** P0-3: 执行预算可配(原硬编码 pr6Default maxReplans=0 → Replan 必 BUDGET_ZERO)。 */
     private final com.xxx.ragdoc.application.chat.agent.AgentBudgetProperties budgetProps;
+
     /**
-     * 检索锚定(2026-08-25): 原查询 hybrid 检索结果作为"保底"加入 Agentic 证据池。
-     * 根因: LLM 分解后的子查询方向跑偏(实测 Dubbo/Seata 题检索到 Sentinel/RocketMQ),
-     * 而原查询一次性 hybrid 检索精准命中 — include_original 模式(LangChain
+     * 检索锚定(2026-08-25): 原查询 hybrid 检索结果作为"保底"加入 Agentic 证据池。 根因: LLM 分解后的子查询方向跑偏(实测 Dubbo/Seata
+     * 题检索到 Sentinel/RocketMQ), 而原查询一次性 hybrid 检索精准命中 — include_original 模式(LangChain
      * MultiQueryRetriever), 即使所有子查询跑偏, 原查询结果保证相关证据存在。
      */
     private final com.xxx.ragdoc.application.chat.RetrieveService retrieveService;
+
     /**
-     * P0-1(降级链)第 2 层: Model→retry→Rule 全部失败 (INITIAL_PLANNER_FAILED) 时降级
-     * Classic RAG。Planner 是 Agent 链路里唯一无替代物的组件, 但检索+生成底座 (Classic)
-     * 不依赖 Planner — 整题单次 hybrid 检索仍可给出有引用的回答 (质量降、可用性保)。
+     * P0-1(降级链)第 2 层: Model→retry→Rule 全部失败 (INITIAL_PLANNER_FAILED) 时降级 Classic RAG。Planner 是
+     * Agent 链路里唯一无替代物的组件, 但检索+生成底座 (Classic) 不依赖 Planner — 整题单次 hybrid 检索仍可给出有引用的回答 (质量降、可用性保)。
      */
     private final ClassicRagPipeline classicRagPipeline;
 
@@ -70,10 +71,11 @@ public class PlannedAgentPipeline implements ChatPipeline {
     }
 
     /**
-     * P2-D5(B/C): correlation contract — runId 只在真实存在时暴露(不造 fake);
-     * ChatController 从 MDC 读出转 X-Agent-* 响应头(与 SSE DoneEvent 字段同语义)。
+     * P2-D5(B/C): correlation contract — runId 只在真实存在时暴露(不造 fake); ChatController 从 MDC 读出转
+     * X-Agent-* 响应头(与 SSE DoneEvent 字段同语义)。
      */
-    private static void exposeCorrelation(String runId, String terminalStatus, String decisionSummary) {
+    private static void exposeCorrelation(
+            String runId, String terminalStatus, String decisionSummary) {
         if (runId != null) org.slf4j.MDC.put("rag.agentRunId", runId);
         if (terminalStatus != null) org.slf4j.MDC.put("rag.agentTerminalStatus", terminalStatus);
         if (decisionSummary != null) org.slf4j.MDC.put("rag.agentDecisionSummary", decisionSummary);
@@ -166,18 +168,19 @@ public class PlannedAgentPipeline implements ChatPipeline {
                     "ANSWER_COMPOSER_FAILED",
                     p.usage(),
                     p.reservation(),
-                        null);
+                    null);
             return ChatResult.of(StateHint.NO_RECALL, "答案生成失败", context.traceId());
         }
         // Final Answer Cas ANSWERED
-        PlannedAgentRunFinalizer.FinalizeOutcome outcome = runFinalizer.finalize(
-                p.runId(),
-                p.readyRunVersion(),
-                java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                AgentRunStatus.ANSWERED,
-                "PLANNED_ANSWER_READY",
-                p.usage(),
-                p.reservation(),
+        PlannedAgentRunFinalizer.FinalizeOutcome outcome =
+                runFinalizer.finalize(
+                        p.runId(),
+                        p.readyRunVersion(),
+                        java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
+                        AgentRunStatus.ANSWERED,
+                        "PLANNED_ANSWER_READY",
+                        p.usage(),
+                        p.reservation(),
                         null);
         if (!outcome.written() && !outcome.idempotent()) {
             log.warn(
@@ -259,7 +262,7 @@ public class PlannedAgentPipeline implements ChatPipeline {
                     "USER_CANCELLED",
                     p.usage(),
                     p.reservation(),
-                        null);
+                    null);
             return Flux.just(
                     (ChatStreamEvent)
                             new ChatStreamEvent.ErrorEvent(
@@ -282,18 +285,18 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                 () -> {
                                     PlannedAgentRunFinalizer.FinalizeOutcome outcome =
                                             runFinalizer.finalize(
-                                            p.runId(),
-                                            p.readyRunVersion(),
-                                            java.util.Set.of(AgentRunStatus.READY_TO_ANSWER),
-                                            AgentRunStatus.ANSWERED,
-                                            "PLANNED_ANSWER_STREAMED",
-                                            p.usage(),
-                                            p.reservation(),
-                        null);
+                                                    p.runId(),
+                                                    p.readyRunVersion(),
+                                                    java.util.Set.of(
+                                                            AgentRunStatus.READY_TO_ANSWER),
+                                                    AgentRunStatus.ANSWERED,
+                                                    "PLANNED_ANSWER_STREAMED",
+                                                    p.usage(),
+                                                    p.reservation(),
+                                                    null);
                                     if (!outcome.written() && !outcome.idempotent()) {
                                         throw new IllegalStateException(
-                                                "Agent 终态已被抢占: "
-                                                        + outcome.effectiveTerminal());
+                                                "Agent 终态已被抢占: " + outcome.effectiveTerminal());
                                     }
                                     return (ChatStreamEvent)
                                             new ChatStreamEvent.DoneEvent(
@@ -320,7 +323,7 @@ public class PlannedAgentPipeline implements ChatPipeline {
                                     "ANSWER_STREAM_FAILED",
                                     p.usage(),
                                     p.reservation(),
-                        null);
+                                    null);
                             return reactor.core.publisher.Flux.just(
                                     (ChatStreamEvent)
                                             new ChatStreamEvent.ErrorEvent(
@@ -332,8 +335,8 @@ public class PlannedAgentPipeline implements ChatPipeline {
     }
 
     /**
-     * P0-3: 预算从 rag.agent.budget.* 构建(原 pr6Default maxReplans=0 使 Replan 必死);
-     * maxReplans 取 budget 与 planner 配置的较小值, 防两处口径漂移。
+     * P0-3: 预算从 rag.agent.budget.* 构建(原 pr6Default maxReplans=0 使 Replan 必死); maxReplans 取 budget 与
+     * planner 配置的较小值, 防两处口径漂移。
      */
     private com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy buildAgenticPolicy() {
         int maxReplans = Math.min(budgetProps.getMaxReplans(), plannerProperties.getMaxReplans());
@@ -365,35 +368,54 @@ public class PlannedAgentPipeline implements ChatPipeline {
     }
 
     /**
-     * 检索锚定: 原查询走一次 hybrid 检索(与 Classic 相同), 结果合并到 Agentic 证据池。
-     * 去重: 按 content 前200字符; 上限: 合并后最多 20 条(Composer 上下文预算内)。
+     * 检索锚定: 原查询走一次 hybrid 检索(与 Classic 相同), 结果合并到 Agentic 证据池。 去重: 按 content 前200字符; 上限: 合并后最多 20
+     * 条(Composer 上下文预算内)。
      */
-    private java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> anchorWithOriginalQuery(
-            ChatCommand command,
-            java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> agenticEvidence,
-            ChatExecutionContext context) {
+    private java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence>
+            anchorWithOriginalQuery(
+                    ChatCommand command,
+                    java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence>
+                            agenticEvidence,
+                    ChatExecutionContext context) {
         try {
-            com.xxx.ragdoc.application.chat.RetrieveService.RetrieveResult result = retrieveService.retrieve(command);
+            com.xxx.ragdoc.application.chat.RetrieveService.RetrieveResult result =
+                    retrieveService.retrieve(command);
             if (result.items().isEmpty()) return agenticEvidence;
             java.util.Set<String> existing = new java.util.HashSet<>();
             for (var e : agenticEvidence) {
-                if (e.content() != null) existing.add(e.content().substring(0, Math.min(200, e.content().length())));
+                if (e.content() != null)
+                    existing.add(e.content().substring(0, Math.min(200, e.content().length())));
             }
-            java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> merged = new java.util.ArrayList<>(agenticEvidence);
-            String tenant = context != null && context.principal() != null ? context.principal().tenantId() : "default";
+            java.util.List<com.xxx.ragdoc.application.chat.evidence.Evidence> merged =
+                    new java.util.ArrayList<>(agenticEvidence);
+            String tenant =
+                    context != null && context.principal() != null
+                            ? context.principal().tenantId()
+                            : "default";
             for (var c : result.items()) {
                 String content = c.llmContext() != null ? c.llmContext() : c.snippet();
                 if (content == null || content.isBlank()) continue;
                 String key = content.substring(0, Math.min(200, content.length()));
                 if (existing.contains(key)) continue;
                 existing.add(key);
-                merged.add(com.xxx.ragdoc.application.chat.evidence.Evidence.of(
-                        tenant, c.docId(), c.chunkId(), null, content, (double) c.score(), 0.0,
-                        "original_query_anchor", java.util.Map.of("anchor", "original_query")));
+                merged.add(
+                        com.xxx.ragdoc.application.chat.evidence.Evidence.of(
+                                tenant,
+                                c.docId(),
+                                c.chunkId(),
+                                null,
+                                content,
+                                (double) c.score(),
+                                0.0,
+                                "original_query_anchor",
+                                java.util.Map.of("anchor", "original_query")));
                 if (merged.size() >= 20) break;
             }
-            log.info("planned.evidence_anchored agentic={} original={} merged={}",
-                    agenticEvidence.size(), result.items().size(), merged.size());
+            log.info(
+                    "planned.evidence_anchored agentic={} original={} merged={}",
+                    agenticEvidence.size(),
+                    result.items().size(),
+                    merged.size());
             return merged;
         } catch (Exception e) {
             log.warn("planned.anchor_failed: {}", e.getMessage());
@@ -402,19 +424,26 @@ public class PlannedAgentPipeline implements ChatPipeline {
     }
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort queryContextualizer;
+    private com.xxx.ragdoc.application.chat.conversation.port.QueryContextualizerPort
+            queryContextualizer;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.xxx.ragdoc.application.chat.conversation.port.ConversationStore conversationStore;
 
     private String resolveEffectiveQuery(ChatCommand command) {
-        if (command.conversationId() == null || command.conversationId().isBlank()) return command.query();
+        if (command.conversationId() == null || command.conversationId().isBlank())
+            return command.query();
         if (queryContextualizer == null || conversationStore == null) return command.query();
         try {
             var ctx = conversationStore.findById(command.conversationId()).orElse(null);
-            if (ctx == null || !ctx.isEnabled() || ctx.recentTurns().isEmpty()) return command.query();
+            if (ctx == null || !ctx.isEnabled() || ctx.recentTurns().isEmpty())
+                return command.query();
             var result = queryContextualizer.contextualize(command.query(), ctx.recentTurns());
-            log.info("planned.multi_turn_rewrite conv_id={}, rewritten='{}'", command.conversationId(), result.retrieveQuery().substring(0, Math.min(40, result.retrieveQuery().length())));
+            log.info(
+                    "planned.multi_turn_rewrite conv_id={}, rewritten='{}'",
+                    command.conversationId(),
+                    result.retrieveQuery()
+                            .substring(0, Math.min(40, result.retrieveQuery().length())));
             return result.retrieveQuery();
         } catch (Exception e) {
             log.warn("planned.multi_turn_rewrite_failed: {}", e.getMessage());
@@ -472,7 +501,10 @@ public class PlannedAgentPipeline implements ChatPipeline {
         try {
             return classicRagPipeline.execute(command, context);
         } catch (RuntimeException ex) {
-            log.warn("planned.classic_fallback_failed req={} err={}", context.requestId(), ex.toString());
+            log.warn(
+                    "planned.classic_fallback_failed req={} err={}",
+                    context.requestId(),
+                    ex.toString());
             return ChatResult.of(StateHint.NO_RECALL, "无法处理: 检索通道不可用", context.traceId());
         }
     }
@@ -486,8 +518,7 @@ public class PlannedAgentPipeline implements ChatPipeline {
         if (metricsPort != null) metricsPort.incrementPlannerDegradation("classic_fallback");
         String trace = context.traceId() == null ? "" : context.traceId().value();
         try {
-            return classicRagPipeline
-                    .stream(command, context)
+            return classicRagPipeline.stream(command, context)
                     .onErrorResume(
                             err -> {
                                 log.warn(

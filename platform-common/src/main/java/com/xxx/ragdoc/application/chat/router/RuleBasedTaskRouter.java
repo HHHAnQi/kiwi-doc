@@ -69,7 +69,8 @@ public class RuleBasedTaskRouter implements TaskRouter {
             List.of("天气", "股票", "彩票", "今天星期", "写一首诗", "作诗");
 
     private static final Pattern CHAT_PHRASE =
-            Pattern.compile("^(你好|您好|hi|hello|早上好|下午好|晚上好|谢谢|感谢|再见)[!！,.，。 ]*$", Pattern.CASE_INSENSITIVE);
+            Pattern.compile(
+                    "^(你好|您好|hi|hello|早上好|下午好|晚上好|谢谢|感谢|再见)[!！,.，。 ]*$", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern TOOL_PHRASE =
             Pattern.compile("(帮我|请)?(查找|搜索|检索|定位)(一下)?(文档|知识库|章节|资料)|调用.{0,12}(工具|搜索)");

@@ -203,8 +203,10 @@ public class JpaDocumentRepository implements DocumentRepository {
 
     @Override
     public boolean existsCurrentByLogicalKey(String tenantId, String logicalDocumentKey) {
-        if (tenantId == null || tenantId.isBlank()
-                || logicalDocumentKey == null || logicalDocumentKey.isBlank()) return false;
+        if (tenantId == null
+                || tenantId.isBlank()
+                || logicalDocumentKey == null
+                || logicalDocumentKey.isBlank()) return false;
         return jpa.existsByTenantIdAndLogicalDocumentKeyAndIsDefaultTrueAndDeletedAtIsNull(
                 tenantId, logicalDocumentKey);
     }
@@ -212,8 +214,10 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public Optional<Document> findCurrentByLogicalKeyForUpdate(
             String tenantId, String logicalDocumentKey) {
-        if (tenantId == null || tenantId.isBlank()
-                || logicalDocumentKey == null || logicalDocumentKey.isBlank()) {
+        if (tenantId == null
+                || tenantId.isBlank()
+                || logicalDocumentKey == null
+                || logicalDocumentKey.isBlank()) {
             return Optional.empty();
         }
         return jpa.findCurrentForUpdate(tenantId, logicalDocumentKey).map(DocumentMapper::toDomain);
@@ -239,23 +243,38 @@ public class JpaDocumentRepository implements DocumentRepository {
         String normalizedLanguage = normalize(language);
         java.util.stream.Stream<DocumentEntity> documents =
                 candidateDocumentIds == null
-                        ? jpa.findRetrievableForGenerationFilter(
+                        ? jpa
+                                .findRetrievableForGenerationFilter(
                                         tenantId,
                                         normalizedSource,
                                         normalizedVersion,
                                         normalizedLanguage)
                                 .stream()
                         : jpa.findAllById(candidateDocumentIds).stream();
-        java.util.Map<Long, Integer> result = documents
-                .filter(e -> tenantId.equals(e.getTenantId()))
-                .filter(e -> e.getDeletedAt() == null)
-                .filter(e -> DocumentStatus.INDEXED.name().equals(e.getStatus()))
-                .filter(e -> normalizedSource == null || normalizedSource.equals(e.getSource()))
-                .filter(e -> normalizedVersion == null || normalizedVersion.equals(e.getVersion()))
-                .filter(e -> normalizedLanguage == null || normalizedLanguage.equals(e.getLanguage()))
-                .collect(java.util.stream.Collectors.toUnmodifiableMap(
-                        DocumentEntity::getId,
-                        e -> e.getActiveGeneration() == null ? 1 : e.getActiveGeneration()));
+        java.util.Map<Long, Integer> result =
+                documents
+                        .filter(e -> tenantId.equals(e.getTenantId()))
+                        .filter(e -> e.getDeletedAt() == null)
+                        .filter(e -> DocumentStatus.INDEXED.name().equals(e.getStatus()))
+                        .filter(
+                                e ->
+                                        normalizedSource == null
+                                                || normalizedSource.equals(e.getSource()))
+                        .filter(
+                                e ->
+                                        normalizedVersion == null
+                                                || normalizedVersion.equals(e.getVersion()))
+                        .filter(
+                                e ->
+                                        normalizedLanguage == null
+                                                || normalizedLanguage.equals(e.getLanguage()))
+                        .collect(
+                                java.util.stream.Collectors.toUnmodifiableMap(
+                                        DocumentEntity::getId,
+                                        e ->
+                                                e.getActiveGeneration() == null
+                                                        ? 1
+                                                        : e.getActiveGeneration()));
         return Optional.of(result);
     }
 
@@ -303,7 +322,8 @@ public class JpaDocumentRepository implements DocumentRepository {
     @Override
     public java.util.List<Document> findUploadedWithoutParseTask(
             java.time.Instant olderThan, int limit) {
-        return jpa.findUploadedWithoutParseTask(
+        return jpa
+                .findUploadedWithoutParseTask(
                         olderThan,
                         org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
                 .stream()

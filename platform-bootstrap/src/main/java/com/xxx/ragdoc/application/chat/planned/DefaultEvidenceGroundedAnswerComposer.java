@@ -29,10 +29,8 @@ import reactor.core.publisher.Flux;
 public class DefaultEvidenceGroundedAnswerComposer implements EvidenceGroundedAnswerComposer {
 
     /**
-     * 校准(Composer prompt 消融实测 2026-08-25): 同一证据下, Classic 简洁段落
-     * 风格得分 0.285, Agentic Markdown 结构化风格得分 0.050(差 5.7×) —
-     * prompt 格式是 Agentic 低分的最大瓶颈(非检索/架构问题)。
-     * 对齐 Classic 的 "2-4 句要点" 简洁散文风格。
+     * 校准(Composer prompt 消融实测 2026-08-25): 同一证据下, Classic 简洁段落 风格得分 0.285, Agentic Markdown 结构化风格得分
+     * 0.050(差 5.7×) — prompt 格式是 Agentic 低分的最大瓶颈(非检索/架构问题)。 对齐 Classic 的 "2-4 句要点" 简洁散文风格。
      */
     public static final String SYSTEM_PROMPT =
             "你是基于提供 Evidence 回答问题的助手。规则:\n"
@@ -66,18 +64,28 @@ public class DefaultEvidenceGroundedAnswerComposer implements EvidenceGroundedAn
         // 让 LLM 对未确认部分标注"根据现有证据"而非假装全知
         String partialNote = "";
         if (request.coverage() != null && !request.coverage().isEmpty()) {
-            long uncovered = request.coverage().stream()
-                    .filter(c -> c.status() != com.xxx.ragdoc.application.chat.sufficiency.CoverageStatus.COVERED)
-                    .count();
+            long uncovered =
+                    request.coverage().stream()
+                            .filter(
+                                    c ->
+                                            c.status()
+                                                    != com.xxx.ragdoc.application.chat.sufficiency
+                                                            .CoverageStatus.COVERED)
+                            .count();
             if (uncovered > 0) {
-                partialNote = "\n\n[注意: 本次检索覆盖了部分需求("
-                    + (request.coverage().size() - uncovered) + "/" + request.coverage().size()
-                    + ")。对于未完全覆盖的部分, 基于现有最相关证据回答, 如证据不足请如实说明。]";
+                partialNote =
+                        "\n\n[注意: 本次检索覆盖了部分需求("
+                                + (request.coverage().size() - uncovered)
+                                + "/"
+                                + request.coverage().size()
+                                + ")。对于未完全覆盖的部分, 基于现有最相关证据回答, 如证据不足请如实说明。]";
             }
         }
         recordLlmCall();
         String text =
-                chatClient.chat(SYSTEM_PROMPT + partialNote + "\n\n用户问题: " + request.originalQuery(), context);
+                chatClient.chat(
+                        SYSTEM_PROMPT + partialNote + "\n\n用户问题: " + request.originalQuery(),
+                        context);
         List<String> usedIds = collectUsedEvidenceIds(request);
         return new GroundedAnswer(text, usedIds);
     }

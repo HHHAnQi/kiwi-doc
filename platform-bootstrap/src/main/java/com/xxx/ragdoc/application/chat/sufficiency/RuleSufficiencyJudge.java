@@ -18,12 +18,11 @@ import org.springframework.stereotype.Component;
  * <p>规则集 (P2-D3 语义职责修复后):
  *
  * <ol>
- *   <li>每个 required Requirement 是否至少关联一条已授权 Evidence (按 requirementIds)
- *       — 无 → NOT_COVERED (确定性)
+ *   <li>每个 required Requirement 是否至少关联一条已授权 Evidence (按 requirementIds) — 无 → NOT_COVERED (确定性)
  *   <li>指定 entity / filter 的 Requirement, Evidence 是否匹配 — 不匹配 → NOT_COVERED (确定性)
  *   <li>显式 version-value conflict (requirement 锁定版本且证据不符) → CONFLICTED (确定性)
- *   <li>其余一律 UNDETERMINED → Model Judge 做语义充分性判定
- *       (此前此处对"证据非空+实体命中"直接判 COVERED, 是 47/47 零 replan 的根因)
+ *   <li>其余一律 UNDETERMINED → Model Judge 做语义充分性判定 (此前此处对"证据非空+实体命中"直接判 COVERED, 是 47/47 零 replan
+ *       的根因)
  *   <li>duplicate-Evidence-only (同 contentHash 多 Evidence) 算一条覆盖
  * </ol>
  *
@@ -137,8 +136,8 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
         // 有证据但仍被判 INSUFFICIENT → 终态拒答。≥1 个 required 有证据 → PARTIAL
         // → Composer 带标注回答; 全部 required 无证据 → 仍 INSUFFICIENT(防幻觉底线)。
         if (!missing.isEmpty()) {
-            boolean anyCovered = coverages.stream()
-                    .anyMatch(c -> c.status() == CoverageStatus.COVERED);
+            boolean anyCovered =
+                    coverages.stream().anyMatch(c -> c.status() == CoverageStatus.COVERED);
             if (anyCovered) {
                 return SufficiencyDecision.rule(
                         SufficiencyStatus.PARTIAL,
@@ -229,13 +228,11 @@ public class RuleSufficiencyJudge implements EvidenceSufficiencyJudge {
     /**
      * 版本冲突检测(校准版, pilot20 实测 58 次误判 CONFLICT 的根因)。
      *
-     * <p>原实现: 证据覆盖 ≥2 个 document version 即判 VERSION_VALUE_MISMATCH → 终态
-     * REFUSED_CONFLICT(无 Replan)。多组件对比题的证据天然跨文档/跨版本(dubbo 与 nacos 的
-     * version 字段本就不同), 该规则把一切对比题判死。
+     * <p>原实现: 证据覆盖 ≥2 个 document version 即判 VERSION_VALUE_MISMATCH → 终态 REFUSED_CONFLICT(无
+     * Replan)。多组件对比题的证据天然跨文档/跨版本(dubbo 与 nacos 的 version 字段本就不同), 该规则把一切对比题判死。
      *
-     * <p>正确语义: 仅当 Requirement <b>显式锁定</b> expectedFilters.version 且证据版本与之
-     * 不符时才是冲突(用户要 v2.3 的答案, 检回 v3.0)。版本多样性本身 = 异质证据, 交给
-     * 类型映射/Model judge 做语义级判定。
+     * <p>正确语义: 仅当 Requirement <b>显式锁定</b> expectedFilters.version 且证据版本与之 不符时才是冲突(用户要 v2.3 的答案, 检回
+     * v3.0)。版本多样性本身 = 异质证据, 交给 类型映射/Model judge 做语义级判定。
      */
     static EvidenceConflict detectVersionValueConflict(EvidenceRequirement req, List<Evidence> ev) {
         String pinned = null;

@@ -92,8 +92,8 @@ public class TikaParsingTrigger implements ParsingTrigger {
     private final Tika tika = new Tika();
 
     /**
-     * P1 Contextual Retrieval: embed 输入 = 确定性上下文前缀 + chunk 原文。
-     * 只影响向量; chunk.content/哈希/Milvus BM25 文本保持原文。flag 关闭时 = baseline。
+     * P1 Contextual Retrieval: embed 输入 = 确定性上下文前缀 + chunk 原文。 只影响向量; chunk.content/哈希/Milvus BM25
+     * 文本保持原文。flag 关闭时 = baseline。
      */
     private java.util.List<String> contextualEmbedInputs(
             Document doc, java.util.List<Chunk> chunks) {
@@ -101,12 +101,12 @@ public class TikaParsingTrigger implements ParsingTrigger {
                 chunkingProps.isContextualPrefixEnabled()
                         ? c ->
                                 com.xxx.ragdoc.application.document.chunking
-                                        .ContextualEmbeddingPrefix.build(
-                                        doc.originalFilename(),
-                                        doc.source(),
-                                        c.sectionPath(),
-                                        chunkingProps.getContextualPrefixMaxChars())
-                                + c.content()
+                                                .ContextualEmbeddingPrefix.build(
+                                                doc.originalFilename(),
+                                                doc.source(),
+                                                c.sectionPath(),
+                                                chunkingProps.getContextualPrefixMaxChars())
+                                        + c.content()
                         : Chunk::content;
         return chunks.stream().map(toInput).toList();
     }
@@ -391,8 +391,10 @@ public class TikaParsingTrigger implements ParsingTrigger {
         }
 
         if (ingestionPolicy != null) {
-            childChunks = new java.util.ArrayList<>(
-                    ingestionPolicy.deduplicateChunks(documentId, childChunks, redactionCount));
+            childChunks =
+                    new java.util.ArrayList<>(
+                            ingestionPolicy.deduplicateChunks(
+                                    documentId, childChunks, redactionCount));
         }
         childTexts = new java.util.ArrayList<>(contextualEmbedInputs(doc, childChunks));
 

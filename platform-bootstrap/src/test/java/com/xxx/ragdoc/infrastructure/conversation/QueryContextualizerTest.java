@@ -52,11 +52,11 @@ class QueryContextualizerTest {
         metrics = mock(RagdocMetrics.class);
         CircuitBreakerRegistry registry = CircuitBreakerRegistry.ofDefaults();
         ctx =
-                    new QueryContextualizer(
-                            router,
-                            registry,
-                            metrics,
-                            new com.xxx.ragdoc.application.chat.ConversationProperties());
+                new QueryContextualizer(
+                        router,
+                        registry,
+                        metrics,
+                        new com.xxx.ragdoc.application.chat.ConversationProperties());
     }
 
     @Test

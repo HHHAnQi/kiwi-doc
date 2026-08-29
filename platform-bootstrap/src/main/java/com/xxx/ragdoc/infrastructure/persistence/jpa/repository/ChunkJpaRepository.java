@@ -12,12 +12,14 @@ import org.springframework.stereotype.Repository;
 public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
 
     /** count 用于文档详情(不强制 join document; 软删 doc 的 chunk 暂不计入可由 service 决定)。 */
-    @Query("SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
-            + "AND d.id=c.documentId AND c.generation=d.activeGeneration")
+    @Query(
+            "SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
+                    + "AND d.id=c.documentId AND c.generation=d.activeGeneration")
     long countActiveByDocumentId(@Param("documentId") Long documentId);
 
-    @Query("SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
-            + "AND d.id=c.documentId AND c.generation=d.activeGeneration AND c.chunkType <> 'PARENT'")
+    @Query(
+            "SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
+                    + "AND d.id=c.documentId AND c.generation=d.activeGeneration AND c.chunkType <> 'PARENT'")
     long countIndexableByDocumentId(@Param("documentId") Long documentId);
 
     /** 单条: 必须保证父 doc 未软删(Scenario 6 "查已软删文档的 chunk → 404")。 */

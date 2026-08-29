@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 /**
  * P1-A(契约对齐): LLM-visible constraint 必须 = Planner assembler runtime constraint。
  *
- * <p>背景: pilot 中 prompt 注入 remainingSteps(=6) 而 Assembler cap=min(3,6)=3,
- * LLM 合法产出 4 步被确定性拒绝(2/50 用户直败)。修复后 prompt 注入 effectiveMaxSteps
- * =min(maxPlanSteps, remainingSteps), 与 Assembler 公式逐字一致; 越界仍 reject。
+ * <p>背景: pilot 中 prompt 注入 remainingSteps(=6) 而 Assembler cap=min(3,6)=3, LLM 合法产出 4 步被确定性拒绝(2/50
+ * 用户直败)。修复后 prompt 注入 effectiveMaxSteps =min(maxPlanSteps, remainingSteps), 与 Assembler 公式逐字一致; 越界仍
+ * reject。
  */
 @DisplayName("P1-A Planner 步数契约对齐 — prompt 与 assembler 统一")
 class PlannerConstraintContractTest {
@@ -139,8 +139,7 @@ class PlannerConstraintContractTest {
             for (int remaining : new int[] {1, 2, 3, 6, 8}) {
                 props.setMaxPlanSteps(maxPlan);
                 int expected = Math.min(maxPlan, remaining);
-                String prompt =
-                        ModelPlannerProvider.buildPrompt(request(remaining), maxPlan);
+                String prompt = ModelPlannerProvider.buildPrompt(request(remaining), maxPlan);
                 assertThat(prompt).contains("- max " + expected + " steps");
                 PlannerPlanAssembler.AssemblyResult at =
                         assembler.assemble(request(remaining), stepsResponse(expected), policy());

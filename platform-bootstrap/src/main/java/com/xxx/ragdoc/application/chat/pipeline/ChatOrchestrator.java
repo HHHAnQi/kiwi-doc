@@ -17,17 +17,16 @@ import com.xxx.ragdoc.domain.auth.Principal;
 import com.xxx.ragdoc.domain.shared.ChatMode;
 import com.xxx.ragdoc.domain.shared.PipelineType;
 import com.xxx.ragdoc.domain.shared.TraceId;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 /**
- * 在线 chat 统一执行入口。同步与 SSE 只保留传输差异，路由、拒答和 pipeline 派发均经过
- * {@link OnlineExecutionKernel}。
+ * 在线 chat 统一执行入口。同步与 SSE 只保留传输差异，路由、拒答和 pipeline 派发均经过 {@link OnlineExecutionKernel}。
  *
  * <p>Controller 只调用本类。Orchestrator 负责:
  *
@@ -45,8 +44,8 @@ import reactor.core.publisher.Flux;
  * <ul>
  *   <li>{@link ChatMode#RAG} → {@link PipelineType#CLASSIC_RAG}
  *   <li>{@link ChatMode#AUTO} → CHAT / RETRIEVE / TOOL / REFUSE 四分流
- *   <li>{@link ChatMode#AGENTIC} → 仅在 Planner 与 Planned Pipeline 双开关均启用时直达
- *       {@link PipelineType#PLANNED_AGENT}; 否则抛 {@link ErrorCode#AGENTIC_MODE_UNAVAILABLE}
+ *   <li>{@link ChatMode#AGENTIC} → 仅在 Planner 与 Planned Pipeline 双开关均启用时直达 {@link
+ *       PipelineType#PLANNED_AGENT}; 否则抛 {@link ErrorCode#AGENTIC_MODE_UNAVAILABLE}
  * </ul>
  *
  * <h2>Trace 字段 (PR-2 新增)</h2>
@@ -78,6 +77,7 @@ public class ChatOrchestrator {
     /** PR-7c.3c: 能力解析器 — MULTI_HOP + flags + confidence → PLANNED_AGENT; 默认全 false 保持零回归。 */
     private final com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver
             strategyResolver;
+
     private final OnlineExecutionKernel executionKernel;
     private final OnlineExecutionProperties executionProperties;
 
@@ -106,8 +106,14 @@ public class ChatOrchestrator {
             RouterProperties routerProperties,
             TaskRouter taskRouter,
             com.xxx.ragdoc.application.chat.planned.ExecutionStrategyResolver strategyResolver) {
-        this(registry, traceObserver, routerProperties, taskRouter, strategyResolver,
-                new OnlineExecutionKernel(registry), new OnlineExecutionProperties());
+        this(
+                registry,
+                traceObserver,
+                routerProperties,
+                taskRouter,
+                strategyResolver,
+                new OnlineExecutionKernel(registry),
+                new OnlineExecutionProperties());
     }
 
     /**
@@ -228,8 +234,10 @@ public class ChatOrchestrator {
                 ExecutionStrategy resolved = strategyResolver.resolve(d, d.strategy());
                 RouterDecision resolvedD = withStrategy(d, resolved);
                 OnlineRoute onlineRoute = toOnlineRoute(resolved);
-                PipelineType pipeline = onlineRoute == OnlineRoute.REFUSE ? null : toPipelineType(resolved);
-                return new Routed(onlineRoute, pipeline, resolvedD, OnlineReasonCode.from(resolvedD));
+                PipelineType pipeline =
+                        onlineRoute == OnlineRoute.REFUSE ? null : toPipelineType(resolved);
+                return new Routed(
+                        onlineRoute, pipeline, resolvedD, OnlineReasonCode.from(resolvedD));
             }
         }
         throw new IllegalStateException("unreachable");
@@ -255,9 +263,7 @@ public class ChatOrchestrator {
         }
     }
 
-    /**
-     * ExecutionStrategy → PipelineType。REFUSE 不存在映射，调用即为编程错误。
-     */
+    /** ExecutionStrategy → PipelineType。REFUSE 不存在映射，调用即为编程错误。 */
     private static PipelineType toPipelineType(ExecutionStrategy strategy) {
         return switch (strategy) {
             case DIRECT_CHAT -> PipelineType.DIRECT_CHAT;

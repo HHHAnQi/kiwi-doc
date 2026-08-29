@@ -48,14 +48,14 @@ public class PlannerProperties {
     private int modelMaxOutputTokens = 1024;
 
     /**
-     * P0-1(降级链): Model Planner 失败后的重试次数。默认 1 (共 2 次尝试)。
-     * FIXTURE_* 确定性失败不重试 (REPLAY 评测语义: 夹具缺失严格失败, 不允许重试碰巧绕过)。
+     * P0-1(降级链): Model Planner 失败后的重试次数。默认 1 (共 2 次尝试)。 FIXTURE_* 确定性失败不重试 (REPLAY 评测语义: 夹具缺失严格失败,
+     * 不允许重试碰巧绕过)。
      */
     private int modelRetryAttempts = 1;
 
     /**
-     * P0-1(降级链): Model 重试耗尽后是否降级到 RuleTemplatePlannerProvider。默认 true —
-     * Planner 是 Agent 链路唯一无兜底的 LLM 依赖, 关闭即回到 INITIAL_PLANNER_FAILED 直败语义。
+     * P0-1(降级链): Model 重试耗尽后是否降级到 RuleTemplatePlannerProvider。默认 true — Planner 是 Agent 链路唯一无兜底的
+     * LLM 依赖, 关闭即回到 INITIAL_PLANNER_FAILED 直败语义。
      */
     private boolean ruleFallbackEnabled = true;
 

@@ -8,7 +8,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,28 +15,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxx.ragdoc.application.chat.agent.AgentBudget;
 import com.xxx.ragdoc.application.chat.agent.AgentBudgetManager;
 import com.xxx.ragdoc.application.chat.agent.AgentBudgetReservation;
+import com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy;
 import com.xxx.ragdoc.application.chat.agent.AgentPersistenceCoordinator;
 import com.xxx.ragdoc.application.chat.agent.AgentPersistenceCoordinator.InitializedRun;
 import com.xxx.ragdoc.application.chat.agent.AgentPersistenceCoordinator.ReservationResult;
 import com.xxx.ragdoc.application.chat.agent.AgentPersistenceCoordinator.SettlementResult;
-import com.xxx.ragdoc.application.chat.agent.BudgetDecision;
-import com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy;
 import com.xxx.ragdoc.application.chat.agent.AgentProgressDetector;
 import com.xxx.ragdoc.application.chat.agent.AgentRunFactory;
+import com.xxx.ragdoc.application.chat.agent.AgentRunPhaseExecutor;
 import com.xxx.ragdoc.application.chat.agent.AgentRunRecord;
 import com.xxx.ragdoc.application.chat.agent.AgentRunStatus;
 import com.xxx.ragdoc.application.chat.agent.AgentStepRecord;
 import com.xxx.ragdoc.application.chat.agent.AgentStepStatus;
 import com.xxx.ragdoc.application.chat.agent.AgentUsage;
-import com.xxx.ragdoc.application.chat.agent.AgentRunPhaseExecutor;
+import com.xxx.ragdoc.application.chat.agent.BudgetDecision;
 import com.xxx.ragdoc.application.chat.agent.CancellationTokenSource;
 import com.xxx.ragdoc.application.chat.agent.DeterministicExecutionPlan;
 import com.xxx.ragdoc.application.chat.agent.EvidenceAccumulatorFactory;
 import com.xxx.ragdoc.application.chat.agent.PlanValidationResult;
 import com.xxx.ragdoc.application.chat.agent.PlanValidator;
 import com.xxx.ragdoc.application.chat.agent.ReplanDecisionCoordinator;
-import com.xxx.ragdoc.application.chat.tool.ToolExecutor;
-import com.xxx.ragdoc.application.chat.tool.ToolResult;
 import com.xxx.ragdoc.application.chat.evidence.Evidence;
 import com.xxx.ragdoc.application.chat.planner.ModelPlannerProvider;
 import com.xxx.ragdoc.application.chat.planner.PlannerPlanAssembler;
@@ -51,7 +48,9 @@ import com.xxx.ragdoc.application.chat.sufficiency.ModelSufficiencyJudge;
 import com.xxx.ragdoc.application.chat.sufficiency.RuleSufficiencyJudge;
 import com.xxx.ragdoc.application.chat.sufficiency.SufficiencyProperties;
 import com.xxx.ragdoc.application.chat.tool.SearchInput;
+import com.xxx.ragdoc.application.chat.tool.ToolExecutor;
 import com.xxx.ragdoc.application.chat.tool.ToolInput;
+import com.xxx.ragdoc.application.chat.tool.ToolResult;
 import com.xxx.ragdoc.domain.auth.Principal;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -75,13 +74,12 @@ import org.mockito.quality.Strictness;
  *
  * <p>真实组件: Coordinator / ModelPlannerProvider(脚本化LLM) / PlannerPlanAssembler /
  * RuleSufficiencyJudge(经 DispatchingSufficiencyJudge) / SufficiencyDecisionGuard /
- * ReplanDecisionCoordinator / AgentRunPhaseExecutor(真实预算+证据累积+签名+requirement打标)。
- * 仅 DB(persistence) / Tool 执行体 / runFactory / finalizer 为 mock。
+ * ReplanDecisionCoordinator / AgentRunPhaseExecutor(真实预算+证据累积+签名+requirement打标)。 仅 DB(persistence)
+ * / Tool 执行体 / runFactory / finalizer 为 mock。
  *
- * <p>强制路径: 多实体 MULTI_HOP → REQ-1/2(ENTITY_ATTRIBUTE)+REQ-3(RELATION);
- * Phase-0 只规划 REQ-1 检索(PARTIAL, REQ-2 未覆盖) → replan ALLOW →
- * Model replan 返回 REQ-2 新查询 → Phase-1 真实执行第二次检索 → 降级 PARTIAL 回答。
- * (真实 workload 中 D3 使 replan 自然不可达, 故必须 fixture 强制。)
+ * <p>强制路径: 多实体 MULTI_HOP → REQ-1/2(ENTITY_ATTRIBUTE)+REQ-3(RELATION); Phase-0 只规划 REQ-1 检索(PARTIAL,
+ * REQ-2 未覆盖) → replan ALLOW → Model replan 返回 REQ-2 新查询 → Phase-1 真实执行第二次检索 → 降级 PARTIAL 回答。 (真实
+ * workload 中 D3 使 replan 自然不可达, 故必须 fixture 强制。)
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -114,9 +112,14 @@ class ForcedModelReplanIntegrationTest {
         PlanValidator validator = mock(PlanValidator.class);
         when(validator.validate(
                         any(DeterministicExecutionPlan.class), any(AgentExecutionPolicy.class)))
-                .thenAnswer(inv -> new PlanValidationResult(true, List.of(),
-                        inv.getArgument(0) instanceof DeterministicExecutionPlan p
-                                ? List.of() : List.of("s0")));
+                .thenAnswer(
+                        inv ->
+                                new PlanValidationResult(
+                                        true,
+                                        List.of(),
+                                        inv.getArgument(0) instanceof DeterministicExecutionPlan p
+                                                ? List.of()
+                                                : List.of("s0")));
         PlannerPlanAssembler assembler = new PlannerPlanAssembler(validator, plannerProps);
         SufficiencyProperties suffProps = new SufficiencyProperties();
         suffProps.setEnabled(true);
@@ -125,7 +128,9 @@ class ForcedModelReplanIntegrationTest {
                 new DispatchingSufficiencyJudge(new RuleSufficiencyJudge(), modelJudge, suffProps);
         AgentRunPhaseExecutor phaseExecutor =
                 new AgentRunPhaseExecutor(
-                        persistence, new AgentBudgetManager(), toolExecutor,
+                        persistence,
+                        new AgentBudgetManager(),
+                        toolExecutor,
                         new EvidenceAccumulatorFactory());
 
         coordinator =
@@ -151,13 +156,13 @@ class ForcedModelReplanIntegrationTest {
     }
 
     /**
-     * P2-D3 修复后 Rule 对"有证据+实体命中"一律 defer → Model Judge 每次判定都会被调用。
-     * 脚本化语义判定(模拟真实 LLM 的语义判别力, D3 holdout 实测 glm-4-plus false_sufficient=0):
-     * 第1次(Phase-0后): REQ-1 有相关证据 COVERED, REQ-2/REQ-3 无证据 → INSUFFICIENT → replan;
-     * 第2次(Phase-1后): REQ-1/REQ-2 均有证据, REQ-3 合成可答 → SUFFICIENT → 最终回答。
+     * P2-D3 修复后 Rule 对"有证据+实体命中"一律 defer → Model Judge 每次判定都会被调用。 脚本化语义判定(模拟真实 LLM 的语义判别力, D3
+     * holdout 实测 glm-4-plus false_sufficient=0): 第1次(Phase-0后): REQ-1 有相关证据 COVERED, REQ-2/REQ-3
+     * 无证据 → INSUFFICIENT → replan; 第2次(Phase-1后): REQ-1/REQ-2 均有证据, REQ-3 合成可答 → SUFFICIENT → 最终回答。
      */
     private void stubScriptedModelJudge() {
-        java.util.concurrent.atomic.AtomicInteger call = new java.util.concurrent.atomic.AtomicInteger();
+        java.util.concurrent.atomic.AtomicInteger call =
+                new java.util.concurrent.atomic.AtomicInteger();
         when(modelJudge.evaluate(any()))
                 .thenAnswer(
                         inv -> {
@@ -193,20 +198,20 @@ class ForcedModelReplanIntegrationTest {
                                 if (covered && !req.evidence().isEmpty()) {
                                     String evId =
                                             hits.isEmpty()
-                                                    ? req.evidence()
-                                                            .get(0)
-                                                            .evidenceId()
+                                                    ? req.evidence().get(0).evidenceId()
                                                     : hits.get(0).evidenceId();
                                     covs.add(
                                             com.xxx.ragdoc.application.chat.sufficiency
                                                     .RequirementCoverage.covered(
-                                                    r.requirementId(), List.of(evId),
+                                                    r.requirementId(),
+                                                    List.of(evId),
                                                     "SCRIPTED_SEMANTIC"));
                                 } else {
                                     covs.add(
                                             com.xxx.ragdoc.application.chat.sufficiency
                                                     .RequirementCoverage.notCovered(
-                                                    r.requirementId(), "SCRIPTED_SEMANTIC_MISSING"));
+                                                    r.requirementId(),
+                                                    "SCRIPTED_SEMANTIC_MISSING"));
                                     if (r.required()) missing.add(r.requirementId());
                                 }
                             }
@@ -267,21 +272,34 @@ class ForcedModelReplanIntegrationTest {
                             String q = in instanceof SearchInput si ? si.query() : "";
                             toolQueries.add(q);
                             boolean seata = q.toLowerCase().contains("seata");
-                            String content = seata
-                                    ? "Seata AT mode uses undo_log table for rollback"
-                                    : "Nacos config center default ports 8848 and 9848";
+                            String content =
+                                    seata
+                                            ? "Seata AT mode uses undo_log table for rollback"
+                                            : "Nacos config center default ports 8848 and 9848";
                             Evidence ev =
-                                    Evidence.of(TENANT, 1L, 10L, "v1", content, 0.9, null,
-                                            "semantic_search", Map.of());
+                                    Evidence.of(
+                                            TENANT,
+                                            1L,
+                                            10L,
+                                            "v1",
+                                            content,
+                                            0.9,
+                                            null,
+                                            "semantic_search",
+                                            Map.of());
                             return ToolResult.success(
-                                    "c-" + toolQueries.size(), "semantic_search", "v1",
-                                    new StubOutput(List.of(ev)), 10L, Map.of());
+                                    "c-" + toolQueries.size(),
+                                    "semantic_search",
+                                    "v1",
+                                    new StubOutput(List.of(ev)),
+                                    10L,
+                                    Map.of());
                         });
     }
 
     private record StubOutput(List<Evidence> evidences)
             implements com.xxx.ragdoc.application.chat.tool.ToolOutput,
-            com.xxx.ragdoc.application.chat.tool.EvidenceListOutput {
+                    com.xxx.ragdoc.application.chat.tool.EvidenceListOutput {
         @Override
         public List<Evidence> evidences() {
             return evidences;
@@ -299,33 +317,91 @@ class ForcedModelReplanIntegrationTest {
                 .thenAnswer(
                         inv ->
                                 new AgentStepRecord(
-                                        inv.getArgument(0), inv.getArgument(1), 0,
-                                        "semantic_search", "v1", null, "h",
-                                        AgentStepStatus.PENDING, 0, List.of(), null, null,
-                                        false, false, false, null, null, null, null, 0));
+                                        inv.getArgument(0),
+                                        inv.getArgument(1),
+                                        0,
+                                        "semantic_search",
+                                        "v1",
+                                        null,
+                                        "h",
+                                        AgentStepStatus.PENDING,
+                                        0,
+                                        List.of(),
+                                        null,
+                                        null,
+                                        false,
+                                        false,
+                                        false,
+                                        null,
+                                        null,
+                                        null,
+                                        null,
+                                        0));
         when(persistence.reserveStep(
-                        anyString(), anyLong(), anySet(), any(),
-                        any(BudgetDecision.Allowed.class), anyString(), anyLong()))
-                .thenReturn(new ReservationResult(
-                        new AgentBudgetReservation(1, 1, 0, 0, 0, BigDecimal.ZERO), 4L, 1L));
+                        anyString(),
+                        anyLong(),
+                        anySet(),
+                        any(),
+                        any(BudgetDecision.Allowed.class),
+                        anyString(),
+                        anyLong()))
+                .thenReturn(
+                        new ReservationResult(
+                                new AgentBudgetReservation(1, 1, 0, 0, 0, BigDecimal.ZERO),
+                                4L,
+                                1L));
         when(persistence.markStepRunning(anyString(), anyString(), anyLong(), any()))
                 .thenReturn(2L);
         when(persistence.settleStep(
-                        anyString(), anyLong(), anySet(), any(), any(), anyInt(),
-                        anyString(), anyLong(), any(), any()))
+                        anyString(),
+                        anyLong(),
+                        anySet(),
+                        any(),
+                        any(),
+                        anyInt(),
+                        anyString(),
+                        anyLong(),
+                        any(),
+                        any()))
                 .thenReturn(new SettlementResult(5L, 3L));
     }
 
     private void stubRunFactory() {
         AgentRunRecord run =
                 new AgentRunRecord(
-                        RUN_ID, "req-1", TENANT, "u1", "PLANNED_AGENT",
-                        AgentRunStatus.EXECUTING, "p-init", "v1", "h", "{}",
-                        policy().budget(), AgentBudgetReservation.zero(), AgentUsage.zero(),
-                        List.of(), 0, null, "model-llm-v1", "tsv", "iv1", "LIVE",
-                        null, null, 3);
-        when(runFactory.create(any(), any(), any(), anyString(), anyString(), anyString(),
-                        anyString(), anyString(), anyString()))
+                        RUN_ID,
+                        "req-1",
+                        TENANT,
+                        "u1",
+                        "PLANNED_AGENT",
+                        AgentRunStatus.EXECUTING,
+                        "p-init",
+                        "v1",
+                        "h",
+                        "{}",
+                        policy().budget(),
+                        AgentBudgetReservation.zero(),
+                        AgentUsage.zero(),
+                        List.of(),
+                        0,
+                        null,
+                        "model-llm-v1",
+                        "tsv",
+                        "iv1",
+                        "LIVE",
+                        null,
+                        null,
+                        3);
+        when(runFactory.create(
+                        any(),
+                        any(),
+                        any(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString(),
+                        anyString()))
                 .thenReturn(new InitializedRun(run, List.of()));
     }
 
@@ -342,7 +418,11 @@ class ForcedModelReplanIntegrationTest {
                 new AgentBudget(6, 12, 3, 1, 30_000L, 0, 0, 0, BigDecimal.ZERO),
                 Instant.now().plusSeconds(60),
                 Set.of("semantic_search", "keyword_search", "metadata_search", "document_fetch"),
-                20, 4000, true, false, true);
+                20,
+                4000,
+                true,
+                false,
+                true);
     }
 
     // ── T7 ──────────────────────────────────────────────────────
@@ -352,8 +432,12 @@ class ForcedModelReplanIntegrationTest {
     void forcedModelReplanEndToEnd() {
         RouterDecision decision =
                 new RouterDecision(
-                        TaskIntent.MULTI_HOP, ExecutionStrategy.PLANNED_AGENT,
-                        List.of("Seata", "Nacos"), Map.of(), 0.95, "TEST");
+                        TaskIntent.MULTI_HOP,
+                        ExecutionStrategy.PLANNED_AGENT,
+                        List.of("Seata", "Nacos"),
+                        Map.of(),
+                        0.95,
+                        "TEST");
 
         PlannedAgentExecutionCoordinator.PrepareResult prepared =
                 coordinator.prepare(
@@ -371,8 +455,7 @@ class ForcedModelReplanIntegrationTest {
         // 2) Planner LLM 恰好 2 次调用(initial + replan), Phase-1 计划真实生成并被接受
         assertThat(llmPrompts).hasSize(2);
         // 3) D2: replan prompt 携带 attempted query(而非仅 hash)
-        assertThat(llmPrompts.get(1))
-                .contains("attempted_query=\"Seata AT mode mechanism\"");
+        assertThat(llmPrompts.get(1)).contains("attempted_query=\"Seata AT mode mechanism\"");
 
         // 4) Phase-1 检索真实发生: 工具被调用 2 次, 第二次是新的 Nacos 查询
         assertThat(toolQueries).hasSize(2);
@@ -392,8 +475,15 @@ class ForcedModelReplanIntegrationTest {
         assertThat(modelJudgeVerdicts).containsExactly("INSUFFICIENT", "SUFFICIENT");
         ArgumentCaptor<String> reason = ArgumentCaptor.forClass(String.class);
         verify(runFinalizer)
-                .finalize(anyString(), anyLong(), anySet(), any(), reason.capture(),
-                        any(), any(), any());
+                .finalize(
+                        anyString(),
+                        anyLong(),
+                        anySet(),
+                        any(),
+                        reason.capture(),
+                        any(),
+                        any(),
+                        any());
         assertThat(reason.getValue()).isEqualTo("PLANNED_REPLAN_SUFFICIENT");
 
         // 7) 两个 requirement 的证据都进入了最终回答基座

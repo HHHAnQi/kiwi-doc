@@ -7,12 +7,11 @@ import org.springframework.stereotype.Component;
 /**
  * P0-3 修复: Agentic 执行预算可配化。
  *
- * <p>此前 PlannedAgentPipeline 硬编码 {@code AgentExecutionPolicy.pr6Default()}
- * (maxSteps=3 / maxReplans=<b>0</b>) — Replan 永远 BUDGET_ZERO, "不充分→再检索"链路不可用;
- * 且无任何配置绑定。
+ * <p>此前 PlannedAgentPipeline 硬编码 {@code AgentExecutionPolicy.pr6Default()} (maxSteps=3 /
+ * maxReplans=<b>0</b>) — Replan 永远 BUDGET_ZERO, "不充分→再检索"链路不可用; 且无任何配置绑定。
  *
- * <p>默认值给 Replan 留足空间: 初始 3 步 + replan 余量; deadline 从 30s 上调到 120s
- * (多跳 + LLM planner + sufficiency 判定的真实 p95 需要)。
+ * <p>默认值给 Replan 留足空间: 初始 3 步 + replan 余量; deadline 从 30s 上调到 120s (多跳 + LLM planner + sufficiency
+ * 判定的真实 p95 需要)。
  */
 @Data
 @Component

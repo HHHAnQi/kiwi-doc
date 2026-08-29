@@ -13,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * P0 安全修复配套: dev/local/test profile 专用默认 principal 种子。
  *
- * <p>背景: V9 曾把公开默认 token (dev-token-change-me / admin-token-change-me) 无条件 seed 进
- * principal 表, V22 迁移已删除; 但本地开发与 e2e 脚本 (scripts/*.sh, Makefile) 依赖这两个 token,
- * 因此开发便利改为: <b>只在 dev/local/test profile 下</b>启动时幂等补种, 生产 profile 该 bean 根本不加载。
+ * <p>背景: V9 曾把公开默认 token (dev-token-change-me / admin-token-change-me) 无条件 seed 进 principal 表, V22
+ * 迁移已删除; 但本地开发与 e2e 脚本 (scripts/*.sh, Makefile) 依赖这两个 token, 因此开发便利改为: <b>只在 dev/local/test profile
+ * 下</b>启动时幂等补种, 生产 profile 该 bean 根本不加载。
  *
- * <p>比原 V9 方案强在: 默认 token 是否存在由 active profile 决定, 而不是由"跑过哪版迁移"决定 —
- * 生产库从任何历史版本升级上来, V22 之后都不会再有公开默认 token。
+ * <p>比原 V9 方案强在: 默认 token 是否存在由 active profile 决定, 而不是由"跑过哪版迁移"决定 — 生产库从任何历史版本升级上来, V22 之后都不会再有公开默认
+ * token。
  */
 @Slf4j
 @Component

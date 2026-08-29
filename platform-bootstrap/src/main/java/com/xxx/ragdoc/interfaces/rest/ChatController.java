@@ -115,7 +115,8 @@ public class ChatController {
                             .header(
                                     "X-Effective-Query",
                                     java.net.URLEncoder.encode(
-                                            effectiveQuery, java.nio.charset.StandardCharsets.UTF_8))
+                                            effectiveQuery,
+                                            java.nio.charset.StandardCharsets.UTF_8))
                             .body(ChatResponse.from(result, includeEvidence));
             org.slf4j.MDC.remove("rag.effectiveQuery");
         }

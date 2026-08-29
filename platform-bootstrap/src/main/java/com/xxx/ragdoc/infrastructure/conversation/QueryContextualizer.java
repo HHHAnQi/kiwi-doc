@@ -43,9 +43,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
     // 不用 rollingSummary: 是压缩过的, 喂 rewrite LLM 反而扰指代消解。
 
     /**
-     * G2 校准: 加 few-shot(正例 + 反例)。原 prompt 只有规则描述, fallback LLM 常见两类
-     * 失败: 复读原问题(鹦鹉, 已由编辑相似度兜底) / 过度扩展(把上一轮的答案塞进改写)。
-     * few-shot 是 G2 提分的主要杠杆。
+     * G2 校准: 加 few-shot(正例 + 反例)。原 prompt 只有规则描述, fallback LLM 常见两类 失败: 复读原问题(鹦鹉, 已由编辑相似度兜底) /
+     * 过度扩展(把上一轮的答案塞进改写)。 few-shot 是 G2 提分的主要杠杆。
      */
     private static final String CONDENSE_PROMPT_TEMPLATE =
             """
@@ -210,9 +209,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
     /**
      * 鹦鹉学舌检测 — LLM 偶尔直接复读原 query, 此时 rewrite 无意义, retrieve 跑偏。
      *
-     * <p>P0 修复: 原实现的双向 {@code contains} 会把一切合法的指代消解改写误判为鹦鹉 —
-     * condense 式改写天然以原问为子串("那它支持哪些？"→"Dubbo 支持哪些序列化？"含原问全部字符),
-     * 实测多轮 G2 gate 仅 2/20 通过。现收紧为:
+     * <p>P0 修复: 原实现的双向 {@code contains} 会把一切合法的指代消解改写误判为鹦鹉 — condense 式改写天然以原问为子串("那它支持哪些？"→"Dubbo
+     * 支持哪些序列化？"含原问全部字符), 实测多轮 G2 gate 仅 2/20 通过。现收紧为:
      *
      * <ul>
      *   <li>完全相等(去空白/大小写) → 鹦鹉
@@ -227,7 +225,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
         if (o.isEmpty() || r.isEmpty()) return true;
         if (o.equals(r)) return true;
         // 改写长度与原问相差悬殊 → 一定增/删了实质内容, 不是复读
-        double lenRatio = Math.min(o.length(), r.length()) / (double) Math.max(o.length(), r.length());
+        double lenRatio =
+                Math.min(o.length(), r.length()) / (double) Math.max(o.length(), r.length());
         if (lenRatio < 0.9) return false;
         // 长度接近时用 Levenshtein 相似度: ≥0.9 视为只动了标点/语气词的复读
         return similarity(o, r) >= 0.9;
@@ -257,8 +256,7 @@ public class QueryContextualizer implements QueryContextualizerPort {
         // 鹦鹉判定用归一化: 去空白 + 去标点(中英文) + 小写 — 只差标点的复读不算改写
         return s == null
                 ? ""
-                : s.replaceAll("[\\s\\p{Punct}\\u3000-\\u303F\\uFF00-\\uFFEF]+", "")
-                        .toLowerCase();
+                : s.replaceAll("[\\s\\p{Punct}\\u3000-\\u303F\\uFF00-\\uFFEF]+", "").toLowerCase();
     }
 
     private static String resolveExplicitRetry(String query, List<Turn> recentTurns) {

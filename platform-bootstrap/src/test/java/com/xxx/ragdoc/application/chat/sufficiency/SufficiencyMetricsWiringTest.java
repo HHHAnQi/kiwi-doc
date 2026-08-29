@@ -21,9 +21,9 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 /**
- * P1-B: sufficiency 指标接线单测 —
- * ragdoc.agent.sufficiency_total 在 DispatchingSufficiencyJudge 单一出口记录(每判定恰一笔);
- * ragdoc.agent.llm_calls_total{component=sufficiency} 在 ModelSufficiencyJudge 真实调用点记录。
+ * P1-B: sufficiency 指标接线单测 — ragdoc.agent.sufficiency_total 在 DispatchingSufficiencyJudge
+ * 单一出口记录(每判定恰一笔); ragdoc.agent.llm_calls_total{component=sufficiency} 在 ModelSufficiencyJudge
+ * 真实调用点记录。
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -40,8 +40,16 @@ class SufficiencyMetricsWiringTest {
 
     private final SufficiencyRequest anyRequest =
             new SufficiencyRequest(
-                    "r1", "q", List.of(), List.of(), Set.of(), Set.of(),
-                    EvidenceCoverageSummary.empty(), 0, true, Map.of());
+                    "r1",
+                    "q",
+                    List.of(),
+                    List.of(),
+                    Set.of(),
+                    Set.of(),
+                    EvidenceCoverageSummary.empty(),
+                    0,
+                    true,
+                    Map.of());
 
     @BeforeEach
     void setup() {

@@ -554,7 +554,9 @@ public class AgentRunExecutor {
                         leaseLost.set(true);
                         log.error(
                                 "agent.lease_heartbeat_failed run_id={}, owner_id={}, error={}",
-                                runId, ownerId, e.getMessage());
+                                runId,
+                                ownerId,
+                                e.getMessage());
                     }
                 },
                 interval,
@@ -582,11 +584,15 @@ public class AgentRunExecutor {
     }
 
     public static final class AgentLeaseUnavailableException extends RuntimeException {
-        public AgentLeaseUnavailableException(String message) { super(message); }
+        public AgentLeaseUnavailableException(String message) {
+            super(message);
+        }
     }
 
     public static final class AgentLeaseLostException extends RuntimeException {
-        public AgentLeaseLostException(String message) { super(message); }
+        public AgentLeaseLostException(String message) {
+            super(message);
+        }
     }
 
     // ─── 内部 ────────────────────────────────────────────

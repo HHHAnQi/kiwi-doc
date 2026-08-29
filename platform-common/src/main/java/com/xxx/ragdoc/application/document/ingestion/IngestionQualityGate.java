@@ -37,9 +37,11 @@ public class IngestionQualityGate {
         return report(reasons, chunks == null ? 0 : chunks.size(), 0, redactions);
     }
 
-    public Report validateEmbeddings(List<EmbeddingResult> embeddings, int expected, int redactions) {
+    public Report validateEmbeddings(
+            List<EmbeddingResult> embeddings, int expected, int redactions) {
         List<String> reasons = new ArrayList<>();
-        if (embeddings == null || embeddings.size() != expected) reasons.add("EMBEDDING_COUNT_MISMATCH");
+        if (embeddings == null || embeddings.size() != expected)
+            reasons.add("EMBEDDING_COUNT_MISMATCH");
         if (embeddings != null) {
             for (EmbeddingResult embedding : embeddings) {
                 float[] vector = embedding == null ? null : embedding.denseVector();
@@ -75,15 +77,24 @@ public class IngestionQualityGate {
         return text.chars().filter(c -> c == 0xfffd).count() / (double) text.length();
     }
 
-    public record Report(boolean passed, double score, List<String> reasons, int chunkCount,
-                         int embeddingCount, int redactionCount) {}
+    public record Report(
+            boolean passed,
+            double score,
+            List<String> reasons,
+            int chunkCount,
+            int embeddingCount,
+            int redactionCount) {}
 
     public static final class QualityRejectedException extends RuntimeException {
         private final Report report;
+
         public QualityRejectedException(Report report) {
             super("入库质量门禁拒绝: " + String.join(",", report.reasons()));
             this.report = report;
         }
-        public Report report() { return report; }
+
+        public Report report() {
+            return report;
+        }
     }
 }

@@ -60,10 +60,12 @@ public class SufficiencyDecisionGuard {
         if (decision == null) return GuardResult.reject("NULL_DECISION");
         // 改动(2026-08-25): PARTIAL + ANSWER_PARTIAL 也放行(带覆盖度标注回答)。
         // 原: 只允许 SUFFICIENT + ANSWER + missing 为空 → 65% 拒答的守门层。
-        boolean isFull = decision.status() == SufficiencyStatus.SUFFICIENT
-                && decision.action() == RecommendedAction.ANSWER;
-        boolean isPartial = decision.status() == SufficiencyStatus.PARTIAL
-                && decision.action() == RecommendedAction.ANSWER_PARTIAL;
+        boolean isFull =
+                decision.status() == SufficiencyStatus.SUFFICIENT
+                        && decision.action() == RecommendedAction.ANSWER;
+        boolean isPartial =
+                decision.status() == SufficiencyStatus.PARTIAL
+                        && decision.action() == RecommendedAction.ANSWER_PARTIAL;
         if (!isFull && !isPartial) {
             return GuardResult.reject(
                     "STATUS_NOT_ANSWERABLE:" + decision.status() + ":" + decision.action());

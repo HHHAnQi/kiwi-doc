@@ -18,15 +18,23 @@ public class JpaIngestionQualityReportAdapter implements IngestionQualityReportP
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void record(Long documentId, String stage, IngestionQualityGate.Report report,
-                       String parserVersion, String chunkerVersion, String embeddingVersion) {
+    public void record(
+            Long documentId,
+            String stage,
+            IngestionQualityGate.Report report,
+            String parserVersion,
+            String chunkerVersion,
+            String embeddingVersion) {
         IngestionQualityReportEntity entity = new IngestionQualityReportEntity();
         entity.setDocumentId(documentId);
         entity.setStage(stage);
         entity.setPassed(report.passed());
         entity.setScore(report.score());
-        try { entity.setReasons(objectMapper.writeValueAsString(report.reasons())); }
-        catch (Exception e) { entity.setReasons("[]"); }
+        try {
+            entity.setReasons(objectMapper.writeValueAsString(report.reasons()));
+        } catch (Exception e) {
+            entity.setReasons("[]");
+        }
         entity.setChunkCount(report.chunkCount());
         entity.setEmbeddingCount(report.embeddingCount());
         entity.setRedactionCount(report.redactionCount());

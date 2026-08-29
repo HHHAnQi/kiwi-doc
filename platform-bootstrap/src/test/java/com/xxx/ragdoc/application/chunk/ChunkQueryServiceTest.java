@@ -217,8 +217,7 @@ class ChunkQueryServiceTest {
         void docMissing() {
             // 守门现在承担存在性+权限校验(与文档详情同语义, 防枚举)
             when(documentAccessGuard.requireRead(99L))
-                    .thenThrow(
-                            new NotFoundException(ErrorCode.DOC_NOT_FOUND, "文档不存在: 99"));
+                    .thenThrow(new NotFoundException(ErrorCode.DOC_NOT_FOUND, "文档不存在: 99"));
 
             assertThatThrownBy(() -> service.listByPage(99L, 1))
                     .isInstanceOf(NotFoundException.class)
@@ -284,5 +283,4 @@ class ChunkQueryServiceTest {
                     .isInstanceOf(NotFoundException.class);
         }
     }
-
 }

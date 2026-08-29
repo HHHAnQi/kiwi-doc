@@ -68,8 +68,7 @@ class RuleSufficiencyJudgeTest {
             Evidence ev = ev("tA", "R1", "v2 content", "v2", null);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(ev)));
             assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
-            assertThat(d.coverage().get(0).reasonCode())
-                    .isEqualTo("RULE_DEFERS_SEMANTIC_TO_MODEL");
+            assertThat(d.coverage().get(0).reasonCode()).isEqualTo("RULE_DEFERS_SEMANTIC_TO_MODEL");
             assertThat(d.missingRequirementIds()).containsExactly("R1");
         }
 

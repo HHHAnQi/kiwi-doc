@@ -19,8 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
- * P1 MCP stdio server 协议层单测: initialize / tools/list / tools/call / notification /
- * unknown method。服务层全 mock, 不起 Spring 上下文。
+ * P1 MCP stdio server 协议层单测: initialize / tools/list / tools/call / notification / unknown
+ * method。服务层全 mock, 不起 Spring 上下文。
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("McpStdioServer JSON-RPC 协议")
@@ -50,8 +50,7 @@ class McpStdioServerTest {
     @DisplayName("notification(无 id) → 不应答(null)")
     void notificationNoResponse() {
         assertThat(
-                        server()
-                                .handle(
+                        server().handle(
                                         "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"))
                 .isNull();
     }
@@ -61,16 +60,14 @@ class McpStdioServerTest {
     void toolsList() throws Exception {
         JsonNode tools =
                 om.readTree(
-                                server()
-                                        .handle(
+                                server().handle(
                                                 "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}"))
                         .get("result")
                         .get("tools");
         assertThat(tools.size()).isEqualTo(2);
         assertThat(tools.get(0).get("name").asText()).isEqualTo("rag_search");
         assertThat(tools.get(1).get("name").asText()).isEqualTo("rag_ask");
-        assertThat(tools.get(0).path("inputSchema").path("required").toString())
-                .contains("query");
+        assertThat(tools.get(0).path("inputSchema").path("required").toString()).contains("query");
     }
 
     @Test
@@ -89,12 +86,10 @@ class McpStdioServerTest {
                                 null));
 
         String resp =
-                server()
-                        .handle(
+                server().handle(
                                 "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\","
                                         + "\"params\":{\"name\":\"rag_ask\",\"arguments\":{\"query\":\"RocketMQ 默认端口?\"}}}");
-        JsonNode content =
-                om.readTree(resp).get("result").get("content").get(0);
+        JsonNode content = om.readTree(resp).get("result").get("content").get(0);
         assertThat(content.get("type").asText()).isEqualTo("text");
         JsonNode payload = om.readTree(content.get("text").asText());
         assertThat(payload.get("answer").asText()).contains("10911");
@@ -109,8 +104,8 @@ class McpStdioServerTest {
     void unknownMethod() throws Exception {
         JsonNode n =
                 om.readTree(
-                        server()
-                                .handle("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"resources/list\"}"));
+                        server().handle(
+                                        "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"resources/list\"}"));
         assertThat(n.get("error").get("code").asInt()).isEqualTo(-32601);
     }
 
@@ -118,8 +113,7 @@ class McpStdioServerTest {
     @DisplayName("未知 tool → isError content (MCP 工具级错误语义, 非 JSON-RPC error)")
     void unknownTool() throws Exception {
         String resp =
-                server()
-                        .handle(
+                server().handle(
                                 "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"tools/call\","
                                         + "\"params\":{\"name\":\"nope\",\"arguments\":{\"query\":\"x\"}}}");
         JsonNode result = om.readTree(resp).get("result");

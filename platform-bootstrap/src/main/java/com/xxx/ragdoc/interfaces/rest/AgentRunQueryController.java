@@ -18,8 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * P1(ADR-0012 §7 Phase1): Agent run 只读查询端点 — 评测与审计必需。
  *
- * <p>权限: 登录用户仅可查本租户的 run(跨租户 404 防枚举, 与文档守门同语义)。
- * resume(续跑)属 Phase 2, 本端点只读。
+ * <p>权限: 登录用户仅可查本租户的 run(跨租户 404 防枚举, 与文档守门同语义)。 resume(续跑)属 Phase 2, 本端点只读。
  */
 @Slf4j
 @RestController

@@ -11,10 +11,10 @@ import com.xxx.ragdoc.application.chat.agent.AgentStateMachine;
 import com.xxx.ragdoc.application.chat.agent.AgentUsage;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.AgentRunEntity;
 import com.xxx.ragdoc.infrastructure.persistence.jpa.repository.AgentRunJpaRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.time.Instant;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,15 +81,19 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
 
     @Override
     public List<AgentRunRecord> findStaleNonTerminal(Instant updatedBefore, int limit) {
-        Set<String> statuses = java.util.Arrays.stream(AgentRunStatus.values())
-                .filter(s -> !s.isTerminal())
-                .map(AgentRunStatus::name)
-                .collect(Collectors.toSet());
-        return jpa.findStaleNonTerminal(
+        Set<String> statuses =
+                java.util.Arrays.stream(AgentRunStatus.values())
+                        .filter(s -> !s.isTerminal())
+                        .map(AgentRunStatus::name)
+                        .collect(Collectors.toSet());
+        return jpa
+                .findStaleNonTerminal(
                         updatedBefore,
                         statuses,
                         org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
-                .stream().map(this::toRecord).toList();
+                .stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     @Override
@@ -111,9 +115,9 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
     }
 
     /**
-     * P2-D5(A): 过程决策摘要 — 只在为空时写入(见 JPA 查询守卫), 失败静默(诊断字段不阻塞主流程)。
-     * @Transactional: @Modifying 查询需要线程持有事务(Finalizer 调用点无外层事务,
-     * 实测无注解会抛 No EntityManager with actual transaction — 同 JpaChunkRepository:80 坑)。
+     * P2-D5(A): 过程决策摘要 — 只在为空时写入(见 JPA 查询守卫), 失败静默(诊断字段不阻塞主流程)。 @Transactional: @Modifying
+     * 查询需要线程持有事务(Finalizer 调用点无外层事务, 实测无注解会抛 No EntityManager with actual transaction — 同
+     * JpaChunkRepository:80 坑)。
      */
     @Override
     @org.springframework.transaction.annotation.Transactional
@@ -129,8 +133,10 @@ public class AgentRunRepositoryImpl implements AgentRunRepository {
     }
 
     private static Set<String> nonTerminalStatusNames() {
-        return java.util.Arrays.stream(AgentRunStatus.values()).filter(s -> !s.isTerminal())
-                .map(AgentRunStatus::name).collect(Collectors.toSet());
+        return java.util.Arrays.stream(AgentRunStatus.values())
+                .filter(s -> !s.isTerminal())
+                .map(AgentRunStatus::name)
+                .collect(Collectors.toSet());
     }
 
     @Override

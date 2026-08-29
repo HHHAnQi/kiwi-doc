@@ -84,7 +84,10 @@ public class MilvusVectorStore implements VectorStore {
             List<EmbeddingResult> embeddings,
             VectorStore.ChunkMetadata metadata) {
         deleteByDocumentIdAndGeneration(documentId, generation);
-        insertGeneration(documentId, chunks, embeddings,
+        insertGeneration(
+                documentId,
+                chunks,
+                embeddings,
                 (metadata == null ? VectorStore.ChunkMetadata.unknown() : metadata)
                         .withGeneration(generation));
     }
@@ -175,12 +178,16 @@ public class MilvusVectorStore implements VectorStore {
     @Override
     public void deleteByDocumentIdAndGeneration(Long documentId, int generation) {
         circuitBreaker.executeRunnable(
-                () -> milvusClientV2.delete(
-                        DeleteReq.builder()
-                                .collectionName(props.getCollection())
-                                .filter("document_id == " + documentId
-                                        + " and ingestion_generation == " + generation)
-                                .build()));
+                () ->
+                        milvusClientV2.delete(
+                                DeleteReq.builder()
+                                        .collectionName(props.getCollection())
+                                        .filter(
+                                                "document_id == "
+                                                        + documentId
+                                                        + " and ingestion_generation == "
+                                                        + generation)
+                                        .build()));
     }
 
     /** 兼容旧端口：这里只能表达存在性，不能作为精确数量使用。 */
@@ -198,9 +205,11 @@ public class MilvusVectorStore implements VectorStore {
                                     milvusClientV2.query(
                                             io.milvus.v2.service.vector.request.QueryReq.builder()
                                                     .collectionName(props.getCollection())
-                                                    .filter("document_id == " + documentId
-                                                            + " and ingestion_generation == "
-                                                            + generation)
+                                                    .filter(
+                                                            "document_id == "
+                                                                    + documentId
+                                                                    + " and ingestion_generation == "
+                                                                    + generation)
                                                     .outputFields(
                                                             java.util.List.of(
                                                                     MilvusCollectionInitializer

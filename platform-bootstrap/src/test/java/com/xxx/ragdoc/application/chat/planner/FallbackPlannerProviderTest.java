@@ -25,10 +25,9 @@ import org.mockito.quality.Strictness;
 /**
  * P0-1(降级链): Model → retry → Rule 运行时降级链全场景验收。
  *
- * <p>对应验收矩阵: Model success / transient→retry success / Model fail→Rule success /
- * Model+Rule fail→ALL_PLANNERS_FAILED(Pipeline 层再降 Classic, 见 PlannedAgentPipeline) /
- * model-disabled zero-diff。另覆盖: FIXTURE_* 确定性失败不重试(REPLAY 评测语义)、
- * Rule 返回 null (无 allowed tool) 视同失败、降级指标接线。
+ * <p>对应验收矩阵: Model success / transient→retry success / Model fail→Rule success / Model+Rule
+ * fail→ALL_PLANNERS_FAILED(Pipeline 层再降 Classic, 见 PlannedAgentPipeline) / model-disabled
+ * zero-diff。另覆盖: FIXTURE_* 确定性失败不重试(REPLAY 评测语义)、 Rule 返回 null (无 allowed tool) 视同失败、降级指标接线。
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -101,7 +100,8 @@ class FallbackPlannerProviderTest {
     @DisplayName("Model 重试耗尽 → Rule 兜底成功: 结果带 RULE_FALLBACK 标记, 指标 rule_fallback")
     void ruleFallback() {
         when(modelProvider.plan(any()))
-                .thenThrow(new PlannerException(PlannerException.Reason.PROVIDER_ERROR, "llm down"));
+                .thenThrow(
+                        new PlannerException(PlannerException.Reason.PROVIDER_ERROR, "llm down"));
         when(ruleProvider.plan(any())).thenReturn(resp("rule-plan"));
         PlannerResponse out = chain.plan(request());
         assertThat(out.planId()).isEqualTo("rule-plan");
@@ -117,9 +117,9 @@ class FallbackPlannerProviderTest {
     @DisplayName("Model+Rule 全灭 → PlannerException(ALL_PLANNERS_FAILED), 由 Pipeline 降级 Classic")
     void allPlannersFailed() {
         when(modelProvider.plan(any()))
-                .thenThrow(new PlannerException(PlannerException.Reason.PROVIDER_ERROR, "llm down"));
-        when(ruleProvider.plan(any()))
-                .thenThrow(new IllegalStateException("rule planner broken"));
+                .thenThrow(
+                        new PlannerException(PlannerException.Reason.PROVIDER_ERROR, "llm down"));
+        when(ruleProvider.plan(any())).thenThrow(new IllegalStateException("rule planner broken"));
         assertThatThrownBy(() -> chain.plan(request()))
                 .isInstanceOf(PlannerException.class)
                 .hasMessageContaining("ALL_PLANNERS_FAILED");

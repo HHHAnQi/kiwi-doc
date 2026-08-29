@@ -2,11 +2,9 @@ package com.xxx.ragdoc.application.chat.planned;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,10 +31,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 
-/**
- * P2-D5(B/C) T6/T7: correlation contract — runId 只在真实存在时暴露;
- * sync 头与 SSE 终态事件同语义。
- */
+/** P2-D5(B/C) T6/T7: correlation contract — runId 只在真实存在时暴露; sync 头与 SSE 终态事件同语义。 */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("P2-D5 T6/T7 — correlation contract(sync/SSE一致, 无fake runId)")
@@ -58,9 +53,10 @@ class D5PipelineCorrelationTest {
     void setup() {
         plannerProps = new PlannerProperties();
         plannerProps.setEnabled(true);
-        when(retrieveService.retrieve(any())).thenReturn(
-                new com.xxx.ragdoc.application.chat.RetrieveService.RetrieveResult(
-                        List.of(), null, 0f, 0f, null));
+        when(retrieveService.retrieve(any()))
+                .thenReturn(
+                        new com.xxx.ragdoc.application.chat.RetrieveService.RetrieveResult(
+                                List.of(), null, 0f, 0f, null));
         when(runFinalizer.finalize(
                         anyString(), anyLong(), anySet(), any(), anyString(), any(), any(), any()))
                 .thenReturn(
@@ -68,8 +64,13 @@ class D5PipelineCorrelationTest {
                                 "run-ok", 7L, AgentRunStatus.ANSWERED));
         pipeline =
                 new PlannedAgentPipeline(
-                        coordinator, composer, runFinalizer, plannerProps, budgetProps,
-                        retrieveService, classicPipeline);
+                        coordinator,
+                        composer,
+                        runFinalizer,
+                        plannerProps,
+                        budgetProps,
+                        retrieveService,
+                        classicPipeline);
     }
 
     @AfterEach
@@ -82,7 +83,10 @@ class D5PipelineCorrelationTest {
                 new RouterDecision(
                         com.xxx.ragdoc.application.chat.router.TaskIntent.MULTI_HOP,
                         com.xxx.ragdoc.application.chat.router.ExecutionStrategy.PLANNED_AGENT,
-                        List.of("Seata"), java.util.Map.of(), 0.95, "TEST");
+                        List.of("Seata"),
+                        java.util.Map.of(),
+                        0.95,
+                        "TEST");
         return new ChatExecutionContext(
                 "req-d5-1",
                 new com.xxx.ragdoc.domain.auth.Principal("tA", "u1", java.util.Set.of(), null),
@@ -95,10 +99,16 @@ class D5PipelineCorrelationTest {
 
     private PlannedAgentExecutionCoordinator.PreparedGroundedAnswer prepared(String runId) {
         return new PlannedAgentExecutionCoordinator.PreparedGroundedAnswer(
-                runId, "req-d5-1", "q", List.of(), List.of(), List.of(),
+                runId,
+                "req-d5-1",
+                "q",
+                List.of(),
+                List.of(),
+                List.of(),
                 com.xxx.ragdoc.application.chat.agent.AgentUsage.zero(),
                 com.xxx.ragdoc.application.chat.agent.AgentBudgetReservation.zero(),
-                0, java.time.Instant.now(),
+                0,
+                java.time.Instant.now(),
                 com.xxx.ragdoc.application.chat.agent.CancellationTokenSource.CancellationToken
                         .never(),
                 6L);
@@ -114,8 +124,16 @@ class D5PipelineCorrelationTest {
                         PlannedAgentExecutionCoordinator.PrepareResult.structuralFailure(
                                 "INITIAL_PLANNER_FAILED"));
         when(classicPipeline.execute(any(), any()))
-                .thenReturn(new ChatResult("classic answer", List.of(), StateHint.OK, TID,
-                        null, null, PipelineType.CLASSIC_RAG, null));
+                .thenReturn(
+                        new ChatResult(
+                                "classic answer",
+                                List.of(),
+                                StateHint.OK,
+                                TID,
+                                null,
+                                null,
+                                PipelineType.CLASSIC_RAG,
+                                null));
 
         ChatResult r = pipeline.execute(new ChatCommand("q", null, 5), ctx());
 
@@ -132,10 +150,9 @@ class D5PipelineCorrelationTest {
     @DisplayName("T7a: sync 成功 → MDC 携带 runId+terminalStatus=ANSWERED(供 X-Agent-* 头)")
     void t7a_syncCorrelation() throws Exception {
         when(coordinator.prepare(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(
-                        PlannedAgentExecutionCoordinator.PrepareResult.ok(prepared("run-ok")));
-        when(composer.compose(any())).thenReturn(
-                new EvidenceGroundedAnswerComposer.GroundedAnswer("ans", List.of()));
+                .thenReturn(PlannedAgentExecutionCoordinator.PrepareResult.ok(prepared("run-ok")));
+        when(composer.compose(any()))
+                .thenReturn(new EvidenceGroundedAnswerComposer.GroundedAnswer("ans", List.of()));
 
         ChatResult r = pipeline.execute(new ChatCommand("q", null, 5), ctx());
         assertThat(r.answer()).isEqualTo("ans");
@@ -147,10 +164,8 @@ class D5PipelineCorrelationTest {
     @DisplayName("T7b: SSE 终态 DoneEvent 携带 runId/terminalStatus(与sync同语义), ErrorEvent携带真实runId")
     void t7b_sseParity() {
         when(coordinator.prepare(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(
-                        PlannedAgentExecutionCoordinator.PrepareResult.ok(prepared("run-ok")));
-        when(composer.stream(any()))
-                .thenReturn(Flux.just(new ChatStreamEvent.DeltaEvent("a")));
+                .thenReturn(PlannedAgentExecutionCoordinator.PrepareResult.ok(prepared("run-ok")));
+        when(composer.stream(any())).thenReturn(Flux.just(new ChatStreamEvent.DeltaEvent("a")));
 
         List<ChatStreamEvent> events =
                 pipeline.stream(new ChatCommand("q", null, 5), ctx())
@@ -185,12 +200,12 @@ class D5PipelineCorrelationTest {
         when(coordinator.prepare(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(
                         PlannedAgentExecutionCoordinator.PrepareResult.prematureFailure(
-                                "run-y", AgentRunStatus.REFUSED_NO_EVIDENCE,
+                                "run-y",
+                                AgentRunStatus.REFUSED_NO_EVIDENCE,
                                 "INSUFFICIENT_AFTER_REPLAN_NO_EVIDENCE"));
         ChatResult r = pipeline.execute(new ChatCommand("q", null, 5), ctx());
         assertThat(r.stateHint()).isEqualTo(StateHint.NO_RECALL);
         assertThat(org.slf4j.MDC.get("rag.agentRunId")).isEqualTo("run-y");
-        assertThat(org.slf4j.MDC.get("rag.agentTerminalStatus"))
-                .isEqualTo("REFUSED_NO_EVIDENCE");
+        assertThat(org.slf4j.MDC.get("rag.agentTerminalStatus")).isEqualTo("REFUSED_NO_EVIDENCE");
     }
 }

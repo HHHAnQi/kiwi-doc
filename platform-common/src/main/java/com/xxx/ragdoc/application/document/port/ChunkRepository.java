@@ -78,7 +78,8 @@ public interface ChunkRepository {
     List<Chunk> saveAllAppend(Long documentId, List<Chunk> chunks);
 
     default List<Chunk> saveAllAppend(Long documentId, int generation, List<Chunk> chunks) {
-        return saveAllAppend(documentId, chunks.stream().map(c -> c.withGeneration(generation)).toList());
+        return saveAllAppend(
+                documentId, chunks.stream().map(c -> c.withGeneration(generation)).toList());
     }
 
     default void deleteByDocumentIdAndGeneration(Long documentId, int generation) {

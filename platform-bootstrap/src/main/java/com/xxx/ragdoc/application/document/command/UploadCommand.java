@@ -92,12 +92,13 @@ public record UploadCommand(
         int dot = base.lastIndexOf('.');
         if (dot > 0) base = base.substring(0, dot);
         // 只剥离独立的版本段，避免把普通文件名中的数字误当成版本。
-        base = base.replaceAll(
-                        "(?i)(?:^|[-_\\s])v?\\d+\\.\\d+(?:\\.\\d+){0,2}(?:[-_.]?(?:rc|ga|m|alpha|beta)\\d?)?(?=$|[-_\\s])",
-                        "-")
-                .replaceAll("[^a-z0-9\\p{IsHan}._-]+", "-")
-                .replaceAll("[-_]{2,}", "-")
-                .replaceAll("^[-_.]+|[-_.]+$", "");
+        base =
+                base.replaceAll(
+                                "(?i)(?:^|[-_\\s])v?\\d+\\.\\d+(?:\\.\\d+){0,2}(?:[-_.]?(?:rc|ga|m|alpha|beta)\\d?)?(?=$|[-_\\s])",
+                                "-")
+                        .replaceAll("[^a-z0-9\\p{IsHan}._-]+", "-")
+                        .replaceAll("[-_]{2,}", "-")
+                        .replaceAll("^[-_.]+|[-_.]+$", "");
         if (base.isBlank()) {
             throw new IllegalArgumentException("无法从文件名推导 logicalDocumentKey，请显式传入");
         }

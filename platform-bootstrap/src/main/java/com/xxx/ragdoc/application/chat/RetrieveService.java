@@ -12,8 +12,8 @@ import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
-import com.xxx.ragdoc.application.document.port.Retriever;
 import com.xxx.ragdoc.application.document.port.ReciprocalRankFusion;
+import com.xxx.ragdoc.application.document.port.Retriever;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import com.xxx.ragdoc.common.exception.ErrorCode;
@@ -52,8 +52,8 @@ import org.springframework.stereotype.Service;
 public class RetrieveService {
 
     /**
-     * P1: minScoreThreshold(rerank 分数闸门)配置。setter 注入(可选) — 保持
-     * Lombok 主构造器签名不变, 14 处既有测试调用零改动; 未注入时用默认阈值 0.3。
+     * P1: minScoreThreshold(rerank 分数闸门)配置。setter 注入(可选) — 保持 Lombok 主构造器签名不变, 14 处既有测试调用零改动;
+     * 未注入时用默认阈值 0.3。
      */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private ChatMessages chatMessages;
@@ -61,9 +61,6 @@ public class RetrieveService {
     private double minScoreThreshold() {
         return chatMessages != null ? chatMessages.getMinScoreThreshold() : 0.3;
     }
-
-
-
 
     private final EmbeddingClient embeddingClient;
     private final VectorStore vectorStore;
@@ -287,9 +284,7 @@ public class RetrieveService {
                     retrievalQueries.size(),
                     lastRetrievalFailure == null ? "unknown" : lastRetrievalFailure.getMessage());
             throw new InfraException(
-                    ErrorCode.RAG_RETRIEVAL_FAILED,
-                    "检索基础设施调用失败",
-                    lastRetrievalFailure);
+                    ErrorCode.RAG_RETRIEVAL_FAILED, "检索基础设施调用失败", lastRetrievalFailure);
         }
         List<ScoredChunk> hits =
                 queryRankings.size() == 1
@@ -338,8 +333,7 @@ public class RetrieveService {
             if (chunk == null
                     || document == null
                     || document.isDeleted()
-                    || document.status()
-                            != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED
+                    || document.status() != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED
                     || chunk.generation() != document.activeGeneration()) {
                 staleHitCount++;
                 continue;
@@ -383,7 +377,9 @@ public class RetrieveService {
         // 统一判相关；不开启 rerank 时不扩展，避免把未经判别的邻居直接喂给 LLM。
         if (rerankEnabled && rerankProps.isNeighborExpansionEnabled()) {
             int before = validHits.size();
-            validHits = expandRerankNeighbors(validHits, chunkMap, documentMap, principal, allowedDocIds);
+            validHits =
+                    expandRerankNeighbors(
+                            validHits, chunkMap, documentMap, principal, allowedDocIds);
             log.info(
                     "retrieve.neighbor_expansion before={}, after={}, added={}, window={}, seeds={}",
                     before,
@@ -443,7 +439,10 @@ public class RetrieveService {
                         top1HybridScore);
                 rerankT0 = System.currentTimeMillis();
                 // 必须与召回使用同一个 effectiveQuery；否则开启 query rewrite 后会用旧问题精排新候选。
-                var reranked = (java.util.List<ScoredChunk>) new java.util.ArrayList<ScoredChunk>(rerankClient.rerank(effectiveQuery, candidates, topN));
+                var reranked =
+                        (java.util.List<ScoredChunk>)
+                                new java.util.ArrayList<ScoredChunk>(
+                                        rerankClient.rerank(effectiveQuery, candidates, topN));
                 metrics.recordRerankLatency(System.currentTimeMillis() - rerankT0, true);
                 if (!reranked.isEmpty()) {
                     // minScoreThreshold 接线(P1, 原定义从未使用): rerank 分数是 0-1 的
@@ -452,9 +451,7 @@ public class RetrieveService {
                     // 注意: 只对 rerank 分数闸门; hybrid RRF 分绝对值极低(~0.03)不可比。
                     double threshold = minScoreThreshold();
                     List<ScoredChunk> gated =
-                            reranked.stream()
-                                    .filter(c -> c.score() >= threshold)
-                                    .toList();
+                            reranked.stream().filter(c -> c.score() >= threshold).toList();
                     if (!gated.isEmpty() && gated.size() < reranked.size()) {
                         log.info(
                                 "retrieve.score_gate threshold={}, dropped={}/{}",
@@ -720,9 +717,7 @@ public class RetrieveService {
     static boolean isLeadInChunk(String content) {
         if (content == null) return false;
         String text = content.strip();
-        return text.endsWith(":")
-                || text.endsWith("：")
-                || text.matches("(?s).*(如下|示例|例如)\\s*$");
+        return text.endsWith(":") || text.endsWith("：") || text.matches("(?s).*(如下|示例|例如)\\s*$");
     }
 
     private String expandForwardContext(Chunk anchor, Map<String, Chunk> neighbors) {
@@ -754,7 +749,6 @@ public class RetrieveService {
         return out.toString();
     }
 
-
     /**
      * PR-1: 向 finalContext 段追加一条 Evidence, 与 citations 同序产出。 chunkId 标 childChunk.id() 维持与 Citation
      * 一致溯源键; content 用 contextChunk.content() (parent 全文或 chunk 自身)。
@@ -775,7 +769,7 @@ public class RetrieveService {
                         childChunk.documentId(),
                         childChunk.id(),
                         docVersion,
-                    contextContent,
+                        contextContent,
                         retrievalScore,
                         rerankScore,
                         "context",

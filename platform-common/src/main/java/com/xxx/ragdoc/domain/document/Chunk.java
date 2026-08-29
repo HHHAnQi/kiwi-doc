@@ -29,9 +29,28 @@ public record Chunk(
         String contentHash,
         List<String> sectionPath) {
     public Chunk(
-            Long id, Long documentId, int seq, ChunkType type, String content, int page,
-            BoundingBox bbox, Long parentChunkId, String contentHash, List<String> sectionPath) {
-        this(id, documentId, 1, seq, type, content, page, bbox, parentChunkId, contentHash, sectionPath);
+            Long id,
+            Long documentId,
+            int seq,
+            ChunkType type,
+            String content,
+            int page,
+            BoundingBox bbox,
+            Long parentChunkId,
+            String contentHash,
+            List<String> sectionPath) {
+        this(
+                id,
+                documentId,
+                1,
+                seq,
+                type,
+                content,
+                page,
+                bbox,
+                parentChunkId,
+                contentHash,
+                sectionPath);
     }
 
     public Chunk {
@@ -51,7 +70,17 @@ public record Chunk(
     }
 
     public Chunk withGeneration(int value) {
-        return new Chunk(id, documentId, value, seq, type, content, page, bbox,
-                parentChunkId, contentHash, sectionPath);
+        return new Chunk(
+                id,
+                documentId,
+                value,
+                seq,
+                type,
+                content,
+                page,
+                bbox,
+                parentChunkId,
+                contentHash,
+                sectionPath);
     }
 }

@@ -19,8 +19,7 @@ class GenerationCleanupJobTest {
 
     @Test
     void deletesVectorBeforeChunkAndMarksDone() {
-        GenerationCleanupRepository.Task task =
-                new GenerationCleanupRepository.Task(1L, 10L, 2, 0);
+        GenerationCleanupRepository.Task task = new GenerationCleanupRepository.Task(1L, 10L, 2, 0);
         when(repository.findDue(any(Instant.class), anyInt())).thenReturn(List.of(task));
         when(repository.claim(eq(1L), any(Instant.class), any(Instant.class))).thenReturn(true);
 
@@ -34,17 +33,23 @@ class GenerationCleanupJobTest {
 
     @Test
     void failureIsRetriedWithoutDeletingMysqlChunks() {
-        GenerationCleanupRepository.Task task =
-                new GenerationCleanupRepository.Task(2L, 20L, 3, 1);
+        GenerationCleanupRepository.Task task = new GenerationCleanupRepository.Task(2L, 20L, 3, 1);
         when(repository.findDue(any(Instant.class), anyInt())).thenReturn(List.of(task));
         when(repository.claim(eq(2L), any(Instant.class), any(Instant.class))).thenReturn(true);
         doThrow(new IllegalStateException("milvus unavailable"))
-                .when(vectorStore).deleteByDocumentIdAndGeneration(20L, 3);
+                .when(vectorStore)
+                .deleteByDocumentIdAndGeneration(20L, 3);
 
         job.sweep();
 
         verify(chunkRepository, never()).deleteByDocumentIdAndGeneration(anyLong(), anyInt());
-        verify(repository).markRetry(eq(2L), eq(2), any(Instant.class), contains("milvus unavailable"), eq(false));
+        verify(repository)
+                .markRetry(
+                        eq(2L),
+                        eq(2),
+                        any(Instant.class),
+                        contains("milvus unavailable"),
+                        eq(false));
         verify(repository, never()).markDone(anyLong());
     }
 }

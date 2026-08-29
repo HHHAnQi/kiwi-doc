@@ -27,8 +27,8 @@ public class ChunkingProperties {
     /**
      * Contextual Retrieval(P1): embed 输入前是否拼接确定性上下文前缀(来源+文档标题+章节路径)。
      *
-     * <p>见 {@link ContextualEmbeddingPrefix}。只改 embedding 输入, 不动 chunk 原文/哈希/BM25 文本。
-     * 默认 true; 关闭 = baseline 行为(评测消融用)。
+     * <p>见 {@link ContextualEmbeddingPrefix}。只改 embedding 输入, 不动 chunk 原文/哈希/BM25 文本。 默认 true; 关闭 =
+     * baseline 行为(评测消融用)。
      */
     private boolean contextualPrefixEnabled = true;
 

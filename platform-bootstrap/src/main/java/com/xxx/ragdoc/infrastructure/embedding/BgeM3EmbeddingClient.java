@@ -50,6 +50,7 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
 
     /** P1: embed 并发闸(可选); props.maxConcurrent<=0 时不启用。 */
     private final java.util.concurrent.Semaphore concurrencyLimit;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public BgeM3EmbeddingClient(EmbeddingProperties props, CircuitBreakerRegistry cbRegistry) {
@@ -152,8 +153,7 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
                 circuitBreaker.executeSupplier(
                         () -> {
                             var request =
-                                    client()
-                                            .post()
+                                    client().post()
                                             .uri(embeddingsPath())
                                             .header("Content-Type", "application/json");
                             // P1(云端 embedding): 云 provider 需要 Bearer key; 本地 TEI 无需
@@ -162,8 +162,7 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
                                         request.header(
                                                 "Authorization", "Bearer " + props.getApiKey());
                             }
-                            return request
-                                    .bodyValue(body.toString())
+                            return request.bodyValue(body.toString())
                                     .retrieve()
                                     .bodyToMono(String.class)
                                     .timeout(Duration.ofMillis(props.getTimeoutMs()))
@@ -172,8 +171,8 @@ public class BgeM3EmbeddingClient implements EmbeddingClient {
     }
 
     /**
-     * P1: base-url 已以版本段(/v1, /v4)结尾的 provider(智谱 paas/v4, OpenAI /v1)直接拼
-     * /embeddings; 本地 TEI 裸 host(8082) 拼老路径 /v1/embeddings, 行为不变。
+     * P1: base-url 已以版本段(/v1, /v4)结尾的 provider(智谱 paas/v4, OpenAI /v1)直接拼 /embeddings; 本地 TEI 裸
+     * host(8082) 拼老路径 /v1/embeddings, 行为不变。
      */
     private String embeddingsPath() {
         String base = props.getBaseUrl() == null ? "" : props.getBaseUrl().trim();

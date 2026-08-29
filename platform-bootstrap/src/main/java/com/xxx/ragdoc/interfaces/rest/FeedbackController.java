@@ -26,13 +26,12 @@ import org.springframework.web.bind.annotation.*;
  * <p>鉴权纪律 (P0 修复: 撤掉与 AuthFilter 并行的静态 token 双轨制):
  *
  * <ul>
- *   <li>POST /feedback: 任何通过 AuthFilter 的登录用户, 提交者记为 principal.userId()
- *       (此前硬编码 "default", 反馈归属失真)
+ *   <li>POST /feedback: 任何通过 AuthFilter 的登录用户, 提交者记为 principal.userId() (此前硬编码 "default", 反馈归属失真)
  *   <li>GET /feedbacks: 仅 role:admin
  * </ul>
  *
- * <p>此前本类自带一套 APP_DEV_TOKEN/APP_ADMIN_TOKEN 静态比对, 与 AuthFilter 的 DB principal
- * 体系互斥 — 正常 DB 用户 token 会被 401 挡掉, 同时形成第二条凭据通道。现统一走 AuthContext。
+ * <p>此前本类自带一套 APP_DEV_TOKEN/APP_ADMIN_TOKEN 静态比对, 与 AuthFilter 的 DB principal 体系互斥 — 正常 DB 用户 token
+ * 会被 401 挡掉, 同时形成第二条凭据通道。现统一走 AuthContext。
  */
 @Slf4j
 @RestController

@@ -79,8 +79,13 @@ public class ChunkEntity {
         this.documentId = documentId;
     }
 
-    public Integer getGeneration() { return generation; }
-    public void setGeneration(Integer generation) { this.generation = generation; }
+    public Integer getGeneration() {
+        return generation;
+    }
+
+    public void setGeneration(Integer generation) {
+        this.generation = generation;
+    }
 
     public Integer getSeq() {
         return seq;

@@ -39,18 +39,59 @@ public record ParseTask(
         Instant updatedAt) {
 
     public ParseTask(
-            Long id, Long documentId, String contentHash, ParseTaskStatus status,
-            int retryCount, int maxRetries, int chunksWritten, int chunkSeqOffset,
-            String errorMessage, String errorClass, List<Attempt> attempts,
-            Instant visibleAt, String leasedBy, Instant createdAt, Instant updatedAt) {
-        this(id, documentId, 1, TriggerType.UPLOAD, null, contentHash, status, retryCount, maxRetries, chunksWritten,
-                chunkSeqOffset, errorMessage, errorClass, attempts, visibleAt, leasedBy,
-                DeliveryStatus.PENDING, 0, visibleAt, null, createdAt, updatedAt);
+            Long id,
+            Long documentId,
+            String contentHash,
+            ParseTaskStatus status,
+            int retryCount,
+            int maxRetries,
+            int chunksWritten,
+            int chunkSeqOffset,
+            String errorMessage,
+            String errorClass,
+            List<Attempt> attempts,
+            Instant visibleAt,
+            String leasedBy,
+            Instant createdAt,
+            Instant updatedAt) {
+        this(
+                id,
+                documentId,
+                1,
+                TriggerType.UPLOAD,
+                null,
+                contentHash,
+                status,
+                retryCount,
+                maxRetries,
+                chunksWritten,
+                chunkSeqOffset,
+                errorMessage,
+                errorClass,
+                attempts,
+                visibleAt,
+                leasedBy,
+                DeliveryStatus.PENDING,
+                0,
+                visibleAt,
+                null,
+                createdAt,
+                updatedAt);
     }
 
-    public enum DeliveryStatus { PENDING, SENDING, SENT, DEAD }
+    public enum DeliveryStatus {
+        PENDING,
+        SENDING,
+        SENT,
+        DEAD
+    }
 
-    public enum TriggerType { UPLOAD, RETRY, REBUILD, RECONCILE }
+    public enum TriggerType {
+        UPLOAD,
+        RETRY,
+        REBUILD,
+        RECONCILE
+    }
 
     public ParseTask withExecutionState(
             ParseTaskStatus newStatus,
@@ -64,11 +105,28 @@ public record ParseTask(
             String newLeasedBy,
             Instant newUpdatedAt) {
         return new ParseTask(
-                id, documentId, generation, triggerType, supersedesTaskId, contentHash,
-                newStatus, newRetryCount, maxRetries, newChunksWritten, newChunkSeqOffset,
-                newErrorMessage, newErrorClass, newAttempts, newVisibleAt, newLeasedBy,
-                deliveryStatus, deliveryAttempts, nextDeliveryAt, deliveryError,
-                createdAt, newUpdatedAt);
+                id,
+                documentId,
+                generation,
+                triggerType,
+                supersedesTaskId,
+                contentHash,
+                newStatus,
+                newRetryCount,
+                maxRetries,
+                newChunksWritten,
+                newChunkSeqOffset,
+                newErrorMessage,
+                newErrorClass,
+                newAttempts,
+                newVisibleAt,
+                newLeasedBy,
+                deliveryStatus,
+                deliveryAttempts,
+                nextDeliveryAt,
+                deliveryError,
+                createdAt,
+                newUpdatedAt);
     }
 
     /** 单次 attempt 历史(V3 commit 3 dead letter 分析用)。 */

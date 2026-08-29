@@ -3,8 +3,8 @@ package com.xxx.ragdoc.infrastructure.milvus;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.xxx.ragdoc.application.document.port.VectorStore;
-import java.util.Set;
 import java.util.LinkedHashMap;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -121,18 +121,22 @@ class MilvusFilterExprBuilderTest {
         generations.put(10L, 2);
         generations.put(20L, 4);
         VectorStore.MetadataFilter filter =
-                new VectorStore.MetadataFilter(null, null, null, "tenant-a", Set.of(10L, 20L), generations);
+                new VectorStore.MetadataFilter(
+                        null, null, null, "tenant-a", Set.of(10L, 20L), generations);
         assertThat(MilvusFilterExprBuilder.build(null, filter))
-                .contains("((document_id == 10 and ingestion_generation == 2) or "
-                        + "(document_id == 20 and ingestion_generation == 4))");
+                .contains(
+                        "((document_id == 10 and ingestion_generation == 2) or "
+                                + "(document_id == 20 and ingestion_generation == 4))");
     }
 
     @Test
     @DisplayName("空 active generation 映射必须 fail closed")
     void emptyActiveGenerationFailsClosed() {
         VectorStore.MetadataFilter filter =
-                new VectorStore.MetadataFilter(null, null, null, "tenant-a", null, java.util.Map.of());
-        assertThat(MilvusFilterExprBuilder.build(null, filter)).contains(MilvusFilterExprBuilder.ALWAYS_FALSE);
+                new VectorStore.MetadataFilter(
+                        null, null, null, "tenant-a", null, java.util.Map.of());
+        assertThat(MilvusFilterExprBuilder.build(null, filter))
+                .contains(MilvusFilterExprBuilder.ALWAYS_FALSE);
     }
 
     @Nested

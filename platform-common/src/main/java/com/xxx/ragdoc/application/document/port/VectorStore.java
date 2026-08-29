@@ -73,8 +73,8 @@ public interface VectorStore {
     }
 
     /**
-     * 轻量存在性探测，不冒充精确计数。返回 1=至少存在一条，0=不存在，-1=基础设施不可用。
-     * Reconcile 高频任务只使用该语义，避免用 limit=1 的查询结果与 MySQL Chunk 总数误比较。
+     * 轻量存在性探测，不冒充精确计数。返回 1=至少存在一条，0=不存在，-1=基础设施不可用。 Reconcile 高频任务只使用该语义，避免用 limit=1 的查询结果与 MySQL
+     * Chunk 总数误比较。
      */
     default int vectorPresence(Long documentId, int generation) {
         int legacy = countByDocumentId(documentId);
@@ -190,20 +190,31 @@ public interface VectorStore {
         }
 
         public ChunkMetadata(
-                String source, String version, String language, String docType, String chunkType,
-                String tenantId, String logicalDocumentKey) {
+                String source,
+                String version,
+                String language,
+                String docType,
+                String chunkType,
+                String tenantId,
+                String logicalDocumentKey) {
             this(source, version, language, docType, chunkType, tenantId, logicalDocumentKey, 1);
         }
 
         /** 老路径元数据缺省值, 保证未注入元数据时向量库可写。 */
         public static ChunkMetadata unknown() {
-            return new ChunkMetadata(
-                    "unknown", null, "zh", "doc", "TEXT", "default", "unknown", 1);
+            return new ChunkMetadata("unknown", null, "zh", "doc", "TEXT", "default", "unknown", 1);
         }
 
         public ChunkMetadata withGeneration(int value) {
-            return new ChunkMetadata(source, version, language, docType, chunkType, tenantId,
-                    logicalDocumentKey, value);
+            return new ChunkMetadata(
+                    source,
+                    version,
+                    language,
+                    docType,
+                    chunkType,
+                    tenantId,
+                    logicalDocumentKey,
+                    value);
         }
     }
 }

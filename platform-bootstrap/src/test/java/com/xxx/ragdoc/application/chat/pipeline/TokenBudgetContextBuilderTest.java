@@ -38,8 +38,7 @@ class TokenBudgetContextBuilderTest {
         // 3 个 entry, token 都很小, 但 char 总量超 20 → 第 3 个被整段丢
         // char 闸门=8: "aaaa"(4)+"bbbb"(4) 恰好装满, "cccc" 整段 tail-drop
         TokenBudgetContextBuilder.BuildResult r =
-                new TokenBudgetContextBuilder()
-                        .build(List.of("aaaa", "bbbb", "cccc"), 10_000, 8);
+                new TokenBudgetContextBuilder().build(List.of("aaaa", "bbbb", "cccc"), 10_000, 8);
         assertThat(r.context()).containsExactly("aaaa", "bbbb");
         assertThat(r.truncated()).isTrue();
         // 调用方据此把 citations 截到 kept.size(), [n] 编号与卡片保持对齐
@@ -50,10 +49,8 @@ class TokenBudgetContextBuilderTest {
     @DisplayName("P0: 字符预算只够截半个 entry → 保留前缀且标记 truncated")
     void charCapPartiallyTruncatesLastEntry() {
         TokenBudgetContextBuilder.BuildResult r =
-                new TokenBudgetContextBuilder()
-                        .build(List.of("aaaa", "bbbb"), 10_000, 6);
+                new TokenBudgetContextBuilder().build(List.of("aaaa", "bbbb"), 10_000, 6);
         assertThat(r.context()).containsExactly("aaaa", "bb");
         assertThat(r.truncated()).isTrue();
     }
-
 }

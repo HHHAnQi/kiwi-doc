@@ -8,30 +8,25 @@ import org.springframework.stereotype.Component;
 /**
  * P0-1(降级链): Planner 运行时降级链 — Model → retry → RuleTemplate。
  *
- * <p>修复前: Model/Rule 按 {@code model-enabled} 启动期互斥装配, Model 一次失败即
- * INITIAL_PLANNER_FAILED 直败 (对比: Sufficiency 已有 DispatchingSufficiencyJudge 运行时
- * fallback)。本类固定持有 bean 名 {@code basePlannerProvider}, 是
- * {@link HarnessAwarePlannerProvider} 装饰器的底层委托。
+ * <p>修复前: Model/Rule 按 {@code model-enabled} 启动期互斥装配, Model 一次失败即 INITIAL_PLANNER_FAILED 直败 (对比:
+ * Sufficiency 已有 DispatchingSufficiencyJudge 运行时 fallback)。本类固定持有 bean 名 {@code
+ * basePlannerProvider}, 是 {@link HarnessAwarePlannerProvider} 装饰器的底层委托。
  *
  * <p>降级语义:
  *
  * <ol>
- *   <li>{@code model-enabled=false} (ModelPlannerProvider bean 不存在) → 纯转发 Rule,
- *       行为与旧互斥装配 zero-diff
- *   <li>Model 失败 → 重试 {@link PlannerProperties#getModelRetryAttempts()} 次 (默认 1);
- *       {@code FIXTURE_*} 确定性失败<b>不</b>重试也<b>不</b>降级 Rule — REPLAY 评测语义:
- *       夹具缺失即严格失败, 降级链不得静默污染实验组 (P0-2 评测隔离防线)
- *   <li>重试耗尽且 {@code rule-fallback-enabled=true} → Rule 生成, response.reasonCode 标记
- *       {@link #REASON_RULE_FALLBACK}:REASON:attN (coordinator 据此把 agent_run.plannerVersion
- *       写为 rule-fallback-v1:REASON, 评测 runner 逐样本可辨降级来源)
- *   <li>Rule 也失败/返回 null (无 allowed tool) → 抛 {@link PlannerException}
- *       (PROVIDER_ERROR, ALL_PLANNERS_FAILED) — 由 Pipeline 层降级 Classic (见
- *       PlannedAgentPipeline)
+ *   <li>{@code model-enabled=false} (ModelPlannerProvider bean 不存在) → 纯转发 Rule, 行为与旧互斥装配 zero-diff
+ *   <li>Model 失败 → 重试 {@link PlannerProperties#getModelRetryAttempts()} 次 (默认 1); {@code FIXTURE_*}
+ *       确定性失败<b>不</b>重试也<b>不</b>降级 Rule — REPLAY 评测语义: 夹具缺失即严格失败, 降级链不得静默污染实验组 (P0-2 评测隔离防线)
+ *   <li>重试耗尽且 {@code rule-fallback-enabled=true} → Rule 生成, response.reasonCode 标记 {@link
+ *       #REASON_RULE_FALLBACK}:REASON:attN (coordinator 据此把 agent_run.plannerVersion 写为
+ *       rule-fallback-v1:REASON, 评测 runner 逐样本可辨降级来源)
+ *   <li>Rule 也失败/返回 null (无 allowed tool) → 抛 {@link PlannerException} (PROVIDER_ERROR,
+ *       ALL_PLANNERS_FAILED) — 由 Pipeline 层降级 Classic (见 PlannedAgentPipeline)
  * </ol>
  *
- * <p>每次降级: 结构化日志 + {@code ragdoc.agent.planner_degradation_total{stage}} 指标,
- * 无 silent fallback。不触碰 bounded loop / 状态机 CAS / lease / 幂等键 — 降级发生在
- * run 创建之前 (prepare 第 2 步), 不产生孤儿 run。
+ * <p>每次降级: 结构化日志 + {@code ragdoc.agent.planner_degradation_total{stage}} 指标, 无 silent fallback。不触碰
+ * bounded loop / 状态机 CAS / lease / 幂等键 — 降级发生在 run 创建之前 (prepare 第 2 步), 不产生孤儿 run。
  */
 @Slf4j
 @Component("basePlannerProvider")
@@ -124,9 +119,10 @@ public class FallbackPlannerProvider implements PlannerProvider {
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
                 PlannerResponse resp = modelProvider.plan(request);
-                if (resp == null) throw new PlannerException(
-                        PlannerException.Reason.PROVIDER_ERROR,
-                        "model planner returned null run=" + request.runId());
+                if (resp == null)
+                    throw new PlannerException(
+                            PlannerException.Reason.PROVIDER_ERROR,
+                            "model planner returned null run=" + request.runId());
                 if (attempt > 1) {
                     log.info(
                             "planner.model_retry_success run={} attempt={}/{}",
@@ -157,7 +153,8 @@ public class FallbackPlannerProvider implements PlannerProvider {
         }
 
         if (!properties.isRuleFallbackEnabled()) {
-            throw asPlannerException("ALL_PLANNERS_FAILED run=" + request.runId(), lastModelFailure);
+            throw asPlannerException(
+                    "ALL_PLANNERS_FAILED run=" + request.runId(), lastModelFailure);
         }
         try {
             PlannerResponse ruleResp = ruleProvider.plan(request);

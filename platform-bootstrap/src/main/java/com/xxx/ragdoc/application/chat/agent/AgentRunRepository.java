@@ -1,9 +1,9 @@
 package com.xxx.ragdoc.application.chat.agent;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.time.Instant;
 
 /**
  * PR-6a.2: agent_run 持久化 Port。
@@ -40,9 +40,8 @@ public interface AgentRunRepository {
     void releaseLease(String runId, String ownerId);
 
     /**
-     * P2-D5(A): 写入过程决策摘要(INITIAL_SUFFICIENT / REPLAN_SUFFICIENT /
-     * REPLAN_EXHAUSTED_FALLBACK / REFUSED_CONFLICT / TOOL_FAILURE)。
-     * 语义: 只在为空时写入 — 不被后续终态(PLANNED_ANSWER_READY)覆盖。
+     * P2-D5(A): 写入过程决策摘要(INITIAL_SUFFICIENT / REPLAN_SUFFICIENT / REPLAN_EXHAUSTED_FALLBACK /
+     * REFUSED_CONFLICT / TOOL_FAILURE)。 语义: 只在为空时写入 — 不被后续终态(PLANNED_ANSWER_READY)覆盖。
      */
     void updateDecisionSummary(String runId, String decisionSummary);
 

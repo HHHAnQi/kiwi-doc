@@ -79,40 +79,50 @@ public class RagCapabilityRegistry implements ApplicationRunner, InfoContributor
     }
 
     void validate() {
-        require(!planner.isModelEnabled() || planner.isEnabled(),
+        require(
+                !planner.isModelEnabled() || planner.isEnabled(),
                 "model planner 开启时必须同时开启 planner.enabled");
-        require(!planner.isPlannedPipelineEnabled() || planner.isEnabled(),
+        require(
+                !planner.isPlannedPipelineEnabled() || planner.isEnabled(),
                 "planned pipeline 开启时必须同时开启 planner.enabled");
-        require(!conversation.isCompress() || conversation.isEnabled(),
+        require(
+                !conversation.isCompress() || conversation.isEnabled(),
                 "conversation.compress=true 要求 conversation.enabled=true");
-        require(!conversation.isTopicShiftDetect() || conversation.isEnabled(),
+        require(
+                !conversation.isTopicShiftDetect() || conversation.isEnabled(),
                 "topic-shift-detect=true 要求 conversation.enabled=true");
-        require(queryEnhance.getMaxExpansionQueries() >= 0,
+        require(
+                queryEnhance.getMaxExpansionQueries() >= 0,
                 "query-enhance.max-expansion-queries 不能小于 0");
-        require(queryEnhance.getFusionRrfK() >= 1,
-                "query-enhance.fusion-rrf-k 必须大于等于 1");
+        require(queryEnhance.getFusionRrfK() >= 1, "query-enhance.fusion-rrf-k 必须大于等于 1");
         require(retrieve.getCandidatePool() >= 1, "retrieve.candidate-pool 必须大于等于 1");
         require(retrieve.getRrf().getK() >= 1, "retrieve.rrf.k 必须大于等于 1");
         if (rerank.isEnabled()) {
             require(hasText(rerank.getBaseUrl()), "rerank 开启时 base-url 不能为空");
-            require(rerank.getCandidatePool() >= rerank.getTopN() && rerank.getTopN() >= 1,
+            require(
+                    rerank.getCandidatePool() >= rerank.getTopN() && rerank.getTopN() >= 1,
                     "rerank 要求 candidate-pool >= top-n >= 1");
         }
         if (langfuse.isEnabled()) {
             require(hasText(langfuse.getBaseUrl()), "Langfuse 开启时 base-url 不能为空");
-            require(hasText(langfuse.getPublicKey()) && hasText(langfuse.getSecretKey()),
+            require(
+                    hasText(langfuse.getPublicKey()) && hasText(langfuse.getSecretKey()),
                     "Langfuse 开启时 public-key/secret-key 不能为空");
         }
         if (router.isEnabled()) {
-            require(pipelines.registeredTypes().contains(PipelineType.CLASSIC_RAG),
+            require(
+                    pipelines.registeredTypes().contains(PipelineType.CLASSIC_RAG),
                     "Router 开启时 CLASSIC_RAG pipeline 必须注册");
-            require(pipelines.registeredTypes().contains(PipelineType.TARGETED_RAG),
+            require(
+                    pipelines.registeredTypes().contains(PipelineType.TARGETED_RAG),
                     "Router 开启时 TARGETED_RAG pipeline 必须注册");
-            require(pipelines.registeredTypes().contains(PipelineType.FIXED_WORKFLOW),
+            require(
+                    pipelines.registeredTypes().contains(PipelineType.FIXED_WORKFLOW),
                     "Router 开启时 FIXED_WORKFLOW pipeline 必须注册");
         }
         if (planner.isPlannedPipelineEnabled()) {
-            require(pipelines.registeredTypes().contains(PipelineType.PLANNED_AGENT),
+            require(
+                    pipelines.registeredTypes().contains(PipelineType.PLANNED_AGENT),
                     "Planned Agent 开启时 PLANNED_AGENT pipeline 必须注册");
         }
     }
@@ -132,10 +142,12 @@ public class RagCapabilityRegistry implements ApplicationRunner, InfoContributor
                 enabled(
                         queryEnhance.isEnabled()
                                 && queryEnhance.getMode() != QueryEnhanceProperties.Mode.REWRITE));
-        result.put("hybridRetrieval", enabled(retrieve.getMode() == RetrieveProperties.Mode.HYBRID));
+        result.put(
+                "hybridRetrieval", enabled(retrieve.getMode() == RetrieveProperties.Mode.HYBRID));
         result.put("rerank", enabled(rerank.isEnabled()));
         result.put("citationVerification", enabled(verifier.isEnabled()));
-        result.put("agenticRag", enabled(planner.isEnabled() && planner.isPlannedPipelineEnabled()));
+        result.put(
+                "agenticRag", enabled(planner.isEnabled() && planner.isPlannedPipelineEnabled()));
         result.put("distributedTrace", enabled(langfuse.isEnabled()));
         return Map.copyOf(result);
     }

@@ -59,12 +59,7 @@ public class IngestionPolicy {
 
     private void record(Long documentId, String stage, IngestionQualityGate.Report report) {
         reportPort.record(
-                documentId,
-                stage,
-                report,
-                PARSER_VERSION,
-                CHUNKER_VERSION,
-                EMBEDDING_VERSION);
+                documentId, stage, report, PARSER_VERSION, CHUNKER_VERSION, EMBEDDING_VERSION);
     }
 
     public record PreparedText(String text, int redactionCount) {}

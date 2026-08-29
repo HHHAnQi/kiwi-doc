@@ -35,19 +35,29 @@ public class AgentCheckpointRepositoryImpl implements AgentCheckpointRepository 
 
     private Checkpoint map(AgentCheckpointEntity e) {
         try {
-            List<String> ids = e.getEvidenceIdsJson() == null ? List.of()
-                    : mapper.readValue(e.getEvidenceIdsJson(), new TypeReference<List<String>>() {});
-            return new Checkpoint(e.getRunId(), e.getCheckpointVersion(), e.getCompletedStepId(),
+            List<String> ids =
+                    e.getEvidenceIdsJson() == null
+                            ? List.of()
+                            : mapper.readValue(
+                                    e.getEvidenceIdsJson(), new TypeReference<List<String>>() {});
+            return new Checkpoint(
+                    e.getRunId(),
+                    e.getCheckpointVersion(),
+                    e.getCompletedStepId(),
                     mapper.readValue(e.getUsageJson(), AgentUsage.class),
                     mapper.readValue(e.getReservationJson(), AgentBudgetReservation.class),
-                    ids, e.getCreatedAt());
+                    ids,
+                    e.getCreatedAt());
         } catch (Exception ex) {
             throw new IllegalStateException("agent checkpoint 反序列化失败", ex);
         }
     }
 
     private String write(Object value) {
-        try { return mapper.writeValueAsString(value); }
-        catch (Exception ex) { throw new IllegalStateException("agent checkpoint 序列化失败", ex); }
+        try {
+            return mapper.writeValueAsString(value);
+        } catch (Exception ex) {
+            throw new IllegalStateException("agent checkpoint 序列化失败", ex);
+        }
     }
 }

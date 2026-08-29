@@ -44,7 +44,10 @@ public class ParseTaskProducer {
     public boolean send(ParseTask task, TraceId traceId) {
         ParseTaskSubmitMessage payload =
                 new ParseTaskSubmitMessage(
-                        task.id(), task.documentId(), task.contentHash(), task.generation(),
+                        task.id(),
+                        task.documentId(),
+                        task.contentHash(),
+                        task.generation(),
                         Instant.now(clock));
 
         org.springframework.messaging.Message<ParseTaskSubmitMessage> message =

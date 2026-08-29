@@ -1,9 +1,6 @@
 package com.xxx.ragdoc.application.chat.router;
 
-/**
- * 在线主链稳定原因码。禁止在安全、拒答和降级分支继续散落自由文本。
- * Router 的细粒度诊断码仍保留在 RouterDecision 中。
- */
+/** 在线主链稳定原因码。禁止在安全、拒答和降级分支继续散落自由文本。 Router 的细粒度诊断码仍保留在 RouterDecision 中。 */
 public enum OnlineReasonCode {
     ROUTER_DISABLED,
     RAG_MODE_FORCED,

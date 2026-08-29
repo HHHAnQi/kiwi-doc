@@ -57,8 +57,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
             // parser 解析链不需要 LLM 与多轮会话基础设施, 一并排除 llm / conversation 两包。
             @ComponentScan.Filter(
                     type = FilterType.REGEX,
-                    pattern = "com\\.xxx\\.ragdoc\\.infrastructure\\.(llm|conversation|queryenhance|verification|trace|rerank)\\..*"),
-            // Release-hardening Phase5 实测回归: RerankHealthIndicator 依赖 application.chat.RerankProperties
+                    pattern =
+                            "com\\.xxx\\.ragdoc\\.infrastructure\\.(llm|conversation|queryenhance|verification|trace|rerank)\\..*"),
+            // Release-hardening Phase5 实测回归: RerankHealthIndicator 依赖
+            // application.chat.RerankProperties
             // (parser 已排除该包) → parser 启动失败。parser 解析链不需要 rerank, 一并排除。
             // chat-app 专属能力自检 Runner: 依赖一堆 chat 侧 properties/router(已排除),
             // parser 不需要; ASSIGNABLE_TYPE 精确到类。

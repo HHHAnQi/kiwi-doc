@@ -15,12 +15,8 @@ class ContextualEmbeddingPrefixTest {
     void fullMetadata() {
         String p =
                 ContextualEmbeddingPrefix.build(
-                        "dubbo-user-guide.pdf",
-                        "dubbo",
-                        List.of("Dubbo", "异步调用", "异步编程"),
-                        120);
-        assertThat(p)
-                .isEqualTo("[来源: dubbo | 文档: dubbo-user-guide | 章节: Dubbo › 异步调用 › 异步编程]\n");
+                        "dubbo-user-guide.pdf", "dubbo", List.of("Dubbo", "异步调用", "异步编程"), 120);
+        assertThat(p).isEqualTo("[来源: dubbo | 文档: dubbo-user-guide | 章节: Dubbo › 异步调用 › 异步编程]\n");
         // 与 chunk 原文拼接后即 embed 输入
         assertThat(p + "默认端口是 10911").contains("]\n默认端口");
     }
@@ -51,10 +47,7 @@ class ContextualEmbeddingPrefixTest {
     @Test
     @DisplayName("maxChars<=0 → 空前缀(等价关闭)")
     void disabledByMaxChars() {
-        assertThat(
-                        ContextualEmbeddingPrefix.build(
-                                "f.pdf", "dubbo", List.of("a"), 0))
-                .isEmpty();
+        assertThat(ContextualEmbeddingPrefix.build("f.pdf", "dubbo", List.of("a"), 0)).isEmpty();
     }
 
     @Test

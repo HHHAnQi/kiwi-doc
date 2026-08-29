@@ -1,6 +1,5 @@
 package com.xxx.ragdoc.application.chat.planner;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xxx.ragdoc.application.chat.port.ChatClient;
 import java.util.ArrayList;
@@ -106,9 +105,9 @@ public class ModelPlannerProvider implements PlannerProvider {
     }
 
     /**
-     * P1 修复(冒烟实测): PlannedToolStep.input 声明为 ToolInput 接口, Jackson 无类型信息
-     * 直接 readValue 必失败("no Creators") — Model Planner 此前从未对真实 LLM 输出跑通过。
-     * 两段式: 先树解析, 再按 step.toolName 把 input node 转具体 Input record。
+     * P1 修复(冒烟实测): PlannedToolStep.input 声明为 ToolInput 接口, Jackson 无类型信息 直接 readValue 必失败("no
+     * Creators") — Model Planner 此前从未对真实 LLM 输出跑通过。 两段式: 先树解析, 再按 step.toolName 把 input node 转具体
+     * Input record。
      */
     private PlannerResponse decode(String json, int replanIndex) throws Exception {
         com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(json);
@@ -120,9 +119,7 @@ public class ModelPlannerProvider implements PlannerProvider {
             // 容错: LLM 常把 input 写成纯字符串 query 而非对象 → 包装为默认 SearchInput
             if (inputNode.isTextual() && !inputNode.asText().isBlank()) {
                 inputNode =
-                        mapper.createObjectNode()
-                                .put("query", inputNode.asText())
-                                .put("topK", 5);
+                        mapper.createObjectNode().put("query", inputNode.asText()).put("topK", 5);
             }
             com.xxx.ragdoc.application.chat.tool.ToolInput input =
                     switch (toolName) {
@@ -204,24 +201,33 @@ public class ModelPlannerProvider implements PlannerProvider {
 
     static String buildPrompt(PlannerRequest request, int plannerMaxPlanSteps) {
         StringBuilder sb = new StringBuilder();
-        sb.append("You are a strategic Planner for a multi-step RAG system. Your job is to decompose "
-                + "the user's question into targeted search steps that TOGETHER cover all information needs.\n\n");
+        sb.append(
+                "You are a strategic Planner for a multi-step RAG system. Your job is to decompose "
+                        + "the user's question into targeted search steps that TOGETHER cover all information needs.\n\n");
 
         // ── 核心规划原则 ──
         sb.append("== PLANNING PRINCIPLES ==\n");
-        sb.append("1. DECOMPOSE: Break the question into independent sub-questions. Each step answers ONE "
-                + "sub-question with a FOCUSED query. NEVER repeat the full user question as a search query.\n");
-        sb.append("2. ANCHOR ENTITIES: Every sub-query MUST contain the specific entity/component name "
-                + "(e.g. 'Dubbo', 'Nacos'). A query like 'default port' without the component name WILL FAIL.\n");
+        sb.append(
+                "1. DECOMPOSE: Break the question into independent sub-questions. Each step answers ONE "
+                        + "sub-question with a FOCUSED query. NEVER repeat the full user question as a search query.\n");
+        sb.append(
+                "2. ANCHOR ENTITIES: Every sub-query MUST contain the specific entity/component name "
+                        + "(e.g. 'Dubbo', 'Nacos'). A query like 'default port' without the component name WILL FAIL.\n");
         sb.append("3. CHOOSE TOOLS BY QUERY TYPE:\n");
-        sb.append("   - semantic_search: conceptual questions ('how does X work?', 'what is the mechanism?')\n");
-        sb.append("   - keyword_search: exact config keys, error messages, port numbers, class names\n");
-        sb.append("   - metadata_search: version-specific or source-filtered lookups (requires source/version filter)\n");
-        sb.append("   - document_fetch: retrieve full context of a specific chunk (requires chunkId)\n");
-        sb.append("4. SEQUENCE: Use dependsOn when step B needs information from step A's results. "
-                + "Independent steps should NOT have dependencies (enables parallel execution).\n");
-        sb.append("5. DESCRIBE EVIDENCE: For each step, write expectedEvidence describing what a successful "
-                + "result looks like (specific facts, config keys, or values you expect to find).\n\n");
+        sb.append(
+                "   - semantic_search: conceptual questions ('how does X work?', 'what is the mechanism?')\n");
+        sb.append(
+                "   - keyword_search: exact config keys, error messages, port numbers, class names\n");
+        sb.append(
+                "   - metadata_search: version-specific or source-filtered lookups (requires source/version filter)\n");
+        sb.append(
+                "   - document_fetch: retrieve full context of a specific chunk (requires chunkId)\n");
+        sb.append(
+                "4. SEQUENCE: Use dependsOn when step B needs information from step A's results. "
+                        + "Independent steps should NOT have dependencies (enables parallel execution).\n");
+        sb.append(
+                "5. DESCRIBE EVIDENCE: For each step, write expectedEvidence describing what a successful "
+                        + "result looks like (specific facts, config keys, or values you expect to find).\n\n");
 
         // ── Few-shot 示例(最关键的新增) ──
         sb.append("== EXAMPLES OF GOOD PLANS ==\n");
@@ -229,23 +235,29 @@ public class ModelPlannerProvider implements PlannerProvider {
         sb.append("Question: \"Dubbo和Nacos的默认端口分别是什么，各自怎么修改？\"\n");
         sb.append("Plan:\n");
         sb.append("{\"steps\":[\n");
-        sb.append("  {\"stepId\":\"s1\",\"toolName\":\"keyword_search\",\"input\":{\"query\":\"Dubbo default port configuration\",\"topK\":5},"
-                + "\"requirementIds\":[\"REQ-1\"],\"expectedEvidence\":\"Dubbo协议默认端口号及修改配置项\",\"dependsOn\":[]},\n");
-        sb.append("  {\"stepId\":\"s2\",\"toolName\":\"keyword_search\",\"input\":{\"query\":\"Nacos default port server.port grpc\",\"topK\":5},"
-                + "\"requirementIds\":[\"REQ-2\"],\"expectedEvidence\":\"Nacos主端口和gRPC端口默认值\",\"dependsOn\":[]}\n");
+        sb.append(
+                "  {\"stepId\":\"s1\",\"toolName\":\"keyword_search\",\"input\":{\"query\":\"Dubbo default port configuration\",\"topK\":5},"
+                        + "\"requirementIds\":[\"REQ-1\"],\"expectedEvidence\":\"Dubbo协议默认端口号及修改配置项\",\"dependsOn\":[]},\n");
+        sb.append(
+                "  {\"stepId\":\"s2\",\"toolName\":\"keyword_search\",\"input\":{\"query\":\"Nacos default port server.port grpc\",\"topK\":5},"
+                        + "\"requirementIds\":[\"REQ-2\"],\"expectedEvidence\":\"Nacos主端口和gRPC端口默认值\",\"dependsOn\":[]}\n");
         sb.append("]}\n");
-        sb.append("NOTE: s1 and s2 have NO dependencies → can run in parallel. Each query is entity-anchored.\n\n");
+        sb.append(
+                "NOTE: s1 and s2 have NO dependencies → can run in parallel. Each query is entity-anchored.\n\n");
 
         sb.append("Example 2 (multi-hop question):\n");
         sb.append("Question: \"Seata的AT模式回滚依赖什么表，这个表的建表语句在哪个配置文件里？\"\n");
         sb.append("Plan:\n");
         sb.append("{\"steps\":[\n");
-        sb.append("  {\"stepId\":\"s1\",\"toolName\":\"semantic_search\",\"input\":{\"query\":\"Seata AT模式 undo_log 回滚机制\",\"topK\":5},"
-                + "\"requirementIds\":[\"REQ-1\"],\"expectedEvidence\":\"AT模式使用的回滚日志表名\",\"dependsOn\":[]},\n");
-        sb.append("  {\"stepId\":\"s2\",\"toolName\":\"keyword_search\",\"input\":{\"query\":\"undo_log table DDL script file\",\"topK\":5},"
-                + "\"requirementIds\":[\"REQ-2\"],\"expectedEvidence\":\"undo_log建表SQL所在的配置文件路径\",\"dependsOn\":[\"s1\"]}\n");
+        sb.append(
+                "  {\"stepId\":\"s1\",\"toolName\":\"semantic_search\",\"input\":{\"query\":\"Seata AT模式 undo_log 回滚机制\",\"topK\":5},"
+                        + "\"requirementIds\":[\"REQ-1\"],\"expectedEvidence\":\"AT模式使用的回滚日志表名\",\"dependsOn\":[]},\n");
+        sb.append(
+                "  {\"stepId\":\"s2\",\"toolName\":\"keyword_search\",\"input\":{\"query\":\"undo_log table DDL script file\",\"topK\":5},"
+                        + "\"requirementIds\":[\"REQ-2\"],\"expectedEvidence\":\"undo_log建表SQL所在的配置文件路径\",\"dependsOn\":[\"s1\"]}\n");
         sb.append("]}\n");
-        sb.append("NOTE: s2 depends on s1 because we need to know the table NAME before searching for its DDL.\n\n");
+        sb.append(
+                "NOTE: s2 depends on s1 because we need to know the table NAME before searching for its DDL.\n\n");
 
         // ── 严格规则 ──
         sb.append("== STRICT RULES ==\n");
@@ -263,33 +275,49 @@ public class ModelPlannerProvider implements PlannerProvider {
         sb.append("User question: ").append(request.normalizedQuery()).append('\n');
         sb.append("Intent: ").append(request.intent()).append('\n');
         if (!request.entities().isEmpty()) {
-            sb.append("Known entities (MUST appear in sub-queries): ").append(request.entities()).append('\n');
+            sb.append("Known entities (MUST appear in sub-queries): ")
+                    .append(request.entities())
+                    .append('\n');
         }
         if (!request.filters().isEmpty()) {
             sb.append("Filters: ").append(safeFilters(request.filters())).append('\n');
         }
         sb.append("\nRequirements:\n");
         for (EvidenceRequirement r : request.requirements()) {
-            sb.append("- ").append(r.requirementId())
-                    .append(" | ").append(r.type())
-                    .append(" | ").append(r.description()).append('\n');
+            sb.append("- ")
+                    .append(r.requirementId())
+                    .append(" | ")
+                    .append(r.type())
+                    .append(" | ")
+                    .append(r.description())
+                    .append('\n');
         }
 
         // ── Replan上下文(增强) ──
         if (request.replanIndex() > 0) {
-            sb.append("\n== REPLAN CONTEXT (attempt #").append(request.replanIndex() + 1).append(") ==\n");
+            sb.append("\n== REPLAN CONTEXT (attempt #")
+                    .append(request.replanIndex() + 1)
+                    .append(") ==\n");
             sb.append("Previously uncovered requirements: ")
-                    .append(request.currentCoverage().uncoveredRequirementIds()).append('\n');
+                    .append(request.currentCoverage().uncoveredRequirementIds())
+                    .append('\n');
             sb.append("Previously completed steps:\n");
             for (CompletedStepSummary s : request.completedSteps()) {
-                sb.append("- tool=").append(s.toolName())
-                        .append(" attempted_query=\"").append(s.attemptedQuery()).append("\"")
-                        .append(" evidence_found=").append(s.evidenceCount())
-                        .append(" outcome=").append(s.outcome()).append('\n');
+                sb.append("- tool=")
+                        .append(s.toolName())
+                        .append(" attempted_query=\"")
+                        .append(s.attemptedQuery())
+                        .append("\"")
+                        .append(" evidence_found=")
+                        .append(s.evidenceCount())
+                        .append(" outcome=")
+                        .append(s.outcome())
+                        .append('\n');
             }
-            sb.append("\nIMPORTANT: Your new plan must target the UNCOVERED requirements with DIFFERENT "
-                    + "queries than the attempted_query values listed above (identical tool+query is "
-                    + "deterministically rejected). Focus on what's missing, not what's found.\n");
+            sb.append(
+                    "\nIMPORTANT: Your new plan must target the UNCOVERED requirements with DIFFERENT "
+                            + "queries than the attempted_query values listed above (identical tool+query is "
+                            + "deterministically rejected). Focus on what's missing, not what's found.\n");
         }
 
         sb.append("\nAllowed tools:\n");

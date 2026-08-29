@@ -274,14 +274,37 @@ public class AgentRunEntity {
         this.harnessMode = harnessMode;
     }
 
-    public String getOwnerId() { return ownerId; }
-    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
-    public Instant getLeaseUntil() { return leaseUntil; }
-    public void setLeaseUntil(Instant leaseUntil) { this.leaseUntil = leaseUntil; }
-    public Instant getHeartbeatAt() { return heartbeatAt; }
-    public void setHeartbeatAt(Instant heartbeatAt) { this.heartbeatAt = heartbeatAt; }
-    public Integer getResumeCount() { return resumeCount; }
-    public void setResumeCount(Integer resumeCount) { this.resumeCount = resumeCount; }
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public Instant getLeaseUntil() {
+        return leaseUntil;
+    }
+
+    public void setLeaseUntil(Instant leaseUntil) {
+        this.leaseUntil = leaseUntil;
+    }
+
+    public Instant getHeartbeatAt() {
+        return heartbeatAt;
+    }
+
+    public void setHeartbeatAt(Instant heartbeatAt) {
+        this.heartbeatAt = heartbeatAt;
+    }
+
+    public Integer getResumeCount() {
+        return resumeCount;
+    }
+
+    public void setResumeCount(Integer resumeCount) {
+        this.resumeCount = resumeCount;
+    }
 
     public Instant getCreatedAt() {
         return createdAt;

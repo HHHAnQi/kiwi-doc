@@ -214,7 +214,8 @@ public class RuleTemplatePlannerProvider implements PlannerProvider {
             }
         }
         ToolInput input =
-                new SearchInput(q.trim(), topK, new SearchInput.SearchFilters(source, version, null));
+                new SearchInput(
+                        q.trim(), topK, new SearchInput.SearchFilters(source, version, null));
 
         List<String> deps =
                 req.type() == RequirementType.FOLLOW_UP_ENTITY && subOrdinal > 0

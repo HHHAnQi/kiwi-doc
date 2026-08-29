@@ -75,8 +75,7 @@ public interface MetricsPort {
     }
 
     /**
-     * P0-1(降级链): Planner 降级计数。stage 取值:
-     * model_retry_success / rule_fallback / classic_fallback。
+     * P0-1(降级链): Planner 降级计数。stage 取值: model_retry_success / rule_fallback / classic_fallback。
      * 非零速率即说明 Model Planner 依赖的 LLM 在劣化 — 告警语义, 不是错误率。
      */
     default void incrementPlannerDegradation(String stage) {

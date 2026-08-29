@@ -74,7 +74,12 @@ public class ParseTaskEntity {
     @Column(name = "leased_by", length = 50)
     private String leasedBy;
 
-    @Column(name = "delivery_status", nullable = false, length = 16, insertable = false, updatable = false)
+    @Column(
+            name = "delivery_status",
+            nullable = false,
+            length = 16,
+            insertable = false,
+            updatable = false)
     private String deliveryStatus = "PENDING";
 
     @Column(name = "delivery_attempts", nullable = false, insertable = false, updatable = false)
@@ -117,12 +122,29 @@ public class ParseTaskEntity {
         this.documentId = documentId;
     }
 
-    public Integer getGeneration() { return generation; }
-    public void setGeneration(Integer generation) { this.generation = generation; }
-    public String getTriggerType() { return triggerType; }
-    public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
-    public Long getSupersedesTaskId() { return supersedesTaskId; }
-    public void setSupersedesTaskId(Long supersedesTaskId) { this.supersedesTaskId = supersedesTaskId; }
+    public Integer getGeneration() {
+        return generation;
+    }
+
+    public void setGeneration(Integer generation) {
+        this.generation = generation;
+    }
+
+    public String getTriggerType() {
+        return triggerType;
+    }
+
+    public void setTriggerType(String triggerType) {
+        this.triggerType = triggerType;
+    }
+
+    public Long getSupersedesTaskId() {
+        return supersedesTaskId;
+    }
+
+    public void setSupersedesTaskId(Long supersedesTaskId) {
+        this.supersedesTaskId = supersedesTaskId;
+    }
 
     public String getContentHash() {
         return contentHash;
@@ -212,20 +234,61 @@ public class ParseTaskEntity {
         this.leasedBy = leasedBy;
     }
 
-    public String getDeliveryStatus() { return deliveryStatus; }
-    public void setDeliveryStatus(String value) { this.deliveryStatus = value; }
-    public Integer getDeliveryAttempts() { return deliveryAttempts; }
-    public void setDeliveryAttempts(Integer value) { this.deliveryAttempts = value; }
-    public Instant getNextDeliveryAt() { return nextDeliveryAt; }
-    public void setNextDeliveryAt(Instant value) { this.nextDeliveryAt = value; }
-    public Instant getLastDeliveredAt() { return lastDeliveredAt; }
-    public void setLastDeliveredAt(Instant value) { this.lastDeliveredAt = value; }
-    public String getDeliveryError() { return deliveryError; }
-    public void setDeliveryError(String value) { this.deliveryError = value; }
-    public String getDeliveryLeasedBy() { return deliveryLeasedBy; }
-    public void setDeliveryLeasedBy(String value) { this.deliveryLeasedBy = value; }
-    public Instant getDeliveryLeaseUntil() { return deliveryLeaseUntil; }
-    public void setDeliveryLeaseUntil(Instant value) { this.deliveryLeaseUntil = value; }
+    public String getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(String value) {
+        this.deliveryStatus = value;
+    }
+
+    public Integer getDeliveryAttempts() {
+        return deliveryAttempts;
+    }
+
+    public void setDeliveryAttempts(Integer value) {
+        this.deliveryAttempts = value;
+    }
+
+    public Instant getNextDeliveryAt() {
+        return nextDeliveryAt;
+    }
+
+    public void setNextDeliveryAt(Instant value) {
+        this.nextDeliveryAt = value;
+    }
+
+    public Instant getLastDeliveredAt() {
+        return lastDeliveredAt;
+    }
+
+    public void setLastDeliveredAt(Instant value) {
+        this.lastDeliveredAt = value;
+    }
+
+    public String getDeliveryError() {
+        return deliveryError;
+    }
+
+    public void setDeliveryError(String value) {
+        this.deliveryError = value;
+    }
+
+    public String getDeliveryLeasedBy() {
+        return deliveryLeasedBy;
+    }
+
+    public void setDeliveryLeasedBy(String value) {
+        this.deliveryLeasedBy = value;
+    }
+
+    public Instant getDeliveryLeaseUntil() {
+        return deliveryLeaseUntil;
+    }
+
+    public void setDeliveryLeaseUntil(Instant value) {
+        this.deliveryLeaseUntil = value;
+    }
 
     public Instant getCreatedAt() {
         return createdAt;

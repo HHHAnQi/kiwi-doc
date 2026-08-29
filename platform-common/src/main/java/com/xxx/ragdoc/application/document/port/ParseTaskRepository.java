@@ -49,9 +49,16 @@ public interface ParseTaskRepository {
         }
         ParseTask leased =
                 task.withExecutionState(
-                        ParseTaskStatus.RUNNING, task.retryCount(), task.chunksWritten(),
-                        task.chunkSeqOffset(), task.errorMessage(), task.errorClass(),
-                        task.attempts(), leaseUntil, leasedBy, now);
+                        ParseTaskStatus.RUNNING,
+                        task.retryCount(),
+                        task.chunksWritten(),
+                        task.chunkSeqOffset(),
+                        task.errorMessage(),
+                        task.errorClass(),
+                        task.attempts(),
+                        leaseUntil,
+                        leasedBy,
+                        now);
         update(leased);
         return Optional.of(leased);
     }
@@ -70,7 +77,9 @@ public interface ParseTaskRepository {
             Long taskId, Instant nextAttemptAt, String error, Instant now, int maxAttempts) {}
 
     /** 运维人工重放 DEAD 消息；仅允许 DEAD → PENDING。 */
-    default boolean replayDeadDelivery(Long taskId, Instant now) { return false; }
+    default boolean replayDeadDelivery(Long taskId, Instant now) {
+        return false;
+    }
 
     /**
      * 原子 lease: 抢占一条 PENDING + visible_at ≤ now 的 task。

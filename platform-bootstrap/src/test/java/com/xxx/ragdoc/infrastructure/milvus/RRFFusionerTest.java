@@ -124,10 +124,8 @@ class RRFFusionerTest {
     @Test
     @DisplayName("融合分数相同时按命中路数、最佳排名、chunkId 确定性排序")
     void tiesUseDeterministicOrdering() {
-        List<ScoredChunk> dense =
-                List.of(new ScoredChunk(20L, 0.9f), new ScoredChunk(10L, 0.8f));
-        List<ScoredChunk> sparse =
-                List.of(new ScoredChunk(10L, 9f), new ScoredChunk(20L, 8f));
+        List<ScoredChunk> dense = List.of(new ScoredChunk(20L, 0.9f), new ScoredChunk(10L, 0.8f));
+        List<ScoredChunk> sparse = List.of(new ScoredChunk(10L, 9f), new ScoredChunk(20L, 8f));
 
         for (int i = 0; i < 20; i++) {
             assertThat(fusioner.fuse(List.of(dense, sparse), 60, 5))
@@ -139,10 +137,7 @@ class RRFFusionerTest {
     @Test
     @DisplayName("topK 非法时返回空结果")
     void invalidTopKReturnsEmpty() {
-        assertThat(
-                        fusioner.fuse(
-                                List.of(List.of(new ScoredChunk(1L, 1f))), 60, 0))
-                .isEmpty();
+        assertThat(fusioner.fuse(List.of(List.of(new ScoredChunk(1L, 1f))), 60, 0)).isEmpty();
     }
 
     private static org.assertj.core.data.Offset<Float> within(float tolerance) {
