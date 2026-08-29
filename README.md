@@ -1,283 +1,261 @@
-# rag-doc-platform (kiwi-doc)
+# 🥝 KiwiRAG
 
-> **An evaluation-driven Agentic RAG system** with hybrid retrieval, bounded Plan–Execute–Replan,
-> semantic sufficiency control, durable execution state, runtime fallback, and end-to-end observability.
+**Reliable RAG Infrastructure for Knowledge Applications**
+
+KiwiRAG（仓库 `rag-doc-platform`）是一个面向知识密集型 AI 应用的 production-oriented RAG 平台：
+覆盖可靠知识接入（Durable Ingestion）、Hybrid Retrieval、Context Engineering、可信引用生成
+（Grounded Generation）与系统化评测（Evaluation Harness），并通过可重复实验决定每个能力
+是否进入默认执行路径——包括**否决更复杂的 Agentic 路径**。
+
+> **核心原则：更复杂的 AI Pipeline 只有在端到端评测中带来可验证收益，才进入默认执行路径。**
 
 ![Java](https://img.shields.io/badge/JDK-17-blue) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-green) ![React](https://img.shields.io/badge/React-19-61dafb) ![Milvus](https://img.shields.io/badge/Milvus-2.5-00a1ea) ![CI](https://img.shields.io/badge/CI-tests%20%2B%20ArchUnit%20%2B%20eval--gate-success)
 
-评测驱动开发的私有知识库问答系统。与"直接拼装 RAG/Agent Demo"的区别在于：本项目**测量了
-Agentic 控制环什么时候真正提升检索质量、什么时候其延迟与 LLM 成本不划算**——并用数据做出了
-默认执行模式的架构决策。
+**Highlights（每个都解决一个真实的 prototype→production 失败模式）：**
 
-[Architecture](#system-architecture) · [Evaluation](#evaluation) · [Quick Start](#quick-start) · [中文文档入口](#documentation)
+- 🔎 **Hybrid Retrieval** — Dense + Sparse 单路召回在术语/配置键查询上失效 → RRF 融合 + Cross-Encoder 精排（消融实测 faithfulness **+9.2pp**）
+- 🛡 **Reliable Ingestion** — 同步解析在长文档/进程崩溃/重复投递下丢数据或阻塞 → Outbox + MQ + Lease + Retry + Checkpoint + DLQ（真实故障注入三测全 PASS）
+- 🧠 **Context Engineering** — 上下文超预算后引用错位、历史挤占证据 → 查询改写 + 双闸门预算装填 + 异步历史压缩 + 截断引用同步对齐
+- 📚 **Grounded Generation** — 幻觉引用与编号错位 → 引用对齐默认全链生效 + citation verification（可选开关）
+- 📊 **Evaluation Harness** — "看起来更好"不等于更好 → 四层评测 + 回归门禁 + 配对 A/B + 逐样本 planner 隔离 + bootstrap CI
+
+[Why](#why-kiwirag) · [Architecture](#system-architecture) · [Evaluation](#evaluation-driven-engineering) · [Validated Results](#validated-results) · [Quick Start](#quick-start) · [Limitations](#current-limitations)
 
 ---
 
-## Why This Project
+## Why KiwiRAG?
+
+普通 RAG Demo 与可靠 AI 知识系统之间隔着一系列真实的工程失败模式。KiwiRAG 解决的是这些问题：
+
+| 普通 RAG Demo | KiwiRAG |
+| --- | --- |
+| Vector Top-K 单路召回 | Dense + Sparse + RRF + Cross-Encoder Rerank |
+| 同步文档处理，崩溃即丢 | Durable Async Ingestion（Outbox/Lease/Checkpoint/DLQ） |
+| 检索结果直接拼 Prompt | Context Selection + Token Budget + 引用对齐 |
+| 引用只是文本编号 | Citation Alignment + 可选 Verification |
+| 人工看几个 case 判断效果 | 四层评测 + CI 回归门禁 + 配对 A/B |
+| Agent 越复杂越好 | Classic / Agentic 用实验选择（当前默认 Classic） |
+
+## Demo / Screenshots
 
 ```text
-Classic RAG:   Query → Retrieve → Rerank → Generate
-
-Agentic RAG:   Query → Plan → Execute → Semantic Sufficiency
-                        ↑                    ↓
-                        └── Replan (if insufficient) ──→ Answer / Abstain / Fallback
+SCREENSHOT_STATUS=MISSING（如实标注）
 ```
 
-核心问题：
-
-> **When does the additional Agentic control loop actually improve retrieval,
-> and when is Classic RAG the better engineering choice?**
-
-回答这个问题需要的不是更大的 Demo，而是：可逐样本核验的评测、机制级的调试、
-以及一个诚实的默认决策。本项目的答案浓缩在 [Evaluation](#evaluation) 一节。
+产品级前端已落地（React 19 SPA：SSE 流式对话、引用卡片、Agent 执行步骤可视化，见
+[frontend/](frontend/)），**真实运行截图尚未采集**——不放置 placeholder 或虚构 UI 截图。
+截图采集列为本仓库 TODO（见 [Limitations](#current-limitations)）。
 
 ---
 
 ## System Architecture
 
+五层结构（真实模块映射，无虚构组件；逐层细节见
+[architecture-diagrams.md](docs/architecture/architecture-diagrams.md)）：
+
 ```mermaid
 flowchart TB
-    U[Client / React SPA] --> R{Execution Mode}
-    R -->|Classic 默认| CR[Classic RAG Pipeline]
-    R -->|Agentic| AR[Agent Runtime]
-
-    subgraph Retrieval [Shared Retrieval]
-        HR[Milvus Hybrid<br/>dense BGE-M3 + BM25] --> RRF[RRF Fusion]
-        RRF --> RR[Cross-Encoder Reranker<br/>bge-reranker-v2-m3]
-        RR --> CB[Token-Budget Context Builder<br/>citation-aligned]
+    subgraph APP [Application Layer]
+        UI[React SPA + REST/SSE Controllers]
     end
-    CR --> HR
-
-    subgraph Agent [Agent Runtime]
-        P[LLM Planner<br/>query decomposition] --> X[Tool Execution<br/>semantic/keyword/metadata/fetch]
-        X --> S{Semantic Sufficiency<br/>Rule guards + LLM judge}
-        S -->|insufficient| RP[Bounded Replan]
-        RP --> X
+    subgraph ORCH [AI Orchestration Layer]
+        PIPE[Pipeline Registry: Classic RAG 默认 / Planned Agent 实验性]
+        MCP[MCP Server 对外暴露 rag_search/rag_ask]
     end
-    AR --> P
-    X --> HR
-
-    S -->|sufficient| G[Grounded Composer]
-    S -->|conflict| A[Abstain]
-    CB --> G
-
-    subgraph Runtime [Runtime Infrastructure]
-        ST[agent_run / agent_step<br/>+ decision_summary]
-        CAS[CAS state machine]
-        LS[DB lease]
-        ID[step idempotency<br/>+ signature dedup]
-        OBS[traceId / Prometheus<br/>/ run audit API]
+    subgraph RET [Retrieval & Context Layer]
+        HYB[Hybrid Retrieve + RRF] --> RER[Rerank] --> CTX[Context Budget + Citation]
     end
+    subgraph DATA [Knowledge / Data Layer]
+        MY[(MySQL 事实源)] -.派生索引/回库校验.-> MV[(Milvus)]
+        MINIO[(MinIO)] & REDIS[(Redis 会话)]
+    end
+    subgraph INFRA [Infrastructure Layer]
+        ING[Async Ingestion: Outbox→RocketMQ→Parser] & OBS[Trace/Prometheus/Langfuse]
+    end
+    APP --> ORCH --> RET --> DATA
+    INFRA --> DATA
 ```
 
-- **MySQL 为事实源，Milvus 为派生索引**（召回后逐条回库校验租户/软删/generation）
-- 异步索引链路：outbox → RocketMQ → parser-service（租约 + visibility timeout + 对账，kill -9 演练验证）
-- 安全：Deny-by-Default 认证 + 文档/块双层 ACL + prompt 注入双层防御
+关键架构决策：**MySQL 为事实源、Milvus 为派生索引**（召回后逐条回库校验租户/软删/generation，
+防索引与权限漂移）；DDD 六边形分层，application 层只依赖 port。
 
-## Agent Runtime
+## Online RAG Pipeline
 
-```mermaid
-flowchart TD
-    Q[Request] --> P[LLM Planner]
-    P --> X0[Execute Phase 0]
-    X0 --> S0{Semantic Sufficiency}
-    S0 -->|sufficient| C[Compose with citations]
-    S0 -->|conflict| R[Refuse / Abstain]
-    S0 -->|insufficient| B{Replan Budget?}
-    B -->|yes| RP[Replan<br/>sees attempted queries]
-    RP --> X1[Execute Phase 1]
-    X1 --> S1{Semantic Sufficiency}
-    S1 -->|sufficient| C
-    S1 -->|conflict| R
-    S1 -->|still insufficient| F[Bounded Fallback<br/>partial answer]
-    B -->|no| F
-```
-
-Bounded by: **step budget · replan budget (1) · token budget · deadline**。
-每一次终止都能事后重建：`agent_run.decision_summary` 区分
-`INITIAL_SUFFICIENT / REPLAN_SUFFICIENT / REPLAN_EXHAUSTED_FALLBACK / REFUSED_CONFLICT / TOOL_FAILURE`。
-
-## Runtime Degradation
+每个阶段的存在理由都是被评测暴露过的一个失败模式：
 
 ```mermaid
 flowchart LR
-    M[Model Planner] -->|failure| RT[Retry ×1]
-    RT -->|failure| RP[Rule Planner]
-    RP -->|failure| C[Classic RAG]
-    C -->|failure| F[Graceful Failure]
+    Q[Query] --> CW[Contextualization<br/>多轮指代消解]
+    CW --> D[Dense] & S[Sparse]
+    D & S --> RRF[RRF 融合<br/>单路召回失效]
+    RRF --> ACL[ACL 回库校验<br/>索引权限漂移]
+    ACL --> RK[Cross-Encoder Rerank<br/>bi-encoder 无区分度]
+    RK --> CB[Context Budget<br/>超限引用错位]
+    CB --> L[LLM 生成]
+    L --> CIT[Citation Alignment<br/>编号错位/幻觉引用]
+    CIT --> R[Response + traceId]
 ```
 
-每一级降级可观测：`reasonCode` · `planner_source`（逐样本落库）· `traceId` · Prometheus 指标。
-评测（REPLAY）模式下夹具缺失严格失败、**不降级**——防止评测对象漂移。
+## Reliable Knowledge Ingestion
 
----
+**为什么文档接入不能只是一次同步 HTTP 请求？** 长任务超时、worker 崩溃留下半成品、
+消息重复投递造成双份索引、DB 与向量库部分失败不一致——同步路径在这些场景下必然出错。
 
-## Key Engineering Highlights
+```mermaid
+flowchart TB
+    U[Upload SHA256 幂等] --> DB[documents 事实源]
+    DB --> OB[Outbox 账本] --> MQ[[RocketMQ]]
+    MQ --> W[Parser Worker<br/>Tika+脱敏+注入扫描]
+    W --> CH[结构感知切块] --> EM[Contextual 前缀+Embedding]
+    EM --> IX[MySQL chunks + Milvus upsert<br/>generation 隔离] --> OK[INDEXED ✓]
+    W -.Lease CAS.-> OB
+    W -.Retry×3 → DLQ.-> MQ
+    W -.Checkpoint.-> CH
+```
 
-- **Hybrid Retrieval & Context Construction** — dense(BGE-M3)+BM25 RRF 融合 → cross-encoder
-  GPU 重排 → token/字符双闸门预算装填 + 引用编号对齐；Contextual Retrieval 入库前缀。
-- **Bounded Plan–Execute–Replan** — LLM 查询分解、需求冻结、语义充分性判定（Rule 确定性守卫 +
-  LLM 语义判定）、有界 replan（能看到已尝试的查询）、四重预算终止。
-- **Failure-aware Runtime** — Planner 四级降级链（上图）；每级有独立 reasonCode/日志/指标，零静默降级。
-- **Durable Execution** — `agent_run`/`agent_step` 持久化 + CAS 状态机 + DB lease +
-  checkpoint 落库 + 步级幂等（sha256 幂等键 + 工具签名去重）。resume 续跑未接线（stale run
-  安全终止），不声称 automatic resume。
-- **Semantic Control** — 修复后的 Sufficiency 分层：Rule 只判 NO_EVIDENCE/实体过滤不匹配/
-  版本冲突三类确定性事实，语义充分性归 LLM judge（holdout 实测 human agreement
-  42%→**96%**，false-sufficient 100%→**4%**）；矛盾证据保守 abstain。
-- **Evaluation Infrastructure** — 配对评测 + 逐样本 planner_source 隔离 + 盲评换位双 judge +
-  bootstrap CI + common-cohort 固定分母 + 有效性门槛（MODEL 样本 <80% 禁止下结论）。
-- **Observability** — traceId/requestId/runId 三级关联（sync 头与 SSE 终态事件同语义、
-  从不伪造 runId）；Prometheus agent 域指标（每指标单一权威记录点）；
-  `GET /api/v1/agent/runs/{id}` 全步骤审计 API。
+**这不是纸面设计**——三项真实故障注入验证全 PASS
+（[FAULT_INJECTION_REPORT](docs/reliability/FAULT_INJECTION_REPORT.md)）：
+kill -9 worker 后零丢失零重复续点完成；毒消息 3 次重试进 DLQ 且不阻塞正常任务；
+并发重复投递幂等收敛为单一文档。
 
----
+## Retrieval & Context Engineering
 
-## Evaluation
+**Retrieval**：Dense(BGE-M3) + Sparse(BM25) + RRF + Cross-Encoder(bge-reranker-v2-m3, GPU) + Score Gate + ACL。
 
-Classic 与 Agentic 共享同一 retrieval / reranker / generator / judge 基础；配对评测、
-逐样本 planner_source 核验、盲评位置互换、bootstrap 95% CI、固定共同 cohort（46 题）。
+**Context**：查询改写 / 会话历史压缩 / 上下文选择与预算 / 来源隔离标签（防 prompt 注入）。
 
-结果按三层组织（current 冻结 → ablation → historical，口径互不混用；主结果为
-**单 run 配对 + bootstrap 95% CI**，多 run 历史基线不混入 headline）：
+关键消融（100 题，其余配置不变，[证据](docs/evaluation/CLAIM_EVIDENCE_MATRIX.md)）：
 
-**Current Frozen Results**（common-cohort audit，2026-08-27）：
+```text
+Rerank OFF → ON:  faithfulness +9.2pp · recall +7.5pp
+bi-encoder 召回分数几乎无区分度(top1 hybrid 0.028 vs 精排后 0.98) — 重排不是可选项
+```
 
-| System | Overall vs Classic | Multi-hop vs Classic | Relative Latency |
-|---|---:|---:|---:|
-| Classic RAG | baseline | baseline | 1.0× |
-| Pre-fix Agentic (LLM Planner) | **-8.3pp** * | -10.0pp * | ~2.7× |
-| Post-fix Agentic | **-0.2pp** (n.s.) | +2.3pp (n.s.) | ~2.8× |
+## Grounded Generation & Citation
 
-\* 95% CI 不含 0（Pre-fix: [-16.7, -1.5]pp）；Post-fix CI [-8.9, +8.9]pp。
-修复本身：Post-fix − Pre-fix = **+5.7pp**，CI [+0.9, +11.7]pp，显著。
+```text
+Retrieved Knowledge → Context Assembly → Generation → Citation Mapping
+→ Citation Verification(可选) → Final Answer
+```
 
-- 语义 replan 在 **21%（10/48）** 的样本上触发——恰好是证据真正不足处（该子集 Classic 仅 0.79），
-  并在其中有正向信号（n=10，方向真实、个体不显著）；其余 79% 正确地不触发。
-- 成本：约 **2.8× 延迟**、**3.4 次 LLM 调用/run**。
-**Ablation Results**：rerank 消融 faith **+9.2pp** / recall +7.5pp（100 题，其余配置不变）；
-Classic 自身基线（80 题冻结集，单 run）：faithfulness **0.885** / recall **0.90**。
+解决：幻觉引用（引用必须锚定真实 chunk）、截断后编号错位（预算器与 citations 同步裁剪）、
+不可追溯（每条回答携带 traceId → run/step 审计链）。
 
-**Historical Milestones**（过程数字，含 run 口径，不入 headline）：见
+## Evaluation-Driven Engineering
+
+评测驱动不是"做完功能跑一次 RAGAS"，而是**能力进入默认路径前必须通过预定义 evaluation gate**：
+
+```mermaid
+flowchart LR
+    F[Feature/Change] --> E[Evaluation] --> FA[Failure Analysis]
+    FA --> RC[Root Cause] --> FX[Engineering Fix] --> RG[Regression Gate]
+    RG -->|pass| SHIP[Ship] --> D{Default Path?}
+    RG -->|fail| REJ[Reject]
+    D -->|no| OFF[保持关闭]
+```
+
+四层评测：检索侧（Recall@K/MRR/NDCG）· 生成侧（RAGAS）· 拒答分离（诚实拒答≠幻觉）·
+Agentic 对照（配对 A/B + 盲评换位 + bootstrap CI + 逐样本 planner 隔离 + validity gate）。
+回归门禁：主分支 nightly 评测，任一指标降幅 >3pp 自动阻断并开 issue。
+
+### 三个代表性 Engineering Stories
+
+**Case 1 — Retrieval（评测否决直觉）**：rerank 消融测出 +9.2pp 才开启重排；同法发现
+"评测配置与线上漂移"导致拒答率虚高 16%→修复后 6%——先修尺子再修系统。
+
+**Case 2 — Reliability（故障注入验证架构）**：索引链路曾因 embed 并发风暴 4 小时跑不完
+（超时→熔断误判→重投风暴→DLQ，三层根因修复后 6 分钟零失败）；kill-9/毒消息/重复投递注入三测全 PASS。
+
+**Case 3 — Agentic RAG（用实验否决自己的复杂度）**：完整实现 bounded Plan-Execute-Replan
+后发现 Classic 仍更优——没有删代码，而是让数据决定默认路径（下节）。
+
+## Agentic RAG: When More Agency Is Not Better
+
+完整实现的实验性执行策略（**默认关闭**）：
+
+```text
+Planner → Tool Execution → Semantic Sufficiency → Replan(bounded) → Composer / Abstain / Fallback
+```
+
+修复三个机制缺陷（replan 命名空间冲突 / replan 不可见已试查询 / 规则判定器构造性
+false-sufficient）后，与 Classic 的配对差距从 **-8.3pp（显著）收敛到 -0.2pp（统计平手）**，
+多跳 slice 首次名义反超（+2.3pp, n.s.）——但代价是 **×2.8 延迟、3.4 次 LLM 调用/run**。
+
+> **Agentic path remains disabled by default.** 更复杂的 Agent 不自动意味着更高质量：
+> 在当前任务分布下，额外 planning/tool/replan 的收益不足以覆盖延迟与成本。
+> 启用边界的完整数据分析见 [WHEN_TO_USE_AGENTIC_RAG](docs/agentic/WHEN_TO_USE_AGENTIC_RAG.md)。
+
+## Validated Results
+
+**Current Frozen Results**（common-cohort 46 题，单 run 配对 + bootstrap 95%CI，
+[完整口径](docs/evaluation/2026-08-27-postd3-residual-audit.md)）：
+
+| System | Overall vs Classic | Multi-hop | Latency |
+| --- | ---: | ---: | ---: |
+| Classic RAG（基线） | baseline | baseline | 1.0× |
+| Pre-fix Agentic | **-8.3pp** \* | -10.0pp \* | ~2.7× |
+| Post-fix Agentic | -0.2pp (n.s.) | +2.3pp (n.s.) | ~2.8× |
+
+\* 95% CI 不含 0；修复效应 Post−Pre = +5.7pp \*（CI [+0.9, +11.7]）。
+
+其他冻结指标：Classic faithfulness **0.885** / recall **0.90**（80 题冻结集，单 run）；
+语义充分性判定 human agreement 42%→**96%**（24 对独立 holdout）；
+性能基准（单机 dev, rerank OFF）E2E P50 **1029ms** / LLM TTFT P50 **688ms**
+（[perf/performance_report.md](perf/performance_report.md)，c=1；c=10 与限制口径见报告）。
+
+**Historical Milestones**（过程数字，非当前 headline）：见
 [docs/evaluation/](docs/evaluation/) 报告链与 [Claim→Evidence 矩阵](docs/evaluation/CLAIM_EVIDENCE_MATRIX.md)。
-
-> **After fixing the Agentic control loop, quality recovered from a significant deficit
-> to statistical parity with Classic RAG. However, the additional latency and LLM cost
-> still do not justify enabling Agentic mode by default.**
-
-**Default execution mode: Classic RAG** —— 这是数据驱动的工程判断，不是失败。
-
-## What We Learned
-
-1. **Evaluation identity matters** —— 第一轮 200 题×3 轮实验实际生效的是规则模板 Planner
-   而非 LLM Planner（配置漂移）。为此建立了 `planner_source` 逐样本核验、REPLAY 严格失败、
-   有效性门槛与 common-cohort 分析——评测结论的可信度取决于"你确定测的是你以为的东西"。
-2. **Agentic failures were mechanism failures** —— 三个被实测定位并修复的结构缺陷：
-   D1 Model replan step-id 命名空间冲突（replan 100% 失效）、D2 replan 看不到已尝试的查询、
-   D3 Rule sufficiency 存在性检查造成构造性 false-sufficient（47/47 零 replan 根因）。
-   → [Full mechanism audit](docs/evaluation/2026-08-27-postd3-residual-audit.md)
-3. **More agentic is not automatically better** —— 修复后整体平手、多跳出现正向信号，
-   但 ×2.8 延迟与 3.4 次 LLM 调用/run 的成本在当前语料不划算，因此默认保持 Classic。
-
-## Design Decisions
-
-- **Why Classic is still the default** — 质量统计平手，成本显著更高（~2.8× 延迟、~3.4 LLM
-  calls/run）。开启 Agentic 需要的正向收益证据尚未出现。
-- **Why no query-level Agentic router** — 当前不存在稳定的 query 级 pre-routing 特征；
-  semantic insufficiency 是 **post-execution / escalation 信号**而非 query 特征。
-  唯一证据对齐的形态是 retrieval-first escalation，其收益上限（+0.6pp）未证明值得成本，故不实现。
-- **Why no long-term memory** — 当前业务不依赖跨会话用户记忆。已有的是会话级管理
-  （contextualization / history compression / topic-shift detection / Redis TTL），
-  不声称完整 Long-term Memory。
-
-## Reliability & Observability
-
-| Concern | Implementation |
-|---|---|
-| State transition | CAS (version + expected-status) |
-| Execution ownership | DB lease (claim / heartbeat / release) |
-| Duplicate execution | step idempotency key + tool signature dedup |
-| Planner failure | Model → Retry → Rule → Classic → graceful failure |
-| Semantic insufficiency | bounded replan (1), then partial-answer fallback |
-| Evidence conflict | conservative abstain (REFUSED_CONFLICT) |
-| Durable audit | agent_run / agent_step / decision_summary |
-| Correlation | traceId / requestId / runId (sync headers ⇄ SSE parity) |
-| Metrics | Prometheus agent domain (single authoritative site per metric) |
-
-可靠性机制经**真实故障注入验证**（kill -9 / poison-message / duplicate-delivery，
-见 [FAULT_INJECTION_REPORT](docs/reliability/FAULT_INJECTION_REPORT.md)）。
-
----
 
 ## Quick Start
 
-前置：JDK 17、Docker 24+（compose v2）。所有命令见 [Makefile](Makefile)。
-
 ```bash
-# 1. 配置
-make env                      # 从 .env.example 复制 .env（填 LLM_API_KEY 等）
+# Prerequisites: JDK 17, Docker 24+(compose v2)
+make env                      # 1. 配置: .env.example → .env (填 LLM_API_KEY, 不提交 secret)
+make up && make ps            # 2. 中间件: MySQL/Redis/MinIO/Milvus/RocketMQ
+make run                      # 3. 后端: http://localhost:8080
+make test                     # 4. 测试: 单测 + ArchUnit
 
-# 2. 起中间件（MySQL/Redis/MinIO/Milvus/RocketMQ）
-make up && make ps
-
-# 3. 起 chat-app
-make run                      # http://localhost:8080
+cd frontend && npm install && npm run dev   # 5. 前端(可选): :5173 代理到 8080
 ```
 
-### 两种检索模式（真实配置，无漂移）
+检索模式（真实配置）：
 
 ```text
-Minimal Mode（无 GPU）: RAG_RERANK_ENABLED=false        → hybrid 检索，功能完整
-Full Mode:              reranker 服务 + 隧道 18080       → 见 docs/operations/autodl-reranker-sop.md
+Minimal(无 GPU): RAG_RERANK_ENABLED=false → hybrid 检索功能完整
+Full:            GPU reranker + 隧道 18080 → docs/operations/autodl-reranker-sop.md
 ```
 
-### 发一个请求并检查一次 Agent run
+首个请求与 Agent run 审计：
 
 ```bash
-# Classic（默认）
 curl -s localhost:8080/api/v1/chat -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"Seata AT 模式回滚依赖什么表","mode":"RAG","top_k":5}'
-
-# Agentic（需显式开启: RAG_AGENT_PLANNER_ENABLED=true
-#          RAG_AGENT_PLANNED_PIPELINE_ENABLED=true, 默认均为 false）
-curl -s -D headers.txt localhost:8080/api/v1/chat -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"query":"...","mode":"AGENTIC","top_k":5}'
-grep X-Agent headers.txt     # X-Agent-Run-Id / Terminal-Status / Decision-Summary
-
-# 审计这次运行（步骤/状态/耗时/planner来源/决策摘要）
-curl -s -H "Authorization: Bearer $TOKEN" \
-  localhost:8080/api/v1/agent/runs/$RUN_ID
+  -H "Content-Type: application/json" -d '{"query":"...","mode":"RAG","top_k":5}'
+# Agentic 需显式开启(RAG_AGENT_PLANNER_ENABLED=true, 默认 false)
+# 审计: GET /api/v1/agent/runs/$RUN_ID (X-Agent-Run-Id 响应头)
 ```
 
-前端 SPA：`cd frontend && npm install && npm run dev`（Vite 代理到 8080，详见
-[frontend/README.md](frontend/README.md)）。异步解析模式、Langfuse、CI/评测门禁见 docs。
+评测运行：`eval/` 各脚本 + `docs/operations/eval-regression-sop.md`（需 judge API key）。
 
----
+## Current Limitations
 
-## Project Structure
+如实列出（可信度的一部分，详细见 [FINAL_RELEASE_GATE](docs/audits/FINAL_RELEASE_GATE.md)）：
 
-```text
-platform-common/      共享层（domain / ports / chunking）
-platform-bootstrap/   chat-app 主模块（interfaces / application / infrastructure）
-parser-service/       异步解析服务（RocketMQ + chunk 级 checkpoint）
-frontend/             React 19 SPA（SSE 流式 / 引用卡片 / Agent 步骤可视化）
-deploy/               docker-compose（中间件 + RocketMQ）+ nginx
-eval/                 评测脚本 + 冻结基线（agentic/ 下含 paired A/B runner 与报告）
-docs/                 adr(15) / architecture / evaluation / operations / v3 / research
-```
+1. **CI 运行态未验证**——分支未合入 main（workflows 语法合法、fork skip policy 已确认）；
+2. **性能基准口径有限**——单机 dev、rerank OFF、c≤10（rerank/高并发未测，GPU 外部依赖）；
+3. **Agentic 默认关闭**——平手质量不抵 ×2.8 延迟；语义 replan 收益个体不显著（n=10）；
+4. **真实用户流量验证缺失**——extractive GT 为 LLM 生成题集；
+5. **截图未采集**（SCREENSHOT_STATUS=MISSING）；
+6. **LLM Judge 人工校准有限**（judge 与人工一致 62-75%，已量化并双 judge 缓解）；
+7. 解析为 **multi-format**（PDF/DOCX/PPT/TXT），非 multimodal。
 
-## Documentation
+## Deep Dive Documentation
 
 | 主题 | 入口 |
-|---|---|
+| --- | --- |
 | 五张核心架构图 | [docs/architecture/architecture-diagrams.md](docs/architecture/architecture-diagrams.md) |
+| 评测方法与全部冻结报告 | [docs/evaluation/](docs/evaluation/)（含 [Claim→Evidence 矩阵](docs/evaluation/CLAIM_EVIDENCE_MATRIX.md)） |
+| 故障注入验证 | [docs/reliability/FAULT_INJECTION_REPORT.md](docs/reliability/FAULT_INJECTION_REPORT.md) |
 | 何时用 Agentic（数据依据） | [docs/agentic/WHEN_TO_USE_AGENTIC_RAG.md](docs/agentic/WHEN_TO_USE_AGENTIC_RAG.md) |
-| 性能基准（实测 P50/95/99） | [perf/performance_report.md](perf/performance_report.md) |
-| Architecture / 机制审计 | `docs/architecture/` · `docs/adr/` |
-| 评测方法与全部报告 | `docs/evaluation/`（P0-2 spec/pilot、Post-D3 验证、E1/E2 残差审计） |
-| 可靠性 runbook | `docs/operations/`（reranker SOP / eval 回归 SOP / prod runbook） |
-| 修复闭环全记录 | `docs/architecture/agent-architecture-fix-plan.md`（含 P0-3 修订注记） |
-| V3 spec / 验收 | `docs/v3/` |
-| 前端 | `frontend/README.md` |
+| 性能基准 | [perf/performance_report.md](perf/performance_report.md) |
+| ADR ×15 / 运维 runbook | [docs/adr/](docs/adr/) · [docs/operations/](docs/operations/) |
+| 前端 | [frontend/README.md](frontend/README.md) |
