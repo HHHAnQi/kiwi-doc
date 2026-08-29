@@ -38,7 +38,11 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 22 LTS: undici 8.x (jsdom v30 传递依赖) 需要 Node 22+ 的
+          # webidl.util.markAsUncloneable API — Node 20 下 jsdom 加载即崩溃
+          # (TypeError: webidl.util.markAsUncloneable is not a function)。
+          # 本地开发环境为 Node 24, CI 对齐到同代 LTS。
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
