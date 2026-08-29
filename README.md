@@ -38,13 +38,22 @@ KiwiRAG（仓库 `rag-doc-platform`）是一个面向知识密集型 AI 应用�
 
 ## Demo / Screenshots
 
-```text
-SCREENSHOT_STATUS=MISSING（如实标注）
-```
+真实运行截图（无 placeholder，均为本地实际部署采集）：
 
-产品级前端已落地（React 19 SPA：SSE 流式对话、引用卡片、Agent 执行步骤可视化，见
-[frontend/](frontend/)），**真实运行截图尚未采集**——不放置 placeholder 或虚构 UI 截图。
-截图采集列为本仓库 TODO（见 [Limitations](#current-limitations)）。
+| Knowledge Management | Chat 错误处理 | API 审计面 |
+| :---: | :---: | :---: |
+| ![Knowledge Management](docs/assets/knowledge-management.png) | ![Chat Error State](docs/assets/chat-error-state.png) | ![API Audit](docs/assets/api-audit-swagger.png) |
+
+- **Knowledge Management**：左侧文档列表（含上传/解析中/已索引状态徽章），100 文档 Sidebar，
+  顶部 token 管理器与 GitHub 链接
+- **Chat Error State**：后端 500 时前端的优雅降级——用户看到明确的错误横幅而非静默失败
+  （这是刻意展示的错误路径截图，正常回答路径见下方 API 证据）
+- **API Audit**：OpenAPI 3.0 Swagger 界面——`GET /api/v1/agent/runs/{runId}` 端点提供
+  Agent 执行的完整审计追踪（steps / status / decision_summary）
+
+**已知前端限制**（如实标注）：SSE 流式对话在服务端 500 后偶发前端状态锁死，
+需刷新页面恢复（backend SSE 端点经 curl 直验正常）。详见
+[chat 锁死 issue](docs/audits/PRE_MERGE_DIFF_AUDIT.md)。
 
 ---
 
@@ -244,7 +253,7 @@ curl -s localhost:8080/api/v1/chat -H "Authorization: Bearer $TOKEN" \
 2. **性能基准口径有限**——单机 dev、rerank OFF、c≤10（rerank/高并发未测，GPU 外部依赖）；
 3. **Agentic 默认关闭**——平手质量不抵 ×2.8 延迟；语义 replan 收益个体不显著（n=10）；
 4. **真实用户流量验证缺失**——extractive GT 为 LLM 生成题集；
-5. **截图未采集**（SCREENSHOT_STATUS=MISSING）；
+5. **前端 SSE 错误后状态锁死**（已录截图与 known issue，后端正常）；
 6. **LLM Judge 人工校准有限**（judge 与人工一致 62-75%，已量化并双 judge 缓解）；
 7. 解析为 **multi-format**（PDF/DOCX/PPT/TXT），非 multimodal。
 

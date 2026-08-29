@@ -21,7 +21,7 @@ export function Sidebar({ onPickDoc, selectedDocId }: Props) {
   const error = useDocStore((s) => s.error);
   const loadMore = useDocStore((s) => s.loadMore);
 
-  const readyCount = docs.filter((d) => d.status === 'READY').length;
+  const readyCount = docs.filter((d) => (d.status === 'READY' || d.status === 'INDEXED')).length;
   const totalSize = docs.reduce((acc, d) => acc + d.size_bytes, 0);
   // DEV-B3: 仍有未加载文档时, footer 区显示 "加载更多 (剩余 N)"
   const remaining = Math.max(0, total - docs.length);
