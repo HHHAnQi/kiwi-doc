@@ -60,20 +60,31 @@ public class AsyncParsingTrigger implements ParsingTrigger {
                 && existing != null
                 && existing.triggerType() == ParseTask.TriggerType.REBUILD
                 && !existing.status().isTerminal()) {
-            log.info("async_rebuild.idempotent_inflight doc_id={}, task_id={}, generation={}",
-                    documentId, existing.id(), existing.generation());
+            log.info(
+                    "async_rebuild.idempotent_inflight doc_id={}, task_id={}, generation={}",
+                    documentId,
+                    existing.id(),
+                    existing.generation());
             return;
         }
         if (!rebuild && existing != null && !existing.status().isTerminal()) {
-            log.info("async_parse.idempotent_inflight doc_id={}, task_id={}, generation={}",
-                    documentId, existing.id(), existing.generation());
+            log.info(
+                    "async_parse.idempotent_inflight doc_id={}, task_id={}, generation={}",
+                    documentId,
+                    existing.id(),
+                    existing.generation());
             return;
         }
-        int generation = rebuild ? parseTaskRepository.nextGeneration(documentId)
-                : existing == null ? 1 : existing.generation();
-        ParseTask.TriggerType triggerType = rebuild
-                ? ParseTask.TriggerType.REBUILD
-                : existing == null ? ParseTask.TriggerType.UPLOAD : ParseTask.TriggerType.RETRY;
+        int generation =
+                rebuild
+                        ? parseTaskRepository.nextGeneration(documentId)
+                        : existing == null ? 1 : existing.generation();
+        ParseTask.TriggerType triggerType =
+                rebuild
+                        ? ParseTask.TriggerType.REBUILD
+                        : existing == null
+                                ? ParseTask.TriggerType.UPLOAD
+                                : ParseTask.TriggerType.RETRY;
         ParseTask pending =
                 new ParseTask(
                         null,
@@ -116,9 +127,18 @@ public class AsyncParsingTrigger implements ParsingTrigger {
             if (exist.status().isTerminal()) {
                 // 复用 ParseTaskService 的重入队逻辑走 parser-service 自己的 ParseTaskService, 这里 chat-app
                 // 本地不持 ParseTaskService bean, 直接 update 一行复用(record 不可变, 用 new 复制)
-                saved = exist.withExecutionState(
-                        ParseTaskStatus.PENDING, exist.retryCount(), 0, 0, null, null,
-                        exist.attempts(), now, null, now);
+                saved =
+                        exist.withExecutionState(
+                                ParseTaskStatus.PENDING,
+                                exist.retryCount(),
+                                0,
+                                0,
+                                null,
+                                null,
+                                exist.attempts(),
+                                now,
+                                null,
+                                now);
                 parseTaskRepository.update(saved);
             } else {
                 // 非终态说明另一进程在跑, 重发消息兜底(parser-service 消费时 lease 抢占保证只一份)

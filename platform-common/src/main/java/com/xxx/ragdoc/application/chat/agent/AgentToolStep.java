@@ -20,8 +20,8 @@ public record AgentToolStep(
         boolean required) {
 
     /**
-     * P0-2 修复: 老构造器保留(ComparisonPlanFactory 等不携带需求归属的调用方),
-     * requirementIds 默认空 = 证据归属未知(Sufficiency judge 走 RELATION/模型路径)。
+     * P0-2 修复: 老构造器保留(ComparisonPlanFactory 等不携带需求归属的调用方), requirementIds 默认空 = 证据归属未知(Sufficiency
+     * judge 走 RELATION/模型路径)。
      */
     public AgentToolStep(
             String stepId,
@@ -31,7 +31,15 @@ public record AgentToolStep(
             List<String> dependsOn,
             String expectedEvidence,
             boolean required) {
-        this(stepId, toolName, toolVersion, input, dependsOn, List.of(), expectedEvidence, required);
+        this(
+                stepId,
+                toolName,
+                toolVersion,
+                input,
+                dependsOn,
+                List.of(),
+                expectedEvidence,
+                required);
     }
 
     public AgentToolStep {

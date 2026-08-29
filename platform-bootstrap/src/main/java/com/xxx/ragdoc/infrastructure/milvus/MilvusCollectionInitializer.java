@@ -92,7 +92,8 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
             if (has) {
                 if (needsSchemaMigration(collection)) {
                     String message =
-                            "Milvus collection '" + collection
+                            "Milvus collection '"
+                                    + collection
                                     + "' schema 不兼容；请创建新 collection、全量回灌并切换 MILVUS_COLLECTION，应用不会自动删除数据";
                     if (props.isFailOnSchemaMismatch()) {
                         throw new IllegalStateException(message);
@@ -127,8 +128,13 @@ public class MilvusCollectionInitializer implements ApplicationRunner {
             boolean hasChunkType = fieldNames.contains(FIELD_CHUNK_TYPE);
             boolean hasLogicalDocumentKey = fieldNames.contains(FIELD_LOGICAL_DOCUMENT_KEY);
             boolean hasGeneration = fieldNames.contains(FIELD_GENERATION);
-            boolean needsMigrate = hasLegacySparse || !hasBm25 || !hasSource || !hasChunkType
-                    || !hasLogicalDocumentKey || !hasGeneration;
+            boolean needsMigrate =
+                    hasLegacySparse
+                            || !hasBm25
+                            || !hasSource
+                            || !hasChunkType
+                            || !hasLogicalDocumentKey
+                            || !hasGeneration;
             log.info(
                     "milvus.schema_check fields={} hasLegacySparse={} hasBm25={} hasSource={} hasChunkType={} -> needsMigrate={}",
                     fieldNames,

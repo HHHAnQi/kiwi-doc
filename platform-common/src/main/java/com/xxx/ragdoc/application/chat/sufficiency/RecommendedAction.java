@@ -15,6 +15,8 @@ package com.xxx.ragdoc.application.chat.sufficiency;
  */
 public enum RecommendedAction {
     ANSWER,
+    /** PARTIAL — Composer 带覆盖度标注回答(已确认/未确认)。 */
+    ANSWER_PARTIAL,
     REPLAN,
     REFUSE_NO_EVIDENCE,
     REFUSE_CONFLICT

@@ -12,7 +12,10 @@ public class PiiSanitizer {
     private static final Map<String, Pattern> RULES = new LinkedHashMap<>();
 
     static {
-        RULES.put("SECRET", Pattern.compile("(?i)(api[_-]?key|secret|password|access[_-]?token)\\s*[:=]\\s*[^\\s,;]{6,}"));
+        RULES.put(
+                "SECRET",
+                Pattern.compile(
+                        "(?i)(api[_-]?key|secret|password|access[_-]?token)\\s*[:=]\\s*[^\\s,;]{6,}"));
         RULES.put("ID_CARD", Pattern.compile("(?<!\\d)\\d{17}[0-9Xx](?!\\d)"));
         RULES.put("BANK_CARD", Pattern.compile("(?<!\\d)\\d{16,19}(?!\\d)"));
         RULES.put("PHONE", Pattern.compile("(?<!\\d)1[3-9]\\d{9}(?!\\d)"));

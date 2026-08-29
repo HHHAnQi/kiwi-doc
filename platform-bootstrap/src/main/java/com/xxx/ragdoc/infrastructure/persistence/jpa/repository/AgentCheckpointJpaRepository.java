@@ -4,7 +4,6 @@ import com.xxx.ragdoc.infrastructure.persistence.jpa.entity.AgentCheckpointEntit
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AgentCheckpointJpaRepository
-        extends JpaRepository<AgentCheckpointEntity, Long> {
+public interface AgentCheckpointJpaRepository extends JpaRepository<AgentCheckpointEntity, Long> {
     Optional<AgentCheckpointEntity> findFirstByRunIdOrderByCheckpointVersionDesc(String runId);
 }

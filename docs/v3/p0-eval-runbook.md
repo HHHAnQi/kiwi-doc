@@ -23,7 +23,7 @@
 |---|---|
 | 本机中间件 | `make up` 已起：MySQL 3307 / MinIO 9000 / Milvus 19530 / RocketMQ 9876 / **BGE-M3 8082(/health 可达)** |
 | chat-app | port 8080 跑 dev profile，env `RAG_PARSER_MODE=sync`（同步路径即可，不需要 parser-service） |
-| **reranker 隧道** | `ssh -L 8084:localhost:8081 -N root@autodl-xxx.com` 让 Autodl 8081 → 本地 8084 |
+| **reranker 隧道** | `ssh -L 18080:localhost:6006 -N root@autodl-xxx.com` 让 Autodl 6006 → 本地 18080 |
 | **rerank 开关** | env `RAG_RERANK_ENABLED=true` |
 | LLM_API_KEY | 已 export 或写入 `.env`（gen_questions / RAGAS judge 都用） |
 | corpus 当前 100 docs | P0 会自动扩到 150（无需手动操作；若已扩可 `SKIP_CORPUS=1` 跳过） |
@@ -41,9 +41,9 @@ docker run -d --gpus all -p 8081:8081 \
   --model-id /data/onnx --port 8081 --dtype float32
 
 # 本机(mac)
-ssh -L 8084:localhost:8081 -N root@connect.xxx.autodl.com -p ${PORT}
+ssh -L 18080:localhost:6006 -N root@connect.xxx.autodl.com -p ${PORT}
 # 测试
-curl -X POST http://localhost:8084/rerank \
+curl -X POST http://localhost:18080/rerank \
   -H "Content-Type: application/json" \
   -d '{"query":"测试","documents":["答1","答2"],"top_n":2}'
 ```
@@ -127,7 +127,7 @@ git commit -m "docs(eval): baseline 升级 from P0 微评估 (faith 0.60→0.66,
 | 现象 | 排查路径 |
 |---|---|
 | step0 chat-app 不可达 | `make run` 没起 / `localhost:8080` 端口被占；试 `curl -v http://localhost:8080/actuator/health` |
-| step0 reranker 8084 不可达 | Autodl 隧道断了, `ssh -L 8084:localhost:8081 -N ...` 重连；或 Autodl 上 reranker 容器挂了 |
+| step0 reranker 18080 不可达 | Autodl 隧道断了, `ssh -L 18080:localhost:6006 -N ...` 重连；或 Autodl 上 reranker 容器挂了 |
 | step1 MySQL 查询失败 | docker-compose MySQL 没起 / 端口不是 3307；`docker ps \| grep mysql` 看状态 |
 | step2 gen_questions 失败 | LLM_API_KEY 空 / DashScope 限流；看 eval/gen_questions stderr |
 | step2 qwen-max 把 chunk 翻译成英文了 | prompt polorization 问题，看 issue（之前发生过）；改 prompt 让中文输出 |

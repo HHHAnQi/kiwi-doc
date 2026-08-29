@@ -22,7 +22,7 @@ on:
     branches: [main, master]
 
 concurrency:
-  group: ci-\${{ github.workflow }}-\${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -60,11 +60,25 @@ jobs:
       - name: Unit Tests (no Docker)
         run: ./gradlew test
 
+      # Docker 诊断(Backend CI fix): 输出 runner Docker 版本与 socket 状态,
+      # 便于定位 Testcontainers 在 CI 上的具体失败根因
+      - name: Docker environment diagnostics
+        run: |
+          docker version --format 'Client: {{.Client.Version}} API: {{.Client.APIVersion}}'
+          docker version --format 'Server: {{.Server.Version}} API: {{.Server.APIVersion}}'
+          ls -la /var/run/docker.sock || echo "NO DOCKER SOCKET"
+          docker info 2>&1 | grep -iE "server version|storage|cgroup" | head -5
+
       # 集成测试 — Testcontainers 自动起 MySQL 容器
       # GitHub runner 自带 docker, Testcontainers 直接可用
       # PR-7e: 新增 integrationTest task, 与 test 分离
       - name: Integration Tests (Testcontainers MySQL)
-        run: ./gradlew integrationTest
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: 'false'
+        run: |
+          ./gradlew integrationTest --stacktrace 2>&1 | tee /tmp/it-output.log
+          # 提取 Testcontainers/Docker 相关错误行帮助诊断
+          grep -iE "docker|testcontainers|ryuk|container|mysql.*fail" /tmp/it-output.log | tail -20 || true
 
       # Python eval 测试
       - name: Python Eval Tests

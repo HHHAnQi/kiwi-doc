@@ -39,7 +39,7 @@ rocketmq:
 milvus:
   host: ${MILVUS_HOST:localhost}
   port: ${MILVUS_PORT:19530}
-  collection: ${MILVUS_COLLECTION:documents_v1}
+  collection: ${MILVUS_COLLECTION:documents_current}
   fail-on-schema-mismatch: ${MILVUS_FAIL_ON_SCHEMA_MISMATCH:true}
 
 minio:

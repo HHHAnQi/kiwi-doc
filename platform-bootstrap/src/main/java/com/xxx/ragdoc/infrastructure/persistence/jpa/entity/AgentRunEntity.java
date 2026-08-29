@@ -67,6 +67,10 @@ public class AgentRunEntity {
     @Column(name = "terminal_reason_code", length = 64)
     private String terminalReasonCode;
 
+    /** P2-D5(A): 过程决策摘要 — 写入后不被终态覆盖(语义见 V24 迁移注释)。 */
+    @Column(name = "decision_summary", length = 64)
+    private String decisionSummary;
+
     @Column(name = "router_version", length = 64)
     private String routerVersion;
 
@@ -230,6 +234,14 @@ public class AgentRunEntity {
         this.terminalReasonCode = terminalReasonCode;
     }
 
+    public String getDecisionSummary() {
+        return decisionSummary;
+    }
+
+    public void setDecisionSummary(String decisionSummary) {
+        this.decisionSummary = decisionSummary;
+    }
+
     public String getRouterVersion() {
         return routerVersion;
     }
@@ -262,14 +274,37 @@ public class AgentRunEntity {
         this.harnessMode = harnessMode;
     }
 
-    public String getOwnerId() { return ownerId; }
-    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
-    public Instant getLeaseUntil() { return leaseUntil; }
-    public void setLeaseUntil(Instant leaseUntil) { this.leaseUntil = leaseUntil; }
-    public Instant getHeartbeatAt() { return heartbeatAt; }
-    public void setHeartbeatAt(Instant heartbeatAt) { this.heartbeatAt = heartbeatAt; }
-    public Integer getResumeCount() { return resumeCount; }
-    public void setResumeCount(Integer resumeCount) { this.resumeCount = resumeCount; }
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public Instant getLeaseUntil() {
+        return leaseUntil;
+    }
+
+    public void setLeaseUntil(Instant leaseUntil) {
+        this.leaseUntil = leaseUntil;
+    }
+
+    public Instant getHeartbeatAt() {
+        return heartbeatAt;
+    }
+
+    public void setHeartbeatAt(Instant heartbeatAt) {
+        this.heartbeatAt = heartbeatAt;
+    }
+
+    public Integer getResumeCount() {
+        return resumeCount;
+    }
+
+    public void setResumeCount(Integer resumeCount) {
+        this.resumeCount = resumeCount;
+    }
 
     public Instant getCreatedAt() {
         return createdAt;

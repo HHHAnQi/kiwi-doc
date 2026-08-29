@@ -136,6 +136,8 @@ class PlannedAgentReplayIT {
                 new PlannedAgentExecutionCoordinator(
                         requirementExtractor,
                         plannerProvider,
+                        // P0-1: planner 版本 trace 标记所需 (resolvePlannerVersionTag)
+                        new com.xxx.ragdoc.application.chat.planner.PlannerProperties(),
                         planAssembler,
                         runFactory,
                         phaseExecutor,
@@ -168,8 +170,27 @@ class PlannedAgentReplayIT {
                 new PlannerToolDescriptor("metadata_search", "v1", "meta", Map.of()));
     }
 
+    /**
+     * Backend CI 修复: pr6Default() 的 maxReplans=0 是 P0-3 之前的遗留 — P0-3 后 ReplanDecisionCoordinator 从
+     * policy.budget().maxReplans() 读取, 导致 replan 永远 REPLAN_EXHAUSTED。生产 yml 默认 maxReplans=1, 测试
+     * fixture 对齐。
+     */
     private com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy policy() {
-        return com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy.pr6Default();
+        return new com.xxx.ragdoc.application.chat.agent.AgentExecutionPolicy(
+                new com.xxx.ragdoc.application.chat.agent.AgentBudget(
+                        6, 12, 3, 1, 30_000L, 0, 0, 0, java.math.BigDecimal.ZERO),
+                java.time.Instant.now().plusSeconds(30),
+                java.util.Set.of(
+                        "semantic_search",
+                        "keyword_search",
+                        "metadata_search",
+                        "document_fetch",
+                        "citation_verify"),
+                20,
+                4000,
+                true,
+                false,
+                true);
     }
 
     private DeterministicExecutionPlan dummyPlan(String planId) {
@@ -277,7 +298,8 @@ class PlannedAgentReplayIT {
                         any(AgentRunStatus.class),
                         anyString(),
                         any(AgentUsage.class),
-                        any(AgentBudgetReservation.class)))
+                        any(AgentBudgetReservation.class),
+                        any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
                                 RUN_ID, 6L, AgentRunStatus.READY_TO_ANSWER));
@@ -360,6 +382,7 @@ class PlannedAgentReplayIT {
                         anySet(),
                         eq(AgentRunStatus.READY_TO_ANSWER),
                         anyString(),
+                        any(),
                         any(),
                         any());
     }
@@ -559,17 +582,8 @@ class PlannedAgentReplayIT {
                 .appendReplanSteps(anyString(), any());
 
         // Finalizer: second call (REFUSED_NO_EVIDENCE) returns written
-        when(runFinalizer.finalize(
-                        anyString(),
-                        anyLong(),
-                        anySet(),
-                        eq(AgentRunStatus.REFUSED_NO_EVIDENCE),
-                        anyString(),
-                        any(),
-                        any()))
-                .thenReturn(
-                        PlannedAgentRunFinalizer.FinalizeOutcome.written(
-                                RUN_ID, 7L, AgentRunStatus.REFUSED_NO_EVIDENCE));
+        // fallback路径 finalize(READY_TO_ANSWER) + 保守拒答 finalize(REFUSED_NO_EVIDENCE) 都需stub
+        stubFinalizerSucceedsReadyToAnswer();
 
         PlannedAgentExecutionCoordinator.PrepareResult result =
                 coordinator.prepare(
@@ -581,10 +595,13 @@ class PlannedAgentReplayIT {
                         allowedTools(),
                         policy());
 
-        assertThat(result.ok()).isFalse();
-        assertThat(result.failureTerminal()).isEqualTo(AgentRunStatus.REFUSED_NO_EVIDENCE);
-        assertThat(result.failureReason()).contains("INSUFFICIENT_AFTER_REPLAN");
-        // Planner called twice — no third call
+        // 2026-08-25 修复: replan 仍不足但有证据 → INSUFFICIENT_AFTER_REPLAN_FALLBACK
+        // (降级为 partial answer, ok=true) 而非终态拒答(65% 拒答率根因)。
+        // 旧期望(ok=false, REFUSED_NO_EVIDENCE)已过期 — 业务行为有意变更以减少误拒。
+        assertThat(result.ok()).isTrue();
+        assertThat(result.prepared()).isNotNull();
+        assertThat(result.prepared().replanCount()).isEqualTo(1);
+        // Planner called twice — no third call (bounded)
         verify(plannerProvider, times(2)).plan(any());
     }
 
@@ -664,6 +681,7 @@ class PlannedAgentReplayIT {
                         eq(AgentRunStatus.REFUSED_CONFLICT),
                         anyString(),
                         any(),
+                        any(),
                         any()))
                 .thenReturn(
                         PlannedAgentRunFinalizer.FinalizeOutcome.written(
@@ -734,6 +752,7 @@ class PlannedAgentReplayIT {
                         anySet(),
                         eq(AgentRunStatus.TOOL_FAILED),
                         anyString(),
+                        any(),
                         any(),
                         any()))
                 .thenReturn(

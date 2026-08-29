@@ -137,10 +137,12 @@ public class ChatService {
 
     /** 在线主链统一 Token Budget；同步和 SSE 必须调用同一个 builder。 */
     @org.springframework.beans.factory.annotation.Autowired
-    private com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder tokenBudgetContextBuilder;
+    private com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder
+            tokenBudgetContextBuilder;
 
     @org.springframework.beans.factory.annotation.Autowired
-    private com.xxx.ragdoc.application.chat.pipeline.OnlineExecutionProperties onlineExecutionProperties;
+    private com.xxx.ragdoc.application.chat.pipeline.OnlineExecutionProperties
+            onlineExecutionProperties;
 
     /** 多轮对话是否启用 (3 件 Bean 全注入才表 enabled, 防 Redis 没起但 flag ON 的不一致)。 */
     private boolean isMultiTurnEnabled() {
@@ -623,10 +625,10 @@ public class ChatService {
     /**
      * P0 修复(SSE 多轮贯通): 多轮流式 chat 入口。
      *
-     * <p>此前 SSE 是产品唯一入口但 conversationId 在 ClassicRagPipeline 被丢弃 — load ctx / rewrite /
-     * history block / OK turn 写回整套多轮体系在流式路径上是死代码。本重载与同步 {@link #chat(ChatCommand,
-     * TraceId, String)} 对齐: conversationId 非空且多轮启用时 load ctx → topic shift → rewrite → 用改写后
-     * query 检索 → history block 进 context(不占 [n] 编号) → 流正常结束且非拒答时写回 history。
+     * <p>此前 SSE 是产品唯一入口但 conversationId 在 ClassicRagPipeline 被丢弃 — load ctx / rewrite / history
+     * block / OK turn 写回整套多轮体系在流式路径上是死代码。本重载与同步 {@link #chat(ChatCommand, TraceId, String)} 对齐:
+     * conversationId 非空且多轮启用时 load ctx → topic shift → rewrite → 用改写后 query 检索 → history block 进
+     * context(不占 [n] 编号) → 流正常结束且非拒答时写回 history。
      */
     public reactor.core.publisher.Flux<ChatStreamEvent> chatStream(
             ChatCommand cmd, TraceId traceId, String conversationId) {
@@ -682,8 +684,7 @@ public class ChatService {
         java.util.Map<String, Object> sseTraceMeta = new java.util.HashMap<>();
         sseTraceMeta.put("query", cmd.query());
         sseTraceMeta.put("path", "sse");
-        sseTraceMeta.put(
-                "conversation_id", conversationId == null ? "(none)" : conversationId);
+        sseTraceMeta.put("conversation_id", conversationId == null ? "(none)" : conversationId);
         sseTraceMeta.put(
                 "user_id", com.xxx.ragdoc.application.auth.AuthContext.currentPrincipal().userId());
         String lfTrace = traceObserver.startTrace(traceId.value(), null, sseTraceMeta);
@@ -831,7 +832,8 @@ public class ChatService {
                                             // history。与 chat() 的 OK 判定对齐。
                                             String finalAnswer = acc.toString();
                                             boolean streamRefusal =
-                                                    finalAnswer.isBlank() || isLlmRefusal(finalAnswer);
+                                                    finalAnswer.isBlank()
+                                                            || isLlmRefusal(finalAnswer);
                                             StateHint doneState =
                                                     streamRefusal
                                                             ? StateHint.LLM_DEGRADED
@@ -856,9 +858,9 @@ public class ChatService {
                                                     null,
                                                     llmTotalMs,
                                                     null);
-                                            // Phase 3.A: SSE outcome 设 ok/degraded 供 doFinally record
-                                            sseOutcome.set(
-                                                    streamRefusal ? "degraded" : "ok");
+                                            // Phase 3.A: SSE outcome 设 ok/degraded 供 doFinally
+                                            // record
+                                            sseOutcome.set(streamRefusal ? "degraded" : "ok");
                                             persistTrace(
                                                     cmd,
                                                     traceId,
@@ -1029,11 +1031,10 @@ public class ChatService {
      * <p>chat() 与 chatStream() 必须共用本方法, 保证两条主路径的 [n] 编号语义一致:
      *
      * <ul>
-     *   <li>history block (带 {@code <<CONVERSATION_HISTORY>>} marker) 作为 context 第 1 entry,
-     *       LLM client 渲染为不占 [n] 编号的独立段
+     *   <li>history block (带 {@code <<CONVERSATION_HISTORY>>} marker) 作为 context 第 1 entry, LLM
+     *       client 渲染为不占 [n] 编号的独立段
      *   <li>LITM 重排只作用于 evidence (history 不参与重排), 且 citations 同步重排保持配对
-     *   <li>预算截断后 kept 之外的 evidence 从返回的 citations 中移除 — LLM 只能给可见 evidence 标 [n],
-     *       前端卡片与 [n] 严格一一对应
+     *   <li>预算截断后 kept 之外的 evidence 从返回的 citations 中移除 — LLM 只能给可见 evidence 标 [n], 前端卡片与 [n] 严格一一对应
      * </ul>
      */
     private AssembledContext assembleContextWithHistory(
@@ -1085,8 +1086,8 @@ public class ChatService {
     /**
      * Phase 2.A Upgrade A2: Lost-in-the-Middle 重排的 citations 配对版本。
      *
-     * <p>与 {@link #applyLostInTheMiddleReorder(List)} 同一排列算法, 但作用于 citation 列表 —
-     * llmContext 与 citation 同源同序, 排 citation 即排 context。
+     * <p>与 {@link #applyLostInTheMiddleReorder(List)} 同一排列算法, 但作用于 citation 列表 — llmContext 与
+     * citation 同源同序, 排 citation 即排 context。
      */
     static List<ChatResult.Citation> applyLitmReorderCitations(
             List<ChatResult.Citation> sortedDesc) {
@@ -1110,9 +1111,10 @@ public class ChatService {
     }
 
     private List<String> applyContextBudget(List<String> context, String traceId, String lfTrace) {
-        int budget = onlineExecutionProperties == null
-                ? 3000
-                : onlineExecutionProperties.getContextTokenBudget();
+        int budget =
+                onlineExecutionProperties == null
+                        ? 3000
+                        : onlineExecutionProperties.getContextTokenBudget();
         com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder builder =
                 tokenBudgetContextBuilder == null
                         ? new com.xxx.ragdoc.application.chat.pipeline.TokenBudgetContextBuilder()
@@ -1130,12 +1132,17 @@ public class ChatService {
                 "context.token_budget",
                 null,
                 Map.of(
-                        "estimated_tokens", built.estimatedTokens(),
-                        "token_budget", built.tokenBudget(),
-                        "truncated", built.truncated(),
+                        "estimated_tokens",
+                        built.estimatedTokens(),
+                        "token_budget",
+                        built.tokenBudget(),
+                        "truncated",
+                        built.truncated(),
                         "reason_code",
                         built.truncated()
-                                ? com.xxx.ragdoc.application.chat.router.OnlineReasonCode.CONTEXT_TOKEN_BUDGET_APPLIED.name()
+                                ? com.xxx.ragdoc.application.chat.router.OnlineReasonCode
+                                        .CONTEXT_TOKEN_BUDGET_APPLIED
+                                        .name()
                                 : "CONTEXT_WITHIN_BUDGET"),
                 0,
                 null);
@@ -1161,7 +1168,8 @@ public class ChatService {
             case LLM_DEGRADED ->
                     com.xxx.ragdoc.application.chat.router.OnlineReasonCode.LLM_UNAVAILABLE.name();
             case VERIFY_FAILED ->
-                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.VERIFICATION_FAILED.name();
+                    com.xxx.ragdoc.application.chat.router.OnlineReasonCode.VERIFICATION_FAILED
+                            .name();
         };
     }
 

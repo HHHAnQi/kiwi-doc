@@ -1,0 +1,239 @@
+{
+  "dataset_size": 3,
+  "metrics": {
+    "retrieval": {
+      "mrr@5": 1.0,
+      "ndcg@5": 1.0,
+      "precision@5": 0.20000000000000004,
+      "hit_rate@5": 1.0,
+      "recall@5": 1.0
+    },
+    "generation": {
+      "faithfulness": 0.6666666666666666,
+      "citation_hit_rate": 1.0,
+      "citation_recall": 1.0,
+      "answer_correctness": 0.8333333333333334,
+      "citation_accuracy": 0.3444444444444444
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 2
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 3
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 0.5,
+        "citation_accuracy": 0.5,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 1
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 0.5,
+        "citation_accuracy": 0.3333333333333333,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 2
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 1.0,
+        "citation_accuracy": 0.2,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 3
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+        "gold_answer": "延迟连接配置对 Dubbo 协议生效，因为 Dubbo 协议是长连接。",
+        "answer": "延迟连接用于减少长连接数，当有调用发起时，再创建长连接 [1]。Dubbo 从 2.2.0 版本开始每个服务默认都会在本地暴露 [2]。片段中未提及延迟连接配置对哪种 Dubbo 协议生效。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1566,
+          1591
+        ],
+        "gold_chunk_ids": [
+          1566
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1566,
+            "doc_id": 168,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/lazy-connect/\ndescription: 在 Dubbo 中配置延迟连接\nlinkTitle: 延迟连接\ntitle: 延迟连接\ntype: docs\nweight: 30\n---\n\n \n\n延迟连接用于减少长连接数。当有调用发起时，再创建长连接。",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/lazy-connect/\ndescription: 在 Dubbo 中配置延迟连接\nlinkTitle: 延迟连接\ntitle: 延迟连接\ntype: docs\nweight: 30\n---\n\n \n\n延迟连接用于减少长连接数。当有调用发起时，再创建长连接。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1591,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 2,
+        "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+        "gold_answer": "Spring Cloud Alibaba 提供了四种多注册中心间的选址策略，包括指定优先级。其中指定优先级通过设置 preferred=\"true\" 使该注册中心地址被优先选择。",
+        "answer": "Spring Cloud Alibaba在多注册中心订阅场景下提供了指定优先级的选址策略，通过设置`preferred=\"true\"`使特定注册中心地址被优先选择 [1]。多注册中心配置可以通过竖号分隔同时连接不同注册中心，同一注册中心的多个集群地址用逗号分隔 [2]。也可以为不同注册中心指定不同ID，并通过`registry`属性指定向多个注册中心注册服务 [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          982,
+          2072,
+          2068
+        ],
+        "gold_chunk_ids": [
+          982
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 982,
+            "doc_id": 126,
+            "page": 0,
+            "snippet": "多注册中心订阅的场景，注册中心集群间的负载均衡。对于多注册中心间的选址策略有如下四种\n\n1. 指定优先级：`preferred=\"true\"`注册中心的地址将被优先选择",
+            "llm_context": "多注册中心订阅的场景，注册中心集群间的负载均衡。对于多注册中心间的选址策略有如下四种\n\n1. 指定优先级：`preferred=\"true\"`注册中心的地址将被优先选择",
+            "section_path": [
+              "集群容错模式",
+              "ZoneAware Cluster"
+            ]
+          },
+          {
+            "chunk_id": 2072,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置，竖号分隔表示同时连接多个不同注册中心，同一注册中心的多个集群地址用逗号分隔 -->\n    <dubbo:registry address=\"10.20.141.150:9090|10.20.154.177:9010\" />\n    <!-- 引用服务 -->\n    <dubbo:reference id=\"helloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          },
+          {
+            "chunk_id": 2068,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置 -->\n    <dubbo:registry id=\"hangzhouRegistry\" address=\"10.20.141.150:9090\" />\n    <dubbo:registry id=\"qingdaoRegistry\" address=\"10.20.141.151:9010\" default=\"false\" />\n    <!-- 向多个注册中心注册 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" registry=\"hangzhouRegistry,qingdaoRegistry\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心注册"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 3,
+        "question": "Dubbo 点对点直连以什么粒度配置，对其他服务接口有什么影响？",
+        "gold_answer": "点对点直连以服务接口为单位配置，并忽略注册中心的提供者列表；A 接口配置点对点不会影响 B 接口继续从注册中心获取提供者列表。",
+        "answer": "点对点直连方式将以服务接口为单位进行配置 [1][2]。配置点对点直连不会影响其他服务接口从注册中心获取列表 [1][2]。A 接口配置点对点，不影响 B 接口从注册中心获取列表 [1][2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          959,
+          958,
+          88,
+          498,
+          2138
+        ],
+        "gold_chunk_ids": [
+          959
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "llm_context": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 958,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/explicit-target/\ndescription: Dubbo 中点对点的直连方式\nlinkTitle: 直连提供者\ntitle: 直连提供者\ntype: docs\nweight: 5\n---\n\n \n\n在开发及测试环境下，经常需要绕过注册中心，只测试指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单…",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/explicit-target/\ndescription: Dubbo 中点对点的直连方式\nlinkTitle: 直连提供者\ntitle: 直连提供者\ntype: docs\nweight: 5\n---\n\n \n\n在开发及测试环境下，经常需要绕过注册中心，只测试指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "page": 0,
+            "snippet": "Dubbo 提供了从服务定义、服务发现、服务通信到流量管控等几乎所有的服务治理能力，并且尝试从使用上对用户屏蔽底层细节，以提供更好的易用性。\n\n定义服务在 Dubbo 中非常简单与直观，可以选择使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），也可以使用 Protobuf IDL 语言中立的方式。无论选择哪种方式，站在服务消费方的视角，都可以通过 Dubbo 提供的透明代…",
+            "llm_context": "Dubbo 提供了从服务定义、服务发现、服务通信到流量管控等几乎所有的服务治理能力，并且尝试从使用上对用户屏蔽底层细节，以提供更好的易用性。\n\n定义服务在 Dubbo 中非常简单与直观，可以选择使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），也可以使用 Protobuf IDL 语言中立的方式。无论选择哪种方式，站在服务消费方的视角，都可以通过 Dubbo 提供的透明代理直接编码。\n>需要注意的是，在 Dubbo 中，我们提到服务时，通常是指 RPC 粒度的、提供某个具体业务增删改功能的接口或方法，与一些微服务概念书籍中泛指的服务并不是一个概念。\n\n点对点的服务通信是 Dubbo 提供的另一项基本能力，Dubbo 以 RPC 的方式将请求数据（Request）发送给后端服务，并接收服务端返回的计算结果（Response）。RPC 通信对用户来说是完全透明的，使用者无需关心请求是如何发出去的、发到了哪里，每次调用只需要拿到正确的调用结果就行。同步的 Request-Response 是默认的通信模型，它最简单但却不能覆盖所有的场景，因此，Dubbo 提供更丰富的通信模型：\n* 消费端异步请求(Client Side Asynchronous Request-Response)\n* 提供端异步执行（Server Side Asynchronous Request-Response）\n* 消费端请求流（Request Streaming）\n* 提供端响应流（Response Streaming）\n* 双向流式通信（Bidirectional Streaming）\n\n",
+            "section_path": [
+              "一站式微服务解决方案"
+            ]
+          },
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "page": 0,
+            "snippet": " Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力。2.7.0 版本开始，支持从**服务**和**应用**两个粒度来调整动态配置。",
+            "llm_context": " Dubbo 设计的在无需重启应用的情况下，动态调整 RPC 调用行为的一种能力。2.7.0 版本开始，支持从**服务**和**应用**两个粒度来调整动态配置。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "page": 0,
+            "snippet": "- key: 消费者应用名\n- step: 状态名（FORCE_INTERFACE、APPLICATION_FIRST、FORCE_APPLICATION）\n- threshold: 决策阈值（浮点数，具体含义参考后文）\n- proportion: 灰度比例（0～100，决定调用次数比例）\n- delay: 延迟决策时间（延迟决策的时间，实际等待时间为 1～2 倍 delay 时间，取决于注册中心…",
+            "llm_context": "- key: 消费者应用名\n- step: 状态名（FORCE_INTERFACE、APPLICATION_FIRST、FORCE_APPLICATION）\n- threshold: 决策阈值（浮点数，具体含义参考后文）\n- proportion: 灰度比例（0～100，决定调用次数比例）\n- delay: 延迟决策时间（延迟决策的时间，实际等待时间为 1～2 倍 delay 时间，取决于注册中心第一次通知的时间，对于目前 Dubbo 的注册中心实现次配置项保留 0 即可）\n- force: 强制切换（对于 FORCE_INTERFACE、FORCE_APPLICATION 是否不考虑决策直接切换，可能导致无地址调用失败问题）\n- interfaces: 接口粒度配置\n\n参考配置示例如下：",
+            "section_path": [
+              "规则体说明"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 0,
+  "k": 5,
+  "timestamp": "2026-08-25T02:49:02.447044+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

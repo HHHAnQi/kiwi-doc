@@ -49,10 +49,25 @@ public sealed interface ChatStreamEvent
         }
     }
 
-    /** 流正常终止。含 traceId 供前端做反馈入口 + 最终 stateHint(EMPTY_KB/NO_RECALL/LLM_DEGRADED/OK)。 */
-    record DoneEvent(String traceId, String stateHint, String reasonCode) implements ChatStreamEvent {
+    /**
+     * 流正常终止。含 traceId 供前端做反馈入口 + 最终 stateHint(EMPTY_KB/NO_RECALL/LLM_DEGRADED/OK)。 P2-D5(C):
+     * 与同步响应头一致的 correlation 语义 — runId/terminalStatus/decisionSummary 可空(非 Agent 路径或 run 未创建时),
+     * 只在真实存在时携带(不造 fake)。
+     */
+    record DoneEvent(
+            String traceId,
+            String stateHint,
+            String reasonCode,
+            String runId,
+            String terminalStatus,
+            String decisionSummary)
+            implements ChatStreamEvent {
+        public DoneEvent(String traceId, String stateHint, String reasonCode) {
+            this(traceId, stateHint, reasonCode, null, null, null);
+        }
+
         public DoneEvent(String traceId, String stateHint) {
-            this(traceId, stateHint, null);
+            this(traceId, stateHint, null, null, null, null);
         }
 
         @Override
@@ -61,8 +76,12 @@ public sealed interface ChatStreamEvent
         }
     }
 
-    /** 流异常终止(LLM 调用中途抛错)。前端收到后显示降级提示。 */
-    record ErrorEvent(String traceId, String message) implements ChatStreamEvent {
+    /** 流异常终止(LLM 调用中途抛错)。前端收到后显示降级提示。P2-D5(C): 可选携带真实 runId。 */
+    record ErrorEvent(String traceId, String message, String runId) implements ChatStreamEvent {
+        public ErrorEvent(String traceId, String message) {
+            this(traceId, message, null);
+        }
+
         @Override
         public String type() {
             return "error";

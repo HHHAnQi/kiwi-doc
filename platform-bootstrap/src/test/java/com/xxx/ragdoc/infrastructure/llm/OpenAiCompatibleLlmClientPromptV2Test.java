@@ -51,6 +51,8 @@ class OpenAiCompatibleLlmClientPromptV2Test {
 
         assertThat(prompt).contains("严禁编造片段中未出现");
         assertThat(prompt).contains("fallback 判定");
+        assertThat(prompt).contains("所问要点必须全部覆盖");
+        assertThat(prompt).contains("不补充相邻主题");
     }
 
     @Test

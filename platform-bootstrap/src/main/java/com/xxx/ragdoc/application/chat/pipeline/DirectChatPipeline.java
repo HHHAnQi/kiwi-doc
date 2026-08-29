@@ -25,8 +25,11 @@ public class DirectChatPipeline implements ChatPipeline {
     @Override
     public ChatResult execute(ChatCommand command, ChatExecutionContext context) {
         try {
-            String answer = chatClient.chat(command.query(), List.of("你是企业知识助手。仅进行简短礼貌闲聊，不声称访问了知识库或执行了工具。"));
-            if (answer == null || answer.isBlank()) throw new IllegalStateException("empty direct chat answer");
+            String answer =
+                    chatClient.chat(
+                            command.query(), List.of("你是企业知识助手。仅进行简短礼貌闲聊，不声称访问了知识库或执行了工具。"));
+            if (answer == null || answer.isBlank())
+                throw new IllegalStateException("empty direct chat answer");
             return ChatResult.of(StateHint.OK, answer, context.traceId());
         } catch (Exception ex) {
             return ChatResult.of(StateHint.LLM_DEGRADED, "您好，我是企业知识助手。", context.traceId());
@@ -35,9 +38,18 @@ public class DirectChatPipeline implements ChatPipeline {
 
     @Override
     public Flux<ChatStreamEvent> stream(ChatCommand command, ChatExecutionContext context) {
-        return chatClient.chatStream(command.query(), List.of("你是企业知识助手。仅进行简短礼貌闲聊。"))
+        return chatClient
+                .chatStream(command.query(), List.of("你是企业知识助手。仅进行简短礼貌闲聊。"))
                 .map(delta -> (ChatStreamEvent) new ChatStreamEvent.DeltaEvent(delta))
-                .concatWith(Flux.just(new ChatStreamEvent.DoneEvent(context.traceId().value(), StateHint.OK.name())))
-                .onErrorResume(ex -> Flux.just(new ChatStreamEvent.DoneEvent(context.traceId().value(), StateHint.LLM_DEGRADED.name())));
+                .concatWith(
+                        Flux.just(
+                                new ChatStreamEvent.DoneEvent(
+                                        context.traceId().value(), StateHint.OK.name())))
+                .onErrorResume(
+                        ex ->
+                                Flux.just(
+                                        new ChatStreamEvent.DoneEvent(
+                                                context.traceId().value(),
+                                                StateHint.LLM_DEGRADED.name())));
     }
 }

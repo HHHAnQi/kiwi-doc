@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 public class TokenBudgetContextBuilder {
 
     /**
-     * P0 修复: build 结果额外带 keptCount(实际保留的 entry 数), 调用方须把 citations 截到该数 —
-     * 否则 LLM 只看到前 k 条 evidence, 但响应仍带全量 citations, 前端 [n] 编号与引用卡片错位。
+     * P0 修复: build 结果额外带 keptCount(实际保留的 entry 数), 调用方须把 citations 截到该数 — 否则 LLM 只看到前 k 条 evidence,
+     * 但响应仍带全量 citations, 前端 [n] 编号与引用卡片错位。
      */
     public BuildResult build(List<String> candidates, int tokenBudget) {
         return build(candidates, tokenBudget, Integer.MAX_VALUE);
@@ -20,9 +20,9 @@ public class TokenBudgetContextBuilder {
     /**
      * 双闸门版本: token 预算 + 总字符上限。
      *
-     * <p>maxTotalChars 与 OpenAiCompatibleLlmClient.max-context-chars 对齐(留出编号开销余量后传入):
-     * 若只在 token 维度截断, chars 可能仍超 LLM client 的内层 cap, client 会再次 tail-drop —
-     * 那次截断对 ChatService 不可见, citations 对齐又被打破。在此一次算清, client 侧 cap 成为 no-op。
+     * <p>maxTotalChars 与 OpenAiCompatibleLlmClient.max-context-chars 对齐(留出编号开销余量后传入): 若只在 token
+     * 维度截断, chars 可能仍超 LLM client 的内层 cap, client 会再次 tail-drop — 那次截断对 ChatService 不可见, citations
+     * 对齐又被打破。在此一次算清, client 侧 cap 成为 no-op。
      */
     public BuildResult build(List<String> candidates, int tokenBudget, int maxTotalChars) {
         if (tokenBudget <= 0) throw new IllegalArgumentException("tokenBudget 必须大于 0");
@@ -56,13 +56,14 @@ public class TokenBudgetContextBuilder {
             truncated = true;
             break;
         }
-        if (kept.size() < input.stream().filter(s -> s != null && !s.isBlank()).count()) truncated = true;
+        if (kept.size() < input.stream().filter(s -> s != null && !s.isBlank()).count())
+            truncated = true;
         return new BuildResult(List.copyOf(kept), used, tokenBudget, truncated);
     }
 
     /**
-     * 双约束下的最长前缀: 长度 ≤ charBudget 且 token 估算 ≤ tokenBudget。
-     * (前缀若只按 token 估, ASCII 文本 token 密度低时前缀会长于字符上限, char 闸门被绕过。)
+     * 双约束下的最长前缀: 长度 ≤ charBudget 且 token 估算 ≤ tokenBudget。 (前缀若只按 token 估, ASCII 文本 token
+     * 密度低时前缀会长于字符上限, char 闸门被绕过。)
      */
     private static String largestPrefixWithin(String text, int tokenBudget, int charBudget) {
         int maxLen = Math.min(text.length(), Math.max(0, charBudget));
@@ -76,5 +77,6 @@ public class TokenBudgetContextBuilder {
         return text.substring(0, low).stripTrailing();
     }
 
-    public record BuildResult(List<String> context, int estimatedTokens, int tokenBudget, boolean truncated) {}
+    public record BuildResult(
+            List<String> context, int estimatedTokens, int tokenBudget, boolean truncated) {}
 }

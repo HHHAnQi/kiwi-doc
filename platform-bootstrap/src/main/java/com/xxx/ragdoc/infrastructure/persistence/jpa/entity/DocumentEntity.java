@@ -204,10 +204,21 @@ public class DocumentEntity {
         this.pendingMilvusDelete = pendingMilvusDelete;
     }
 
-    public Integer getActiveGeneration() { return activeGeneration; }
-    public void setActiveGeneration(Integer activeGeneration) { this.activeGeneration = activeGeneration; }
-    public Integer getPendingGeneration() { return pendingGeneration; }
-    public void setPendingGeneration(Integer pendingGeneration) { this.pendingGeneration = pendingGeneration; }
+    public Integer getActiveGeneration() {
+        return activeGeneration;
+    }
+
+    public void setActiveGeneration(Integer activeGeneration) {
+        this.activeGeneration = activeGeneration;
+    }
+
+    public Integer getPendingGeneration() {
+        return pendingGeneration;
+    }
+
+    public void setPendingGeneration(Integer pendingGeneration) {
+        this.pendingGeneration = pendingGeneration;
+    }
 
     public Long getSizeBytes() {
         return sizeBytes;

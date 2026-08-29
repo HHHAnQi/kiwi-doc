@@ -5,6 +5,7 @@ export type DocumentStatus =
   | 'UPLOADED'
   | 'PARSING'
   | 'READY'
+  | 'INDEXED'
   | 'FAILED'
   | 'DELETED';
 

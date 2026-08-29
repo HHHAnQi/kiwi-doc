@@ -528,8 +528,8 @@ class RetrieveServiceTest {
             mockIndexedDocuments(dr);
             when(emb.embed(anyString())).thenReturn(new EmbeddingResult(new float[1024], null));
 
-            com.xxx.ragdoc.application.document.port.Retriever retriever = mock(
-                    com.xxx.ragdoc.application.document.port.Retriever.class);
+            com.xxx.ragdoc.application.document.port.Retriever retriever =
+                    mock(com.xxx.ragdoc.application.document.port.Retriever.class);
             when(retriever.search(any()))
                     .thenAnswer(
                             invocation -> {
@@ -564,17 +564,13 @@ class RetrieveServiceTest {
                             props);
             QueryProcessorPort processor = mock(QueryProcessorPort.class);
             when(processor.enhance(eq("原始问题"), any()))
-                    .thenReturn(
-                            EnhanceResult.success(
-                                    "原始问题", "改写问题", List.of("扩展问题"), 3));
+                    .thenReturn(EnhanceResult.success("原始问题", "改写问题", List.of("扩展问题"), 3));
             svc.setQueryEnhancePort(processor);
             mockFindByIdIn(cr, chunk(1L, "a"), chunk(2L, "b"));
 
-            RetrieveService.RetrieveResult result =
-                    svc.retrieve(new ChatCommand("原始问题", null, 5));
+            RetrieveService.RetrieveResult result = svc.retrieve(new ChatCommand("原始问题", null, 5));
 
-            org.mockito.ArgumentCaptor<
-                            com.xxx.ragdoc.application.document.port.Retriever.Query>
+            org.mockito.ArgumentCaptor<com.xxx.ragdoc.application.document.port.Retriever.Query>
                     captor =
                             org.mockito.ArgumentCaptor.forClass(
                                     com.xxx.ragdoc.application.document.port.Retriever.Query.class);
@@ -582,7 +578,8 @@ class RetrieveServiceTest {
             assertThat(captor.getAllValues())
                     .extracting(com.xxx.ragdoc.application.document.port.Retriever.Query::text)
                     .containsExactly("改写问题", "原始问题", "扩展问题");
-            assertThat(result.items()).extracting(RetrieveService.Citation::chunkId)
+            assertThat(result.items())
+                    .extracting(RetrieveService.Citation::chunkId)
                     .containsExactly(1L, 2L);
         }
 
@@ -617,8 +614,7 @@ class RetrieveServiceTest {
                             props);
             QueryProcessorPort processor = mock(QueryProcessorPort.class);
             when(processor.enhance(eq("原始问题"), any()))
-                    .thenReturn(
-                            EnhanceResult.success("原始问题", "原始问题", List.of("坏扩展"), 1));
+                    .thenReturn(EnhanceResult.success("原始问题", "原始问题", List.of("坏扩展"), 1));
             svc.setQueryEnhancePort(processor);
             mockFindByIdIn(cr, chunk(1L, "a"));
 

@@ -33,8 +33,10 @@ public class Document {
     // 详见 ADR-0001 与 docs/data/data-model.md。缺省值保证老调用方零改动。
     private final String source; // dubbo/nacos/seata/rocketmq/sentinel/unknown
     private final String version; // 自由版本号, null = 未指定
+
     /** 同一逻辑文件跨版本稳定不变；默认由上传层从文件名推导，也可由连接器提供外部稳定 ID。 */
     private final String logicalDocumentKey;
+
     private final String language; // zh/en
     private final String docType; // doc/blog/release-notes/spec/demo
 
@@ -63,6 +65,7 @@ public class Document {
      * <p>不变量: 新建 doc 永远 pending=false; reactivate 时 clear (避免历史脏标记触发 sweeper 误删)。
      */
     private boolean pendingMilvusDelete;
+
     private int activeGeneration = 1;
     private Integer pendingGeneration;
 
@@ -608,9 +611,13 @@ public class Document {
         return pendingMilvusDelete;
     }
 
-    public int activeGeneration() { return activeGeneration; }
+    public int activeGeneration() {
+        return activeGeneration;
+    }
 
-    public Integer pendingGeneration() { return pendingGeneration; }
+    public Integer pendingGeneration() {
+        return pendingGeneration;
+    }
 
     public void amendGenerationState(int active, Integer pending) {
         if (active < 1) throw new IllegalArgumentException("activeGeneration 必须 >= 1");

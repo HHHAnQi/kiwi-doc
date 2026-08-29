@@ -33,6 +33,20 @@ def citation_accuracy(
     return hits / len(cited)
 
 
+def citation_recall(cited_ids: Iterable[int], gold_ids: Iterable[int]) -> float:
+    """金标证据覆盖率 = |unique(cited) ∩ gold| / max(|gold|, 1)。"""
+    cited = set(cited_ids)
+    gold = set(gold_ids)
+    if not gold:
+        return 0.0
+    return len(cited & gold) / len(gold)
+
+
+def citation_hit_rate(cited_ids: Iterable[int], gold_ids: Iterable[int]) -> float:
+    """答案是否至少引用一个金标 chunk。"""
+    return 1.0 if set(cited_ids) & set(gold_ids) else 0.0
+
+
 # ─── LLM-judge 文本归一 (供 correctness / faithfulness 共用) ────────────
 _SCORE_RE = re.compile(r"([0-1](?:\.\d+)?)")
 
@@ -73,6 +87,7 @@ def answer_correctness(
     pred_answer: str,
     gold_answer: str,
     judge_fn: Callable[[str], str] | None = None,
+    question: str | None = None,
 ) -> float:
     """答案正确性, 0~1。
 
@@ -81,12 +96,15 @@ def answer_correctness(
     """
     if judge_fn is None:
         return _overlap_f1(pred_answer, gold_answer)
+    question_block = f"【问题】\n{question}\n\n" if question else ""
     prompt = (
-        "你是严格的判官。判断【预测答案】是否在语义上与【标准答案】一致, "
-        "覆盖标准答案里的关键事实。\n\n"
+        "你是严格的答案正确性判官。只把【标准答案】中直接回应【问题】的事实视为必答要点；"
+        "标准答案中的背景、旁支和未被问题询问的限制不应导致扣分。分数等于预测答案正确覆盖的"
+        "必答要点比例；额外但正确的相关信息不影响覆盖分。\n\n"
+        f"{question_block}"
         f"【标准答案】\n{gold_answer}\n\n"
         f"【预测答案】\n{pred_answer}\n\n"
-        "只输出一个 [0, 1] 的浮点数 (1=完全覆盖关键事实, 0.5=部分, 0=完全不相关), "
+        "只输出一个 [0, 1] 的浮点数 (1=完全覆盖必答要点, 0.5=部分, 0=完全不相关), "
         "不要其它解释。"
     )
     return judge_llm_score(judge_fn(prompt))
@@ -106,12 +124,36 @@ def faithfulness(
     if judge_fn is None:
         return _context_coverage(pred_answer, context)
     prompt = (
-        "判断【答案】中的断言是否全部由【上下文】支持。任何 context 没有的具体事实"
-        " (版本号/数值/类名/步骤) 即视为幻觉。\n\n"
+        "你是严格的事实核验员。请先在内部把【答案】拆成可核验断言，再判断每条断言是否能由"
+        "【上下文】直接支持或语义蕴含；不要求逐字一致，忽略措辞、格式和 [n] 引用标记。"
+        "上下文没有的具体事实（版本号/数值/类名/步骤）才视为幻觉。分数等于被支持断言占比；"
+        "所有断言均受支持必须输出 1。\n\n"
         f"【上下文】\n{context}\n\n"
         f"【答案】\n{pred_answer}\n\n"
         "只输出一个 [0, 1] 的浮点数 (1=完全由上下文支持, 0.5=部分, 0=大量幻觉), "
         "不要其它解释。"
+    )
+    return judge_llm_score(judge_fn(prompt))
+
+
+def evidence_completeness(
+    gold_answer: str,
+    context: str,
+    judge_fn: Callable[[str], str] | None = None,
+) -> float:
+    """证据完整性：上下文覆盖标准答案关键事实的比例。"""
+    if not gold_answer or not context:
+        return 0.0
+    if judge_fn is None:
+        return _context_coverage(gold_answer, context)
+    prompt = (
+        "你是严格的 RAG 证据完整性判官。请先在内部把【标准答案】拆成最小关键事实，"
+        "再判断每条关键事实是否能由【检索上下文】直接支持或语义蕴含；不要求逐字一致，"
+        "不得使用外部知识。分数等于已被上下文支持的关键事实占比；全部覆盖必须输出 1，"
+        "完全没有覆盖输出 0。\n\n"
+        f"【标准答案】\n{gold_answer}\n\n"
+        f"【检索上下文】\n{context}\n\n"
+        "只输出一个 [0, 1] 的浮点数，不要其它解释。"
     )
     return judge_llm_score(judge_fn(prompt))
 

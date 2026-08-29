@@ -14,6 +14,7 @@ ADR-0012 Phase 1: Classic vs PlannedAgent 对照评测(pilot20 多跳题集)。
 环境: .env(JUDGE_LLM_PROVIDER_1_*, TEST_AUTH_TOKEN), chat-app 8080 已起。
 """
 import json
+import math
 import os
 import re
 import statistics
@@ -71,6 +72,52 @@ def ast_literal(s):
     import ast
 
     return ast.literal_eval(s)
+
+
+def aggregate_mode_results(per_case: dict, runs: int) -> dict:
+    """按运行轮次聚合，避免把“题目间离散度”误报成“轮间标准差”。"""
+    total = len(per_case)
+    if total == 0:
+        raise ValueError("per_case must not be empty")
+
+    run_accuracies = []
+    for run_index in range(runs):
+        passed = sum(
+            1
+            for results in per_case.values()
+            if run_index < len(results) and results[run_index]["verdict"] == "PASS"
+        )
+        run_accuracies.append(passed / total)
+
+    case_accuracies, lats, cites, refuses = [], [], [], 0
+    pass_all = 0
+    for results in per_case.values():
+        oks = [result["verdict"] == "PASS" for result in results]
+        case_accuracies.append(sum(oks) / len(oks))
+        pass_all += int(len(oks) == runs and all(oks))
+        lats.extend(result["latency_ms"] for result in results)
+        cites.extend(result["citations"] for result in results)
+        refuses += sum(1 for result in results if result["state"] != "OK")
+
+    lats.sort()
+    p95_index = max(0, math.ceil(0.95 * len(lats)) - 1)
+    return {
+        "accuracy_mean": round(statistics.mean(run_accuracies), 4),
+        "accuracy_stdev": round(statistics.stdev(run_accuracies), 4) if runs > 1 else 0,
+        "run_accuracies": [round(value, 4) for value in run_accuracies],
+        "case_accuracy_stdev": round(statistics.stdev(case_accuracies), 4)
+        if len(case_accuracies) > 1
+        else 0,
+        f"pass_all_{runs}": round(pass_all / total, 4),
+        "latency_p50_ms": lats[len(lats) // 2],
+        "latency_p95_ms": lats[p95_index],
+        "avg_citations": round(statistics.mean(cites), 2),
+        "non_ok_rate": round(refuses / (total * runs), 4),
+        "per_case": {
+            case_id: [result["verdict"] for result in results]
+            for case_id, results in per_case.items()
+        },
+    }
 
 
 def chat(query, mode, timeout=150):
@@ -133,31 +180,7 @@ def main():
                     f"  [{mode} r{run} {i}/{len(cases)}] {verdict} "
                     f"{res['state']} {res['latency_ms']}ms cite={res['citations']}"
                 )
-        accs, lats, cites, refuses = [], [], [], 0
-        pass_all = 0
-        total = 0
-        for cid, rs in per_case.items():
-            oks = [r["verdict"] == "PASS" for r in rs]
-            accs.append(sum(oks) / len(rs))
-            if all(oks):
-                pass_all += 1
-            total += 1
-            lats += [r["latency_ms"] for r in rs]
-            cites += [r["citations"] for r in rs]
-            refuses += sum(1 for r in rs if r["state"] != "OK")
-        lats.sort()
-        report["modes"][mode] = {
-            "accuracy_mean": round(statistics.mean(accs), 4),
-            "accuracy_stdev": round(statistics.stdev(accs), 4) if len(accs) > 1 else 0,
-            f"pass_all_{RUNS}": round(pass_all / total, 4),
-            "latency_p50_ms": lats[len(lats) // 2],
-            "latency_p95_ms": lats[int(len(lats) * 0.95)],
-            "avg_citations": round(statistics.mean(cites), 2),
-            "non_ok_rate": round(refuses / (total * RUNS), 4),
-            "per_case": {
-                cid: [r["verdict"] for r in rs] for cid, rs in per_case.items()
-            },
-        }
+        report["modes"][mode] = aggregate_mode_results(per_case, RUNS)
         print(f"[{mode}] acc={report['modes'][mode]['accuracy_mean']} "
               f"pass^k={report['modes'][mode][f'pass_all_{RUNS}']}")
 

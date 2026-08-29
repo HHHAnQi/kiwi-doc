@@ -1,6 +1,83 @@
 {
-  "faithfulness": 0.6658,
-  "answer_relevancy": 0.7493,
-  "context_precision": 0.8438,
-  "context_recall": 0.5778
+  "schema_version": 2,
+  "baseline_type": "multi_run",
+  "created_at": "2026-08-25T05:06:45.426748+00:00",
+  "run_count": 3,
+  "source_experiment_ids": [
+    "f32ee5384eaa6735",
+    "c15145c06dcd9cdc",
+    "e88ce80c67603948"
+  ],
+  "questions_file": "eval/golden/golden_v4_generation_valid_frozen80.jsonl",
+  "questions_sha256": "f4fb6f94f89b7d2a3077e0b225b3929148e9613b387bb4d2fa8367be5dd5bf70",
+  "sample_count": 80,
+  "judge": {
+    "provider_id": 2,
+    "family": "qwen",
+    "model": "qwen-max",
+    "temperature": 0.1
+  },
+  "public_config": {
+    "RAG_RETRIEVE_MODE": null,
+    "RAG_RETRIEVE_CANDIDATE_POOL": null,
+    "RAG_RETRIEVE_RRF_K": null,
+    "RAG_RERANK_ENABLED": "true",
+    "RAG_RERANK_MODEL": null,
+    "RAG_QUERY_ENHANCE_ENABLED": null,
+    "RAG_QUERY_ENHANCE_MODE": null,
+    "RAG_CITATION_VERIFIER_ENABLED": null,
+    "RAG_CITATION_VERIFIER_ON_FAIL": null
+  },
+  "scores": {
+    "faithfulness": 0.9108379930254931,
+    "answer_relevancy": 0.832519702312074,
+    "context_precision": 0.8639641203149311,
+    "context_recall": 0.93125
+  },
+  "run_stdev": {
+    "faithfulness": 0.0077855102119566266,
+    "answer_relevancy": 0.015013519320737322,
+    "context_precision": 0.004548953460574272,
+    "context_recall": 0.008267972847076838
+  },
+  "run_confidence_intervals_95": {
+    "faithfulness": {
+      "low": 0.903968253968254,
+      "high": 0.9192947330447329,
+      "n_runs": 3,
+      "iterations": 5000
+    },
+    "answer_relevancy": {
+      "low": 0.8166210637135564,
+      "high": 0.8464548991935631,
+      "n_runs": 3,
+      "iterations": 5000
+    },
+    "context_precision": {
+      "low": 0.8592013888340612,
+      "high": 0.8682638888330224,
+      "n_runs": 3,
+      "iterations": 5000
+    },
+    "context_recall": {
+      "low": 0.921875,
+      "high": 0.9375,
+      "n_runs": 3,
+      "iterations": 5000
+    }
+  },
+  "retrieval_scores": {
+    "hit_rate@5": 0.9125,
+    "mrr@5": 0.7810416666666666,
+    "ndcg@5": 0.8143076182728564,
+    "precision@5": 0.18250000000000002,
+    "recall@5": 0.9125
+  },
+  "retrieval_run_stdev": {
+    "hit_rate@5": 0.0,
+    "mrr@5": 0.0,
+    "ndcg@5": 0.0,
+    "precision@5": 0.0,
+    "recall@5": 0.0
+  }
 }

@@ -52,11 +52,11 @@ class QueryContextualizerTest {
         metrics = mock(RagdocMetrics.class);
         CircuitBreakerRegistry registry = CircuitBreakerRegistry.ofDefaults();
         ctx =
-                    new QueryContextualizer(
-                            router,
-                            registry,
-                            metrics,
-                            new com.xxx.ragdoc.application.chat.ConversationProperties());
+                new QueryContextualizer(
+                        router,
+                        registry,
+                        metrics,
+                        new com.xxx.ragdoc.application.chat.ConversationProperties());
     }
 
     @Test
@@ -170,6 +170,20 @@ class QueryContextualizerTest {
 
         // 空格 + 大小写已 normalized, 检测得到
         assertThat(r.outcome()).isEqualTo("skip");
+    }
+
+    @Test
+    void 明确要求重新回答最开始问题_应确定性恢复首个有效问题() {
+        ContextualizeResult r =
+                ctx.contextualize(
+                        "请重新回答最开始的问题",
+                        List.of(
+                                turn("RocketMQ 怎么保证不丢消息?", "通过持久化和重试"),
+                                turn("补充同步刷盘", "同步刷盘降低丢失风险")));
+
+        assertThat(r.outcome()).isEqualTo("ok");
+        assertThat(r.retrieveQuery()).isEqualTo("RocketMQ 怎么保证不丢消息?");
+        verifyNoInteractions(routeClient);
     }
 
     // ────────────────── helpers ──────────────────

@@ -1,0 +1,305 @@
+{
+  "dataset": "eval/golden/golden_v3_frozen80.jsonl",
+  "scope": "high_confidence_auto_accepted",
+  "sample_count": 21,
+  "judge_model": "deepseek-chat",
+  "generated_at": "2026-08-25T02:00:45.675837+00:00",
+  "counts": {
+    "partial": 8,
+    "none": 6,
+    "full": 6,
+    "error": 1
+  },
+  "full_support_rate": 0.2857142857142857,
+  "results": [
+    {
+      "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1566
+      ],
+      "retrieved_chunk_ids": [
+        1566
+      ],
+      "support": "partial",
+      "supported_answer": "延迟连接配置对 Dubbo 协议生效，因为 Dubbo 协议是长连接。",
+      "reason": "证据中提到延迟连接用于减少长连接数，并且在调用发起时创建长连接，但没有明确提到connections参数表示每个提供者建立的长连接数。"
+    },
+    {
+      "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        982
+      ],
+      "retrieved_chunk_ids": [
+        982
+      ],
+      "support": "partial",
+      "supported_answer": "Spring Cloud Alibaba 提供了四种多注册中心间的选址策略，包括指定优先级，其中指定优先级通过设置 preferred=\"true\" 使该注册中心地址被优先选择。",
+      "reason": "证据仅支持了指定优先级这一种选址策略，并未提及同中心优先、权重轮询等其他策略。"
+    },
+    {
+      "question": "Spring Cloud Alibaba 中如何使用 JVM 启动参数实现点对点直连服务提供者？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        959
+      ],
+      "retrieved_chunk_ids": [
+        959,
+        960
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "当前语料证据中没有提到使用JVM启动参数-D来实现点对点直连服务提供者的方法。"
+    },
+    {
+      "question": "在容量评估时，单节点 Nacos 支持多少级服务实例与配置？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1799
+      ],
+      "retrieved_chunk_ids": [
+        1799
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "当前语料证据主要讨论了Nacos2在3节点集群下的性能测试结果，并未提供单节点Nacos支持的服务实例与配置的具体数量级信息。"
+    },
+    {
+      "question": "在 sayHello 方法中，如何避免使用 JDK 公用线程池？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        16
+      ],
+      "retrieved_chunk_ids": [
+        16
+      ],
+      "support": "partial",
+      "supported_answer": "在 sayHello 方法中，建议为 CompletableFuture.supplyAsync 提供自定义线程池。",
+      "reason": "证据中提到建议提供自定义线程池，但未明确指出是避免使用JDK公用线程池。"
+    },
+    {
+      "question": "Spring Cloud Alibaba 的哪个版本开始支持服务降级功能？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        2083
+      ],
+      "retrieved_chunk_ids": [
+        2083,
+        2082,
+        2084
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "提供的证据没有提到关于Spring Cloud Alibaba哪个版本开始支持服务降级功能的信息。"
+    },
+    {
+      "question": "在Spring Cloud Alibaba中，如何配置加权最少活跃调用优先算法？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1688
+      ],
+      "retrieved_chunk_ids": [
+        1688
+      ],
+      "support": "partial",
+      "supported_answer": "在Spring Cloud Alibaba中，配置加权最少活跃调用优先算法需要将客户端的负载均衡策略设置为基于活跃数越低越优先的原则进行选择，相同活跃数的服务提供者之间会进行加权随机选择。",
+      "reason": "证据中没有提到具体的配置属性'loadbalance'应设为'leastactive'，但支持了该算法的基本工作原理。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何实现 Dubbo 服务消费者的 Callback 接口？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1115
+      ],
+      "retrieved_chunk_ids": [
+        1115,
+        1118,
+        1108
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "提供的证据中没有提到如何通过参数回调方式实现Dubbo服务消费者的Callback接口，也没有说明在Spring配置文件中声明callback类型参数的具体方法。"
+    },
+    {
+      "question": "在本地新建开发分支时，分支名通常以什么作为命名依据？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        526
+      ],
+      "retrieved_chunk_ids": [
+        526
+      ],
+      "support": "full",
+      "supported_answer": "在本地新建开发分支时，分支名通常以该PR对应的issue号作为命名依据，例如使用 `develop-issue#${issue-number}` 的格式。",
+      "reason": "证据中明确提到了基于issue号创建分支以及具体的命名格式。"
+    },
+    {
+      "question": "Dubbo 3 中，与 Dubbo 2 相比，地址注册模型的变化是什么？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        2134
+      ],
+      "retrieved_chunk_ids": [
+        2134
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "证据中具体说明了Dubbo 3的地址注册模型从接口级变为了应用级，但标准答案仅提到进行了全面升级而未提及这一变化。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，泛接口实现方式主要用于什么场景？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1200
+      ],
+      "retrieved_chunk_ids": [
+        1200
+      ],
+      "support": "partial",
+      "supported_answer": "泛接口实现方式主要用于服务器端没有 API 接口及模型类元的情况，参数及返回值中的所有 POJO 均用 Map 表示，通常用于框架集成，比如：实现一个通用的远程服务 Mock 框架。",
+      "reason": "证据支持了泛接口在某些特定场景下的使用，但未直接提到Dubbo服务提供方或微服务场景。"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1426
+      ],
+      "retrieved_chunk_ids": [
+        1426,
+        1399,
+        1385
+      ],
+      "support": "partial",
+      "supported_answer": "在 Spring Cloud Alibaba 中配置扩展配置 extension-configs 需要在 bootstrap.yml 中配置 spring.cloud.nacos.config.prefix、spring.profiles.active 和 spring.cloud.nacos.config.file-extension，并使用 @RefreshScope 注解实现配置动态刷新。",
+      "reason": "证据提到了部分关键配置项和注解的使用，但没有明确提到需要通过 spring.config.import 显式声明 Nacos 数据源以及配置 server-addr、namespace 和 group。"
+    },
+    {
+      "question": "在上述 Map 中，如何指定 Person 对象的实现类？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        1198
+      ],
+      "retrieved_chunk_ids": [
+        1198
+      ],
+      "support": "none",
+      "supported_answer": "",
+      "reason": "证据中并未提及通过在NotifyImpl类中定义Map来指定Person对象的实现类"
+    },
+    {
+      "question": "如何在本地克隆Nacos代码仓库并添加Alibaba/Nacos仓库为upstream仓库？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        31
+      ],
+      "retrieved_chunk_ids": [
+        31
+      ],
+      "support": "partial",
+      "supported_answer": "首先克隆你的 fork 仓库，然后使用 `git remote add upstream https://github.com/alibaba/nacos.git` 添加 upstream 仓库。",
+      "reason": "证据中提到了克隆fork到本地以及添加upstream仓库的操作，但没有提到通过`git fetch upstream`获取更新的具体步骤。"
+    },
+    {
+      "question": "在完成rebase后，如何将分支上传到您fork的仓库？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        534
+      ],
+      "retrieved_chunk_ids": [
+        534,
+        533
+      ],
+      "support": "full",
+      "supported_answer": "在rebase后，由于commit ID发生了变化，您需要使用force push命令将分支上传到您的fork仓库，例如`git push --force`到您的fork分支。",
+      "reason": "证据中明确提到了rebase后commit ID发生变化，需要使用force push到fork分支。"
+    },
+    {
+      "question": "如何修改应用demo在20880端口上提供服务的权重？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        499
+      ],
+      "retrieved_chunk_ids": [
+        499,
+        506,
+        501,
+        505
+      ],
+      "support": "full",
+      "supported_answer": "根据片段1，可通过配置configVersion: v2.7、scope: application、key: demo、addresses: [\"0.0.0.0:20880\"]、side: provider，并设置parameters中的weight为1000来修改应用demo在20880端口上提供服务的权重。",
+      "reason": "所有关键事实包括版本号、作用域、键名、地址、侧边及参数权重值均在证据中得到支持。"
+    },
+    {
+      "question": "阿里巴巴在Dubbo3中扮演了什么角色？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        103
+      ],
+      "retrieved_chunk_ids": [
+        103
+      ],
+      "support": "full",
+      "supported_answer": "阿里巴巴是Dubbo3的核心参与力量之一，主导了该版本许多核心功能的设计与开发，并将内部HSF通过Dubbo3形式贡献到开源社区，确定其为未来内部主推的服务框架。",
+      "reason": "证据中明确提到了阿里巴巴在Dubbo3中的核心参与角色、主导设计与开发的功能以及对内部HSF的贡献。"
+    },
+    {
+      "question": "如何在 Spring Cloud Alibaba 中开启 Dubbo 的访问日志功能？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        770
+      ],
+      "retrieved_chunk_ids": [
+        770
+      ],
+      "support": "error",
+      "supported_answer": null,
+      "reason": "Expecting ',' delimiter: line 4 column 83 (char 198)"
+    },
+    {
+      "question": "Spring Cloud Alibaba中的Nacos数据模型Key由哪些元素唯一确定？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        188
+      ],
+      "retrieved_chunk_ids": [
+        188
+      ],
+      "support": "partial",
+      "supported_answer": "Nacos数据模型Key由三元组唯一确定，包括Namespace（默认空串，即公共命名空间public）和Group（默认DEFAULT_GROUP）。",
+      "reason": "证据中没有提到Data ID作为三元组的一部分。"
+    },
+    {
+      "question": "在注册动态配置覆盖规则时，`override://`的用途是什么？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        464
+      ],
+      "retrieved_chunk_ids": [
+        464,
+        468,
+        469,
+        465,
+        467
+      ],
+      "support": "full",
+      "supported_answer": "`override://` 表示数据采用覆盖方式，用于向注册中心写入动态配置覆盖规则，支持 `override` 和 `absent` 两种操作，是必填项。",
+      "reason": "证据中明确说明了`override://`的用途、支持的操作以及它是必填项的事实。"
+    },
+    {
+      "question": "在 Spring Cloud Alibaba 中，如何配置一个参数为 callback 类型？",
+      "review_status": "high_confidence_auto_accepted",
+      "gold_chunk_ids": [
+        381
+      ],
+      "retrieved_chunk_ids": [
+        381,
+        382
+      ],
+      "support": "full",
+      "supported_answer": "在 Spring Cloud Alibaba 中，配置 callback 类型参数需要在 Spring 配置文件中声明该参数为 callback 类型，Dubbo 会基于长连接生成反向代理，从而从服务器端调用客户端逻辑。",
+      "reason": "证据完全支持标准答案中的所有关键事实。"
+    }
+  ]
+}

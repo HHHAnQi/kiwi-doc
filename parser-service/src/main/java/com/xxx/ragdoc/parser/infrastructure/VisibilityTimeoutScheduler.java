@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * 心跳回收 job(spec §3.3 + §8 Commit 3).
  *
- * <p>每 30 秒扫一次 parse_tasks 表: 把过期 RUNNING 回滚 PENDING，并原子恢复 Outbox 投递状态，
- * 让 Relay 必然重新发消息。解决 kill -9 / OOM / 进程崩溃留下的 zombie worker。
+ * <p>每 30 秒扫一次 parse_tasks 表: 把过期 RUNNING 回滚 PENDING，并原子恢复 Outbox 投递状态， 让 Relay 必然重新发消息。解决 kill -9
+ * / OOM / 进程崩溃留下的 zombie worker。
  *
  * <p>覆盖 DoD-1: parser 进程死, 重启后该 job 周期性扫, 把 zombie RUNNING 还回 PENDING → 下轮 worker pull 重启继续解析。续点字段
  * chunks_written / chunk_seq_offset 在 worker 重启后从该值继续(spec §3.1).

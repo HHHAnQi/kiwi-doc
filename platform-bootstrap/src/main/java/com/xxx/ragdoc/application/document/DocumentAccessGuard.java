@@ -117,9 +117,8 @@ public class DocumentAccessGuard {
     /**
      * Principal doc 当前 visibility。
      *
-     * <p>V9 起 documents 表有 visibility 列(VARCHAR NOT NULL DEFAULT 'TENANT'), 但 Document 聚合
-     * 未暴露该字段, 故经 port 回查。查询失败时保守返 "PRIVATE" (fail closed: PRIVATE 需要显式 ACL
-     * 才放行, 不会因为读不到列而扩大可见面)。
+     * <p>V9 起 documents 表有 visibility 列(VARCHAR NOT NULL DEFAULT 'TENANT'), 但 Document 聚合 未暴露该字段,
+     * 故经 port 回查。查询失败时保守返 "PRIVATE" (fail closed: PRIVATE 需要显式 ACL 才放行, 不会因为读不到列而扩大可见面)。
      */
     private String visibilityOf(Document doc) {
         return documentRepository

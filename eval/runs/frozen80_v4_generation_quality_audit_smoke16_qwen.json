@@ -1,0 +1,143 @@
+{
+  "dataset_size": 16,
+  "metrics": {
+    "answer_correctness": 0.71875,
+    "faithfulness": 1.0,
+    "evidence_completeness": 0.8535714285714285
+  },
+  "confidence_intervals_95": {
+    "answer_correctness": {
+      "low": 0.53125,
+      "high": 0.875,
+      "method": "query_bootstrap_percentile"
+    },
+    "faithfulness": {
+      "low": 1.0,
+      "high": 1.0,
+      "method": "query_bootstrap_percentile"
+    },
+    "evidence_completeness": {
+      "low": 0.7473214285714286,
+      "high": 0.9508928571428571,
+      "method": "query_bootstrap_percentile"
+    }
+  },
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "source_report": "eval/runs/frozen80_v4_generation_post_router_fix_qwen.json",
+  "timestamp": "2026-08-25T03:11:53.014387+00:00",
+  "per_query": [
+    {
+      "question_id": 1,
+      "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+      "answer_correctness": 0.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 2,
+      "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 3,
+      "question": "Dubbo 点对点直连以什么粒度配置，对其他服务接口有什么影响？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 4,
+      "question": "Nacos2 三节点集群服务发现性能测试的容量和核心接口 TPS 达到了什么水平？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 5,
+      "question": "在 sayHello 方法中，如何避免使用 JDK 公用线程池？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 6,
+      "question": "spring-cloud-alibaba-seata 以 2.2.0.RELEASE 为分界点，内部依赖发生了什么变化？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 7,
+      "question": "在Spring Cloud Alibaba中，如何配置加权最少活跃调用优先算法？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8
+    },
+    {
+      "question_id": 8,
+      "question": "使用 XML 配置 Dubbo 服务提供者并以 Nacos 为注册中心时，需要声明哪些核心配置？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 9,
+      "question": "在本地新建开发分支时，分支名通常以什么作为命名依据？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 10,
+      "question": "Dubbo 3 中，与 Dubbo 2 相比，地址注册模型的变化是什么？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 11,
+      "question": "在 Spring Cloud Alibaba 中，泛接口实现方式主要用于什么场景？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 12,
+      "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+      "answer_correctness": 0.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 13,
+      "question": "泛化调用的 Map 参数中，如何显式指定接口类型对象的实现类？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 14,
+      "question": "如何在本地克隆Nacos代码仓库并添加Alibaba/Nacos仓库为upstream仓库？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 15,
+      "question": "在完成rebase后，如何将分支上传到您fork的仓库？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 16,
+      "question": "如何修改应用demo在20880端口上提供服务的权重？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8571428571428571
+    }
+  ]
+}

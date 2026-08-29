@@ -62,15 +62,14 @@ class RuleSufficiencyJudgeTest {
     class HappyCoverage {
 
         @Test
-        @DisplayName("完整 required 覆盖 → SUFFICIENT + ANSWER")
+        @DisplayName("P2-D3: 完整 required 覆盖 → Rule 不再终判充分, UNDETERMINED 交 Model")
         void allCovered() {
             EvidenceRequirement r1 = req("R1", RequirementType.FACT, true, List.of(), Map.of());
             Evidence ev = ev("tA", "R1", "v2 content", "v2", null);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(ev)));
-            assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
-            assertThat(d.action()).isEqualTo(RecommendedAction.ANSWER);
-            assertThat(d.coverage()).hasSize(1);
-            assertThat(d.coverage().get(0).status()).isEqualTo(CoverageStatus.COVERED);
+            assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
+            assertThat(d.coverage().get(0).reasonCode()).isEqualTo("RULE_DEFERS_SEMANTIC_TO_MODEL");
+            assertThat(d.missingRequirementIds()).containsExactly("R1");
         }
 
         @Test
@@ -84,13 +83,13 @@ class RuleSufficiencyJudgeTest {
         }
 
         @Test
-        @DisplayName("optional 缺失不进入 missing → SUFFICIENT")
+        @DisplayName("P2-D3: optional 有证据同样 defer → UNDETERMINED(语义判定不分类型)")
         void optionalMissingNotBlocking() {
             EvidenceRequirement r1 = req("R1", RequirementType.FACT, true, List.of(), Map.of());
             EvidenceRequirement r2 = req("R2", RequirementType.FACT, false, List.of(), Map.of());
             Evidence ev = ev("tA", "R1", "ok", "v2", null);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1, r2), List.of(ev)));
-            assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
+            assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED);
         }
 
         @Test
@@ -128,11 +127,11 @@ class RuleSufficiencyJudgeTest {
             List<Evidence> dedup = RuleSufficiencyJudge.dedupByContentHash(List.of(a, b));
             assertThat(dedup).hasSize(1);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(a, b)));
-            assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
+            assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED); // P2-D3: defer
         }
 
         @Test
-        @DisplayName("校准: 未锁版本的版本多样性 = 异质证据非冲突(对比题不误杀) → SUFFICIENT")
+        @DisplayName("校准: 未锁版本的版本多样性 = 异质证据非冲突(对比题不误杀) → defer 语义判定")
         void versionDiversityIsNotConflict() {
             // pilot20 实测根因: 多组件对比题证据天然跨文档版本, 旧规则(≥2 version 即
             // CONFLICT 终态)把一切对比题判死 → 58/67 REFUSED_CONFLICT
@@ -140,7 +139,8 @@ class RuleSufficiencyJudgeTest {
             Evidence a = ev("tA", "R1", "v2 fact", "v2", null);
             Evidence b = ev("tA", "R1", "v1 fact", "v1", null);
             SufficiencyDecision d = judge.evaluate(request(List.of(r1), List.of(a, b)));
-            assertThat(d.status()).isEqualTo(SufficiencyStatus.SUFFICIENT);
+            assertThat(d.status()).isEqualTo(SufficiencyStatus.UNDETERMINED); // P2-D3: 非冲突→defer
+            assertThat(d.conflicts()).isEmpty();
         }
 
         @Test

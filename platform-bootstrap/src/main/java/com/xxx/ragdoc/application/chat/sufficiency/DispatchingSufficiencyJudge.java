@@ -32,8 +32,24 @@ public class DispatchingSufficiencyJudge implements EvidenceSufficiencyJudge {
     private final ModelSufficiencyJudge modelJudge;
     private final SufficiencyProperties properties;
 
+    /** P1-B: sufficiency 指标单一权威记录点 — 本调度器是所有 Pipeline 判定的唯一出口。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
     @Override
     public SufficiencyDecision evaluate(SufficiencyRequest request) {
+        SufficiencyDecision decision = doEvaluate(request);
+        if (metricsPort != null) {
+            metricsPort.recordAgentSufficiency(decision.status().name());
+        }
+        return decision;
+    }
+
+    private SufficiencyDecision doEvaluate(SufficiencyRequest request) {
         if (request == null) throw new IllegalArgumentException("request");
         if (!properties.isEnabled()) {
             // Sufficiency 未启用 — 保守 UNDETERMINED, Pipeline 视情况拒答或默认 SUFFICIENT (PR-7c 决策)

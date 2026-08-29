@@ -32,10 +32,9 @@ public class AuthProperties {
     private String devDefaultToken = "dev-default-token";
 
     /**
-     * P0 修复: 原此处有 devToken/adminToken (APP_DEV_TOKEN/APP_ADMIN_TOKEN 静态比对),
-     * 与 AuthFilter 的 DB principal 体系形成双轨凭据通道, 已随 FeedbackController 改走
-     * AuthContext 一并删除。默认 dev/admin principal 由 DefaultPrincipalSeeder (@Profile
-     * dev/local/test) 幂等种入。
+     * P0 修复: 原此处有 devToken/adminToken (APP_DEV_TOKEN/APP_ADMIN_TOKEN 静态比对), 与 AuthFilter 的 DB
+     * principal 体系形成双轨凭据通道, 已随 FeedbackController 改走 AuthContext 一并删除。默认 dev/admin principal 由
+     * DefaultPrincipalSeeder (@Profile dev/local/test) 幂等种入。
      */
 
     /** allowlist 路径前缀 (无 token 可访问), 默认 health/readiness。 */

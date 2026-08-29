@@ -43,9 +43,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
     // 不用 rollingSummary: 是压缩过的, 喂 rewrite LLM 反而扰指代消解。
 
     /**
-     * G2 校准: 加 few-shot(正例 + 反例)。原 prompt 只有规则描述, fallback LLM 常见两类
-     * 失败: 复读原问题(鹦鹉, 已由编辑相似度兜底) / 过度扩展(把上一轮的答案塞进改写)。
-     * few-shot 是 G2 提分的主要杠杆。
+     * G2 校准: 加 few-shot(正例 + 反例)。原 prompt 只有规则描述, fallback LLM 常见两类 失败: 复读原问题(鹦鹉, 已由编辑相似度兜底) /
+     * 过度扩展(把上一轮的答案塞进改写)。 few-shot 是 G2 提分的主要杠杆。
      */
     private static final String CONDENSE_PROMPT_TEMPLATE =
             """
@@ -74,6 +73,13 @@ public class QueryContextualizer implements QueryContextualizerPort {
             后续问题: Seata 的 AT 模式怎么回滚?
             独立问题: Seata 的 AT 模式怎么回滚?
 
+            示例 4 (“X 呢”要继承上一轮正在询问的属性):
+            对话历史:
+            Q: seata-server 支持哪些环境变量?
+            A: SEATA_IP 指定地址；SEATA_PORT 指定端口，默认 8091。
+            后续问题: 那 SEATA_PORT 呢?
+            独立问题: SEATA_PORT 环境变量配置什么，默认值是多少?
+
             对话历史:
             %s
 
@@ -82,8 +88,9 @@ public class QueryContextualizer implements QueryContextualizerPort {
             要求:
             1. 输出 1 句中文, 不超过 60 字
             2. 保留后续问题的核心实体, 只补全指代和省略的成分
-            3. 不要回答问题, 只改写
-            4. 不要任何前缀、引号、解释, 直接输出改写后的独立问题
+            3. “那 X 呢”这类省略问句必须继承上一轮正在询问的属性，不能擅自改成另一个问题维度
+            4. 不要回答问题, 只改写
+            5. 不要任何前缀、引号、解释, 直接输出改写后的独立问题
 
             独立问题: """;
 
@@ -134,6 +141,16 @@ public class QueryContextualizer implements QueryContextualizerPort {
             long elapsed = System.currentTimeMillis() - t0;
             metrics.recordRewriteLatency(elapsed, "skip");
             return ContextualizeResult.skipped(currQuery, elapsed);
+        }
+
+        // 用户明确要求“重新回答”时，目标问题可由有效 history 确定，不应再交给 LLM 猜测。
+        // LLM_DEGRADED/NO_RECALL turn 本来就不会写入 recentTurns，因此这里天然只会恢复
+        // 最近一次成功业务问题，避免把错误文案当领域实体拼进检索 query。
+        String retryTarget = resolveExplicitRetry(currQuery, recentTurns);
+        if (retryTarget != null) {
+            long elapsed = System.currentTimeMillis() - t0;
+            metrics.recordRewriteLatency(elapsed, "ok");
+            return ContextualizeResult.success(currQuery, retryTarget, elapsed);
         }
 
         String prompt = buildPrompt(currQuery, recentTurns);
@@ -192,9 +209,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
     /**
      * 鹦鹉学舌检测 — LLM 偶尔直接复读原 query, 此时 rewrite 无意义, retrieve 跑偏。
      *
-     * <p>P0 修复: 原实现的双向 {@code contains} 会把一切合法的指代消解改写误判为鹦鹉 —
-     * condense 式改写天然以原问为子串("那它支持哪些？"→"Dubbo 支持哪些序列化？"含原问全部字符),
-     * 实测多轮 G2 gate 仅 2/20 通过。现收紧为:
+     * <p>P0 修复: 原实现的双向 {@code contains} 会把一切合法的指代消解改写误判为鹦鹉 — condense 式改写天然以原问为子串("那它支持哪些？"→"Dubbo
+     * 支持哪些序列化？"含原问全部字符), 实测多轮 G2 gate 仅 2/20 通过。现收紧为:
      *
      * <ul>
      *   <li>完全相等(去空白/大小写) → 鹦鹉
@@ -209,7 +225,8 @@ public class QueryContextualizer implements QueryContextualizerPort {
         if (o.isEmpty() || r.isEmpty()) return true;
         if (o.equals(r)) return true;
         // 改写长度与原问相差悬殊 → 一定增/删了实质内容, 不是复读
-        double lenRatio = Math.min(o.length(), r.length()) / (double) Math.max(o.length(), r.length());
+        double lenRatio =
+                Math.min(o.length(), r.length()) / (double) Math.max(o.length(), r.length());
         if (lenRatio < 0.9) return false;
         // 长度接近时用 Levenshtein 相似度: ≥0.9 视为只动了标点/语气词的复读
         return similarity(o, r) >= 0.9;
@@ -239,8 +256,22 @@ public class QueryContextualizer implements QueryContextualizerPort {
         // 鹦鹉判定用归一化: 去空白 + 去标点(中英文) + 小写 — 只差标点的复读不算改写
         return s == null
                 ? ""
-                : s.replaceAll("[\\s\\p{Punct}\\u3000-\\u303F\\uFF00-\\uFFEF]+", "")
-                        .toLowerCase();
+                : s.replaceAll("[\\s\\p{Punct}\\u3000-\\u303F\\uFF00-\\uFFEF]+", "").toLowerCase();
+    }
+
+    private static String resolveExplicitRetry(String query, List<Turn> recentTurns) {
+        if (query == null || recentTurns == null || recentTurns.isEmpty()) return null;
+        String normalized = query.replaceAll("\\s+", "");
+        boolean retry =
+                normalized.contains("重新回答")
+                        || normalized.contains("再回答")
+                        || normalized.contains("重试刚才")
+                        || normalized.contains("重试上一个");
+        if (!retry) return null;
+        if (normalized.contains("最开始") || normalized.contains("一开始")) {
+            return recentTurns.get(0).userQuery();
+        }
+        return recentTurns.get(recentTurns.size() - 1).userQuery();
     }
 
     private static String trimmed(String s) {

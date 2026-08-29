@@ -5,8 +5,8 @@ import com.xxx.ragdoc.application.document.port.ParseTaskRepository;
 import com.xxx.ragdoc.domain.document.Document;
 import com.xxx.ragdoc.domain.document.ParseTask;
 import com.xxx.ragdoc.infrastructure.mq.ParseTaskSubmitMessage;
-import com.xxx.ragdoc.parser.application.ParseTaskService;
 import com.xxx.ragdoc.parser.application.ParseCompletionService;
+import com.xxx.ragdoc.parser.application.ParseTaskService;
 import com.xxx.ragdoc.parser.application.ParseWorker;
 import java.time.Clock;
 import java.time.Duration;
@@ -19,7 +19,6 @@ import org.apache.rocketmq.spring.annotation.MessageModel;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -132,17 +131,23 @@ public class ParseTaskConsumer implements RocketMQListener<ParseTaskSubmitMessag
             ParseTask parsed = completionService.complete(leased, savedChunks);
             log.info(
                     "parse_task.done task_id={}, doc_id={}, status={}, chunks={}",
-                    leased.id(), leased.documentId(), parsed.status(), savedChunks.size());
+                    leased.id(),
+                    leased.documentId(),
+                    parsed.status(),
+                    savedChunks.size());
         } catch (Exception e) {
             // step 12b: failed — 走 ParseTaskService.markFailed, 自动判 retry_count vs max_retries
             // → FAILED/PENDING 或 CANCELLED(DLQ)
             try {
                 parseTaskService.markFailed(leased, e);
                 if (leased.triggerType() == ParseTask.TriggerType.REBUILD) {
-                    documentRepository.findById(leased.documentId()).ifPresent(doc -> {
-                        doc.failGenerationBuild(leased.generation());
-                        documentRepository.save(doc);
-                    });
+                    documentRepository
+                            .findById(leased.documentId())
+                            .ifPresent(
+                                    doc -> {
+                                        doc.failGenerationBuild(leased.generation());
+                                        documentRepository.save(doc);
+                                    });
                 }
                 log.warn(
                         "parse_task.failed_handled task_id={}, err_class={}, err={}",

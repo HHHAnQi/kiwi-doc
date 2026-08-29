@@ -39,8 +39,7 @@ public class HarnessAwarePlannerProvider implements PlannerProvider {
     private final HarnessProperties harnessProperties;
 
     public HarnessAwarePlannerProvider(
-            @org.springframework.beans.factory.annotation.Qualifier("basePlannerProvider")
-                    PlannerProvider delegate,
+            @org.springframework.beans.factory.annotation.Qualifier("basePlannerProvider") PlannerProvider delegate,
             HarnessProvider harnessProvider,
             HarnessProperties harnessProperties,
             ObjectMapper objectMapper /* 显式注入避免误用; 当前 PR 不直接序列化 (HarnessProvider 内部完成) */) {

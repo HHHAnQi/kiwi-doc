@@ -1,0 +1,164 @@
+{
+  "generated_at": "2026-08-25T07:03:37.518074+00:00",
+  "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+  "judge_model": "qwen-max",
+  "fingerprints": {
+    "datasets": {
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/conv_holdout_20.jsonl": "cf00c46b9f7734c1f2bf321c4333f78c32a62ef6fe1c2f20b3032ae3715e7e50",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/antipollution_holdout_10.jsonl": "1a84d15a586b95dcfe67705be3abd1f2cffd87b9e6e20a0e1df325db727ec6a7",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/fidelity_holdout_50.json": "439b7de85d0a0bd97c3b21bcc3de12e520a52b388d1c6d078ba35b5cba523310",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/topic_shift_holdout_50.json": "9922204b79b1336beccfd0235dc804a4eb7b586250aaa6e99f586749fec7804f"
+    },
+    "g1_result": {
+      "path": "eval/runs/e88ce80c67603948/metadata.json",
+      "sha256": "7c4ad757c477a43bdefcb574700f32354c6671c6a455e8386079cd2185956c69"
+    },
+    "g1_baseline": {
+      "path": "eval/ragas_baseline.json",
+      "sha256": "1da6556485ee3520bb12ceb569f16df91d6a7e55c65ca1df5f8767efaa5cbf79"
+    },
+    "config": {
+      "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+      "judge_model": "qwen-max",
+      "judge_provider_id": 2,
+      "gates": "G3",
+      "g1_min_samples": 80,
+      "g1_max_age_hours": 48
+    }
+  },
+  "gates": [
+    {
+      "gate": "G1",
+      "status": "SKIP",
+      "reason": "GATES filter=G3"
+    },
+    {
+      "gate": "G2",
+      "status": "SKIP",
+      "reason": "GATES filter=G3"
+    },
+    {
+      "gate": "G3",
+      "status": "PASS",
+      "pass_n": 8,
+      "total": 10,
+      "rate": 0.8,
+      "pollution_count": 0,
+      "threshold": 0,
+      "note": "G3 硬 gate: pollution_count 必须 0",
+      "details": [
+        {
+          "question_id": "mt_g3_001",
+          "description": "1 turn OK + 1 turn NO_RECALL + 1 turn 重问 OK; 验证 NO_RECALL 文案不污染 rewrite",
+          "actual_answer": "Nacos 默认监听主端口 8848，2.X 版本新增 gRPC 通信方式会额外生成端口 9848 [1]。RocketMQ 默认 prometheus 监听端口为 5557，指标获取路径默认为 /metrics [2]。两者都是分布式系统，但 Nacos 主要用于服务发现和配置管理，而 RocketMQ 是消息队列系统 [1][2]。",
+          "expected": "Nacos 默认端口和 RocketMQ NameServer 默认端口相比如何?",
+          "judge": "FAIL\n\n解析：虽然bot的回答提到了Nacos和RocketMQ的相关信息，但并没有准确地提到题目中要求的关键事实。关键事实强调的是Nacos默认端口8848、RocketMQ NameServer的默认端口9876以及这两个端口号之间相差大约1000，并且指出这是为了防止端口冲突的设计。而提供的回答仅指出了Nacos的一个额外gRPC通信方式使用的端口（9848）和RocketMQ用于Prometheus监控的端口号（5557），并未提及NameServer的默认端口9876或两者间具体的端口差异及避免冲突的原因，因此未能覆盖全部关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_002",
+          "description": "LLM 出错后再问; 验证 'LLM 出错了 trace=xxx' 不污染 rewrite",
+          "actual_answer": "Sentinel 提供了流量控制规则用于保护服务提供方 [2]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [4]。QPS限流可以通过设置FlowRule的grade为RuleConstant.FLOW_GRADE_QPS，并设置count值来实现，例如将QPS限制为20 [1]。Sentinel 控制台是流量控制、熔断降级规则统一配置和",
+          "expected": "Sentinel QPS 限流规则详细介绍",
+          "judge": "FAIL\n\n解析：虽然bot的回答提到了QPS限流以及通过设置FlowRule的grade为RuleConstant.FLOW_GRADE_QPS来实现这一机制，但它没有提到当单位时间请求数超过设定阈值时会触发的具体行为（即默认拒绝、Warm Up、排队等待这三种controlBehavior）。因此，根据给定的关键事实标准，该回答未能完全覆盖所需信息。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_003",
+          "description": "EMPTY_KB 模拟 (知识库空时整轮 fail, 后续需重置 ctx); G3 验证 EMPTY_KB 是否拒写 history",
+          "actual_answer": "需要先下载 Nacos 并启动 Nacos server，操作步骤参见 Nacos 快速入门 [3][4][5]。可以将 Zookeeper 服务迁移到 Nacos，使用 Nacos-Sync 工具实现 [1]。Nacos 支持通过域名 + SLB 模式部署，可读性好且换 IP 方便，推荐使用内网 SLB 且不可暴露到公网 [2]。",
+          "expected": "Seata 如何从默认注册中心切换到 Nacos?",
+          "judge": "FAIL\n\nBot的回答中没有提到关于Seata Server/Client修改`registry.conf`的具体内容，也没有提及需要设置`type=\"nacos\"`、`namespace`、`cluster`、`serverAddr`等参数，更没有提到客户端同步配置以确保能够发现TC（事务协调器）的必要性。因此，根据给定的关键事实来看，该回答未能覆盖所需的关键信息。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_004",
+          "description": "持续 NO_RECALL 多轮的 stress (用户连续问 OOD); G3 验证 history 持续空不需清",
+          "actual_answer": "TCC模式不与具体的服务框架耦合，与底层RPC协议无关，与底层存储介质无关性 [1]。TCC模式在1.5.0增加了防悬挂功能，需要提前在客户端业务库中增加特定表 [3]。TCC模式的一阶段方法进行了优化，不再需要在一阶段的接口入参定义`BusinessActionContext`，如需使用可通过`BusinessActionContextUtil.getContext()`取得 [3]。",
+          "expected": "Seata TCC 模式好用吗?",
+          "judge": "FAIL\n\n解析：Bot的回答主要集中在TCC模式的技术特点上，比如它与服务框架、RPC协议以及存储介质的无关性，还有关于防悬挂功能的具体实现细节和一阶段方法的优化。但是，该回答没有提及关键事实中提到的TCC的优点（强一致性和性能）、缺点（业务侵入性强，包括Try/Confirm/Cancel三步骤的定义需求以及幂等空回滚悬挂问题），也没有提到TCC特别适用于金融场景的信息，或是推荐CRUD操作更适合使用AT模式的观点。因此，根据给定的关键事实标准来判断，此回答未能覆盖所需的关键信息点。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_005",
+          "description": "混合 NO_RECALL + OK 后 LLM 失败; G3 复杂污染场景验证",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 7c07c70e",
+          "expected": "RocketMQ 默认序列化协议是什么?",
+          "judge": "FAIL",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": false
+        },
+        {
+          "question_id": "mt_g3_006",
+          "description": "LLM fail + 用户重试 + 后续 OK; 验证 retry 后 ctx 干净",
+          "actual_answer": "第一种配置方式是通过-D参数进行指定的配置 [1][2]。这种方式可以通过命令行参数直接设置，例如`java -Dsentinel.dashboard.app.hideAppNoMachineMillis=60000` [3]。通过-D参数指定的配置会优先于通过`Properties`对象注入的配置 [1][2]。",
+          "expected": "Sentinel 直接拒绝 (Default) 流控效果详细介绍",
+          "judge": "FAIL\n\n解析：bot 的回答没有提及任何与“直接拒绝”策略相关的内容，也没有提到关于`controlBehavior=Default`时的行为描述，更没有涉及到超过阈值请求如何处理、BlockException (FlowException)的抛出情况，以及这种策略适用于哪些场景等关键事实。因此，根据给定的标准，判定为\"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_007",
+          "description": "首 turn 即 NO_RECALL; 验证空 ctx 时 rewrite 不空指针",
+          "actual_answer": "Nacos集群部署需要3个或3个以上节点才能构成集群[2][4]。当前集群文件中只有两个Nacos节点地址[1][3]。推荐使用Linux系统，64位JDK 1.8+和Maven 3.2.x+的环境[4]。",
+          "expected": "Nacos 集群部署要几个节点?",
+          "judge": "FAIL\n\n虽然Bot的回答提到了Nacos集群需要3个或以上的节点，但没有明确指出推荐使用奇数个节点以满足Raft quorum，并且没有提及避免脑裂这一点。因此，该回答未能完全覆盖给出的关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_008",
+          "description": "OK后多个OOD返回 (用户实验性恐吓); 验证多个降级 turn 后还能正常多轮",
+          "actual_answer": "Dubbo 支持使用独立的注册中心组件（如 Nacos、Zookeeper、Consul、Etcd 等）或将服务组织与注册交给底层容器平台（如 Kubernetes）来实现服务发现 [1]。在配置文件中，可以通过 `<dubbo:registry>` 元素配置注册中心地址，例如 `<dubbo:registry address=\"nacos://10.20.153.10:8848\" />` [5]",
+          "expected": "Dubbo 服务怎么注册到注册中心?",
+          "judge": "FAIL\n\n解析：虽然Bot的回答提到了Dubbo使用Nacos/Zookeeper作为注册中心，并且简要介绍了如何配置注册中心地址和服务到多个注册中心的注册方式，但是没有具体提到关键事实中的“Dubbo service export 时 URL 写入 Registry (Nacos/Zookeeper)，含 application/provider IP:port/接口列表/版本号。消费方订阅Registry监听provider URL变化。”这部分信息。因此，根据提供的判定标准，该回答为\"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_009",
+          "description": "OK / LLM_DEGRADED 混合 + 后续 OK; 最严的 G3 case",
+          "actual_answer": "Sentinel 提供了多种规则来保护系统的不同部分，包括流量控制规则、熔断降级规则和系统保护规则 [1]。流量控制规则用于保护服务提供方，熔断降级规则用于保护服务消费方，系统保护规则用于保护整个系统 [1]。Sentinel 控制台是流量控制、熔断降级规则统一配置和管理的入口，可以配置规则并实时查看流量控制效果 [2][3]。",
+          "expected": "Sentinel 限流规则有哪些?",
+          "judge": "FAIL\n\n解析：Bot 的回答提到了 Sentinel 提供了多种规则来保护系统，包括流量控制规则、熔断降级规则和系统保护规则。但是，它没有具体提到关键事实中所指的4种限流规则（QPS / 线程数 / 关联 / 链路）以及配合使用的流控效果（直接拒绝 / Warm Up / 匀速排队），也没有提及监控是基于滑动窗口统计的。因此，根据提供的标准，该回答未能完全覆盖所需的关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_010",
+          "description": "LLM_DEGRADED 后 QUOTE 反问 (模拟用户引用错误文案); 验证 rewrite 不被污染",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: c89b3c0f",
+          "expected": "RocketMQ 如何保证消息不丢?",
+          "judge": "FAIL\n\n解释：Bot 的回答并没有提及任何与关键事实相关的内容，而是给出了一个关于服务暂时不可用的信息。因此，根据判定标准，此回答为 \"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "gate": "G4",
+      "status": "SKIP",
+      "reason": "GATES filter=G3"
+    },
+    {
+      "gate": "G5",
+      "status": "SKIP",
+      "reason": "GATES filter=G3"
+    }
+  ],
+  "overall_status": "INCOMPLETE"
+}

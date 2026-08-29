@@ -1,0 +1,27 @@
+{
+  "target_collection": "documents_v2_bge_m3_20260825",
+  "chunk_count": 3076,
+  "document_count": 166,
+  "corpus_sha256": "bc23c1ba5bdd791bf98d5ecfbeb33deccb2f5754032cb2346d1c8d776683e2b2",
+  "embedding_model_config": "BAAI/bge-m3",
+  "embedding_service": {
+    "model_id": "BAAI/bge-m3",
+    "model_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "model_dtype": "torch.float32",
+    "device": "cuda:0",
+    "normalized": true,
+    "runtime": "sentence-transformers"
+  },
+  "contextual_prefix_enabled": true,
+  "contextual_prefix_max_chars": 120,
+  "created_at": "2026-08-24T17:36:56.617070+00:00",
+  "elapsed_sec": 101.53,
+  "verification": {
+    "expected_rows": 3076,
+    "actual_rows": 3076,
+    "sample_size": 10,
+    "fresh_vs_stored_cosine_min": 0.9996418110110776,
+    "fresh_vs_stored_cosine_mean": 0.9999641810999311,
+    "passed": true
+  }
+}

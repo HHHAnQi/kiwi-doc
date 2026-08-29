@@ -234,6 +234,7 @@ class RuleTemplatePlannerProviderTest {
                                             1,
                                             List.of("R1"),
                                             "SUCCEEDED",
+                                            "q find x",
                                             Map.of())),
                             new AgentBudgetView(2, 2, 3, 3, 30000, 1),
                             allowlist(),

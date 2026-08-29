@@ -29,7 +29,7 @@
     "seata_at_undolog",
     "rocketmq_transaction_half",
     "nacos_long_polling",
-    "sentinel_circuit_slow_ratio",
+    "sentinel_helloworld_flowrule_20qps",
     "dubbo_protocol_export",
     "seata_tcc_try_confirm_cancel",
     "rocketmq_consume_orderly"

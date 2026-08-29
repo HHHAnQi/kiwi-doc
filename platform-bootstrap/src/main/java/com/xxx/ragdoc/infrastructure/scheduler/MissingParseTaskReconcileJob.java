@@ -40,7 +40,8 @@ public class MissingParseTaskReconcileJob {
         if (!documents.isEmpty()) {
             log.info(
                     "parse_task.missing_reconcile candidates={}, repaired={}",
-                    documents.size(), repaired);
+                    documents.size(),
+                    repaired);
         }
     }
 }

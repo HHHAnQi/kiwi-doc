@@ -182,4 +182,32 @@ public class RagdocMetrics implements MetricsPort {
     // 注: 当前活跃 conversation 数 (gauge) C2 不实现。Micrometer Gauge 要求 supplier / 弱引用,
     //     传 long value 每次重新注册会拿不到更新值, 别扭。
     //     C8 配 Grafana 时再做 — 届时 RedisConversationStore 维护 AtomicLong 引用, Gauge 跟踪它。
+
+    // ─── P0修复(短板9): Agent 域指标 ──────────────────────────
+
+    public void recordAgentSufficiency(String outcome) {
+        registry.counter("ragdoc.agent.sufficiency_total", "outcome", outcome).increment();
+    }
+
+    public void recordAgentReplan(String outcome) {
+        registry.counter("ragdoc.agent.replan_total", "outcome", outcome).increment();
+    }
+
+    public void recordAgentBudgetDenied(String dimension) {
+        registry.counter("ragdoc.agent.budget_denied_total", "dimension", dimension).increment();
+    }
+
+    public void recordAgentE2ELatency(long durationMs) {
+        registry.timer("ragdoc.agent.e2e_duration").record(java.time.Duration.ofMillis(durationMs));
+    }
+
+    public void recordAgentLlmCall(String component) {
+        registry.counter("ragdoc.agent.llm_calls_total", "component", component).increment();
+    }
+
+    /** P0-1(降级链): {@inheritDoc} — 实际接线方为 FallbackPlannerProvider / PlannedAgentPipeline。 */
+    @Override
+    public void incrementPlannerDegradation(String stage) {
+        registry.counter("ragdoc.agent.planner_degradation_total", "stage", stage).increment();
+    }
 }

@@ -151,6 +151,33 @@ class HistoryCompressorTest {
         verify(metrics).incrementCompression("save_failed");
     }
 
+    @Test
+    void LLM摘要遗漏关键实体_保存前应确定性补回() throws Exception {
+        ConversationContext ctx = ConversationContext.empty("c1");
+        for (int i = 0; i < 6; i++) {
+            ctx =
+                    ctx.appendTurn(
+                            turn(
+                                    "Nacos long polling 怎么配置?",
+                                    "configLongPollTimeout 默认 30000，server.port 使用 8848。"));
+        }
+        when(store.findById(anyString())).thenReturn(Optional.of(ctx));
+        when(summaryClient.chat(anyString(), anyList())).thenReturn("用户讨论了配置长轮询的方式。");
+
+        compressor.compress("c1");
+
+        org.mockito.ArgumentCaptor<ConversationContext> captor =
+                org.mockito.ArgumentCaptor.forClass(ConversationContext.class);
+        verify(store).save(captor.capture());
+        assertThat(captor.getValue().rollingSummary())
+                .containsIgnoringCase("Nacos")
+                .containsIgnoringCase("long polling")
+                .contains("configLongPollTimeout")
+                .contains("30000")
+                .contains("server.port")
+                .contains("8848");
+    }
+
     // ────────────────── helpers ──────────────────
 
     private static ConversationContext ctxWithTurns(int n) {

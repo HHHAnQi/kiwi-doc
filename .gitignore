@@ -48,3 +48,4 @@ eval/matrix_smoke_*.jsonl
 .gradle/
 # 注意: gradle-wrapper.jar 必须提交, 不能 ignore
 .venv/
+.evidence/

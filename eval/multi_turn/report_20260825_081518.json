@@ -1,0 +1,1316 @@
+{
+  "generated_at": "2026-08-25T07:54:46.502187+00:00",
+  "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+  "judge_model": "qwen-max",
+  "fingerprints": {
+    "datasets": {
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/conv_holdout_20.jsonl": "02f104068c364d24d4e18b28776d98cca912705bdcdff52c7e02d2b95adce29f",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/antipollution_holdout_10.jsonl": "f16a05f23a95f6622bb27c71c778df76d017539e4f43d9ee0c3700ed58f71a93",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/fidelity_holdout_50.json": "f506f82c7e505f101a055387fb14ba94f1ab0f33404920f41eed821b6fa3610d",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/topic_shift_holdout_50.json": "9922204b79b1336beccfd0235dc804a4eb7b586250aaa6e99f586749fec7804f"
+    },
+    "g1_result": {
+      "path": "eval/runs/e88ce80c67603948/metadata.json",
+      "sha256": "7c4ad757c477a43bdefcb574700f32354c6671c6a455e8386079cd2185956c69"
+    },
+    "g1_baseline": {
+      "path": "eval/ragas_baseline.json",
+      "sha256": "1da6556485ee3520bb12ceb569f16df91d6a7e55c65ca1df5f8767efaa5cbf79"
+    },
+    "config": {
+      "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+      "judge_model": "qwen-max",
+      "judge_provider_id": 2,
+      "gates": "G4",
+      "g1_min_samples": 80,
+      "g1_max_age_hours": 48
+    }
+  },
+  "gates": [
+    {
+      "gate": "G1",
+      "status": "SKIP",
+      "reason": "GATES filter=G4"
+    },
+    {
+      "gate": "G2",
+      "status": "SKIP",
+      "reason": "GATES filter=G4"
+    },
+    {
+      "gate": "G3",
+      "status": "SKIP",
+      "reason": "GATES filter=G4"
+    },
+    {
+      "gate": "G4",
+      "status": "PASS",
+      "pass_n": 50,
+      "total": 50,
+      "overall_rate": 1.0,
+      "threshold": 0.7,
+      "note": "实跑 50 session，生成完成后统一等待 60s 再读取压缩上下文，并发会话数 2；完整门禁要求 G4_SESSIONS=50",
+      "details": [
+        {
+          "session_index": 0,
+          "topic": "nacos_cluster_3node",
+          "conv_id": "conv_g4_0_39a73303",
+          "ground_truth_entities_count": 5,
+          "summary_entities_count": 5,
+          "preserved_count": 5,
+          "ground_truth_entities": [
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "summary_entities": [
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 400,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "nacos cluster 3node是指配置3个或3个以上节点的Nacos集群。在nacos/conf目录下的cluster.conf文件中需要配置每行格式为ip:port的节点信息[1]。集群通过自研一致性协议Distro和Raft协议构建高可用集群，确保数据在节点间同步并保持一致性[1][4]。该集群模式默认采用外置数据库进行存储，也可使用内置数据库[4]。关键参数包括nacos.home("
+        },
+        {
+          "session_index": 1,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_1_0dfe21a0",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 515,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Sentinel FlowRule QPS 是通过 FlowRule 类配置的限流规则，用于保护服务提供方。核心机制是通过设置每秒请求数限制来控制流量，防止系统过载。关键步骤包括：创建 FlowRule 对象并设置资源名称如 \"HelloWorld\"，通过 setCount(20) 设置每秒请求数限制为 20，使用 setGrade(RuleConstant.FLOW_GRADE_QPS) 指定限"
+        },
+        {
+          "session_index": 2,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_2_4f0d4bae",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 484,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Dubbo SPI extension 是一种扩展机制，允许用户通过SPI接口实现自定义功能，包括鉴权认证、密钥存储等 [3]。从 2.1.0 版本开始支持，验证方式也可扩展 [4]。Dubbo 提供了 Filter、Router、Protocol 等关键流程上的扩展点定义，使开发者可以丰富 Dubbo 功能或实现与其他微服务系统的对接 [1][2]。扩展实现方案可以在 apache/dubbo-"
+        },
+        {
+          "session_index": 3,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_3_32b8d86b",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "1.3.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "summary_entities": [
+            "1.3.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 459,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Seata AT模式中的undo_log表用于记录事务的回滚信息。当分支事务注册TC后，在本地事务提交前发生全局事务回滚时，会插入一条log_status=1的undo记录，防止资源悬挂问题。undo_log表与业务写操作SQL在同一个本地事务中，通过唯一索引冲突确保事务一致性。每个业务库中必须包含undo_log表，若与分库分表组件联用，分库不分表。\n\n关键步骤包括：1) 分支事务注册TC后，在"
+        },
+        {
+          "session_index": 4,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_4_bbcd0cc0",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 694,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "RocketMQ事务消息中的\"半事务消息\"是消息被发送到服务端并持久化成功后，被标记为\"暂不能投递\"的状态 [1]。这种状态下的消息不会直接被服务端持久化到普通存储系统中，而是单独存储到事务存储系统中，等待本地事务执行结果 [2]。半事务消息是事务消息处理流程中的中间状态，只有在生产者提交二次确认结果为Commit后，才会被标记为可投递并投递给消费者 [1][2]。\n\n处理涉及以下关键步骤：生产者"
+        },
+        {
+          "session_index": 5,
+          "topic": "nacos_long_polling",
+          "conv_id": "conv_g4_5_ae2648c9",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "nacos"
+          ],
+          "summary_entities": [
+            "nacos"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 573,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Nacos long polling 是一种长连接机制，用于配置变更通知。nacos_monitor{name='longPolling'}指标记录了Nacos config的长连接数[1][2]。长轮询的超时时间可通过configLongPollTimeout参数配置，默认为30000毫秒[3]。\n\nNacos long polling 涉及的关键步骤包括：客户端与 Nacos 服务器建立长连接"
+        },
+        {
+          "session_index": 6,
+          "topic": "sentinel_helloworld_flowrule_20qps",
+          "conv_id": "conv_g4_6_481e131c",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 306,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则，需要创建 FlowRule 对象，设置 resource 为 \"HelloWorld\"，count 为 20，grade 为 RuleConstant.FLOW_GRADE_QPS [1][2]。创建 FlowRule 后，需要将其添加到规则列表中，然后通过 FlowRuleManager.loadRules"
+        },
+        {
+          "session_index": 7,
+          "topic": "dubbo_protocol_export",
+          "conv_id": "conv_g4_7_e609ae3b",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 354,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "dubbo protocol export 是通过 ServiceConfig 类暴露及注册服务的过程 [1]。在配置中可以使用 dubbo:protocol 标签配置多个协议，如 dubbo 和 rmi [3]。服务暴露时需要指定接口、版本和协议等信息 [1][3]。dubbo protocol export 涉及的关键参数包括 path、group、version、dubbo、token、ti"
+        },
+        {
+          "session_index": 8,
+          "topic": "seata_tcc_try_confirm_cancel",
+          "conv_id": "conv_g4_8_889d3293",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "1.5.0",
+            "seata"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "seata"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 445,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "SEATA TCC模式包含Try、Confirm和Cancel三个阶段。Try阶段是预定操作资源(Prepare)，由被@TwoPhaseBusinessAction修饰的方法执行。Confirm阶段执行主要业务逻辑(Commit)，通过commitMethod属性指向的方法完成。Cancel阶段是事务回滚(Rollback)，通过rollbackMethod属性指向的方法执行。实现TCC需要定义"
+        },
+        {
+          "session_index": 9,
+          "topic": "rocketmq_consume_orderly",
+          "conv_id": "conv_g4_9_454585cf",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 396,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "RocketMQ 的 consume orderly 指消息消费的顺序性，分为顺序消费和并发消费两种模式。顺序消费按照消息组或队列存储粒度严格保证消息顺序，并发消费则尽可能按时间顺序处理消息。投递顺序性是消费者分组中统一配置的消费行为之一，分为顺序投递和并发投递 [1][3][4][5]。\n\n关键步骤包括：消息按到达顺序存储到主题的指定队列；相同消息组消息存储在同一队列；消费者通过客户端SDK和服"
+        },
+        {
+          "session_index": 10,
+          "topic": "nacos_cluster_3node",
+          "conv_id": "conv_g4_10_2d202ea5",
+          "ground_truth_entities_count": 5,
+          "summary_entities_count": 5,
+          "preserved_count": 5,
+          "ground_truth_entities": [
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "summary_entities": [
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 493,
+          "recent_turns_count": 5,
+          "pass": true,
+          "summary_preview": "Nacos cluster 3node是指配置3个或3个以上节点的Nacos集群。在Nacos集群配置中，需要在解压目录nacos/的conf目录下的cluster.conf文件中，每行配置成ip:port格式。Nacos在集群模式下依赖MySQL做存储。nacos cluster 3node是由3个节点组成的Nacos集群，通过自研一致性协议Distro以及Raft协议构建高可用集群，确保数据在"
+        },
+        {
+          "session_index": 11,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_11_6113ee2d",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "1.5.0",
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [
+            "rt"
+          ],
+          "fidelity_score": 0.75,
+          "compression_observed": true,
+          "rolling_summary_len": 438,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Sentinel FlowRule QPS是一种流量控制规则，用于限制资源的每秒请求数量。核心机制是通过限制资源的每秒请求数量来保护服务提供方。关键步骤包括：创建FlowRule对象并设置资源名称如\"HelloWorld\"，设置QPS限流阈值通过rule.setCount(20)，设置规则类型为QPS限流使用rule.setGrade(RuleConstant.FLOW_GRADE_QPS)，最后"
+        },
+        {
+          "session_index": 12,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_12_3e941648",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 533,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Dubbo SPI extension 是一种扩展机制，允许用户通过SPI接口实现自定义功能，从2.1.0版本开始支持，可用于实现可扩展的验证方式。Dubbo提供了Filter、Router、Protocol等关键流程上的扩展点定义，支持实现与其他微服务配套系统的对接，包括Transaction、Tracing等功能。用户可以在apache/dubbo-spi-extensions项目中发现更多的"
+        },
+        {
+          "session_index": 13,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_13_9923f920",
+          "ground_truth_entities_count": 7,
+          "summary_entities_count": 7,
+          "preserved_count": 7,
+          "ground_truth_entities": [
+            "1.3.0",
+            "100",
+            "128",
+            "2.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "summary_entities": [
+            "1.3.0",
+            "100",
+            "128",
+            "2.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 631,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Seata AT模式中的undo_log表用于记录事务的回滚信息。当分支事务注册TC后，在本地事务提交前发生全局事务回滚时，会插入log_status=1的undo记录，防止资源悬挂问题。undo_log表与业务写操作SQL在同一个本地事务中，通过唯一索引冲突确保事务一致性[3][4]。\n\nSeata AT模式中undo_log涉及的关键步骤包括：\n1. 分支事务注册TC后，在本地事务提交前生成U"
+        },
+        {
+          "session_index": 14,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_14_82643aff",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 345,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "RocketMQ事务消息中的\"half\"状态工作流程：生产者将消息发送至服务端并收到Ack确认，消息被标记为\"暂不能投递\"的半事务消息状态 [1][2]。半事务消息被单独存储到事务存储系统中，不会直接持久化到普通存储系统，等待生产者执行本地事务逻辑并返回二次确认结果 [1][2]。生产者根据本地事务执行结果向服务端提交二次确认（Commit或Rollback），服务端收到确认结果后，如果是Comm"
+        },
+        {
+          "session_index": 15,
+          "topic": "nacos_long_polling",
+          "conv_id": "conv_g4_15_e8769022",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "1.0.1",
+            "nacos"
+          ],
+          "summary_entities": [
+            "1.0.1",
+            "nacos"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 348,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "nacos long polling 是 Nacos config 中的长轮询机制，可通过指标 nacos_monitor{name='longPolling'} 监控长连接数 [1][2]。长轮询的超时时间可通过参数 configLongPollTimeout(config.long-poll.timeout 1.0.1版本)配置，默认为30000毫秒 [1][3]。长轮询任务有重试机制，重试时"
+        },
+        {
+          "session_index": 16,
+          "topic": "sentinel_helloworld_flowrule_20qps",
+          "conv_id": "conv_g4_16_841f9110",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 300,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则，需要创建 FlowRule 对象，设置 resource 为 \"HelloWorld\"，count 为 20，grade 为 RuleConstant.FLOW_GRADE_QPS [1][2]。创建 FlowRule 后，应将其添加到规则列表中，然后通过 FlowRuleManager.loadRules "
+        },
+        {
+          "session_index": 17,
+          "topic": "dubbo_protocol_export",
+          "conv_id": "conv_g4_17_5c4c6d49",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 314,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "dubbo protocol export 是通过 ServiceConfig 类的 export() 方法将服务暴露并注册到注册中心的过程[1]。在配置中，可以使用 dubbo:protocol 标签配置不同的协议，如 dubbo 协议和 rmi 协议[3]。服务暴露时需要指定接口名、版本和协议等信息[1][3]。dubbo protocol export 涉及的关键参数包括 path、grou"
+        },
+        {
+          "session_index": 18,
+          "topic": "seata_tcc_try_confirm_cancel",
+          "conv_id": "conv_g4_18_76d295ea",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 585,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Seata TCC模式包含三个执行阶段：Try阶段用于预定操作资源(Prepare)，Confirm阶段执行主要业务逻辑(Commit)，Cancel阶段进行事务回滚(Rollback)[1][2][3]。Try阶段的方法被@TwoPhaseBusinessAction注解修饰，Confirm阶段使用commitMethod属性指向的方法，Cancel阶段使用rollbackMethod属性指向的"
+        },
+        {
+          "session_index": 19,
+          "topic": "rocketmq_consume_orderly",
+          "conv_id": "conv_g4_19_e91a9ba3",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 681,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "RocketMQ 的 consume orderly 指的是消息消费的顺序性，分为顺序消费和并发消费两种模式。顺序消费可以保证消息按照发送顺序或队列存储顺序被处理，而并发消费则尽可能按时间顺序处理消息。在顺序消费模式下，如果设置了消息组，可以严格保证同一消息组内的消息消费顺序和发送顺序完全一致；如果没有设置消息组，则按队列存储粒度保证顺序，但不保证与发送顺序一致 [3][4]。\n\n关键步骤包括：消"
+        },
+        {
+          "session_index": 20,
+          "topic": "nacos_cluster_3node",
+          "conv_id": "conv_g4_20_3961ea62",
+          "ground_truth_entities_count": 6,
+          "summary_entities_count": 6,
+          "preserved_count": 6,
+          "ground_truth_entities": [
+            "2.0.0",
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "summary_entities": [
+            "2.0.0",
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 488,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Nacos cluster 3node是指配置3个或3个以上节点的Nacos集群。在Nacos的解压目录nacos/conf下，需要配置cluster.conf文件，每行格式为ip:port。Nacos在集群模式下依赖MySQL做存储。关键步骤包括搭建Nacos集群并配置application.properties文件，通过自研一致性协议Distro以及Raft协议构建高可用集群，数据将在各节点间"
+        },
+        {
+          "session_index": 21,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_21_7a83130b",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "1.5.0",
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 548,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Sentinel FlowRule QPS 是通过 FlowRule 类配置的流量控制规则，用于限制资源的每秒请求数量。核心机制是通过设置每秒请求数量阈值来限制资源访问频率，属于 Sentinel 提供的多种规则类型之一，专门用于系统的流量控制保护。\n\n关键步骤包括：创建 FlowRule 对象并设置资源名称，如 rule.setResource(\"HelloWorld\")；设置 QPS 限制阈值"
+        },
+        {
+          "session_index": 22,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_22_fe1e869d",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 597,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Dubbo SPI extension 是一种扩展机制，允许用户通过SPI接口实现自定义功能，包括鉴权认证、密钥存储等 [3]。Dubbo提供了Filter、Router、Protocol等关键流程上的扩展点定义，使开发者能够丰富Dubbo功能或实现与其他微服务配套系统的对接 [1]。从2.1.0版本开始支持验证方式的扩展，具体使用方式可参考dubbo项目中的示例代码 [4]。更多扩展实现可以在a"
+        },
+        {
+          "session_index": 23,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_23_2691a616",
+          "ground_truth_entities_count": 5,
+          "summary_entities_count": 5,
+          "preserved_count": 5,
+          "ground_truth_entities": [
+            "1.3.0",
+            "2.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "summary_entities": [
+            "1.3.0",
+            "2.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 611,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Seata AT模式中的undo_log表用于记录事务的回滚信息。当分支事务注册TC后，在本地事务提交前发生全局事务回滚时，会插入log_status=1的undo记录来防止资源悬挂问题。undo_log表与业务写操作SQL在同一个本地事务中，通过唯一索引冲突确保事务一致性。在全局事务回滚场景下，如果分支事务的undo记录还未插入，会先插入一条log_status=1的undo记录，使得本地事务提"
+        },
+        {
+          "session_index": 24,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_24_1f992895",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 664,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "RocketMQ事务消息中的\"半事务消息\"是指消息被持久化到服务端后，被标记为\"暂不能投递\"的状态 [1][2]。这种状态发生在生产者发送消息到服务端并收到Ack确认后，但此时消息还未被投递给消费者 [1][2]。半事务消息等待生产者执行本地事务逻辑后，根据二次确认结果(Commit或Rollback)决定是否将其标记为可投递或回滚 [1][2]。如果服务端在指定时间内未收到生产者的二次确认结果，"
+        },
+        {
+          "session_index": 25,
+          "topic": "nacos_long_polling",
+          "conv_id": "conv_g4_25_9f5bba61",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "2000",
+            "30000",
+            "nacos"
+          ],
+          "summary_entities": [
+            "2000",
+            "30000",
+            "nacos"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 456,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Nacos long polling 是一种长连接机制，用于配置变更通知 [1][2]。它通过长连接方式监听配置变化，相关指标为 nacos_monitor{name='longPolling'}，表示长连接数 [1][2]。当配置发生变更时，会触发通知任务，相关指标为 nacos_monitor{name='notifyTask'}，表示配置水平通知任务堆积数 [1]。客户端通过长连接接收配置变"
+        },
+        {
+          "session_index": 26,
+          "topic": "sentinel_helloworld_flowrule_20qps",
+          "conv_id": "conv_g4_26_d3e75c63",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 452,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则，需创建 FlowRule 对象，设置 resource 为 \"HelloWorld\"，count 为 20，grade 为 RuleConstant.FLOW_GRADE_QPS。将规则添加到规则列表后使用 FlowRuleManager.loadRules() 方法加载规则。也可通过 Sentinel 控制"
+        },
+        {
+          "session_index": 27,
+          "topic": "dubbo_protocol_export",
+          "conv_id": "conv_g4_27_0e5cd16e",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 339,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "dubbo protocol export 是通过 ServiceConfig 类的 export() 方法将服务暴露并注册到注册中心的过程 [1]。在配置中，可以使用 <dubbo:protocol> 元素配置不同的协议，如 dubbo 协议和 rmi 协议 [3]。服务暴露时可以指定协议，如 protocol=\"dubbo\" 或 protocol=\"rmi\" [3]。dubbo protoco"
+        },
+        {
+          "session_index": 28,
+          "topic": "seata_tcc_try_confirm_cancel",
+          "conv_id": "conv_g4_28_b6a2cc5a",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 540,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Seata TCC模式包含三个执行阶段：Try阶段预定操作资源(Prepare)，由被@TwoPhaseBusinessAction修饰的方法执行；Confirm阶段执行主要业务逻辑(Commit)，通过commitMethod属性指向的方法执行；Cancel阶段进行事务回滚(Rollback)，通过rollbackMethod属性指向的方法执行[1]。当事务管理器决议为提交时，TC才会进行对事务"
+        },
+        {
+          "session_index": 29,
+          "topic": "rocketmq_consume_orderly",
+          "conv_id": "conv_g4_29_35263f58",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 441,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "RocketMQ 的 consume orderly 指的是消息消费的顺序性，分为顺序消费和并发消费两种模式。投递顺序性是消费者分组中统一配置的消费行为之一，包括顺序投递和并发投递两种方式，默认为并发投递 [1][3][4][5]。消息由生产者初始化并发送到 Apache RocketMQ 服务端；消息按照到达 RocketMQ 服务端的顺序存储到主题的指定队列中；相同消息组的消息按照先后顺序被存"
+        },
+        {
+          "session_index": 30,
+          "topic": "nacos_cluster_3node",
+          "conv_id": "conv_g4_30_5741680c",
+          "ground_truth_entities_count": 6,
+          "summary_entities_count": 6,
+          "preserved_count": 6,
+          "ground_truth_entities": [
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "namespace",
+            "raft",
+            "tps"
+          ],
+          "summary_entities": [
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "namespace",
+            "raft",
+            "tps"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 547,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "nacos cluster 3node 是指配置3个或3个以上节点的Nacos集群。在解压目录nacos/conf下的cluster.conf文件中每行配置成ip:port格式。Nacos在集群模式下依赖MySQL做存储，数据模型中的Key由三元组唯一确定，包括Namespace、分组和服务名。\n\nnacos cluster 3node 通过自研一致性协议Distro以及Raft协议构建高可用集群"
+        },
+        {
+          "session_index": 31,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_31_b742b971",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 492,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Sentinel FlowRule QPS是流量控制规则的一种，用于保护服务提供方[1]。它通过设置每秒请求数限制来控制流量，防止系统过载[1]。这种规则属于Sentinel提供的多种规则类型之一，专门用于服务端的流量控制保护[1]。\n\nSentinel FlowRule QPS涉及关键步骤：创建FlowRule对象并设置资源名称，如\"HelloWorld\"[1]；通过setCount(20)设置"
+        },
+        {
+          "session_index": 32,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_32_febb484c",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 584,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Dubbo SPI extension 是一种扩展机制，允许用户通过SPI接口实现定制化功能，包括鉴权认证、密钥存储等 [3]。Dubbo 提供了 Filter、Router、Protocol 等多个关键流程上的扩展点定义，使开发者能够丰富 Dubbo 功能或实现与其他微服务配套系统的对接 [1]。从 2.1.0 版本开始，Dubbo 支持通过 SPI 机制实现可扩展的验证方式 [4]。\n\nDub"
+        },
+        {
+          "session_index": 33,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_33_dc0eb62b",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "1.3.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "summary_entities": [
+            "1.3.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 504,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Seata AT模式中的undo_log表用于记录事务的回滚信息。当分支事务注册TC后，在本地事务提交前发生全局事务回滚时，会插入一条log_status=1的undo记录，防止资源悬挂问题。undo_log表通过唯一索引确保本地事务提交时与回滚操作的协调，保证分布式事务的一致性[3][4]。每个业务库中必须包含undo_log表，若与分库分表组件联用，则分库不分表[2]。undo_log表必须包"
+        },
+        {
+          "session_index": 34,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_34_5bb1277a",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 423,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "RocketMQ事务消息中的\"半事务消息\"是消息被生产者发送到服务端并持久化成功后，被标记为\"暂不能投递\"的状态 [1]。此时消息对下游消费者不可见，等待生产者执行本地事务逻辑后进行二次确认 [1][3]。如果生产者提交Commit确认，服务端会将半事务消息标记为可投递并投递给消费者；如果提交Rollback，服务端会回滚事务不会投递该消息 [1][3]。在未收到二次确认或确认结果为Unknown"
+        },
+        {
+          "session_index": 35,
+          "topic": "nacos_long_polling",
+          "conv_id": "conv_g4_35_85a37920",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "1.0.2",
+            "nacos"
+          ],
+          "summary_entities": [
+            "1.0.2",
+            "nacos"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 387,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Nacos long polling 是一种长连接机制，用于配置变更通知，通过长连接方式减少客户端轮询频率，提高效率。关键参数包括：config.long-poll.timeout（长轮询超时时间，默认30000毫秒，支持版本≥1.0.2）、config.retry.time（长轮询任务重试时间，默认2000毫秒，支持版本≥1.0.2）、maxRetry（长轮询重试次数，默认3，支持版本≥1.0."
+        },
+        {
+          "session_index": 36,
+          "topic": "sentinel_helloworld_flowrule_20qps",
+          "conv_id": "conv_g4_36_2e0bbedd",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 269,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则，需创建 FlowRule 对象并设置 resource 为 \"HelloWorld\"，count 为 20，grade 为 FlowRule.QPS。使用 FlowRuleManager.loadRules() 方法加载规则。也可通过 Sentinel 控制台配置规则，控制台提供规则配置功能并可以实时查看流量"
+        },
+        {
+          "session_index": 37,
+          "topic": "dubbo_protocol_export",
+          "conv_id": "conv_g4_37_aeca644e",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 265,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "dubbo protocol export 是通过 ServiceConfig 类暴露及注册服务的过程 [1]。服务暴露时需要指定接口、版本和协议等信息 [3]。在配置中可以使用 dubbo:protocol 标签配置多个协议，如 dubbo 和 rmi [3]。GenericService 也可以被用于服务暴露，它封装了与注册中心及服务提供方的连接 [1]。dubbo protocol expo"
+        },
+        {
+          "session_index": 38,
+          "topic": "seata_tcc_try_confirm_cancel",
+          "conv_id": "conv_g4_38_a94acbf7",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 649,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "Seata TCC模式包含三个执行阶段：Try阶段预定操作资源(Prepare)，Confirm阶段执行主要业务逻辑(Commit)，Cancel阶段进行事务回滚(Rollback)[1][2]。Try阶段的方法被@TwoPhaseBusinessAction修饰，Confirm阶段使用commitMethod属性指向的方法，Cancel阶段使用rollbackMethod属性指向的方法[1][2"
+        },
+        {
+          "session_index": 39,
+          "topic": "rocketmq_consume_orderly",
+          "conv_id": "conv_g4_39_24d3ee37",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 433,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "RocketMQ consume orderly 指消息消费的顺序性，分为顺序消费和并发消费两种模式。顺序消费按照消息组或队列存储粒度严格保证消息顺序，并发消费则尽可能按时间顺序处理消息。投递顺序性是消费者分组中统一配置的消费行为之一，支持顺序投递和并发投递 [1][4][3]。\n\n核心机制是通过消费者分组实现消息的顺序消费。同一分组内的消费者共同分摊消息进行消费，并要求所有消费者在投递顺序上保持"
+        },
+        {
+          "session_index": 40,
+          "topic": "nacos_cluster_3node",
+          "conv_id": "conv_g4_40_60a65705",
+          "ground_truth_entities_count": 6,
+          "summary_entities_count": 6,
+          "preserved_count": 6,
+          "ground_truth_entities": [
+            "2.0.0",
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "summary_entities": [
+            "2.0.0",
+            "cluster.conf",
+            "distro",
+            "nacos",
+            "raft",
+            "tps"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 486,
+          "recent_turns_count": 4,
+          "pass": true,
+          "summary_preview": "nacos cluster 3node是指配置3个节点的Nacos集群，通过自研一致性协议Distro和Raft协议构建高可用集群，确保数据在节点间同步并保持一致性[4]。在nacos/conf目录下需配置cluster.conf文件，每行配置成ip:port格式[1][2]。集群模式依赖MySQL做存储，也可使用内置数据库[4]。关键参数包括nacos.home(-D)用于指定Nacos的根目录"
+        },
+        {
+          "session_index": 41,
+          "topic": "sentinel_flowrule_qps",
+          "conv_id": "conv_g4_41_a3cdad71",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "1.5.0",
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "qps",
+            "rt",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 555,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Sentinel FlowRule QPS 是通过 FlowRule 类配置的流量控制规则，用于限制资源的每秒请求数量。核心机制是保护服务提供方，通过限制资源的每秒请求数量来控制流量。关键步骤包括：创建 FlowRule 对象并设置资源名称，如 rule.setResource(\"HelloWorld\")；配置 QPS 限制阈值，通过 rule.setCount(20) 设置每秒请求数限制；指定规"
+        },
+        {
+          "session_index": 42,
+          "topic": "dubbo_spi_extension",
+          "conv_id": "conv_g4_42_8bc3b337",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "summary_entities": [
+            "2.1.0",
+            "2.7.1",
+            "dubbo",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 401,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Dubbo SPI extension 是一种扩展机制，允许用户通过SPI接口实现定制化功能[1]。从2.1.0版本开始支持验证方式的扩展[4]。它涉及的关键步骤包括：通过 Filter、Router、Protocol 等关键流程上的扩展点定义，实现功能扩展或与其他微服务配套系统对接[1]；支持用户通过 SPI 机制实现定制化的鉴权认证，以及适配公司内部基础设施的密钥存储[2][3][4]；用户可"
+        },
+        {
+          "session_index": 43,
+          "topic": "seata_at_undolog",
+          "conv_id": "conv_g4_43_07b5238c",
+          "ground_truth_entities_count": 4,
+          "summary_entities_count": 4,
+          "preserved_count": 4,
+          "ground_truth_entities": [
+            "2.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "summary_entities": [
+            "2.0",
+            "5.6",
+            "seata",
+            "undo_log"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 369,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Seata AT模式中的undo_log表用于记录事务回滚信息。当分支事务注册TC后，在本地事务提交前发生全局事务回滚时，会插入一条log_status=1的undo记录，防止资源悬挂问题。undo_log表与业务SQL在一个本地事务中提交，通过唯一索引冲突确保资源释放的正确性。在AT模式的二阶段提交中，TC会下发undo delete操作来清理undo_log表中的记录。undo_log的关键参"
+        },
+        {
+          "session_index": 44,
+          "topic": "rocketmq_transaction_half",
+          "conv_id": "conv_g4_44_1d9955fd",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 400,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "RocketMQ 事务消息中的半事务消息是指消息被生产者发送至服务端并持久化成功后，被标记为\"暂不能投递\"的状态 [1]。此时消息不会直接被服务端持久化到普通存储系统，而是被单独存储到事务存储系统中，等待本地事务执行结果 [2][4]。半事务消息对下游消费者不可见，直到生产者提交二次确认结果(Commit)后，服务端才会将其标记为可投递并投递给消费者 [1][2]。\n\n关键步骤包括：生产者发送消息"
+        },
+        {
+          "session_index": 45,
+          "topic": "nacos_long_polling",
+          "conv_id": "conv_g4_45_06dcd952",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "nacos"
+          ],
+          "summary_entities": [
+            "nacos"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 434,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Nacos long polling 是客户端通过长连接方式监听配置变更的机制，使用长轮询超时时间(config.long-poll.timeout)参数控制，默认值为30000毫秒[3]。当配置发生变更时，服务器会通知客户端，客户端重试次数由maxRetry参数控制，默认为3次[3]。系统通过nacos_monitor{name='longPolling'}指标记录长连接数[1][2]。\n\n关键"
+        },
+        {
+          "session_index": 46,
+          "topic": "sentinel_helloworld_flowrule_20qps",
+          "conv_id": "conv_g4_46_426f1bda",
+          "ground_truth_entities_count": 2,
+          "summary_entities_count": 2,
+          "preserved_count": 2,
+          "ground_truth_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "summary_entities": [
+            "qps",
+            "sentinel"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 414,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则，需创建 FlowRule 对象并设置 resource 为 \"HelloWorld\"，count 为 20，grade 为 QPS。通过 rule.setResource(\"HelloWorld\")、rule.setCount(20) 和设置 grade 为 QPS 实现配置。创建 FlowRule 后，应使"
+        },
+        {
+          "session_index": 47,
+          "topic": "dubbo_protocol_export",
+          "conv_id": "conv_g4_47_7e981829",
+          "ground_truth_entities_count": 7,
+          "summary_entities_count": 7,
+          "preserved_count": 7,
+          "ground_truth_entities": [
+            "1.0.0",
+            "2.0.0",
+            "2.7.1",
+            "20880",
+            "dubbo",
+            "nacos",
+            "protoc"
+          ],
+          "summary_entities": [
+            "1.0.0",
+            "2.0.0",
+            "2.7.1",
+            "20880",
+            "dubbo",
+            "nacos",
+            "protoc"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 337,
+          "recent_turns_count": 5,
+          "pass": true,
+          "summary_preview": "dubbo protocol export 是通过 dubbo 协议暴露服务的过程。首先需要定义 dubbo 协议配置，使用 <dubbo:protocol name=\"dubbo\" port=\"20880\" /> 指定协议名称和端口号。然后通过 <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0"
+        },
+        {
+          "session_index": 48,
+          "topic": "seata_tcc_try_confirm_cancel",
+          "conv_id": "conv_g4_48_4c70bfd6",
+          "ground_truth_entities_count": 3,
+          "summary_entities_count": 3,
+          "preserved_count": 3,
+          "ground_truth_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "summary_entities": [
+            "1.5.0",
+            "2.7.0",
+            "seata"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 734,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "Seata TCC模式包含三个执行阶段：Try阶段用于预定操作资源(Prepare)，Confirm阶段执行主要业务逻辑(Commit)，Cancel阶段进行事务回滚(Rollback)[1][2]。Try阶段的方法被@TwoPhaseBusinessAction注解修饰，Confirm阶段使用commitMethod属性指向的方法，Cancel阶段使用rollbackMethod属性指向的方法["
+        },
+        {
+          "session_index": 49,
+          "topic": "rocketmq_consume_orderly",
+          "conv_id": "conv_g4_49_4299636f",
+          "ground_truth_entities_count": 1,
+          "summary_entities_count": 1,
+          "preserved_count": 1,
+          "ground_truth_entities": [
+            "rocketmq"
+          ],
+          "summary_entities": [
+            "rocketmq"
+          ],
+          "missing_entities": [],
+          "fidelity_score": 1.0,
+          "compression_observed": true,
+          "rolling_summary_len": 428,
+          "recent_turns_count": 3,
+          "pass": true,
+          "summary_preview": "RocketMQ 顺序消费是按照特定粒度保证消息顺序处理的功能，分为按消息组粒度和按队列存储粒度两种情况。当设置消息组并顺序发送时，同一消息组内的消息消费顺序与发送顺序完全一致；未设置消息组时，按队列存储顺序消费，但不保证与发送顺序一致。顺序消费的核心机制是消息消费失败重试时，后续消息不可被消费，必须等待前面的消息消费完成。\n\n顺序消费的关键参数包括：投递顺序性（顺序投递和并发投递，默认为并发投递"
+        }
+      ]
+    },
+    {
+      "gate": "G5",
+      "status": "SKIP",
+      "reason": "GATES filter=G4"
+    }
+  ],
+  "overall_status": "INCOMPLETE"
+}

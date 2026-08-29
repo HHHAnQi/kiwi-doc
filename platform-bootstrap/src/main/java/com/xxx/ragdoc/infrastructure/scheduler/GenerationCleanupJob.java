@@ -32,17 +32,25 @@ public class GenerationCleanupJob {
             try {
                 // 先删派生索引，再删 SoT 的旧 chunk；两步均为幂等操作。
                 vectorStore.deleteByDocumentIdAndGeneration(task.documentId(), task.generation());
-                chunkRepository.deleteByDocumentIdAndGeneration(task.documentId(), task.generation());
+                chunkRepository.deleteByDocumentIdAndGeneration(
+                        task.documentId(), task.generation());
                 repository.markDone(task.id());
             } catch (Exception e) {
                 int attempts = task.attempts() + 1;
                 long backoffSeconds = Math.min(3600L, 30L << Math.min(attempts - 1, 6));
                 repository.markRetry(
-                        task.id(), attempts, now.plusSeconds(backoffSeconds),
+                        task.id(),
+                        attempts,
+                        now.plusSeconds(backoffSeconds),
                         e.getClass().getSimpleName() + ": " + e.getMessage(),
                         attempts >= MAX_ATTEMPTS);
-                log.warn("generation_cleanup.failed job_id={}, doc_id={}, generation={}, attempts={}, error={}",
-                        task.id(), task.documentId(), task.generation(), attempts, e.getMessage());
+                log.warn(
+                        "generation_cleanup.failed job_id={}, doc_id={}, generation={}, attempts={}, error={}",
+                        task.id(),
+                        task.documentId(),
+                        task.generation(),
+                        attempts,
+                        e.getMessage());
             }
         }
     }

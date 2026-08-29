@@ -58,13 +58,19 @@ public class SufficiencyDecisionGuard {
             List<EvidenceRequirement> requirements,
             List<Evidence> evidence) {
         if (decision == null) return GuardResult.reject("NULL_DECISION");
-        if (decision.status() != SufficiencyStatus.SUFFICIENT) {
-            return GuardResult.reject("STATUS_NOT_SUFFICIENT:" + decision.status());
+        // 改动(2026-08-25): PARTIAL + ANSWER_PARTIAL 也放行(带覆盖度标注回答)。
+        // 原: 只允许 SUFFICIENT + ANSWER + missing 为空 → 65% 拒答的守门层。
+        boolean isFull =
+                decision.status() == SufficiencyStatus.SUFFICIENT
+                        && decision.action() == RecommendedAction.ANSWER;
+        boolean isPartial =
+                decision.status() == SufficiencyStatus.PARTIAL
+                        && decision.action() == RecommendedAction.ANSWER_PARTIAL;
+        if (!isFull && !isPartial) {
+            return GuardResult.reject(
+                    "STATUS_NOT_ANSWERABLE:" + decision.status() + ":" + decision.action());
         }
-        if (decision.action() != RecommendedAction.ANSWER) {
-            return GuardResult.reject("ACTION_NOT_ANSWER:" + decision.action());
-        }
-        if (!decision.missingRequirementIds().isEmpty()) {
+        if (isFull && !decision.missingRequirementIds().isEmpty()) {
             return GuardResult.reject("MISSING_NOT_EMPTY:" + decision.missingRequirementIds());
         }
         if (!decision.conflicts().isEmpty()) {

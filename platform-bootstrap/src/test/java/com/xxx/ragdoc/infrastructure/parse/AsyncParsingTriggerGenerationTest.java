@@ -15,15 +15,39 @@ class AsyncParsingTriggerGenerationTest {
     void duplicateInflightRebuildDoesNotAllocateAnotherGeneration() {
         DocumentRepository documents = mock(DocumentRepository.class);
         ParseTaskRepository tasks = mock(ParseTaskRepository.class);
-        Document doc = Document.newUploaded(
-                new ContentHash("a".repeat(64)), "guide.pdf", "application/pdf", 1,
-                "tenant-a");
+        Document doc =
+                Document.newUploaded(
+                        new ContentHash("a".repeat(64)),
+                        "guide.pdf",
+                        "application/pdf",
+                        1,
+                        "tenant-a");
         doc.assignId(new DocumentId(9L));
         Instant now = Instant.parse("2026-08-13T00:00:00Z");
-        ParseTask existing = new ParseTask(
-                7L, 9L, 2, ParseTask.TriggerType.REBUILD, 6L, "a".repeat(64),
-                ParseTaskStatus.RUNNING, 0, 3, 0, 0, null, null, List.of(), now, "worker",
-                ParseTask.DeliveryStatus.SENT, 0, now, null, now, now);
+        ParseTask existing =
+                new ParseTask(
+                        7L,
+                        9L,
+                        2,
+                        ParseTask.TriggerType.REBUILD,
+                        6L,
+                        "a".repeat(64),
+                        ParseTaskStatus.RUNNING,
+                        0,
+                        3,
+                        0,
+                        0,
+                        null,
+                        null,
+                        List.of(),
+                        now,
+                        "worker",
+                        ParseTask.DeliveryStatus.SENT,
+                        0,
+                        now,
+                        null,
+                        now,
+                        now);
         when(documents.findById(9L)).thenReturn(Optional.of(doc));
         when(tasks.findByDocumentId(9L)).thenReturn(Optional.of(existing));
 

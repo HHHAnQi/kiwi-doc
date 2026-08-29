@@ -1,0 +1,591 @@
+{
+  "dataset_size": 80,
+  "metrics": {
+    "answer_correctness": 0.75,
+    "faithfulness": 0.98225,
+    "evidence_completeness": 0.8728154761904762
+  },
+  "confidence_intervals_95": {
+    "answer_correctness": {
+      "low": 0.68875,
+      "high": 0.8099999999999999,
+      "method": "query_bootstrap_percentile"
+    },
+    "faithfulness": {
+      "low": 0.961375,
+      "high": 0.997875,
+      "method": "query_bootstrap_percentile"
+    },
+    "evidence_completeness": {
+      "low": 0.8261904761904763,
+      "high": 0.9154464285714285,
+      "method": "query_bootstrap_percentile"
+    }
+  },
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "source_report": "eval/runs/frozen80_v4_generation_post_router_fix_qwen.json",
+  "timestamp": "2026-08-25T03:15:39.212770+00:00",
+  "per_query": [
+    {
+      "question_id": 1,
+      "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 2,
+      "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 3,
+      "question": "Dubbo 点对点直连以什么粒度配置，对其他服务接口有什么影响？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 4,
+      "question": "Nacos2 三节点集群服务发现性能测试的容量和核心接口 TPS 达到了什么水平？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 5,
+      "question": "在 sayHello 方法中，如何避免使用 JDK 公用线程池？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 6,
+      "question": "spring-cloud-alibaba-seata 以 2.2.0.RELEASE 为分界点，内部依赖发生了什么变化？",
+      "answer_correctness": 0.8,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 7,
+      "question": "在Spring Cloud Alibaba中，如何配置加权最少活跃调用优先算法？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8
+    },
+    {
+      "question_id": 8,
+      "question": "使用 XML 配置 Dubbo 服务提供者并以 Nacos 为注册中心时，需要声明哪些核心配置？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 9,
+      "question": "在本地新建开发分支时，分支名通常以什么作为命名依据？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 10,
+      "question": "Dubbo 3 中，与 Dubbo 2 相比，地址注册模型的变化是什么？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 11,
+      "question": "在 Spring Cloud Alibaba 中，泛接口实现方式主要用于什么场景？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 12,
+      "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+      "answer_correctness": 0.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 13,
+      "question": "泛化调用的 Map 参数中，如何显式指定接口类型对象的实现类？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 14,
+      "question": "如何在本地克隆Nacos代码仓库并添加Alibaba/Nacos仓库为upstream仓库？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 15,
+      "question": "在完成rebase后，如何将分支上传到您fork的仓库？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 16,
+      "question": "如何修改应用demo在20880端口上提供服务的权重？",
+      "answer_correctness": 0.8,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8571428571428571
+    },
+    {
+      "question_id": 17,
+      "question": "阿里巴巴在Dubbo3中扮演了什么角色？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8571428571428571
+    },
+    {
+      "question_id": 18,
+      "question": "Dubbo 访问日志会记录什么信息，启用时需要注意什么？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 19,
+      "question": "Spring Cloud Alibaba中的Nacos数据模型Key由哪些元素唯一确定？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 20,
+      "question": "在注册动态配置覆盖规则时，`override://`的用途是什么？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 21,
+      "question": "在 Spring Cloud Alibaba 中，如何配置一个参数为 callback 类型？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 22,
+      "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 23,
+      "question": "Nacos 控制台如何帮助用户管理服务流量权重？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 24,
+      "question": "在Nacos中，如何定义实例的权重以及其作用？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 25,
+      "question": "在Spring Cloud Alibaba中，如何修改Dubbo服务的超时时间？",
+      "answer_correctness": 1.0,
+      "faithfulness": 0.5,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 26,
+      "question": "如何在 Spring Cloud Alibaba 中禁用特定的提供者实例？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 27,
+      "question": "如何在Nacos中修改服务实例的流量权重？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 28,
+      "question": "在 Spring Cloud Alibaba 中，如何使用 XML 配置来创建服务消费者的示例？",
+      "answer_correctness": 0.5,
+      "faithfulness": 0.75,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 29,
+      "question": "在Spring Cloud Alibaba中，如何判断平滑加权轮询算法是否适合用户有加权轮询需求的情况？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 30,
+      "question": "Dubbo 如何实现从服务器端调用客户端逻辑？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8
+    },
+    {
+      "question_id": 31,
+      "question": "在 Spring Cloud Alibaba 中，如何使业务类在 Nacos 配置变更时自动重建以加载最新配置？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 32,
+      "question": "如何在 Spring Cloud Alibaba 中通过 XML 配置实现点对点直连服务提供者？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 33,
+      "question": "Spring Cloud Alibaba 2.7.5 版本引入的线程池模型相比老版本有哪些改进？",
+      "answer_correctness": 0.5,
+      "faithfulness": 0.83,
+      "evidence_completeness": 0.8
+    },
+    {
+      "question_id": 34,
+      "question": "在 Spring Cloud Alibaba 中，如何配置远程服务的 Stub？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 35,
+      "question": "如何通过 XML 的 dubbo:reference interface 与 url 配置点对点直连服务提供者？",
+      "answer_correctness": 0.5,
+      "faithfulness": 0.5,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 36,
+      "question": "在 Spring Cloud Alibaba 中，如何使用 RpcContext 进行隐式参数传递？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8571428571428571
+    },
+    {
+      "question_id": 37,
+      "question": "配置 Dubbo 端口时，可以在哪些配置文件中设置？",
+      "answer_correctness": 0.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 38,
+      "question": "为什么在 Spring Cloud Alibaba 中获取客户端隐式传入的参数不建议常规业务使用？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 39,
+      "question": "如何配置 Dubbo 协议以实现延迟连接？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 40,
+      "question": "覆盖规则是从哪个版本开始支持从服务和应用两个粒度来调整动态配置的？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 41,
+      "question": "BarServiceStub 的构造函数接收什么参数？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 42,
+      "question": "如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 43,
+      "question": "Dubbo 微服务支持哪些部署架构？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 44,
+      "question": "如何配置广播调用失败后停止调用其他节点的比例？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 45,
+      "question": "在Spring Cloud Alibaba中，如何配置一个服务提供端使其调用需要鉴权认证通过？",
+      "answer_correctness": 0.8,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 46,
+      "question": "在 Spring Cloud Alibaba 中，如何使用 `force:` 和 `fail:` 来控制 Mock 行为？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 47,
+      "question": "在Nacos中，如何使用配置订阅者来监听配置变更并检查变更是否已推送到客户端？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 48,
+      "question": "如何在 Spring Cloud Alibaba 中限制客户端服务使用的连接数？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 49,
+      "question": "在生产环境中，使用 Spring Cloud Alibaba Nacos 时，建议采用哪种数据源配置？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 50,
+      "question": "Dubbo3 相比 Dubbo2 在哪些方面进行了升级？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 51,
+      "question": "如何指定 Dubbo 的线程堆栈导出路径？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 52,
+      "question": "Dubbo protocol 的 accesslog 属性能否直接指定日志文件路径，示例是什么？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 53,
+      "question": "Nacos支持哪些类型的构建物？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 54,
+      "question": "在 Spring Cloud Alibaba 中，如何确保配置集的 Data ID 具有全局唯一性？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 55,
+      "question": "在 Nacos 中，配置分组的作用是什么？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 56,
+      "question": "Dubbo 的扩展能力体现在哪些方面？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 57,
+      "question": "在Spring Cloud Alibaba中，如何设置服务的客户端的`loadbalance`属性为`leastactive`？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 58,
+      "question": "在 Dubbo 中如何实现分布式事务的支持？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 59,
+      "question": "在Spring Cloud Alibaba中，如何使用异步方式进行Dubbo服务调用？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 60,
+      "question": "Dubbo3 如何支持云原生微服务架构？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8333333333333334
+    },
+    {
+      "question_id": 61,
+      "question": "Dubbo 如何支持 Kubernetes 平台调度？",
+      "answer_correctness": 0.8,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 62,
+      "question": "在 Nacos 中，配置变更历史和服务标签是如何关联的？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 63,
+      "question": "将 Dubbo 访问日志输出到指定文件的 protocol 配置示例是什么？",
+      "answer_correctness": 0.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.0
+    },
+    {
+      "question_id": 64,
+      "question": "Seata 中 TM、RM 和 TC 在事务生命周期中分别承担什么职责？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 65,
+      "question": "Seata AT 模式在提交本地事务前为什么必须获取全局锁？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 66,
+      "question": "Seata AT 模式默认的全局隔离级别是什么，如何实现全局读已提交？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 1,
+      "question": "Seata Saga 模式发生异常时如何执行补偿回滚？",
+      "answer_correctness": 0.8,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 2,
+      "question": "Seata TCC 模式的一阶段和二阶段分别执行什么逻辑？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 69,
+      "question": "Seata XA 模式如何保证分支事务可回滚和持久化？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.75
+    },
+    {
+      "question_id": 70,
+      "question": "RocketMQ 普通消息从发送到删除经历哪些主要生命周期状态？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.83
+    },
+    {
+      "question_id": 71,
+      "question": "RocketMQ 定时消息的定时时间应如何设置，有哪些边界限制？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8571428571428571
+    },
+    {
+      "question_id": 72,
+      "question": "RocketMQ 顺序消息如何通过消息组保证顺序？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 73,
+      "question": "RocketMQ 事务消息在什么情况下会触发事务回查？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.5
+    },
+    {
+      "question_id": 74,
+      "question": "RocketMQ 因服务端流控错误触发发送重试时采用什么退避策略？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 0.8333333333333334
+    },
+    {
+      "question_id": 75,
+      "question": "RocketMQ 提供哪些消费者类型，PullConsumer 适合什么场景？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 76,
+      "question": "Sentinel 主要从哪些方面保障微服务的可靠性？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 77,
+      "question": "Sentinel 的实时监控可以展示哪些范围的运行信息？",
+      "answer_correctness": 0.5,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 78,
+      "question": "Sentinel 原生支持哪些语言，并能集成哪些常用框架？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 79,
+      "question": "如何为 Sentinel 的 HelloWorld 资源配置每秒最多 20 次访问的流控规则？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    },
+    {
+      "question_id": 80,
+      "question": "为什么 Sentinel 控制台的簇点链路页面可能暂时看不到资源？",
+      "answer_correctness": 1.0,
+      "faithfulness": 1.0,
+      "evidence_completeness": 1.0
+    }
+  ]
+}

@@ -92,6 +92,55 @@ class TopicShiftDetectorTest {
     }
 
     @Test
+    void 含指代的低相似追问_应先交给rewrite而不是误判topicShift() {
+        ConversationContext ctx =
+                ConversationContext.empty("c1").appendTurn(turn("seata-server 支持哪些环境变量？"));
+
+        boolean shift = detector.isTopicShift("那它的默认端口是多少？", ctx);
+
+        assertThat(shift).isFalse();
+        verifyNoInteractions(embeddingClient);
+        verify(metrics).incrementTopicShift("context_dependent");
+    }
+
+    @Test
+    void 明确要求重新回答最开始问题_应先交给rewrite() {
+        ConversationContext ctx =
+                ConversationContext.empty("c1").appendTurn(turn("RocketMQ 怎么保证消息不丢?"));
+
+        boolean shift = detector.isTopicShift("请重新回答最开始的问题", ctx);
+
+        assertThat(shift).isFalse();
+        verifyNoInteractions(embeddingClient);
+        verify(metrics).incrementTopicShift("context_dependent");
+    }
+
+    @Test
+    void 序数省略追问_应先交给rewrite() {
+        ConversationContext ctx =
+                ConversationContext.empty("c1").appendTurn(turn("Sentinel 流控效果有几种?"));
+
+        boolean shift = detector.isTopicShift("第一种详细", ctx);
+
+        assertThat(shift).isFalse();
+        verifyNoInteractions(embeddingClient);
+        verify(metrics).incrementTopicShift("context_dependent");
+    }
+
+    @Test
+    void 明确新实体的独立问题_仍应执行topicShift检测() {
+        when(embeddingClient.embed(any()))
+                .thenReturn(emb(vec(1.0f, 0.0f)))
+                .thenReturn(emb(vec(0.0f, 1.0f)));
+        ConversationContext ctx = ConversationContext.empty("c1").appendTurn(turn("Sentinel 流控?"));
+
+        boolean shift = detector.isTopicShift("Nacos 配置中心是什么", ctx);
+
+        assertThat(shift).isTrue();
+        verify(metrics).incrementTopicShift("detected");
+    }
+
+    @Test
     void embed返回null_应返回false() {
         when(embeddingClient.embed(any())).thenReturn(null);
 

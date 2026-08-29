@@ -137,16 +137,22 @@ public class JpaParseTaskRepository implements ParseTaskRepository {
     @Override
     @Transactional(readOnly = true)
     public List<ParseTask> findDueRetry(Instant now, ParseTaskStatus status) {
-        return jpa.findDue(now, status.name(), org.springframework.data.domain.PageRequest.of(0, 100))
-                .stream().map(mapper::toDomain).toList();
+        return jpa
+                .findDue(now, status.name(), org.springframework.data.domain.PageRequest.of(0, 100))
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ParseTask> findDueForDelivery(Instant now, int limit) {
-        return jpa.findDueDelivery(now,
-                        org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
-                .stream().map(mapper::toDomain).toList();
+        return jpa
+                .findDueDelivery(
+                        now, org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)))
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 
     @Override
@@ -155,8 +161,7 @@ public class JpaParseTaskRepository implements ParseTaskRepository {
             String leasedBy, Instant now, Instant leaseUntil, int limit) {
         var candidates =
                 jpa.findDeliveryClaimCandidates(
-                        now,
-                        org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)));
+                        now, org.springframework.data.domain.PageRequest.of(0, Math.max(1, limit)));
         java.util.List<ParseTask> claimed = new java.util.ArrayList<>(candidates.size());
         for (var candidate : candidates) {
             if (jpa.claimDelivery(candidate.getId(), leasedBy, leaseUntil, now) == 1) {

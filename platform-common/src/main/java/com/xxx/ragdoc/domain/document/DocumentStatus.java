@@ -57,8 +57,7 @@ public enum DocumentStatus {
     private boolean canTransitionTo(DocumentStatus target) {
         return switch (this) {
                 // 入口: 启动解析
-            case UPLOADED ->
-                    target == DocumentStatus.PARSING || target == DocumentStatus.FAILED;
+            case UPLOADED -> target == DocumentStatus.PARSING || target == DocumentStatus.FAILED;
                 // 解析阶段: 切片成功 / 失败
             case PARSING -> target == DocumentStatus.CHUNKED || target == DocumentStatus.FAILED;
                 // 切片完成: 进入 embedding / 失败

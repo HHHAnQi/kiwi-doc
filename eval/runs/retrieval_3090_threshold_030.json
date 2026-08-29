@@ -1,0 +1,7578 @@
+{
+  "dataset_size": 80,
+  "k": 5,
+  "started_at": "2026-08-24T16:12:29.001440+00:00",
+  "elapsed_sec": 108.01,
+  "dense": {
+    "hit_rate@5": 0.0,
+    "mrr@5": 0.0,
+    "ndcg@5": 0.0,
+    "precision@5": 0.0,
+    "recall@5": 0.0
+  },
+  "hybrid": {
+    "hit_rate@5": 0.0,
+    "mrr@5": 0.0,
+    "ndcg@5": 0.0,
+    "precision@5": 0.0,
+    "recall@5": 0.0
+  },
+  "delta_recall@5": 0.0,
+  "winner": "tie",
+  "retrieve_url": "http://localhost:8090/api/v1/retrieve",
+  "dataset_sha256": "ba1d3c1ab332a135bd86a5a75c67c9fbe5a7ef16d97495d6115affb21326cfc3",
+  "diagnostics": {
+    "dense": {
+      "rerank_states": {
+        "applied": 80
+      },
+      "top1_rerank_score": {
+        "min": 0.00011,
+        "p25": 0.001589,
+        "p50": 0.009161,
+        "p75": 0.044355,
+        "p95": 0.381508,
+        "max": 0.996703
+      },
+      "latency_ms": {
+        "mean": 663.2,
+        "p50": 650.5,
+        "p95": 935.904
+      },
+      "returned_items": {
+        "min": 1,
+        "mean": 4.8,
+        "max": 5
+      }
+    },
+    "hybrid": {
+      "rerank_states": {
+        "applied": 80
+      },
+      "top1_rerank_score": {
+        "min": 0.0062,
+        "p25": 0.699951,
+        "p50": 0.936349,
+        "p75": 0.990194,
+        "p95": 0.998983,
+        "max": 0.999414
+      },
+      "latency_ms": {
+        "mean": 686.57,
+        "p50": 675.61,
+        "p95": 923.6715
+      },
+      "returned_items": {
+        "min": 1,
+        "mean": 2.8,
+        "max": 5
+      }
+    }
+  },
+  "per_query": {
+    "dense": [
+      {
+        "index": 1,
+        "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1330
+        ],
+        "retrieved_chunk_ids": [
+          498,
+          92,
+          88,
+          95,
+          2136
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1235.99,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.046735063,
+        "top1_rerank_score": 0.04266826,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "score": 0.04266826
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.03725191
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "score": 0.028018309
+          },
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.02393504
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.00017484433
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          2126
+        ],
+        "retrieved_chunk_ids": [
+          2136,
+          2151,
+          56,
+          1745,
+          1674
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 695.81,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.045450214,
+        "top1_rerank_score": 0.025095815,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.025095815
+          },
+          {
+            "chunk_id": 2151,
+            "doc_id": 206,
+            "score": 0.0017295337
+          },
+          {
+            "chunk_id": 56,
+            "doc_id": 20,
+            "score": 0.0016922655
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.000443936
+          },
+          {
+            "chunk_id": 1674,
+            "doc_id": 175,
+            "score": 5.1204446e-05
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "question": "Sentinel 和 Hystrix 的核心差异是什么？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          2235
+        ],
+        "retrieved_chunk_ids": [
+          52,
+          51,
+          95,
+          1203,
+          92
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 711.11,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028142886,
+        "top1_rerank_score": 0.0024924919,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 52,
+            "doc_id": 20,
+            "score": 0.0024924919
+          },
+          {
+            "chunk_id": 51,
+            "doc_id": 20,
+            "score": 0.0007925595
+          },
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.0002749654
+          },
+          {
+            "chunk_id": 1203,
+            "doc_id": 147,
+            "score": 0.000118287695
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.00010271441
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1074
+        ],
+        "retrieved_chunk_ids": [
+          603,
+          3010,
+          3018,
+          1031,
+          1249
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 634.02,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05305195,
+        "top1_rerank_score": 0.015110746,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 603,
+            "doc_id": 70,
+            "score": 0.015110746
+          },
+          {
+            "chunk_id": 3010,
+            "doc_id": 216,
+            "score": 0.0007317788
+          },
+          {
+            "chunk_id": 3018,
+            "doc_id": 216,
+            "score": 0.000102315855
+          },
+          {
+            "chunk_id": 1031,
+            "doc_id": 122,
+            "score": 9.219043e-05
+          },
+          {
+            "chunk_id": 1249,
+            "doc_id": 136,
+            "score": 5.476259e-05
+          }
+        ]
+      },
+      {
+        "index": 5,
+        "question": "Spring Cloud Alibaba 中如何使用 JVM 启动参数实现点对点直连服务提供者？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1927
+        ],
+        "retrieved_chunk_ids": [
+          1741,
+          2525,
+          2527,
+          2136,
+          503
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 489.89,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06071422,
+        "top1_rerank_score": 0.00045191418,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.00045191418
+          },
+          {
+            "chunk_id": 2525,
+            "doc_id": 255,
+            "score": 0.00038756366
+          },
+          {
+            "chunk_id": 2527,
+            "doc_id": 255,
+            "score": 0.0003452963
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.00030741462
+          },
+          {
+            "chunk_id": 503,
+            "doc_id": 63,
+            "score": 0.00024776664
+          }
+        ]
+      },
+      {
+        "index": 6,
+        "question": "Nacos 控制台如何帮助用户管理服务流量权重？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          75
+        ],
+        "retrieved_chunk_ids": [
+          2953,
+          49,
+          103,
+          95,
+          2326
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 800.65,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.058697347,
+        "top1_rerank_score": 0.02079947,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2953,
+            "doc_id": 243,
+            "score": 0.02079947
+          },
+          {
+            "chunk_id": 49,
+            "doc_id": 20,
+            "score": 0.0015677313
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "score": 0.0012252284
+          },
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.0011317682
+          },
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.00033124894
+          }
+        ]
+      },
+      {
+        "index": 7,
+        "question": "在容量评估时，单节点 Nacos 支持多少级服务实例与配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2237
+        ],
+        "retrieved_chunk_ids": [
+          1745,
+          498,
+          1741,
+          2225,
+          95
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 745.92,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.079319894,
+        "top1_rerank_score": 0.0068321615,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.0068321615
+          },
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "score": 0.0017636509
+          },
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.00039741443
+          },
+          {
+            "chunk_id": 2225,
+            "doc_id": 223,
+            "score": 0.00030256322
+          },
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.00022713387
+          }
+        ]
+      },
+      {
+        "index": 8,
+        "question": "在 sayHello 方法中，如何避免使用 JDK 公用线程池？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          373
+        ],
+        "retrieved_chunk_ids": [
+          2135,
+          2155,
+          2138,
+          2156,
+          2134
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 550.55,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06593138,
+        "top1_rerank_score": 0.00084830745,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.00084830745
+          },
+          {
+            "chunk_id": 2155,
+            "doc_id": 206,
+            "score": 0.00027469
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.00016625471
+          },
+          {
+            "chunk_id": 2156,
+            "doc_id": 206,
+            "score": 0.00016253712
+          },
+          {
+            "chunk_id": 2134,
+            "doc_id": 206,
+            "score": 0.00012340398
+          }
+        ]
+      },
+      {
+        "index": 9,
+        "question": "在Nacos中，如何定义实例的权重以及其作用？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1017
+        ],
+        "retrieved_chunk_ids": [
+          1394,
+          1473,
+          1702,
+          2640,
+          1703
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 913.02,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.053098246,
+        "top1_rerank_score": 0.004988012,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1394,
+            "doc_id": 155,
+            "score": 0.004988012
+          },
+          {
+            "chunk_id": 1473,
+            "doc_id": 155,
+            "score": 0.004241706
+          },
+          {
+            "chunk_id": 1702,
+            "doc_id": 169,
+            "score": 0.00400881
+          },
+          {
+            "chunk_id": 2640,
+            "doc_id": 249,
+            "score": 0.0027392244
+          },
+          {
+            "chunk_id": 1703,
+            "doc_id": 169,
+            "score": 0.001631559
+          }
+        ]
+      },
+      {
+        "index": 10,
+        "question": "在Spring Cloud Alibaba中，如何修改Dubbo服务的超时时间？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1072
+        ],
+        "retrieved_chunk_ids": [
+          2138,
+          88,
+          2137,
+          2136,
+          936
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 623.71,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06148767,
+        "top1_rerank_score": 0.15524724,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.15524724
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "score": 0.052997086
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.00082850293
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.00022976198
+          },
+          {
+            "chunk_id": 936,
+            "doc_id": 101,
+            "score": 9.321737e-05
+          }
+        ]
+      },
+      {
+        "index": 11,
+        "question": "如何在 Spring Cloud Alibaba 中禁用特定的提供者实例？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1077
+        ],
+        "retrieved_chunk_ids": [
+          2040,
+          1771,
+          381,
+          585,
+          787
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 677.96,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06923008,
+        "top1_rerank_score": 0.072068885,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "score": 0.072068885
+          },
+          {
+            "chunk_id": 1771,
+            "doc_id": 187,
+            "score": 0.0016155813
+          },
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "score": 0.0012646135
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.00033307265
+          },
+          {
+            "chunk_id": 787,
+            "doc_id": 105,
+            "score": 0.0003068583
+          }
+        ]
+      },
+      {
+        "index": 12,
+        "question": "Spring Cloud Alibaba 的哪个版本开始支持服务降级功能？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          969
+        ],
+        "retrieved_chunk_ids": [
+          498,
+          497,
+          92,
+          964,
+          52
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 650.52,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.056023195,
+        "top1_rerank_score": 0.0080713965,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "score": 0.0080713965
+          },
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "score": 0.0041634557
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.00034452407
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.00012678091
+          },
+          {
+            "chunk_id": 52,
+            "doc_id": 20,
+            "score": 0.00012129701
+          }
+        ]
+      },
+      {
+        "index": 13,
+        "question": "在Spring Cloud Alibaba中，如何配置加权最少活跃调用优先算法？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          798
+        ],
+        "retrieved_chunk_ids": [
+          2135,
+          2136,
+          606,
+          325,
+          1745
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 534.61,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.054575443,
+        "top1_rerank_score": 0.015226971,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.015226971
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.0018839928
+          },
+          {
+            "chunk_id": 606,
+            "doc_id": 70,
+            "score": 0.00057771994
+          },
+          {
+            "chunk_id": 325,
+            "doc_id": 15,
+            "score": 0.00034682796
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.00029922667
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "question": "如何在Nacos中修改服务实例的流量权重？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1017
+        ],
+        "retrieved_chunk_ids": [
+          92,
+          79,
+          52,
+          95,
+          103
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1057.58,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.091135636,
+        "top1_rerank_score": 0.07687917,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.07687917
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.002450348
+          },
+          {
+            "chunk_id": 52,
+            "doc_id": 20,
+            "score": 0.0019071292
+          },
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.00094207143
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "score": 0.0009051451
+          }
+        ]
+      },
+      {
+        "index": 15,
+        "question": "Nacos提供了哪些功能来帮助用户在配置管理中降低可用性风险？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          75
+        ],
+        "retrieved_chunk_ids": [
+          2261,
+          2656,
+          2077,
+          2265,
+          2326
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 929.5,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.04362761,
+        "top1_rerank_score": 0.0138637405,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2261,
+            "doc_id": 215,
+            "score": 0.0138637405
+          },
+          {
+            "chunk_id": 2656,
+            "doc_id": 242,
+            "score": 0.002778345
+          },
+          {
+            "chunk_id": 2077,
+            "doc_id": 208,
+            "score": 0.0010800636
+          },
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "score": 0.00045148897
+          },
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.00023088945
+          }
+        ]
+      },
+      {
+        "index": 16,
+        "question": "在 Spring Cloud Alibaba 中，如何实现 Dubbo 服务消费者的 Callback 接口？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          697
+        ],
+        "retrieved_chunk_ids": [
+          2115,
+          2122,
+          2143,
+          769,
+          2137
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 626.04,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.044408806,
+        "top1_rerank_score": 0.0077233044,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.0077233044
+          },
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.003912604
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.0021828618
+          },
+          {
+            "chunk_id": 769,
+            "doc_id": 92,
+            "score": 0.0013002254
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.0009778963
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 XML 配置来创建服务消费者的示例？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1709
+        ],
+        "retrieved_chunk_ids": [
+          762,
+          2138,
+          2137,
+          1084,
+          2141
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 549.01,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06313026,
+        "top1_rerank_score": 0.07041017,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 762,
+            "doc_id": 92,
+            "score": 0.07041017
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.009374611
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.007669535
+          },
+          {
+            "chunk_id": 1084,
+            "doc_id": 106,
+            "score": 0.005365395
+          },
+          {
+            "chunk_id": 2141,
+            "doc_id": 206,
+            "score": 0.0038275241
+          }
+        ]
+      },
+      {
+        "index": 18,
+        "question": "如果要从旧版本迁移到 Dubbo3，应该参考哪个文档？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          42
+        ],
+        "retrieved_chunk_ids": [
+          924,
+          927,
+          1250,
+          1233,
+          2226
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 512.59,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.055703923,
+        "top1_rerank_score": 0.00014102447,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 924,
+            "doc_id": 101,
+            "score": 0.00014102447
+          },
+          {
+            "chunk_id": 927,
+            "doc_id": 101,
+            "score": 0.000112497466
+          },
+          {
+            "chunk_id": 1250,
+            "doc_id": 136,
+            "score": 8.5247426e-05
+          },
+          {
+            "chunk_id": 1233,
+            "doc_id": 136,
+            "score": 8.362561e-05
+          },
+          {
+            "chunk_id": 2226,
+            "doc_id": 223,
+            "score": 5.2391973e-05
+          }
+        ]
+      },
+      {
+        "index": 19,
+        "question": "在Spring Cloud Alibaba中，如何判断平滑加权轮询算法是否适合用户有加权轮询需求的情况？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          2128
+        ],
+        "retrieved_chunk_ids": [
+          819,
+          1674,
+          818,
+          1775,
+          1923
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 746.01,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.0479173,
+        "top1_rerank_score": 0.0016467888,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 819,
+            "doc_id": 13,
+            "score": 0.0016467888
+          },
+          {
+            "chunk_id": 1674,
+            "doc_id": 175,
+            "score": 0.00039124992
+          },
+          {
+            "chunk_id": 818,
+            "doc_id": 13,
+            "score": 0.00014465574
+          },
+          {
+            "chunk_id": 1775,
+            "doc_id": 183,
+            "score": 0.00013083803
+          },
+          {
+            "chunk_id": 1923,
+            "doc_id": 185,
+            "score": 0.00012075933
+          }
+        ]
+      },
+      {
+        "index": 20,
+        "question": "Dubbo 如何实现从服务器端调用客户端逻辑？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          697
+        ],
+        "retrieved_chunk_ids": [
+          2155,
+          2159,
+          1246,
+          1250,
+          2170
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 540.07,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.04544694,
+        "top1_rerank_score": 0.0045035803,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2155,
+            "doc_id": 206,
+            "score": 0.0045035803
+          },
+          {
+            "chunk_id": 2159,
+            "doc_id": 206,
+            "score": 0.0018139007
+          },
+          {
+            "chunk_id": 1246,
+            "doc_id": 136,
+            "score": 0.001528112
+          },
+          {
+            "chunk_id": 1250,
+            "doc_id": 136,
+            "score": 0.0013236223
+          },
+          {
+            "chunk_id": 2170,
+            "doc_id": 223,
+            "score": 0.00075130136
+          }
+        ]
+      },
+      {
+        "index": 21,
+        "question": "如何在 Spring Cloud Alibaba 中限制服务端接受的连接数？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          869
+        ],
+        "retrieved_chunk_ids": [
+          964,
+          2135,
+          585,
+          2138,
+          587
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 677.66,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.07747689,
+        "top1_rerank_score": 0.005247494,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.005247494
+          },
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.0030267283
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.0011416157
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.0006159026
+          },
+          {
+            "chunk_id": 587,
+            "doc_id": 84,
+            "score": 0.0004026979
+          }
+        ]
+      },
+      {
+        "index": 22,
+        "question": "在 Spring Cloud Alibaba 中，如何使业务类在 Nacos 配置变更时自动重建以加载最新配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2076,
+          2327,
+          2077,
+          2321,
+          2326
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 876.58,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06250738,
+        "top1_rerank_score": 0.003097162,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2076,
+            "doc_id": 208,
+            "score": 0.003097162
+          },
+          {
+            "chunk_id": 2327,
+            "doc_id": 215,
+            "score": 0.0020705569
+          },
+          {
+            "chunk_id": 2077,
+            "doc_id": 208,
+            "score": 0.0017415506
+          },
+          {
+            "chunk_id": 2321,
+            "doc_id": 215,
+            "score": 0.0012476043
+          },
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.0012374517
+          }
+        ]
+      },
+      {
+        "index": 23,
+        "question": "在本地新建开发分支时，分支名通常以什么作为命名依据？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          1097
+        ],
+        "retrieved_chunk_ids": [
+          1052,
+          2085,
+          2086,
+          2907,
+          2906
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 524.76,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05730226,
+        "top1_rerank_score": 0.00049508555,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1052,
+            "doc_id": 122,
+            "score": 0.00049508555
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.00019553762
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.00018821204
+          },
+          {
+            "chunk_id": 2907,
+            "doc_id": 243,
+            "score": 9.80332e-05
+          },
+          {
+            "chunk_id": 2906,
+            "doc_id": 243,
+            "score": 7.89414e-05
+          }
+        ]
+      },
+      {
+        "index": 24,
+        "question": "Dubbo 3 中，与 Dubbo 2 相比，地址注册模型的变化是什么？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          28
+        ],
+        "retrieved_chunk_ids": [
+          13,
+          2158,
+          769,
+          768,
+          592
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 728.32,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026867121,
+        "top1_rerank_score": 0.0059135295,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 13,
+            "doc_id": 16,
+            "score": 0.0059135295
+          },
+          {
+            "chunk_id": 2158,
+            "doc_id": 206,
+            "score": 0.0031108651
+          },
+          {
+            "chunk_id": 769,
+            "doc_id": 92,
+            "score": 0.0024157222
+          },
+          {
+            "chunk_id": 768,
+            "doc_id": 92,
+            "score": 0.0016307135
+          },
+          {
+            "chunk_id": 592,
+            "doc_id": 84,
+            "score": 0.0014066724
+          }
+        ]
+      },
+      {
+        "index": 25,
+        "question": "在Spring Cloud Alibaba中，如何配置Dubbo服务的迁移启动项？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1929
+        ],
+        "retrieved_chunk_ids": [
+          1741,
+          2136,
+          1745,
+          1421,
+          2600
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 487.87,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.058457483,
+        "top1_rerank_score": 0.012393715,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.012393715
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.00046575617
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.00020504171
+          },
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "score": 7.463377e-05
+          },
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "score": 7.463377e-05
+          }
+        ]
+      },
+      {
+        "index": 26,
+        "question": "在 Spring Cloud Alibaba 中，泛接口实现方式主要用于什么场景？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1678
+        ],
+        "retrieved_chunk_ids": [
+          2156,
+          585,
+          2158,
+          2134,
+          587
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 653.29,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.048541475,
+        "top1_rerank_score": 0.00060471345,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2156,
+            "doc_id": 206,
+            "score": 0.00060471345
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.00027269617
+          },
+          {
+            "chunk_id": 2158,
+            "doc_id": 206,
+            "score": 0.00024427543
+          },
+          {
+            "chunk_id": 2134,
+            "doc_id": 206,
+            "score": 0.00020991231
+          },
+          {
+            "chunk_id": 587,
+            "doc_id": 84,
+            "score": 0.00019854907
+          }
+        ]
+      },
+      {
+        "index": 27,
+        "question": "如何在 Spring Cloud Alibaba 中通过 XML 配置实现点对点直连服务提供者？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1924
+        ],
+        "retrieved_chunk_ids": [
+          2138,
+          2140,
+          2143,
+          2137,
+          1741
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 584.95,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05822995,
+        "top1_rerank_score": 0.00064563454,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.00064563454
+          },
+          {
+            "chunk_id": 2140,
+            "doc_id": 206,
+            "score": 0.00039536992
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.0003848974
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.0003830845
+          },
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.00034171095
+          }
+        ]
+      },
+      {
+        "index": 28,
+        "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2086,
+          2085,
+          2141,
+          2158,
+          2143
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 707.83,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06896029,
+        "top1_rerank_score": 0.009315252,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.009315252
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.003999011
+          },
+          {
+            "chunk_id": 2141,
+            "doc_id": 206,
+            "score": 0.0006933427
+          },
+          {
+            "chunk_id": 2158,
+            "doc_id": 206,
+            "score": 0.00067257904
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.0004138237
+          }
+        ]
+      },
+      {
+        "index": 29,
+        "question": "Spring Cloud Alibaba 2.7.5 版本引入的线程池模型相比老版本有哪些改进？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          1155
+        ],
+        "retrieved_chunk_ids": [
+          2966,
+          2946,
+          2881,
+          2115,
+          819
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 740.61,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.042495668,
+        "top1_rerank_score": 0.18597633,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2966,
+            "doc_id": 243,
+            "score": 0.18597633
+          },
+          {
+            "chunk_id": 2946,
+            "doc_id": 243,
+            "score": 0.08220615
+          },
+          {
+            "chunk_id": 2881,
+            "doc_id": 243,
+            "score": 0.003908199
+          },
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.003329327
+          },
+          {
+            "chunk_id": 819,
+            "doc_id": 13,
+            "score": 0.0015436816
+          }
+        ]
+      },
+      {
+        "index": 30,
+        "question": "在上述 Map 中，如何指定 Person 对象的实现类？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1782
+        ],
+        "retrieved_chunk_ids": [
+          2953,
+          2265,
+          2952,
+          2326,
+          2076
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 761.64,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.058623023,
+        "top1_rerank_score": 0.0003513599,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2953,
+            "doc_id": 243,
+            "score": 0.0003513599
+          },
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "score": 0.00030587602
+          },
+          {
+            "chunk_id": 2952,
+            "doc_id": 243,
+            "score": 0.00030471696
+          },
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.00028124836
+          },
+          {
+            "chunk_id": 2076,
+            "doc_id": 208,
+            "score": 0.00026896296
+          }
+        ]
+      },
+      {
+        "index": 31,
+        "question": "在Spring Cloud Alibaba中，如何配置参数校验以增强安全性？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          591
+        ],
+        "retrieved_chunk_ids": [
+          2122,
+          2120,
+          1084,
+          2119,
+          2115
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 865.9,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.0424127,
+        "top1_rerank_score": 0.04941532,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.04941532
+          },
+          {
+            "chunk_id": 2120,
+            "doc_id": 207,
+            "score": 0.008600483
+          },
+          {
+            "chunk_id": 1084,
+            "doc_id": 106,
+            "score": 0.008427214
+          },
+          {
+            "chunk_id": 2119,
+            "doc_id": 207,
+            "score": 0.0015797295
+          },
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.0012178853
+          }
+        ]
+      },
+      {
+        "index": 32,
+        "question": "如何在 Spring Cloud Alibaba 中实现服务降级？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1080
+        ],
+        "retrieved_chunk_ids": [
+          964,
+          92,
+          585,
+          1745,
+          2136
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 605.11,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05691597,
+        "top1_rerank_score": 0.0020739567,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.0020739567
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.0019122744
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.0012129449
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.0006055497
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.00043324183
+          }
+        ]
+      },
+      {
+        "index": 33,
+        "question": "在 Spring Cloud Alibaba 中，如何配置远程服务的 Stub？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1929
+        ],
+        "retrieved_chunk_ids": [
+          2083,
+          2077,
+          2086,
+          2085,
+          2119
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 717.11,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.029182933,
+        "top1_rerank_score": 0.0845136,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.0845136
+          },
+          {
+            "chunk_id": 2077,
+            "doc_id": 208,
+            "score": 0.004671646
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0040638894
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.0023327677
+          },
+          {
+            "chunk_id": 2119,
+            "doc_id": 207,
+            "score": 0.001062403
+          }
+        ]
+      },
+      {
+        "index": 34,
+        "question": "在 Spring Cloud Alibaba 中，如何实现一个远程服务的代理？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          260
+        ],
+        "retrieved_chunk_ids": [
+          2135,
+          2326,
+          2143,
+          2156,
+          2134
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 699.86,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05933909,
+        "top1_rerank_score": 0.0014172164,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.0014172164
+          },
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.00046034539
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.00031472917
+          },
+          {
+            "chunk_id": 2156,
+            "doc_id": 206,
+            "score": 0.00018138281
+          },
+          {
+            "chunk_id": 2134,
+            "doc_id": 206,
+            "score": 0.00018112874
+          }
+        ]
+      },
+      {
+        "index": 35,
+        "question": "如何在本地克隆Nacos代码仓库并添加Alibaba/Nacos仓库为upstream仓库？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1096
+        ],
+        "retrieved_chunk_ids": [
+          1950,
+          2154,
+          1247,
+          1233,
+          1249
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 673.08,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.07280045,
+        "top1_rerank_score": 0.0008539662,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1950,
+            "doc_id": 177,
+            "score": 0.0008539662
+          },
+          {
+            "chunk_id": 2154,
+            "doc_id": 206,
+            "score": 0.0001309842
+          },
+          {
+            "chunk_id": 1247,
+            "doc_id": 136,
+            "score": 9.572085e-05
+          },
+          {
+            "chunk_id": 1233,
+            "doc_id": 136,
+            "score": 8.535252e-05
+          },
+          {
+            "chunk_id": 1249,
+            "doc_id": 136,
+            "score": 6.8239635e-05
+          }
+        ]
+      },
+      {
+        "index": 36,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 RpcContext 进行隐式参数传递？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          499
+        ],
+        "retrieved_chunk_ids": [
+          2135,
+          88,
+          1732,
+          1727,
+          2143
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 777.27,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.053343147,
+        "top1_rerank_score": 0.0012747615,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.0012747615
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "score": 0.0007013542
+          },
+          {
+            "chunk_id": 1732,
+            "doc_id": 187,
+            "score": 0.00057448767
+          },
+          {
+            "chunk_id": 1727,
+            "doc_id": 187,
+            "score": 0.00042340334
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.00038070735
+          }
+        ]
+      },
+      {
+        "index": 37,
+        "question": "在完成rebase后，如何将分支上传到您fork的仓库？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1103
+        ],
+        "retrieved_chunk_ids": [
+          1249,
+          935,
+          3012,
+          680,
+          543
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 642.33,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.039436854,
+        "top1_rerank_score": 0.000110470144,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1249,
+            "doc_id": 136,
+            "score": 0.000110470144
+          },
+          {
+            "chunk_id": 935,
+            "doc_id": 101,
+            "score": 5.6865872e-05
+          },
+          {
+            "chunk_id": 3012,
+            "doc_id": 216,
+            "score": 4.4962882e-05
+          },
+          {
+            "chunk_id": 680,
+            "doc_id": 87,
+            "score": 3.622409e-05
+          },
+          {
+            "chunk_id": 543,
+            "doc_id": 52,
+            "score": 3.389854e-05
+          }
+        ]
+      },
+      {
+        "index": 38,
+        "question": "配置 Dubbo 端口时，可以在哪些配置文件中设置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1668
+        ],
+        "retrieved_chunk_ids": [
+          974,
+          599,
+          2269,
+          2067,
+          2070
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1104.17,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.047819935,
+        "top1_rerank_score": 0.006291923,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 974,
+            "doc_id": 126,
+            "score": 0.006291923
+          },
+          {
+            "chunk_id": 599,
+            "doc_id": 91,
+            "score": 0.0025338733
+          },
+          {
+            "chunk_id": 2269,
+            "doc_id": 215,
+            "score": 0.001017047
+          },
+          {
+            "chunk_id": 2067,
+            "doc_id": 220,
+            "score": 0.00024638406
+          },
+          {
+            "chunk_id": 2070,
+            "doc_id": 220,
+            "score": 0.000167729
+          }
+        ]
+      },
+      {
+        "index": 39,
+        "question": "为什么在 Spring Cloud Alibaba 中获取客户端隐式传入的参数不建议常规业务使用？",
+        "question_type": "troubleshoot",
+        "gold_chunk_ids": [
+          500
+        ],
+        "retrieved_chunk_ids": [
+          2617,
+          1084,
+          2086,
+          2085,
+          2135
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 608.88,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06836454,
+        "top1_rerank_score": 0.0021786285,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2617,
+            "doc_id": 235,
+            "score": 0.0021786285
+          },
+          {
+            "chunk_id": 1084,
+            "doc_id": 106,
+            "score": 0.00071976037
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0006819343
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.00044323475
+          },
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.00028537287
+          }
+        ]
+      },
+      {
+        "index": 40,
+        "question": "如何配置 Dubbo 协议以实现延迟连接？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1330
+        ],
+        "retrieved_chunk_ids": [
+          585
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 633.91,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.043322876,
+        "top1_rerank_score": 0.35405338,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.35405338
+          }
+        ]
+      },
+      {
+        "index": 41,
+        "question": "覆盖规则是从哪个版本开始支持从服务和应用两个粒度来调整动态配置的？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1069
+        ],
+        "retrieved_chunk_ids": [
+          2137,
+          1284,
+          3010,
+          1318,
+          3012
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 666.88,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.054423735,
+        "top1_rerank_score": 0.003486476,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.003486476
+          },
+          {
+            "chunk_id": 1284,
+            "doc_id": 143,
+            "score": 0.001167984
+          },
+          {
+            "chunk_id": 3010,
+            "doc_id": 216,
+            "score": 0.000330938
+          },
+          {
+            "chunk_id": 1318,
+            "doc_id": 143,
+            "score": 0.00020827433
+          },
+          {
+            "chunk_id": 3012,
+            "doc_id": 216,
+            "score": 0.00016105824
+          }
+        ]
+      },
+      {
+        "index": 42,
+        "question": "BarServiceStub 的构造函数接收什么参数？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1056
+        ],
+        "retrieved_chunk_ids": [
+          1783,
+          2086,
+          2085,
+          125,
+          2140
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 368.19,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.040964797,
+        "top1_rerank_score": 0.0028949275,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1783,
+            "doc_id": 187,
+            "score": 0.0028949275
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0028330388
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.0013040296
+          },
+          {
+            "chunk_id": 125,
+            "doc_id": 8,
+            "score": 0.00021133636
+          },
+          {
+            "chunk_id": 2140,
+            "doc_id": 206,
+            "score": 0.00013263003
+          }
+        ]
+      },
+      {
+        "index": 43,
+        "question": "如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          2236
+        ],
+        "retrieved_chunk_ids": [
+          1784,
+          1671,
+          1676,
+          2136,
+          1787
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 697.7,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.054411747,
+        "top1_rerank_score": 0.00072097476,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1784,
+            "doc_id": 183,
+            "score": 0.00072097476
+          },
+          {
+            "chunk_id": 1671,
+            "doc_id": 175,
+            "score": 0.00014054617
+          },
+          {
+            "chunk_id": 1676,
+            "doc_id": 175,
+            "score": 0.00013382698
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 6.826163e-05
+          },
+          {
+            "chunk_id": 1787,
+            "doc_id": 183,
+            "score": 5.9876907e-05
+          }
+        ]
+      },
+      {
+        "index": 44,
+        "question": "Dubbo 微服务支持哪些部署架构？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          37
+        ],
+        "retrieved_chunk_ids": [
+          92
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1093.51,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.047540575,
+        "top1_rerank_score": 0.95540047,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.95540047
+          }
+        ]
+      },
+      {
+        "index": 45,
+        "question": "如何配置广播调用失败后停止调用其他节点的比例？",
+        "question_type": "troubleshoot",
+        "gold_chunk_ids": [
+          2122
+        ],
+        "retrieved_chunk_ids": [
+          1250,
+          1249,
+          1771,
+          1777,
+          2175
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 483.97,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05497195,
+        "top1_rerank_score": 0.0011652608,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1250,
+            "doc_id": 136,
+            "score": 0.0011652608
+          },
+          {
+            "chunk_id": 1249,
+            "doc_id": 136,
+            "score": 0.0011423484
+          },
+          {
+            "chunk_id": 1771,
+            "doc_id": 187,
+            "score": 0.00081908953
+          },
+          {
+            "chunk_id": 1777,
+            "doc_id": 187,
+            "score": 0.00051577843
+          },
+          {
+            "chunk_id": 2175,
+            "doc_id": 223,
+            "score": 0.00037263433
+          }
+        ]
+      },
+      {
+        "index": 46,
+        "question": "在 Spring Cloud Alibaba 中，如何配置服务消费方的集群模式？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2130
+        ],
+        "retrieved_chunk_ids": [
+          1745,
+          56,
+          1741,
+          2137,
+          1749
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 574.37,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.0630724,
+        "top1_rerank_score": 0.038628377,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.038628377
+          },
+          {
+            "chunk_id": 56,
+            "doc_id": 20,
+            "score": 0.011250553
+          },
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.008874953
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.0037573127
+          },
+          {
+            "chunk_id": 1749,
+            "doc_id": 186,
+            "score": 0.002068348
+          }
+        ]
+      },
+      {
+        "index": 47,
+        "question": "如何修改应用demo在20880端口上提供服务的权重？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1071
+        ],
+        "retrieved_chunk_ids": [
+          3010,
+          3012,
+          440,
+          1358,
+          2175
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 613.02,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.07598966,
+        "top1_rerank_score": 0.0020435317,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 3010,
+            "doc_id": 216,
+            "score": 0.0020435317
+          },
+          {
+            "chunk_id": 3012,
+            "doc_id": 216,
+            "score": 0.00056976505
+          },
+          {
+            "chunk_id": 440,
+            "doc_id": 45,
+            "score": 0.00032789205
+          },
+          {
+            "chunk_id": 1358,
+            "doc_id": 157,
+            "score": 0.00022333351
+          },
+          {
+            "chunk_id": 2175,
+            "doc_id": 223,
+            "score": 0.00021250607
+          }
+        ]
+      },
+      {
+        "index": 48,
+        "question": "Spring Cloud Alibaba 中的 Failfast Cluster 通常适用于哪些类型的操作？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          2119
+        ],
+        "retrieved_chunk_ids": [
+          2122,
+          1797,
+          2115,
+          1425,
+          2603
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 605.61,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.050582584,
+        "top1_rerank_score": 0.026107151,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.026107151
+          },
+          {
+            "chunk_id": 1797,
+            "doc_id": 183,
+            "score": 0.00073756214
+          },
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.0007107669
+          },
+          {
+            "chunk_id": 1425,
+            "doc_id": 155,
+            "score": 0.0002271291
+          },
+          {
+            "chunk_id": 2603,
+            "doc_id": 249,
+            "score": 0.0002271291
+          }
+        ]
+      },
+      {
+        "index": 49,
+        "question": "阿里巴巴在Dubbo3中扮演了什么角色？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          36
+        ],
+        "retrieved_chunk_ids": [
+          2134,
+          92,
+          2050,
+          585,
+          964
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 566.79,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02801472,
+        "top1_rerank_score": 0.010995703,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2134,
+            "doc_id": 206,
+            "score": 0.010995703
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.010685477
+          },
+          {
+            "chunk_id": 2050,
+            "doc_id": 227,
+            "score": 0.000839968
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.00044676592
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.00024447462
+          }
+        ]
+      },
+      {
+        "index": 50,
+        "question": "在Spring Cloud Alibaba中，如何配置一个服务提供端使其调用需要鉴权认证通过？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          591
+        ],
+        "retrieved_chunk_ids": [
+          2086,
+          2085,
+          316,
+          2321,
+          1147
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 619.88,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.053117268,
+        "top1_rerank_score": 0.0057033105,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0057033105
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.0042641847
+          },
+          {
+            "chunk_id": 316,
+            "doc_id": 15,
+            "score": 0.0005140655
+          },
+          {
+            "chunk_id": 2321,
+            "doc_id": 215,
+            "score": 0.000458072
+          },
+          {
+            "chunk_id": 1147,
+            "doc_id": 121,
+            "score": 0.00038143806
+          }
+        ]
+      },
+      {
+        "index": 51,
+        "question": "在上述测试代码中，如何验证回调函数是否正确接收到了请求ID？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1785
+        ],
+        "retrieved_chunk_ids": [
+          2170,
+          543,
+          181,
+          176,
+          156
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 556.8,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.059217878,
+        "top1_rerank_score": 0.0011142747,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2170,
+            "doc_id": 223,
+            "score": 0.0011142747
+          },
+          {
+            "chunk_id": 543,
+            "doc_id": 52,
+            "score": 0.00051479245
+          },
+          {
+            "chunk_id": 181,
+            "doc_id": 4,
+            "score": 0.00033645556
+          },
+          {
+            "chunk_id": 176,
+            "doc_id": 4,
+            "score": 0.00023384065
+          },
+          {
+            "chunk_id": 156,
+            "doc_id": 4,
+            "score": 0.00021181606
+          }
+        ]
+      },
+      {
+        "index": 52,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 `force:` 和 `fail:` 来控制 Mock 行为？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          969
+        ],
+        "retrieved_chunk_ids": [
+          2122,
+          2137,
+          2159,
+          2140,
+          2136
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 664.76,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.054978617,
+        "top1_rerank_score": 0.02735938,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.02735938
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.0038485755
+          },
+          {
+            "chunk_id": 2159,
+            "doc_id": 206,
+            "score": 0.0017286729
+          },
+          {
+            "chunk_id": 2140,
+            "doc_id": 206,
+            "score": 0.0011423908
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.0006439967
+          }
+        ]
+      },
+      {
+        "index": 53,
+        "question": "在Nacos中，如何使用配置订阅者来监听配置变更并检查变更是否已推送到客户端？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2953,
+          2115,
+          2952,
+          2036,
+          2265
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 738.14,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.040305726,
+        "top1_rerank_score": 0.010682605,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2953,
+            "doc_id": 243,
+            "score": 0.010682605
+          },
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.0016375765
+          },
+          {
+            "chunk_id": 2952,
+            "doc_id": 243,
+            "score": 0.001082608
+          },
+          {
+            "chunk_id": 2036,
+            "doc_id": 195,
+            "score": 0.0007184267
+          },
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "score": 0.0005250338
+          }
+        ]
+      },
+      {
+        "index": 54,
+        "question": "如何在 Spring Cloud Alibaba 中限制客户端服务使用的连接数？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          792
+        ],
+        "retrieved_chunk_ids": [
+          964,
+          393,
+          969,
+          2138,
+          92
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 617.75,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.07299027,
+        "top1_rerank_score": 0.011396534,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.011396534
+          },
+          {
+            "chunk_id": 393,
+            "doc_id": 49,
+            "score": 0.0012283383
+          },
+          {
+            "chunk_id": 969,
+            "doc_id": 126,
+            "score": 0.0008299996
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.000751083
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.00065058237
+          }
+        ]
+      },
+      {
+        "index": 55,
+        "question": "在生产环境中，使用 Spring Cloud Alibaba Nacos 时，建议采用哪种数据源配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          1250,
+          1745,
+          2158,
+          2135,
+          976
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 534.62,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.052808568,
+        "top1_rerank_score": 0.00021210445,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1250,
+            "doc_id": 136,
+            "score": 0.00021210445
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 7.293108e-05
+          },
+          {
+            "chunk_id": 2158,
+            "doc_id": 206,
+            "score": 4.489681e-05
+          },
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 4.34347e-05
+          },
+          {
+            "chunk_id": 976,
+            "doc_id": 126,
+            "score": 3.1475847e-05
+          }
+        ]
+      },
+      {
+        "index": 56,
+        "question": "Dubbo3 相比 Dubbo2 在哪些方面进行了升级？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          28
+        ],
+        "retrieved_chunk_ids": [
+          79
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 636.47,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.030442204,
+        "top1_rerank_score": 0.9526742,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.9526742
+          }
+        ]
+      },
+      {
+        "index": 57,
+        "question": "如何指定 Dubbo 的线程堆栈导出路径？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1551
+        ],
+        "retrieved_chunk_ids": [
+          2265,
+          2266,
+          2154,
+          2155,
+          2103
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 658.53,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.055739976,
+        "top1_rerank_score": 0.00035019347,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "score": 0.00035019347
+          },
+          {
+            "chunk_id": 2266,
+            "doc_id": 215,
+            "score": 0.0002977682
+          },
+          {
+            "chunk_id": 2154,
+            "doc_id": 206,
+            "score": 0.000290815
+          },
+          {
+            "chunk_id": 2155,
+            "doc_id": 206,
+            "score": 0.00013583076
+          },
+          {
+            "chunk_id": 2103,
+            "doc_id": 207,
+            "score": 9.7022654e-05
+          }
+        ]
+      },
+      {
+        "index": 58,
+        "question": "在生产环境中部署 Spring Cloud Alibaba，建议采用哪种高可用方案？为什么？",
+        "question_type": "troubleshoot",
+        "gold_chunk_ids": [
+          2236
+        ],
+        "retrieved_chunk_ids": [
+          2326,
+          1745,
+          1674,
+          1749,
+          1425
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 705.23,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.040925074,
+        "top1_rerank_score": 0.0002958911,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.0002958911
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.00018137088
+          },
+          {
+            "chunk_id": 1674,
+            "doc_id": 175,
+            "score": 5.6100427e-05
+          },
+          {
+            "chunk_id": 1749,
+            "doc_id": 186,
+            "score": 3.979797e-05
+          },
+          {
+            "chunk_id": 1425,
+            "doc_id": 155,
+            "score": 3.4045297e-05
+          }
+        ]
+      },
+      {
+        "index": 59,
+        "question": "如何在 Spring Cloud Alibaba 中开启访问日志？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          115
+        ],
+        "retrieved_chunk_ids": [
+          2123,
+          2119,
+          2115,
+          2118,
+          2117
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 394.71,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.030180803,
+        "top1_rerank_score": 0.092317276,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2123,
+            "doc_id": 207,
+            "score": 0.092317276
+          },
+          {
+            "chunk_id": 2119,
+            "doc_id": 207,
+            "score": 0.0027085426
+          },
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.00049611635
+          },
+          {
+            "chunk_id": 2118,
+            "doc_id": 207,
+            "score": 0.0004639348
+          },
+          {
+            "chunk_id": 2117,
+            "doc_id": 207,
+            "score": 0.00020010312
+          }
+        ]
+      },
+      {
+        "index": 60,
+        "question": "如何在 Spring Cloud Alibaba 中开启 Dubbo 的访问日志功能？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          116
+        ],
+        "retrieved_chunk_ids": [
+          2143,
+          2135,
+          909,
+          1421,
+          2600
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 474.95,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.021048188,
+        "top1_rerank_score": 0.0045488984,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.0045488984
+          },
+          {
+            "chunk_id": 2135,
+            "doc_id": 206,
+            "score": 0.00066312734
+          },
+          {
+            "chunk_id": 909,
+            "doc_id": 113,
+            "score": 0.0004341611
+          },
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "score": 3.272738e-05
+          },
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "score": 3.272738e-05
+          }
+        ]
+      },
+      {
+        "index": 61,
+        "question": "在 Spring Cloud Alibaba 中，如何配置一个异步回调模式的服务消费者？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          270
+        ],
+        "retrieved_chunk_ids": [
+          2159,
+          2137,
+          56,
+          2143,
+          1745
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 671.97,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.06361884,
+        "top1_rerank_score": 0.00969363,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2159,
+            "doc_id": 206,
+            "score": 0.00969363
+          },
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.0074468995
+          },
+          {
+            "chunk_id": 56,
+            "doc_id": 20,
+            "score": 0.005352694
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.0038446763
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.0011832032
+          }
+        ]
+      },
+      {
+        "index": 62,
+        "question": "在 Spring Cloud Alibaba 中，如何配置 Nacos 配置中心以实现服务治理与动态配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2136,
+          2086,
+          2085,
+          1745,
+          1730
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 418.93,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.0567874,
+        "top1_rerank_score": 0.0012764351,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.0012764351
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0011714246
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.0008730877
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.00041720536
+          },
+          {
+            "chunk_id": 1730,
+            "doc_id": 186,
+            "score": 0.00032510835
+          }
+        ]
+      },
+      {
+        "index": 63,
+        "question": "如何通过curl命令在Nacos中添加服务实例并使用accessToken进行鉴权？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          2163
+        ],
+        "retrieved_chunk_ids": [
+          1473,
+          1394,
+          2582,
+          2077,
+          1617
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 737.99,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05392527,
+        "top1_rerank_score": 0.13012448,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1473,
+            "doc_id": 155,
+            "score": 0.13012448
+          },
+          {
+            "chunk_id": 1394,
+            "doc_id": 155,
+            "score": 0.001609568
+          },
+          {
+            "chunk_id": 2582,
+            "doc_id": 249,
+            "score": 0.0015795061
+          },
+          {
+            "chunk_id": 2077,
+            "doc_id": 208,
+            "score": 0.0007573019
+          },
+          {
+            "chunk_id": 1617,
+            "doc_id": 162,
+            "score": 0.0003251409
+          }
+        ]
+      },
+      {
+        "index": 64,
+        "question": "Nacos支持哪些类型的构建物？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          80
+        ],
+        "retrieved_chunk_ids": [
+          2286,
+          2953,
+          2261,
+          2955,
+          2954
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 686.11,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.062809795,
+        "top1_rerank_score": 0.05371852,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2286,
+            "doc_id": 215,
+            "score": 0.05371852
+          },
+          {
+            "chunk_id": 2953,
+            "doc_id": 243,
+            "score": 0.0360831
+          },
+          {
+            "chunk_id": 2261,
+            "doc_id": 215,
+            "score": 0.01629974
+          },
+          {
+            "chunk_id": 2955,
+            "doc_id": 243,
+            "score": 0.0019863462
+          },
+          {
+            "chunk_id": 2954,
+            "doc_id": 243,
+            "score": 0.001963765
+          }
+        ]
+      },
+      {
+        "index": 65,
+        "question": "在 Spring Cloud Alibaba 中，如何确保配置集的 Data ID 具有全局唯一性？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1005
+        ],
+        "retrieved_chunk_ids": [
+          2083,
+          2978,
+          788,
+          964,
+          2159
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 682.63,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.052368503,
+        "top1_rerank_score": 0.07315382,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.07315382
+          },
+          {
+            "chunk_id": 2978,
+            "doc_id": 243,
+            "score": 0.0016625744
+          },
+          {
+            "chunk_id": 788,
+            "doc_id": 105,
+            "score": 0.0005946729
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.00025555186
+          },
+          {
+            "chunk_id": 2159,
+            "doc_id": 206,
+            "score": 0.00022868802
+          }
+        ]
+      },
+      {
+        "index": 66,
+        "question": "在 Nacos 中，配置分组的作用是什么？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1006
+        ],
+        "retrieved_chunk_ids": [
+          1473,
+          2077,
+          607,
+          2265,
+          2155
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 695.18,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.03639008,
+        "top1_rerank_score": 0.06585583,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1473,
+            "doc_id": 155,
+            "score": 0.06585583
+          },
+          {
+            "chunk_id": 2077,
+            "doc_id": 208,
+            "score": 0.0007916013
+          },
+          {
+            "chunk_id": 607,
+            "doc_id": 70,
+            "score": 0.0006562008
+          },
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "score": 0.00030791858
+          },
+          {
+            "chunk_id": 2155,
+            "doc_id": 206,
+            "score": 0.00021467678
+          }
+        ]
+      },
+      {
+        "index": 67,
+        "question": "Spring Cloud Alibaba中的Nacos数据模型Key由哪些元素唯一确定？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          77
+        ],
+        "retrieved_chunk_ids": [
+          1702,
+          1703,
+          1483,
+          1701,
+          2286
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 628.02,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.04578197,
+        "top1_rerank_score": 0.013297078,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1702,
+            "doc_id": 169,
+            "score": 0.013297078
+          },
+          {
+            "chunk_id": 1703,
+            "doc_id": 169,
+            "score": 0.011318316
+          },
+          {
+            "chunk_id": 1483,
+            "doc_id": 155,
+            "score": 0.0014211263
+          },
+          {
+            "chunk_id": 1701,
+            "doc_id": 169,
+            "score": 0.0003727967
+          },
+          {
+            "chunk_id": 2286,
+            "doc_id": 215,
+            "score": 0.00027208665
+          }
+        ]
+      },
+      {
+        "index": 68,
+        "question": "在 Spring Cloud Alibaba 中，如何配置服务提供方的集群模式？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2130
+        ],
+        "retrieved_chunk_ids": [
+          2051,
+          1741,
+          2141,
+          1745,
+          497
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 510.37,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.060310286,
+        "top1_rerank_score": 0.036574036,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2051,
+            "doc_id": 227,
+            "score": 0.036574036
+          },
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.0077081434
+          },
+          {
+            "chunk_id": 2141,
+            "doc_id": 206,
+            "score": 0.0015088674
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.0013507508
+          },
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "score": 0.0005240651
+          }
+        ]
+      },
+      {
+        "index": 69,
+        "question": "如何将 Dubbo 的访问日志输出到当前应用的 log4j 日志？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          115
+        ],
+        "retrieved_chunk_ids": [
+          2137,
+          385,
+          1002,
+          1950,
+          2140
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 698.15,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016251337,
+        "top1_rerank_score": 0.0003594898,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2137,
+            "doc_id": 206,
+            "score": 0.0003594898
+          },
+          {
+            "chunk_id": 385,
+            "doc_id": 35,
+            "score": 0.00030206662
+          },
+          {
+            "chunk_id": 1002,
+            "doc_id": 115,
+            "score": 0.00017234184
+          },
+          {
+            "chunk_id": 1950,
+            "doc_id": 177,
+            "score": 0.00013190306
+          },
+          {
+            "chunk_id": 2140,
+            "doc_id": 206,
+            "score": 0.000101407284
+          }
+        ]
+      },
+      {
+        "index": 70,
+        "question": "Dubbo 的扩展能力体现在哪些方面？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          28
+        ],
+        "retrieved_chunk_ids": [
+          95,
+          79,
+          88,
+          92
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 818.68,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.034709744,
+        "top1_rerank_score": 0.9967033,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.9967033
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.9916289
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "score": 0.90449524
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.7788913
+          }
+        ]
+      },
+      {
+        "index": 71,
+        "question": "如何通过Nacos获取特定服务的配置信息？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2953,
+          788,
+          2327,
+          2265,
+          2326
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 715.21,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.05424407,
+        "top1_rerank_score": 0.024913488,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2953,
+            "doc_id": 243,
+            "score": 0.024913488
+          },
+          {
+            "chunk_id": 788,
+            "doc_id": 105,
+            "score": 0.0008014308
+          },
+          {
+            "chunk_id": 2327,
+            "doc_id": 215,
+            "score": 0.00047959728
+          },
+          {
+            "chunk_id": 2265,
+            "doc_id": 215,
+            "score": 0.00039675744
+          },
+          {
+            "chunk_id": 2326,
+            "doc_id": 215,
+            "score": 0.00028450167
+          }
+        ]
+      },
+      {
+        "index": 72,
+        "question": "在Spring Cloud Alibaba中，如何设置服务的客户端的`loadbalance`属性为`leastactive`？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          798
+        ],
+        "retrieved_chunk_ids": [
+          1745,
+          1755,
+          2136,
+          1674,
+          1759
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 612.3,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.052212752,
+        "top1_rerank_score": 0.0036092044,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.0036092044
+          },
+          {
+            "chunk_id": 1755,
+            "doc_id": 186,
+            "score": 0.0021512143
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.0019832323
+          },
+          {
+            "chunk_id": 1674,
+            "doc_id": 175,
+            "score": 0.0011498589
+          },
+          {
+            "chunk_id": 1759,
+            "doc_id": 186,
+            "score": 0.0011449057
+          }
+        ]
+      },
+      {
+        "index": 73,
+        "question": "在 Dubbo 中如何实现分布式事务的支持？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1391
+        ],
+        "retrieved_chunk_ids": [
+          95,
+          92,
+          2134,
+          55,
+          1741
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 588.48,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.062210616,
+        "top1_rerank_score": 0.27281603,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.27281603
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.13186938
+          },
+          {
+            "chunk_id": 2134,
+            "doc_id": 206,
+            "score": 0.031158367
+          },
+          {
+            "chunk_id": 55,
+            "doc_id": 20,
+            "score": 0.015396207
+          },
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.002133459
+          }
+        ]
+      },
+      {
+        "index": 74,
+        "question": "在注册动态配置覆盖规则时，`override://`的用途是什么？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          965
+        ],
+        "retrieved_chunk_ids": [
+          2136,
+          2138,
+          2141,
+          2155,
+          2154
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 527.05,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.057504606,
+        "top1_rerank_score": 0.009005969,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.009005969
+          },
+          {
+            "chunk_id": 2138,
+            "doc_id": 206,
+            "score": 0.002190142
+          },
+          {
+            "chunk_id": 2141,
+            "doc_id": 206,
+            "score": 0.0018892527
+          },
+          {
+            "chunk_id": 2155,
+            "doc_id": 206,
+            "score": 0.0011916567
+          },
+          {
+            "chunk_id": 2154,
+            "doc_id": 206,
+            "score": 0.00063874235
+          }
+        ]
+      },
+      {
+        "index": 75,
+        "question": "在Spring Cloud Alibaba中，如何使用异步方式进行Dubbo服务调用？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          257
+        ],
+        "retrieved_chunk_ids": [
+          56,
+          1741,
+          2136,
+          1674,
+          1425
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 650.48,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.047621004,
+        "top1_rerank_score": 0.06031921,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 56,
+            "doc_id": 20,
+            "score": 0.06031921
+          },
+          {
+            "chunk_id": 1741,
+            "doc_id": 186,
+            "score": 0.00304593
+          },
+          {
+            "chunk_id": 2136,
+            "doc_id": 206,
+            "score": 0.00187001
+          },
+          {
+            "chunk_id": 1674,
+            "doc_id": 175,
+            "score": 0.00024616058
+          },
+          {
+            "chunk_id": 1425,
+            "doc_id": 155,
+            "score": 0.00022236248
+          }
+        ]
+      },
+      {
+        "index": 76,
+        "question": "Dubbo3 如何支持云原生微服务架构？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          37
+        ],
+        "retrieved_chunk_ids": [
+          92,
+          498
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 548.68,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.042122535,
+        "top1_rerank_score": 0.90314126,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.90314126
+          },
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "score": 0.49404684
+          }
+        ]
+      },
+      {
+        "index": 77,
+        "question": "Dubbo 如何支持 Kubernetes 平台调度？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          38
+        ],
+        "retrieved_chunk_ids": [
+          93,
+          607,
+          1007,
+          1247,
+          1008
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 655.12,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028786376,
+        "top1_rerank_score": 0.02970239,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 93,
+            "doc_id": 11,
+            "score": 0.02970239
+          },
+          {
+            "chunk_id": 607,
+            "doc_id": 70,
+            "score": 0.00057277095
+          },
+          {
+            "chunk_id": 1007,
+            "doc_id": 129,
+            "score": 0.00016985214
+          },
+          {
+            "chunk_id": 1247,
+            "doc_id": 136,
+            "score": 0.00012983086
+          },
+          {
+            "chunk_id": 1008,
+            "doc_id": 129,
+            "score": 0.00012595009
+          }
+        ]
+      },
+      {
+        "index": 78,
+        "question": "在 Nacos 中，配置变更历史和服务标签是如何关联的？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          78
+        ],
+        "retrieved_chunk_ids": [
+          497,
+          2051,
+          389,
+          461,
+          788
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 480.85,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.045748398,
+        "top1_rerank_score": 0.000409488,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "score": 0.000409488
+          },
+          {
+            "chunk_id": 2051,
+            "doc_id": 227,
+            "score": 0.0002768734
+          },
+          {
+            "chunk_id": 389,
+            "doc_id": 49,
+            "score": 0.00012856124
+          },
+          {
+            "chunk_id": 461,
+            "doc_id": 56,
+            "score": 0.000114186616
+          },
+          {
+            "chunk_id": 788,
+            "doc_id": 105,
+            "score": 7.4486234e-05
+          }
+        ]
+      },
+      {
+        "index": 79,
+        "question": "在 Spring Cloud Alibaba 中，如何配置一个参数为 callback 类型？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          697
+        ],
+        "retrieved_chunk_ids": [
+          2083,
+          1084,
+          2120,
+          2121,
+          2119
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 565.23,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.057700485,
+        "top1_rerank_score": 0.10921859,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.10921859
+          },
+          {
+            "chunk_id": 1084,
+            "doc_id": 106,
+            "score": 0.0068477457
+          },
+          {
+            "chunk_id": 2120,
+            "doc_id": 207,
+            "score": 0.00678844
+          },
+          {
+            "chunk_id": 2121,
+            "doc_id": 207,
+            "score": 0.0018124914
+          },
+          {
+            "chunk_id": 2119,
+            "doc_id": 207,
+            "score": 0.00087758276
+          }
+        ]
+      },
+      {
+        "index": 80,
+        "question": "如何将访问日志输出到指定的文件？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          116
+        ],
+        "retrieved_chunk_ids": [
+          2971,
+          2972,
+          2953,
+          2952,
+          2975
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 597.35,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.03914553,
+        "top1_rerank_score": 0.011782466,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2971,
+            "doc_id": 243,
+            "score": 0.011782466
+          },
+          {
+            "chunk_id": 2972,
+            "doc_id": 243,
+            "score": 0.0036664961
+          },
+          {
+            "chunk_id": 2953,
+            "doc_id": 243,
+            "score": 0.0031227462
+          },
+          {
+            "chunk_id": 2952,
+            "doc_id": 243,
+            "score": 0.0029145302
+          },
+          {
+            "chunk_id": 2975,
+            "doc_id": 243,
+            "score": 0.0023749785
+          }
+        ]
+      }
+    ],
+    "hybrid": [
+      {
+        "index": 1,
+        "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1330
+        ],
+        "retrieved_chunk_ids": [
+          1566
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 554.93,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028371628,
+        "top1_rerank_score": 0.9360158,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 1566,
+            "doc_id": 168,
+            "score": 0.9360158
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          2126
+        ],
+        "retrieved_chunk_ids": [
+          982
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 715.43,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.027500924,
+        "top1_rerank_score": 0.99429905,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 982,
+            "doc_id": 126,
+            "score": 0.99429905
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "question": "Sentinel 和 Hystrix 的核心差异是什么？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          2235
+        ],
+        "retrieved_chunk_ids": [
+          55
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 647.98,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025463335,
+        "top1_rerank_score": 0.37790397,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 55,
+            "doc_id": 20,
+            "score": 0.37790397
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1074
+        ],
+        "retrieved_chunk_ids": [
+          502,
+          497,
+          1086,
+          498,
+          1085
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 699.11,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02428859,
+        "top1_rerank_score": 0.9796928,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 502,
+            "doc_id": 63,
+            "score": 0.9796928
+          },
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "score": 0.8467392
+          },
+          {
+            "chunk_id": 1086,
+            "doc_id": 106,
+            "score": 0.7767995
+          },
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "score": 0.7536722
+          },
+          {
+            "chunk_id": 1085,
+            "doc_id": 106,
+            "score": 0.3889553
+          }
+        ]
+      },
+      {
+        "index": 5,
+        "question": "Spring Cloud Alibaba 中如何使用 JVM 启动参数实现点对点直连服务提供者？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1927
+        ],
+        "retrieved_chunk_ids": [
+          959
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 535.26,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.029236022,
+        "top1_rerank_score": 0.79453343,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "score": 0.79453343
+          }
+        ]
+      },
+      {
+        "index": 6,
+        "question": "Nacos 控制台如何帮助用户管理服务流量权重？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          75
+        ],
+        "retrieved_chunk_ids": [
+          2600,
+          1421,
+          2586,
+          1400,
+          2105
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 657.6,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023258707,
+        "top1_rerank_score": 0.9897752,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "score": 0.9897752
+          },
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "score": 0.9897752
+          },
+          {
+            "chunk_id": 2586,
+            "doc_id": 249,
+            "score": 0.9880943
+          },
+          {
+            "chunk_id": 1400,
+            "doc_id": 155,
+            "score": 0.98354155
+          },
+          {
+            "chunk_id": 2105,
+            "doc_id": 207,
+            "score": 0.86919534
+          }
+        ]
+      },
+      {
+        "index": 7,
+        "question": "在容量评估时，单节点 Nacos 支持多少级服务实例与配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2237
+        ],
+        "retrieved_chunk_ids": [
+          1799
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1409.34,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.018561874,
+        "top1_rerank_score": 0.90829045,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 1799,
+            "doc_id": 183,
+            "score": 0.90829045
+          }
+        ]
+      },
+      {
+        "index": 8,
+        "question": "在 sayHello 方法中，如何避免使用 JDK 公用线程池？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          373
+        ],
+        "retrieved_chunk_ids": [
+          16,
+          416
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 807.81,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.021354616,
+        "top1_rerank_score": 0.9825622,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 16,
+            "doc_id": 16,
+            "score": 0.9825622
+          },
+          {
+            "chunk_id": 416,
+            "doc_id": 42,
+            "score": 0.67329276
+          }
+        ]
+      },
+      {
+        "index": 9,
+        "question": "在Nacos中，如何定义实例的权重以及其作用？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1017
+        ],
+        "retrieved_chunk_ids": [
+          2600,
+          1421,
+          569
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 718.3,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.022548188,
+        "top1_rerank_score": 0.96721864,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "score": 0.96721864
+          },
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "score": 0.96721864
+          },
+          {
+            "chunk_id": 569,
+            "doc_id": 57,
+            "score": 0.6256882
+          }
+        ]
+      },
+      {
+        "index": 10,
+        "question": "在Spring Cloud Alibaba中，如何修改Dubbo服务的超时时间？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1072
+        ],
+        "retrieved_chunk_ids": [
+          586,
+          585
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 921.01,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.022599591,
+        "top1_rerank_score": 0.69861573,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 586,
+            "doc_id": 84,
+            "score": 0.69861573
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.5977794
+          }
+        ]
+      },
+      {
+        "index": 11,
+        "question": "如何在 Spring Cloud Alibaba 中禁用特定的提供者实例？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1077
+        ],
+        "retrieved_chunk_ids": [
+          466
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 594.6,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.029083246,
+        "top1_rerank_score": 0.46953204,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 466,
+            "doc_id": 56,
+            "score": 0.46953204
+          }
+        ]
+      },
+      {
+        "index": 12,
+        "question": "Spring Cloud Alibaba 的哪个版本开始支持服务降级功能？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          969
+        ],
+        "retrieved_chunk_ids": [
+          2083
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 632.96,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025568182,
+        "top1_rerank_score": 0.8630537,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.8630537
+          }
+        ]
+      },
+      {
+        "index": 13,
+        "question": "在Spring Cloud Alibaba中，如何配置加权最少活跃调用优先算法？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          798
+        ],
+        "retrieved_chunk_ids": [
+          1688
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 834.77,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025893752,
+        "top1_rerank_score": 0.7127356,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 1688,
+            "doc_id": 175,
+            "score": 0.7127356
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "question": "如何在Nacos中修改服务实例的流量权重？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1017
+        ],
+        "retrieved_chunk_ids": [
+          2600,
+          1421,
+          2603,
+          1425
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 810.18,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.027692895,
+        "top1_rerank_score": 0.9989802,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 2600,
+            "doc_id": 249,
+            "score": 0.9989802
+          },
+          {
+            "chunk_id": 1421,
+            "doc_id": 155,
+            "score": 0.9989802
+          },
+          {
+            "chunk_id": 2603,
+            "doc_id": 249,
+            "score": 0.9906104
+          },
+          {
+            "chunk_id": 1425,
+            "doc_id": 155,
+            "score": 0.9906104
+          }
+        ]
+      },
+      {
+        "index": 15,
+        "question": "Nacos提供了哪些功能来帮助用户在配置管理中降低可用性风险？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          75
+        ],
+        "retrieved_chunk_ids": [
+          2627,
+          1452,
+          2619,
+          1445,
+          2586
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 685.04,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.99910504,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2627,
+            "doc_id": 249,
+            "score": 0.99910504
+          },
+          {
+            "chunk_id": 1452,
+            "doc_id": 155,
+            "score": 0.99910504
+          },
+          {
+            "chunk_id": 2619,
+            "doc_id": 249,
+            "score": 0.99331975
+          },
+          {
+            "chunk_id": 1445,
+            "doc_id": 155,
+            "score": 0.99331975
+          },
+          {
+            "chunk_id": 2586,
+            "doc_id": 249,
+            "score": 0.9829952
+          }
+        ]
+      },
+      {
+        "index": 16,
+        "question": "在 Spring Cloud Alibaba 中，如何实现 Dubbo 服务消费者的 Callback 接口？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          697
+        ],
+        "retrieved_chunk_ids": [
+          591,
+          88,
+          2114,
+          2111,
+          592
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 748.63,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024286134,
+        "top1_rerank_score": 0.1321879,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 591,
+            "doc_id": 84,
+            "score": 0.1321879
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "score": 0.11734304
+          },
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.04732733
+          },
+          {
+            "chunk_id": 2111,
+            "doc_id": 207,
+            "score": 0.033194702
+          },
+          {
+            "chunk_id": 592,
+            "doc_id": 84,
+            "score": 0.014681185
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 XML 配置来创建服务消费者的示例？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1709
+        ],
+        "retrieved_chunk_ids": [
+          1385
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 511.64,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.48482943,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "score": 0.48482943
+          }
+        ]
+      },
+      {
+        "index": 18,
+        "question": "如果要从旧版本迁移到 Dubbo3，应该参考哪个文档？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          42
+        ],
+        "retrieved_chunk_ids": [
+          76,
+          136
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 714.82,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.60208213,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 76,
+            "doc_id": 1,
+            "score": 0.60208213
+          },
+          {
+            "chunk_id": 136,
+            "doc_id": 1,
+            "score": 0.3141019
+          }
+        ]
+      },
+      {
+        "index": 19,
+        "question": "在Spring Cloud Alibaba中，如何判断平滑加权轮询算法是否适合用户有加权轮询需求的情况？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          2128
+        ],
+        "retrieved_chunk_ids": [
+          1684,
+          1685
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 780.62,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024110384,
+        "top1_rerank_score": 0.9804664,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 1684,
+            "doc_id": 175,
+            "score": 0.9804664
+          },
+          {
+            "chunk_id": 1685,
+            "doc_id": 175,
+            "score": 0.963593
+          }
+        ]
+      },
+      {
+        "index": 20,
+        "question": "Dubbo 如何实现从服务器端调用客户端逻辑？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          697
+        ],
+        "retrieved_chunk_ids": [
+          382,
+          381,
+          1845,
+          60
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 960.94,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.019440407,
+        "top1_rerank_score": 0.99902856,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 382,
+            "doc_id": 35,
+            "score": 0.99902856
+          },
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "score": 0.99708986
+          },
+          {
+            "chunk_id": 1845,
+            "doc_id": 192,
+            "score": 0.9836399
+          },
+          {
+            "chunk_id": 60,
+            "doc_id": 11,
+            "score": 0.47510082
+          }
+        ]
+      },
+      {
+        "index": 21,
+        "question": "如何在 Spring Cloud Alibaba 中限制服务端接受的连接数？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          869
+        ],
+        "retrieved_chunk_ids": [
+          2114,
+          49,
+          381,
+          1727,
+          1565
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 463.98,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024891775,
+        "top1_rerank_score": 0.06497089,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.06497089
+          },
+          {
+            "chunk_id": 49,
+            "doc_id": 20,
+            "score": 0.013381676
+          },
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "score": 0.0091779055
+          },
+          {
+            "chunk_id": 1727,
+            "doc_id": 187,
+            "score": 0.0028217672
+          },
+          {
+            "chunk_id": 1565,
+            "doc_id": 141,
+            "score": 0.0018173108
+          }
+        ]
+      },
+      {
+        "index": 22,
+        "question": "在 Spring Cloud Alibaba 中，如何使业务类在 Nacos 配置变更时自动重建以加载最新配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          1495
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 755.55,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028782895,
+        "top1_rerank_score": 0.74574995,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 1495,
+            "doc_id": 141,
+            "score": 0.74574995
+          }
+        ]
+      },
+      {
+        "index": 23,
+        "question": "在本地新建开发分支时，分支名通常以什么作为命名依据？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          1097
+        ],
+        "retrieved_chunk_ids": [
+          526
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 729.71,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.019075302,
+        "top1_rerank_score": 0.9097982,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 526,
+            "doc_id": 64,
+            "score": 0.9097982
+          }
+        ]
+      },
+      {
+        "index": 24,
+        "question": "Dubbo 3 中，与 Dubbo 2 相比，地址注册模型的变化是什么？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          28
+        ],
+        "retrieved_chunk_ids": [
+          2134,
+          123
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 673.25,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.022960372,
+        "top1_rerank_score": 0.98969895,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 2134,
+            "doc_id": 206,
+            "score": 0.98969895
+          },
+          {
+            "chunk_id": 123,
+            "doc_id": 1,
+            "score": 0.3209748
+          }
+        ]
+      },
+      {
+        "index": 25,
+        "question": "在Spring Cloud Alibaba中，如何配置Dubbo服务的迁移启动项？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1929
+        ],
+        "retrieved_chunk_ids": [
+          2141,
+          2111,
+          2114
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 660.61,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02357456,
+        "top1_rerank_score": 0.9272255,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 2141,
+            "doc_id": 206,
+            "score": 0.9272255
+          },
+          {
+            "chunk_id": 2111,
+            "doc_id": 207,
+            "score": 0.579338
+          },
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.3037908
+          }
+        ]
+      },
+      {
+        "index": 26,
+        "question": "在 Spring Cloud Alibaba 中，泛接口实现方式主要用于什么场景？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1678
+        ],
+        "retrieved_chunk_ids": [
+          1200
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 410.78,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024016563,
+        "top1_rerank_score": 0.8819608,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 1200,
+            "doc_id": 140,
+            "score": 0.8819608
+          }
+        ]
+      },
+      {
+        "index": 27,
+        "question": "如何在 Spring Cloud Alibaba 中通过 XML 配置实现点对点直连服务提供者？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1924
+        ],
+        "retrieved_chunk_ids": [
+          959,
+          960
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 493.67,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026494564,
+        "top1_rerank_score": 0.79906726,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "score": 0.79906726
+          },
+          {
+            "chunk_id": 960,
+            "doc_id": 119,
+            "score": 0.72754306
+          }
+        ]
+      },
+      {
+        "index": 28,
+        "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2083
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 830.92,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023348236,
+        "top1_rerank_score": 0.6516673,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.6516673
+          }
+        ]
+      },
+      {
+        "index": 29,
+        "question": "Spring Cloud Alibaba 2.7.5 版本引入的线程池模型相比老版本有哪些改进？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          1155
+        ],
+        "retrieved_chunk_ids": [
+          605,
+          601,
+          603
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 741.94,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023789879,
+        "top1_rerank_score": 0.991966,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 605,
+            "doc_id": 70,
+            "score": 0.991966
+          },
+          {
+            "chunk_id": 601,
+            "doc_id": 70,
+            "score": 0.9814596
+          },
+          {
+            "chunk_id": 603,
+            "doc_id": 70,
+            "score": 0.9703573
+          }
+        ]
+      },
+      {
+        "index": 30,
+        "question": "在上述 Map 中，如何指定 Person 对象的实现类？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1782
+        ],
+        "retrieved_chunk_ids": [
+          2470
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 756.43,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02175693,
+        "top1_rerank_score": 0.37222824,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2470,
+            "doc_id": 248,
+            "score": 0.37222824
+          }
+        ]
+      },
+      {
+        "index": 31,
+        "question": "在Spring Cloud Alibaba中，如何配置参数校验以增强安全性？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          591
+        ],
+        "retrieved_chunk_ids": [
+          2114
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 625.08,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025460793,
+        "top1_rerank_score": 0.30202872,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.30202872
+          }
+        ]
+      },
+      {
+        "index": 32,
+        "question": "如何在 Spring Cloud Alibaba 中实现服务降级？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1080
+        ],
+        "retrieved_chunk_ids": [
+          1732,
+          1727
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 751.56,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026356857,
+        "top1_rerank_score": 0.35027504,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 1732,
+            "doc_id": 187,
+            "score": 0.35027504
+          },
+          {
+            "chunk_id": 1727,
+            "doc_id": 187,
+            "score": 0.32332006
+          }
+        ]
+      },
+      {
+        "index": 33,
+        "question": "在 Spring Cloud Alibaba 中，如何配置远程服务的 Stub？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1929
+        ],
+        "retrieved_chunk_ids": [
+          2083,
+          2114,
+          2086,
+          2085,
+          1378
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 605.83,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024891775,
+        "top1_rerank_score": 0.08451377,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.08451377
+          },
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.061225068
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0040639127
+          },
+          {
+            "chunk_id": 2085,
+            "doc_id": 208,
+            "score": 0.0023327565
+          },
+          {
+            "chunk_id": 1378,
+            "doc_id": 134,
+            "score": 0.0021798986
+          }
+        ]
+      },
+      {
+        "index": 34,
+        "question": "在 Spring Cloud Alibaba 中，如何实现一个远程服务的代理？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          260
+        ],
+        "retrieved_chunk_ids": [
+          2114,
+          1454,
+          1565,
+          1486,
+          1078
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 473.29,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02359172,
+        "top1_rerank_score": 0.07237056,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.07237056
+          },
+          {
+            "chunk_id": 1454,
+            "doc_id": 134,
+            "score": 0.01364637
+          },
+          {
+            "chunk_id": 1565,
+            "doc_id": 141,
+            "score": 0.0025389364
+          },
+          {
+            "chunk_id": 1486,
+            "doc_id": 134,
+            "score": 0.0025389364
+          },
+          {
+            "chunk_id": 1078,
+            "doc_id": 127,
+            "score": 0.0025389364
+          }
+        ]
+      },
+      {
+        "index": 35,
+        "question": "如何在本地克隆Nacos代码仓库并添加Alibaba/Nacos仓库为upstream仓库？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1096
+        ],
+        "retrieved_chunk_ids": [
+          31
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 631.94,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.8124418,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 31,
+            "doc_id": 12,
+            "score": 0.8124418
+          }
+        ]
+      },
+      {
+        "index": 36,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 RpcContext 进行隐式参数传递？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          499
+        ],
+        "retrieved_chunk_ids": [
+          11,
+          8,
+          12
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 480.73,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.020633012,
+        "top1_rerank_score": 0.98671025,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 11,
+            "doc_id": 21,
+            "score": 0.98671025
+          },
+          {
+            "chunk_id": 8,
+            "doc_id": 21,
+            "score": 0.9594304
+          },
+          {
+            "chunk_id": 12,
+            "doc_id": 21,
+            "score": 0.8891494
+          }
+        ]
+      },
+      {
+        "index": 37,
+        "question": "在完成rebase后，如何将分支上传到您fork的仓库？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1103
+        ],
+        "retrieved_chunk_ids": [
+          534,
+          618,
+          533,
+          718,
+          31
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 629.42,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.9366823,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 534,
+            "doc_id": 64,
+            "score": 0.9366823
+          },
+          {
+            "chunk_id": 618,
+            "doc_id": 71,
+            "score": 0.7450358
+          },
+          {
+            "chunk_id": 533,
+            "doc_id": 64,
+            "score": 0.6130411
+          },
+          {
+            "chunk_id": 718,
+            "doc_id": 79,
+            "score": 0.37357578
+          },
+          {
+            "chunk_id": 31,
+            "doc_id": 12,
+            "score": 0.35491034
+          }
+        ]
+      },
+      {
+        "index": 38,
+        "question": "配置 Dubbo 端口时，可以在哪些配置文件中设置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1668
+        ],
+        "retrieved_chunk_ids": [
+          761,
+          2143
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 646.87,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023667065,
+        "top1_rerank_score": 0.96962523,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 761,
+            "doc_id": 92,
+            "score": 0.96962523
+          },
+          {
+            "chunk_id": 2143,
+            "doc_id": 206,
+            "score": 0.82235885
+          }
+        ]
+      },
+      {
+        "index": 39,
+        "question": "为什么在 Spring Cloud Alibaba 中获取客户端隐式传入的参数不建议常规业务使用？",
+        "question_type": "troubleshoot",
+        "gold_chunk_ids": [
+          500
+        ],
+        "retrieved_chunk_ids": [
+          12,
+          11
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 698.61,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028958334,
+        "top1_rerank_score": 0.9743668,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 12,
+            "doc_id": 21,
+            "score": 0.9743668
+          },
+          {
+            "chunk_id": 11,
+            "doc_id": 21,
+            "score": 0.8929129
+          }
+        ]
+      },
+      {
+        "index": 40,
+        "question": "如何配置 Dubbo 协议以实现延迟连接？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1330
+        ],
+        "retrieved_chunk_ids": [
+          1566,
+          585
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 573.86,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028258707,
+        "top1_rerank_score": 0.96071017,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 1566,
+            "doc_id": 168,
+            "score": 0.96071017
+          },
+          {
+            "chunk_id": 585,
+            "doc_id": 84,
+            "score": 0.35405317
+          }
+        ]
+      },
+      {
+        "index": 41,
+        "question": "覆盖规则是从哪个版本开始支持从服务和应用两个粒度来调整动态配置的？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1069
+        ],
+        "retrieved_chunk_ids": [
+          497,
+          498,
+          502
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 681.6,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026022913,
+        "top1_rerank_score": 0.9881579,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 497,
+            "doc_id": 63,
+            "score": 0.9881579
+          },
+          {
+            "chunk_id": 498,
+            "doc_id": 63,
+            "score": 0.954439
+          },
+          {
+            "chunk_id": 502,
+            "doc_id": 63,
+            "score": 0.3032626
+          }
+        ]
+      },
+      {
+        "index": 42,
+        "question": "BarServiceStub 的构造函数接收什么参数？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1056
+        ],
+        "retrieved_chunk_ids": [
+          1852,
+          1854,
+          1846,
+          1857
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 656.34,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.018695652,
+        "top1_rerank_score": 0.792754,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 1852,
+            "doc_id": 192,
+            "score": 0.792754
+          },
+          {
+            "chunk_id": 1854,
+            "doc_id": 192,
+            "score": 0.74059266
+          },
+          {
+            "chunk_id": 1846,
+            "doc_id": 192,
+            "score": 0.71160066
+          },
+          {
+            "chunk_id": 1857,
+            "doc_id": 192,
+            "score": 0.46760398
+          }
+        ]
+      },
+      {
+        "index": 43,
+        "question": "如何在 Spring Cloud Alibaba 中使用 Nacos 集群模式？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          2236
+        ],
+        "retrieved_chunk_ids": [
+          2114
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 682.58,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023392612,
+        "top1_rerank_score": 0.9115774,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.9115774
+          }
+        ]
+      },
+      {
+        "index": 44,
+        "question": "Dubbo 微服务支持哪些部署架构？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          37
+        ],
+        "retrieved_chunk_ids": [
+          115,
+          129,
+          79,
+          131,
+          92
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 655.35,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026547117,
+        "top1_rerank_score": 0.9948152,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "score": 0.9948152
+          },
+          {
+            "chunk_id": 129,
+            "doc_id": 1,
+            "score": 0.9943672
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.99050796
+          },
+          {
+            "chunk_id": 131,
+            "doc_id": 1,
+            "score": 0.9891544
+          },
+          {
+            "chunk_id": 92,
+            "doc_id": 1,
+            "score": 0.95540047
+          }
+        ]
+      },
+      {
+        "index": 45,
+        "question": "如何配置广播调用失败后停止调用其他节点的比例？",
+        "question_type": "troubleshoot",
+        "gold_chunk_ids": [
+          2122
+        ],
+        "retrieved_chunk_ids": [
+          976,
+          977
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 551.58,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02938653,
+        "top1_rerank_score": 0.99752,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 976,
+            "doc_id": 126,
+            "score": 0.99752
+          },
+          {
+            "chunk_id": 977,
+            "doc_id": 126,
+            "score": 0.96634465
+          }
+        ]
+      },
+      {
+        "index": 46,
+        "question": "在 Spring Cloud Alibaba 中，如何配置服务消费方的集群模式？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2130
+        ],
+        "retrieved_chunk_ids": [
+          2114,
+          2196
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 540.79,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026655348,
+        "top1_rerank_score": 0.82978576,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.82978576
+          },
+          {
+            "chunk_id": 2196,
+            "doc_id": 223,
+            "score": 0.48381293
+          }
+        ]
+      },
+      {
+        "index": 47,
+        "question": "如何修改应用demo在20880端口上提供服务的权重？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1071
+        ],
+        "retrieved_chunk_ids": [
+          499,
+          506,
+          2603,
+          1425,
+          505
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 632.02,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.027106227,
+        "top1_rerank_score": 0.9990639,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 499,
+            "doc_id": 63,
+            "score": 0.9990639
+          },
+          {
+            "chunk_id": 506,
+            "doc_id": 63,
+            "score": 0.88896936
+          },
+          {
+            "chunk_id": 2603,
+            "doc_id": 249,
+            "score": 0.75778043
+          },
+          {
+            "chunk_id": 1425,
+            "doc_id": 155,
+            "score": 0.75778043
+          },
+          {
+            "chunk_id": 505,
+            "doc_id": 63,
+            "score": 0.34227717
+          }
+        ]
+      },
+      {
+        "index": 48,
+        "question": "Spring Cloud Alibaba 中的 Failfast Cluster 通常适用于哪些类型的操作？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          2119
+        ],
+        "retrieved_chunk_ids": [
+          2083,
+          2122,
+          2114,
+          1565,
+          1486
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1091.61,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.030017922,
+        "top1_rerank_score": 0.037122764,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2083,
+            "doc_id": 208,
+            "score": 0.037122764
+          },
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.026107175
+          },
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.01319201
+          },
+          {
+            "chunk_id": 1565,
+            "doc_id": 141,
+            "score": 0.0009711721
+          },
+          {
+            "chunk_id": 1486,
+            "doc_id": 134,
+            "score": 0.0009711721
+          }
+        ]
+      },
+      {
+        "index": 49,
+        "question": "阿里巴巴在Dubbo3中扮演了什么角色？",
+        "question_type": "other",
+        "gold_chunk_ids": [
+          36
+        ],
+        "retrieved_chunk_ids": [
+          103
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 718.15,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.020308124,
+        "top1_rerank_score": 0.98505986,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "score": 0.98505986
+          }
+        ]
+      },
+      {
+        "index": 50,
+        "question": "在Spring Cloud Alibaba中，如何配置一个服务提供端使其调用需要鉴权认证通过？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          591
+        ],
+        "retrieved_chunk_ids": [
+          63,
+          65,
+          68
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 711.72,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016902983,
+        "top1_rerank_score": 0.98666674,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 63,
+            "doc_id": 28,
+            "score": 0.98666674
+          },
+          {
+            "chunk_id": 65,
+            "doc_id": 28,
+            "score": 0.98620933
+          },
+          {
+            "chunk_id": 68,
+            "doc_id": 28,
+            "score": 0.7834647
+          }
+        ]
+      },
+      {
+        "index": 51,
+        "question": "在上述测试代码中，如何验证回调函数是否正确接收到了请求ID？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1785
+        ],
+        "retrieved_chunk_ids": [
+          1852,
+          2552,
+          2319,
+          2449,
+          2555
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 921.71,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.017476747,
+        "top1_rerank_score": 0.0062001934,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1852,
+            "doc_id": 192,
+            "score": 0.0062001934
+          },
+          {
+            "chunk_id": 2552,
+            "doc_id": 235,
+            "score": 0.003136405
+          },
+          {
+            "chunk_id": 2319,
+            "doc_id": 215,
+            "score": 0.0029622768
+          },
+          {
+            "chunk_id": 2449,
+            "doc_id": 241,
+            "score": 0.0017811108
+          },
+          {
+            "chunk_id": 2555,
+            "doc_id": 235,
+            "score": 0.0017202195
+          }
+        ]
+      },
+      {
+        "index": 52,
+        "question": "在 Spring Cloud Alibaba 中，如何使用 `force:` 和 `fail:` 来控制 Mock 行为？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          969
+        ],
+        "retrieved_chunk_ids": [
+          1771,
+          1777
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 725.87,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.027346637,
+        "top1_rerank_score": 0.98541355,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 1771,
+            "doc_id": 187,
+            "score": 0.98541355
+          },
+          {
+            "chunk_id": 1777,
+            "doc_id": 187,
+            "score": 0.8760674
+          }
+        ]
+      },
+      {
+        "index": 53,
+        "question": "在Nacos中，如何使用配置订阅者来监听配置变更并检查变更是否已推送到客户端？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2624,
+          1450
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 810.52,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023025531,
+        "top1_rerank_score": 0.9978271,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 2624,
+            "doc_id": 249,
+            "score": 0.9978271
+          },
+          {
+            "chunk_id": 1450,
+            "doc_id": 155,
+            "score": 0.9978271
+          }
+        ]
+      },
+      {
+        "index": 54,
+        "question": "如何在 Spring Cloud Alibaba 中限制客户端服务使用的连接数？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          792
+        ],
+        "retrieved_chunk_ids": [
+          2122,
+          2114,
+          381,
+          2115,
+          389
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 664.7,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025484351,
+        "top1_rerank_score": 0.12712522,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.12712522
+          },
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.09444997
+          },
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "score": 0.02116073
+          },
+          {
+            "chunk_id": 2115,
+            "doc_id": 207,
+            "score": 0.011419771
+          },
+          {
+            "chunk_id": 389,
+            "doc_id": 49,
+            "score": 0.0041748607
+          }
+        ]
+      },
+      {
+        "index": 55,
+        "question": "在生产环境中，使用 Spring Cloud Alibaba Nacos 时，建议采用哪种数据源配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          2082
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 593.14,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.93242127,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2082,
+            "doc_id": 208,
+            "score": 0.93242127
+          }
+        ]
+      },
+      {
+        "index": 56,
+        "question": "Dubbo3 相比 Dubbo2 在哪些方面进行了升级？",
+        "question_type": "multi_hop",
+        "gold_chunk_ids": [
+          28
+        ],
+        "retrieved_chunk_ids": [
+          75,
+          76,
+          73,
+          79,
+          103
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 639.05,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023200758,
+        "top1_rerank_score": 0.9985796,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 75,
+            "doc_id": 1,
+            "score": 0.9985796
+          },
+          {
+            "chunk_id": 76,
+            "doc_id": 1,
+            "score": 0.9950068
+          },
+          {
+            "chunk_id": 73,
+            "doc_id": 1,
+            "score": 0.9950063
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.9526742
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "score": 0.92856985
+          }
+        ]
+      },
+      {
+        "index": 57,
+        "question": "如何指定 Dubbo 的线程堆栈导出路径？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1551
+        ],
+        "retrieved_chunk_ids": [
+          773,
+          964,
+          774,
+          1103
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 764.78,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024493705,
+        "top1_rerank_score": 0.9914492,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 773,
+            "doc_id": 98,
+            "score": 0.9914492
+          },
+          {
+            "chunk_id": 964,
+            "doc_id": 119,
+            "score": 0.9481431
+          },
+          {
+            "chunk_id": 774,
+            "doc_id": 98,
+            "score": 0.8683072
+          },
+          {
+            "chunk_id": 1103,
+            "doc_id": 106,
+            "score": 0.30345348
+          }
+        ]
+      },
+      {
+        "index": 58,
+        "question": "在生产环境中部署 Spring Cloud Alibaba，建议采用哪种高可用方案？为什么？",
+        "question_type": "troubleshoot",
+        "gold_chunk_ids": [
+          2236
+        ],
+        "retrieved_chunk_ids": [
+          3037,
+          936,
+          1856,
+          2102,
+          1564
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 1021.28,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.023234684,
+        "top1_rerank_score": 0.24194244,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 3037,
+            "doc_id": 263,
+            "score": 0.24194244
+          },
+          {
+            "chunk_id": 936,
+            "doc_id": 101,
+            "score": 0.0358721
+          },
+          {
+            "chunk_id": 1856,
+            "doc_id": 185,
+            "score": 0.012619588
+          },
+          {
+            "chunk_id": 2102,
+            "doc_id": 207,
+            "score": 0.009617928
+          },
+          {
+            "chunk_id": 1564,
+            "doc_id": 141,
+            "score": 0.008347833
+          }
+        ]
+      },
+      {
+        "index": 59,
+        "question": "如何在 Spring Cloud Alibaba 中开启访问日志？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          115
+        ],
+        "retrieved_chunk_ids": [
+          2122
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 595.99,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.027382454,
+        "top1_rerank_score": 0.48144206,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2122,
+            "doc_id": 207,
+            "score": 0.48144206
+          }
+        ]
+      },
+      {
+        "index": 60,
+        "question": "如何在 Spring Cloud Alibaba 中开启 Dubbo 的访问日志功能？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          116
+        ],
+        "retrieved_chunk_ids": [
+          770
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 633.53,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02792121,
+        "top1_rerank_score": 0.81673574,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "score": 0.81673574
+          }
+        ]
+      },
+      {
+        "index": 61,
+        "question": "在 Spring Cloud Alibaba 中，如何配置一个异步回调模式的服务消费者？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          270
+        ],
+        "retrieved_chunk_ids": [
+          2114,
+          1454,
+          1378,
+          2086,
+          1745
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 496.27,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.024444444,
+        "top1_rerank_score": 0.06618952,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.06618952
+          },
+          {
+            "chunk_id": 1454,
+            "doc_id": 134,
+            "score": 0.0051842234
+          },
+          {
+            "chunk_id": 1378,
+            "doc_id": 134,
+            "score": 0.004114911
+          },
+          {
+            "chunk_id": 2086,
+            "doc_id": 208,
+            "score": 0.0022175086
+          },
+          {
+            "chunk_id": 1745,
+            "doc_id": 186,
+            "score": 0.0011832054
+          }
+        ]
+      },
+      {
+        "index": 62,
+        "question": "在 Spring Cloud Alibaba 中，如何配置 Nacos 配置中心以实现服务治理与动态配置？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          1385,
+          1055,
+          1489,
+          2111,
+          1490
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 601.58,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.019307833,
+        "top1_rerank_score": 0.9747546,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "score": 0.9747546
+          },
+          {
+            "chunk_id": 1055,
+            "doc_id": 127,
+            "score": 0.75447446
+          },
+          {
+            "chunk_id": 1489,
+            "doc_id": 141,
+            "score": 0.7488502
+          },
+          {
+            "chunk_id": 2111,
+            "doc_id": 207,
+            "score": 0.7038254
+          },
+          {
+            "chunk_id": 1490,
+            "doc_id": 141,
+            "score": 0.67672455
+          }
+        ]
+      },
+      {
+        "index": 63,
+        "question": "如何通过curl命令在Nacos中添加服务实例并使用accessToken进行鉴权？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          2163
+        ],
+        "retrieved_chunk_ids": [
+          1977,
+          1952,
+          1980
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 680.83,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.022960372,
+        "top1_rerank_score": 0.5272508,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 1977,
+            "doc_id": 193,
+            "score": 0.5272508
+          },
+          {
+            "chunk_id": 1952,
+            "doc_id": 193,
+            "score": 0.37516585
+          },
+          {
+            "chunk_id": 1980,
+            "doc_id": 193,
+            "score": 0.35222876
+          }
+        ]
+      },
+      {
+        "index": 64,
+        "question": "Nacos支持哪些类型的构建物？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          80
+        ],
+        "retrieved_chunk_ids": [
+          194,
+          2930,
+          2111,
+          737
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 783.63,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.029827662,
+        "top1_rerank_score": 0.99658394,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 194,
+            "doc_id": 2,
+            "score": 0.99658394
+          },
+          {
+            "chunk_id": 2930,
+            "doc_id": 243,
+            "score": 0.61743313
+          },
+          {
+            "chunk_id": 2111,
+            "doc_id": 207,
+            "score": 0.46803656
+          },
+          {
+            "chunk_id": 737,
+            "doc_id": 92,
+            "score": 0.45870078
+          }
+        ]
+      },
+      {
+        "index": 65,
+        "question": "在 Spring Cloud Alibaba 中，如何确保配置集的 Data ID 具有全局唯一性？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1005
+        ],
+        "retrieved_chunk_ids": [
+          2550,
+          563,
+          2544,
+          562
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 613.59,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.021212121,
+        "top1_rerank_score": 0.9008649,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 2550,
+            "doc_id": 235,
+            "score": 0.9008649
+          },
+          {
+            "chunk_id": 563,
+            "doc_id": 57,
+            "score": 0.83716017
+          },
+          {
+            "chunk_id": 2544,
+            "doc_id": 235,
+            "score": 0.80043817
+          },
+          {
+            "chunk_id": 562,
+            "doc_id": 57,
+            "score": 0.6372313
+          }
+        ]
+      },
+      {
+        "index": 66,
+        "question": "在 Nacos 中，配置分组的作用是什么？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          1006
+        ],
+        "retrieved_chunk_ids": [
+          564,
+          2614,
+          1439
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 694.94,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.030282332,
+        "top1_rerank_score": 0.9961539,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 564,
+            "doc_id": 57,
+            "score": 0.9961539
+          },
+          {
+            "chunk_id": 2614,
+            "doc_id": 249,
+            "score": 0.98329127
+          },
+          {
+            "chunk_id": 1439,
+            "doc_id": 155,
+            "score": 0.98329127
+          }
+        ]
+      },
+      {
+        "index": 67,
+        "question": "Spring Cloud Alibaba中的Nacos数据模型Key由哪些元素唯一确定？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          77
+        ],
+        "retrieved_chunk_ids": [
+          188
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 552.36,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025567755,
+        "top1_rerank_score": 0.99837,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 188,
+            "doc_id": 2,
+            "score": 0.99837
+          }
+        ]
+      },
+      {
+        "index": 68,
+        "question": "在 Spring Cloud Alibaba 中，如何配置服务提供方的集群模式？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2130
+        ],
+        "retrieved_chunk_ids": [
+          2114
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 607.66,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02792121,
+        "top1_rerank_score": 0.92409897,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 2114,
+            "doc_id": 207,
+            "score": 0.92409897
+          }
+        ]
+      },
+      {
+        "index": 69,
+        "question": "如何将 Dubbo 的访问日志输出到当前应用的 log4j 日志？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          115
+        ],
+        "retrieved_chunk_ids": [
+          770,
+          1993,
+          1992,
+          771
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 704.24,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026041666,
+        "top1_rerank_score": 0.995565,
+        "returned_items": 4,
+        "items": [
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "score": 0.995565
+          },
+          {
+            "chunk_id": 1993,
+            "doc_id": 199,
+            "score": 0.98542583
+          },
+          {
+            "chunk_id": 1992,
+            "doc_id": 199,
+            "score": 0.9631371
+          },
+          {
+            "chunk_id": 771,
+            "doc_id": 6,
+            "score": 0.9609771
+          }
+        ]
+      },
+      {
+        "index": 70,
+        "question": "Dubbo 的扩展能力体现在哪些方面？",
+        "question_type": "factual",
+        "gold_chunk_ids": [
+          28
+        ],
+        "retrieved_chunk_ids": [
+          95,
+          79,
+          110,
+          103,
+          113
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 629.26,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.028860029,
+        "top1_rerank_score": 0.9967033,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 95,
+            "doc_id": 1,
+            "score": 0.9967033
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.9916289
+          },
+          {
+            "chunk_id": 110,
+            "doc_id": 1,
+            "score": 0.9915767
+          },
+          {
+            "chunk_id": 103,
+            "doc_id": 1,
+            "score": 0.97891164
+          },
+          {
+            "chunk_id": 113,
+            "doc_id": 1,
+            "score": 0.9518774
+          }
+        ]
+      },
+      {
+        "index": 71,
+        "question": "如何通过Nacos获取特定服务的配置信息？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          2234
+        ],
+        "retrieved_chunk_ids": [
+          1469,
+          1385,
+          1489,
+          1055,
+          1107
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 677.97,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.016393442,
+        "top1_rerank_score": 0.9407451,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 1469,
+            "doc_id": 134,
+            "score": 0.9407451
+          },
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "score": 0.7275313
+          },
+          {
+            "chunk_id": 1489,
+            "doc_id": 141,
+            "score": 0.6107751
+          },
+          {
+            "chunk_id": 1055,
+            "doc_id": 127,
+            "score": 0.5829383
+          },
+          {
+            "chunk_id": 1107,
+            "doc_id": 106,
+            "score": 0.53195053
+          }
+        ]
+      },
+      {
+        "index": 72,
+        "question": "在Spring Cloud Alibaba中，如何设置服务的客户端的`loadbalance`属性为`leastactive`？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          798
+        ],
+        "retrieved_chunk_ids": [
+          424,
+          469
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 638.23,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.022345679,
+        "top1_rerank_score": 0.97723424,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 424,
+            "doc_id": 42,
+            "score": 0.97723424
+          },
+          {
+            "chunk_id": 469,
+            "doc_id": 56,
+            "score": 0.7893833
+          }
+        ]
+      },
+      {
+        "index": 73,
+        "question": "在 Dubbo 中如何实现分布式事务的支持？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          1391
+        ],
+        "retrieved_chunk_ids": [
+          599,
+          600,
+          3054
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 718.53,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02385613,
+        "top1_rerank_score": 0.99549025,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 599,
+            "doc_id": 91,
+            "score": 0.99549025
+          },
+          {
+            "chunk_id": 600,
+            "doc_id": 91,
+            "score": 0.9559454
+          },
+          {
+            "chunk_id": 3054,
+            "doc_id": 264,
+            "score": 0.3351211
+          }
+        ]
+      },
+      {
+        "index": 74,
+        "question": "在注册动态配置覆盖规则时，`override://`的用途是什么？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          965
+        ],
+        "retrieved_chunk_ids": [
+          464,
+          465
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 476.38,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026685644,
+        "top1_rerank_score": 0.95851654,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 464,
+            "doc_id": 56,
+            "score": 0.95851654
+          },
+          {
+            "chunk_id": 465,
+            "doc_id": 56,
+            "score": 0.33710098
+          }
+        ]
+      },
+      {
+        "index": 75,
+        "question": "在Spring Cloud Alibaba中，如何使用异步方式进行Dubbo服务调用？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          257
+        ],
+        "retrieved_chunk_ids": [
+          591,
+          88
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 637.4,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.02047619,
+        "top1_rerank_score": 0.7003967,
+        "returned_items": 2,
+        "items": [
+          {
+            "chunk_id": 591,
+            "doc_id": 84,
+            "score": 0.7003967
+          },
+          {
+            "chunk_id": 88,
+            "doc_id": 1,
+            "score": 0.40162116
+          }
+        ]
+      },
+      {
+        "index": 76,
+        "question": "Dubbo3 如何支持云原生微服务架构？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          37
+        ],
+        "retrieved_chunk_ids": [
+          79,
+          115,
+          75,
+          76,
+          73
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 830.13,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026860954,
+        "top1_rerank_score": 0.99645126,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.99645126
+          },
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "score": 0.9913994
+          },
+          {
+            "chunk_id": 75,
+            "doc_id": 1,
+            "score": 0.97564733
+          },
+          {
+            "chunk_id": 76,
+            "doc_id": 1,
+            "score": 0.97564495
+          },
+          {
+            "chunk_id": 73,
+            "doc_id": 1,
+            "score": 0.95716995
+          }
+        ]
+      },
+      {
+        "index": 77,
+        "question": "Dubbo 如何支持 Kubernetes 平台调度？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          38
+        ],
+        "retrieved_chunk_ids": [
+          123,
+          115,
+          79,
+          131,
+          120
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 733.93,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025503574,
+        "top1_rerank_score": 0.99941385,
+        "returned_items": 5,
+        "items": [
+          {
+            "chunk_id": 123,
+            "doc_id": 1,
+            "score": 0.99941385
+          },
+          {
+            "chunk_id": 115,
+            "doc_id": 1,
+            "score": 0.97519255
+          },
+          {
+            "chunk_id": 79,
+            "doc_id": 1,
+            "score": 0.9636404
+          },
+          {
+            "chunk_id": 131,
+            "doc_id": 1,
+            "score": 0.9621096
+          },
+          {
+            "chunk_id": 120,
+            "doc_id": 1,
+            "score": 0.8741307
+          }
+        ]
+      },
+      {
+        "index": 78,
+        "question": "在 Nacos 中，配置变更历史和服务标签是如何关联的？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          78
+        ],
+        "retrieved_chunk_ids": [
+          191,
+          2623,
+          1447
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 698.68,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.025567755,
+        "top1_rerank_score": 0.99600005,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 191,
+            "doc_id": 2,
+            "score": 0.99600005
+          },
+          {
+            "chunk_id": 2623,
+            "doc_id": 249,
+            "score": 0.88691455
+          },
+          {
+            "chunk_id": 1447,
+            "doc_id": 155,
+            "score": 0.88691455
+          }
+        ]
+      },
+      {
+        "index": 79,
+        "question": "在 Spring Cloud Alibaba 中，如何配置一个参数为 callback 类型？",
+        "question_type": "config",
+        "gold_chunk_ids": [
+          697
+        ],
+        "retrieved_chunk_ids": [
+          381
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 593.66,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.026030023,
+        "top1_rerank_score": 0.95637226,
+        "returned_items": 1,
+        "items": [
+          {
+            "chunk_id": 381,
+            "doc_id": 35,
+            "score": 0.95637226
+          }
+        ]
+      },
+      {
+        "index": 80,
+        "question": "如何将访问日志输出到指定的文件？",
+        "question_type": "procedural",
+        "gold_chunk_ids": [
+          116
+        ],
+        "retrieved_chunk_ids": [
+          771,
+          770,
+          2123
+        ],
+        "metrics": {
+          "recall@5": 0.0,
+          "precision@5": 0.0,
+          "hit_rate@5": 0.0,
+          "mrr@5": 0.0,
+          "ndcg@5": 0.0
+        },
+        "latency_ms": 689.35,
+        "rerank_state": "applied",
+        "top1_hybrid_score": 0.022550177,
+        "top1_rerank_score": 0.92438287,
+        "returned_items": 3,
+        "items": [
+          {
+            "chunk_id": 771,
+            "doc_id": 6,
+            "score": 0.92438287
+          },
+          {
+            "chunk_id": 770,
+            "doc_id": 6,
+            "score": 0.85915315
+          },
+          {
+            "chunk_id": 2123,
+            "doc_id": 207,
+            "score": 0.40359885
+          }
+        ]
+      }
+    ]
+  },
+  "model_snapshot": {
+    "dense": {
+      "embedding_version": "BAAI/bge-m3",
+      "rerank_model": "BAAI/bge-reranker-v2-m3",
+      "rerank_enabled": true
+    },
+    "hybrid": {
+      "embedding_version": "BAAI/bge-m3",
+      "rerank_model": "BAAI/bge-reranker-v2-m3",
+      "rerank_enabled": true
+    }
+  }
+}

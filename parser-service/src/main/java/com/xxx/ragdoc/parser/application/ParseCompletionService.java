@@ -20,8 +20,13 @@ public class ParseCompletionService {
 
     @Transactional
     public ParseTask complete(ParseTask leased, List<Chunk> savedChunks) {
-        Document document = documentRepository.findById(leased.documentId())
-                .orElseThrow(() -> new IllegalStateException("Document 不存在: " + leased.documentId()));
+        Document document =
+                documentRepository
+                        .findById(leased.documentId())
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Document 不存在: " + leased.documentId()));
         if (leased.triggerType() == ParseTask.TriggerType.REBUILD) {
             int previousGeneration = document.activeGeneration();
             document.activateGeneration(leased.generation());
@@ -44,8 +49,15 @@ public class ParseCompletionService {
 
     private static ParseTask withChunks(ParseTask task, int chunksWritten) {
         return task.withExecutionState(
-                task.status(), task.retryCount(), chunksWritten, task.chunkSeqOffset(),
-                task.errorMessage(), task.errorClass(), task.attempts(), task.visibleAt(),
-                task.leasedBy(), task.updatedAt());
+                task.status(),
+                task.retryCount(),
+                chunksWritten,
+                task.chunkSeqOffset(),
+                task.errorMessage(),
+                task.errorClass(),
+                task.attempts(),
+                task.visibleAt(),
+                task.leasedBy(),
+                task.updatedAt());
     }
 }

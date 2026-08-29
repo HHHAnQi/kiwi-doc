@@ -1,0 +1,220 @@
+{
+  "dataset_size": 3,
+  "metrics": {
+    "retrieval": {
+      "mrr@5": 1.0,
+      "ndcg@5": 1.0,
+      "recall@5": 1.0,
+      "hit_rate@5": 1.0,
+      "precision@5": 0.20000000000000004
+    },
+    "generation": {
+      "answer_correctness": 0.5,
+      "faithfulness": 0.5,
+      "citation_hit_rate": 1.0,
+      "citation_recall": 1.0,
+      "citation_accuracy": 0.38888888888888884
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 2
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 3
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "citation_accuracy": 0.5,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 1
+      },
+      {
+        "answer_correctness": 1.0,
+        "faithfulness": 0.5,
+        "citation_accuracy": 0.3333333333333333,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 2
+      },
+      {
+        "answer_correctness": 0.0,
+        "faithfulness": 0.0,
+        "citation_accuracy": 0.3333333333333333,
+        "citation_recall": 1.0,
+        "citation_hit_rate": 1.0,
+        "__question_id": 3
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "延迟连接配置对哪种 Dubbo 协议生效？",
+        "gold_answer": "延迟连接配置对 Dubbo 协议生效，因为 Dubbo 协议是长连接，connections 表示该服务对每个提供者建立的长连接数。",
+        "answer": "延迟连接用于减少长连接数。当有调用发起时，再创建长连接 [1]。Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用 [2]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          1566,
+          1591
+        ],
+        "gold_chunk_ids": [
+          1566
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1566,
+            "doc_id": 168,
+            "page": 0,
+            "snippet": "---\naliases:\n - /zh/docs/advanced/lazy-connect/\ndescription: 在 Dubbo 中配置延迟连接\nlinkTitle: 延迟连接\ntitle: 延迟连接\ntype: docs\nweight: 30\n---\n\n \n\n延迟连接用于减少长连接数。当有调用发起时，再创建长连接。",
+            "llm_context": "---\naliases:\n - /zh/docs/advanced/lazy-connect/\ndescription: 在 Dubbo 中配置延迟连接\nlinkTitle: 延迟连接\ntitle: 延迟连接\ntype: docs\nweight: 30\n---\n\n \n\n延迟连接用于减少长连接数。当有调用发起时，再创建长连接。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 1591,
+            "doc_id": 182,
+            "page": 0,
+            "snippet": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "llm_context": "Dubbo 从 `2.2.0` 每个服务默认都会在本地暴露，无需进行任何配置即可进行本地引用，如果不希望服务进行远程暴露，只需要在 provider 将 protocol 设置成 injvm 即可",
+            "section_path": [
+              "配置"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 2,
+        "question": "在多注册中心订阅的场景下，Spring Cloud Alibaba提供了哪些选址策略？",
+        "gold_answer": "Spring Cloud Alibaba 提供了四种多注册中心间的选址策略，包括指定优先级、同中心优先、权重轮询等，其中指定优先级通过设置 preferred=\"true\" 使该注册中心地址被优先选择。",
+        "answer": "Spring Cloud Alibaba提供了四种多注册中心间的选址策略，其中指定优先级策略通过`preferred=\"true\"`配置使特定注册中心的地址被优先选择 [1]。多注册中心配置可以通过竖号分隔同时连接不同注册中心，同一注册中心的多个集群地址用逗号分隔 [2]。也可以为每个注册中心指定唯一ID，并在服务注册时指定多个注册中心 [3]。",
+        "state_hint": "OK",
+        "cited_chunk_ids": [
+          982,
+          2072,
+          2068
+        ],
+        "gold_chunk_ids": [
+          982
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 982,
+            "doc_id": 126,
+            "page": 0,
+            "snippet": "多注册中心订阅的场景，注册中心集群间的负载均衡。对于多注册中心间的选址策略有如下四种\n\n1. 指定优先级：`preferred=\"true\"`注册中心的地址将被优先选择",
+            "llm_context": "多注册中心订阅的场景，注册中心集群间的负载均衡。对于多注册中心间的选址策略有如下四种\n\n1. 指定优先级：`preferred=\"true\"`注册中心的地址将被优先选择",
+            "section_path": [
+              "集群容错模式",
+              "ZoneAware Cluster"
+            ]
+          },
+          {
+            "chunk_id": 2072,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置，竖号分隔表示同时连接多个不同注册中心，同一注册中心的多个集群地址用逗号分隔 -->\n    <dubbo:registry address=\"10.20.141.150:9090|10.20.154.177:9010\" />\n    <!-- 引用服务 -->\n    <dubbo:reference id=\"helloService\" interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心引用"
+            ]
+          },
+          {
+            "chunk_id": 2068,
+            "doc_id": 220,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\">\n    <dubbo:application name=\"world\"  />\n    <!-- 多注册中心配置 -->\n    <dubbo:registry id=\"hangzhouRegistry\" address=\"10.20.141.150:9090\" />\n    <dubbo:registry id=\"qingdaoRegistry\" address=\"10.20.141.151:9010\" default=\"false\" />\n    <!-- 向多个注册中心注册 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" registry=\"hangzhouRegistry,qingdaoRegistry\" />\n</beans>\n",
+            "section_path": [
+              "多注册中心注册"
+            ]
+          }
+        ]
+      },
+      {
+        "__question_id": 3,
+        "question": "Spring Cloud Alibaba 中如何使用 JVM 启动参数实现点对点直连服务提供者？",
+        "gold_answer": "在 JVM 启动参数中使用 -D 参数，key 为服务名，value 为服务提供者 URL，例如 -Dcom.alibaba.xxx.XxxService=dubbo://localhost:20890，此配置优先级最高，1.0.15 及以上版本支持。",
+        "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 24f06cc3",
+        "state_hint": "LLM_DEGRADED",
+        "cited_chunk_ids": [
+          959,
+          960,
+          2040
+        ],
+        "gold_chunk_ids": [
+          959
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 959,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "llm_context": "指定服务提供者，这时候可能需要点对点直连，点对点直连方式，将以服务接口为单位，忽略注册中心的提供者列表，A 接口配置点对点，不影响 B 接口从注册中心获取列表。",
+            "section_path": []
+          },
+          {
+            "chunk_id": 960,
+            "doc_id": 119,
+            "page": 0,
+            "snippet": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "llm_context": "如果是线上需求需要点对点，可在 ` ` 中配置 url 指向提供者，将绕过注册中心，多个地址用分号隔开，配置如下：",
+            "section_path": [
+              "通过 XML 配置"
+            ]
+          },
+          {
+            "chunk_id": 2040,
+            "doc_id": 213,
+            "page": 0,
+            "snippet": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/sch…",
+            "llm_context": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<beans xmlns=\"http://www.springframework.org/schema/beans\"\n    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n    xmlns:dubbo=\"http://dubbo.apache.org/schema/dubbo\"\n    xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.3.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd\"> \n    <dubbo:application name=\"world\"  />\n    <dubbo:registry id=\"registry\" address=\"10.20.141.150:9090\" username=\"admin\" [REDACTED_SECRET] />\n    <!-- 多协议配置 -->\n    <dubbo:protocol name=\"dubbo\" port=\"20880\" />\n    <dubbo:protocol name=\"rmi\" port=\"1099\" />\n    <!-- 使用dubbo协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.HelloService\" version=\"1.0.0\" ref=\"helloService\" protocol=\"dubbo\" />\n    <!-- 使用rmi协议暴露服务 -->\n    <dubbo:service interface=\"com.alibaba.hello.api.DemoService\" version=\"1.0.0\" ref=\"demoService\" protocol=\"rmi\" /> \n</beans>\n",
+            "section_path": [
+              "不同服务不同协议"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 0,
+  "k": 5,
+  "timestamp": "2026-08-25T01:43:07.358117+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_model": "deepseek-chat",
+  "skip_generation": false,
+  "metric_definitions": {
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

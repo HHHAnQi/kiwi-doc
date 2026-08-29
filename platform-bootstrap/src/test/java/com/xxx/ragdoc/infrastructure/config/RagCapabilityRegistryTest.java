@@ -22,11 +22,13 @@ class RagCapabilityRegistryTest {
 
     @Test
     void defaultConfigurationProducesExplicitDisabledSnapshot() throws Exception {
-        RagCapabilityRegistry registry = registry(new PlannerProperties(), new ConversationProperties());
+        RagCapabilityRegistry registry =
+                registry(new PlannerProperties(), new ConversationProperties());
 
         registry.run(null);
 
-        assertThat(registry.snapshot()).containsEntry("router", RagCapabilityRegistry.Status.DISABLED)
+        assertThat(registry.snapshot())
+                .containsEntry("router", RagCapabilityRegistry.Status.DISABLED)
                 .containsEntry("hybridRetrieval", RagCapabilityRegistry.Status.DISABLED)
                 .containsEntry("agenticRag", RagCapabilityRegistry.Status.DISABLED);
     }

@@ -28,8 +28,8 @@ public interface DocumentRepository {
     Optional<Document> findById(Long id);
 
     /**
-     * 按 id 查 visibility(TENANT/PUBLIC/PRIVATE)。V9 加列但 Document 聚合未携带,
-     * 供 DocumentAccessGuard 做 PRIVATE 判定; 不存在返 empty, 调用方按保守默认处理。
+     * 按 id 查 visibility(TENANT/PUBLIC/PRIVATE)。V9 加列但 Document 聚合未携带, 供 DocumentAccessGuard 做
+     * PRIVATE 判定; 不存在返 empty, 调用方按保守默认处理。
      */
     default Optional<String> findVisibilityById(Long id) {
         return Optional.empty();
@@ -99,19 +99,16 @@ public interface DocumentRepository {
     boolean existsCurrentByLogicalKey(String tenantId, String logicalDocumentKey);
 
     /** 加锁读取同一逻辑文档当前版本，用于并发安全地切换 current。 */
-    Optional<Document> findCurrentByLogicalKeyForUpdate(
-            String tenantId, String logicalDocumentKey);
+    Optional<Document> findCurrentByLogicalKeyForUpdate(String tenantId, String logicalDocumentKey);
 
-    /**
-     * 返回租户内所有可检索的逻辑文档当前版本 id；source 可空。null 表示适配器暂不支持，调用方兼容旧实现。
-     */
+    /** 返回租户内所有可检索的逻辑文档当前版本 id；source 可空。null 表示适配器暂不支持，调用方兼容旧实现。 */
     default Optional<java.util.Set<Long>> findCurrentIndexedIds(String tenantId, String source) {
         return Optional.empty();
     }
 
     /**
-     * 解析当前检索范围内每个文档的在线 generation。Optional.empty 表示旧适配器不支持该能力；
-     * present(emptyMap) 表示该范围没有可检索文档，调用方应 fail closed。
+     * 解析当前检索范围内每个文档的在线 generation。Optional.empty 表示旧适配器不支持该能力； present(emptyMap) 表示该范围没有可检索文档，调用方应
+     * fail closed。
      */
     default Optional<java.util.Map<Long, Integer>> findActiveGenerations(
             String tenantId,

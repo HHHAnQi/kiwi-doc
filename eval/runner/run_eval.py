@@ -35,8 +35,12 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
+# 客户端模块在 import 时读取 URL/token，必须先加载 .env，避免误连残留服务。
+load_dotenv(REPO_ROOT / ".env", override=False)
 
 # 让 runner 模块能直接相对 import (python3 eval/runner/run_eval.py 时)
 from eval.metrics import retrieval_metrics as rm  # noqa: E402
@@ -58,26 +62,54 @@ def _load_dataset(path: Path) -> list[dict]:
     return out
 
 
-def run_retrieval(query: str, gold: list[int], k: int, **kw) -> tuple[dict, dict]:
+def run_retrieval(query: str, gold: list[int], k: int, api_base_url=None, **kw) -> tuple[dict, dict]:
     """调 /retrieve 算 5 指标, 返回 (metrics_dict, retrieve 原始响应——供生成段复用 context)。"""
-    resp = retrieve_client.retrieve(query, top_k=k, **_filter_kw(kw))
+    call_kw = _filter_kw(kw)
+    if api_base_url:
+        call_kw["base_url"] = f"{api_base_url.rstrip('/')}/api/v1/retrieve"
+    resp = retrieve_client.retrieve(query, top_k=k, **call_kw)
     ids, items = retrieve_client.extracted(resp)
     return rm.per_query_metrics(ids, gold, k), resp
 
 
-def run_generation(query, gold, gold_answer, pred_context, k, judge_fn, **kw) -> dict:
-    """调 /chat 算 3 生成指标。pred_context 给生成指标, 否则用 chat 自己的 citations.*.llm_context。"""
-    chat_resp = chat_client.chat(query, top_k=k, **_filter_kw(kw))
-    answer, cited, _ = chat_client.parse(chat_resp)
-    ctx = pred_context
-    if not ctx:
-        cits = chat_resp.get("citations") or []
-        ctx = "\n\n".join((c.get("llm_context") or "") for c in cits).strip()
-    return {
-        "answer_correctness": gm.answer_correctness(answer, gold_answer or "", judge_fn),
-        "faithfulness": gm.faithfulness(answer, ctx, judge_fn),
-        "citation_accuracy": gm.citation_accuracy(cited, gold),
+def run_generation(
+    query, gold, gold_answer, pred_context, k, judge_fn, api_base_url=None, **kw
+) -> tuple[dict | None, dict]:
+    """调 /chat 算生成指标，并返回逐题审计信息。
+
+    Faithfulness 优先使用本次 /chat 实际 citations 携带的上下文；只有服务未返回
+    citation context 时，才回退到预检索上下文，避免评测证据与真实生成证据错位。
+    """
+    call_kw = _filter_kw(kw)
+    if api_base_url:
+        call_kw["base_url"] = f"{api_base_url.rstrip('/')}/api/v1/chat"
+    chat_resp = chat_client.chat(query, top_k=k, **call_kw)
+    answer, cited, state_hint = chat_client.parse(chat_resp)
+    citations = chat_resp.get("citations") or []
+    actual_ctx = "\n\n".join((c.get("llm_context") or "") for c in citations).strip()
+    ctx = actual_ctx or pred_context
+    audit = {
+        "answer": answer,
+        "state_hint": state_hint,
+        "cited_chunk_ids": cited,
+        "gold_chunk_ids": list(gold),
+        "context_source": "chat_citations" if actual_ctx else "retrieve_fallback",
+        "citations": citations,
     }
+    if state_hint != "OK":
+        # 降级话术不是模型答案，不能送 Judge 后以 0 分混入质量均值。
+        return None, audit
+    metrics = {
+        "answer_correctness": gm.answer_correctness(
+            answer, gold_answer or "", judge_fn, question=query
+        ),
+        "faithfulness": gm.faithfulness(answer, ctx, judge_fn),
+        "evidence_completeness": gm.evidence_completeness(gold_answer or "", ctx, judge_fn),
+        "citation_accuracy": gm.citation_accuracy(cited, gold),
+        "citation_recall": gm.citation_recall(cited, gold),
+        "citation_hit_rate": gm.citation_hit_rate(cited, gold),
+    }
+    return metrics, audit
 
 
 def _filter_kw(kw: dict) -> dict:
@@ -87,6 +119,17 @@ def _filter_kw(kw: dict) -> dict:
         if key in kw and kw[key] is not None:
             out[key] = kw[key]
     return out
+
+
+def _ground_truth_answer(case: dict) -> str:
+    """当前 corpus 的人工修订答案必须优先于历史答案。"""
+    return (
+        case.get("gold_answer")
+        or case.get("new_ground_truth_answer")
+        or case.get("ground_truth_answer")
+        or case.get("answer")
+        or ""
+    )
 
 
 def main():
@@ -102,6 +145,19 @@ def main():
     p.add_argument("--baseline", default=None, help="可选 baseline JSON, 与检索指标对比")
     p.add_argument("--gate", type=float, default=0.0, help="指标退化阈值 (baseline - gate) 即 FAIL, 退出非零")
     p.add_argument("--limit", type=int, default=0, help="只跑前 N 题 (0=全部, 用于冒烟)")
+    p.add_argument("--start", type=int, default=1, help="从第 N 题开始运行（1-based，默认 1）")
+    p.add_argument(
+        "--api-base-url",
+        default=None,
+        help="显式固定被测后端根地址，如 http://localhost:8096；会覆盖客户端默认 URL",
+    )
+    p.add_argument(
+        "--judge-provider",
+        type=int,
+        choices=(1, 2),
+        default=None,
+        help="固定使用指定 Judge provider；默认按配置顺序失败回退",
+    )
     args = p.parse_args()
 
     dataset_path = (REPO_ROOT / args.dataset).resolve()
@@ -109,27 +165,35 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     cases = _load_dataset(dataset_path)
+    if args.start < 1 or args.start > len(cases):
+        p.error(f"--start 必须在 1..{len(cases)} 之间")
+    cases = cases[args.start - 1 :]
     if args.limit > 0:
         cases = cases[:args.limit]
     print(f"[INFO] dataset={dataset_path} size={len(cases)} k={args.k} skip_gen={args.skip_generation}")
 
-    judge_fn = None if args.skip_generation else judge_client.make_judge_fn()
+    judge_fn = (
+        None
+        if args.skip_generation
+        else judge_client.make_judge_fn(provider_index=args.judge_provider)
+    )
 
     per_q_retrieval: list[dict] = []
     per_q_generation: list[dict] = []
+    per_q_generation_audit: list[dict] = []
     sample_meta: dict = {}  # 第一条 retrieve 响应抽模型版本信息
 
     for i, c in enumerate(cases, 1):
         gold = c.get("gold_chunk_ids") or []
         q = c["question"]
         kw = {k: c.get(k) for k in ("doc_id", "source", "version", "language")}
-        gold_ans = c.get("gold_answer") or ""
+        gold_ans = _ground_truth_answer(c)
 
         retrieval_err = None
         # ---- retrieval ----
         try:
-            m, resp = run_retrieval(q, gold, args.k, **kw)
-            m["__question_id"] = c.get("id", i)
+            m, resp = run_retrieval(q, gold, args.k, api_base_url=args.api_base_url, **kw)
+            m["__question_id"] = c.get("id", args.start + i - 1)
             per_q_retrieval.append(m)
             if i == 1:
                 sample_meta = {
@@ -142,7 +206,10 @@ def main():
         except Exception as e:
             retrieval_err = str(e)
             print(f"[{i}] retrieve FAIL: {e}")
-            per_q_retrieval.append({"__question_id": c.get("id", i), "error": retrieval_err})
+            per_q_retrieval.append({
+                "__question_id": c.get("id", args.start + i - 1),
+                "error": retrieval_err,
+            })
             m = {}
 
         if args.skip_generation:
@@ -154,19 +221,56 @@ def main():
         try:
             ctx = ""
             # 再调一次 retrieve 拿 llm_context (与 chat 的 citations 一致性 best-effort)
-            items_resp = retrieve_client.retrieve(q, top_k=args.k, **_filter_kw(kw))
+            retrieve_kw = _filter_kw(kw)
+            if args.api_base_url:
+                retrieve_kw["base_url"] = f"{args.api_base_url.rstrip('/')}/api/v1/retrieve"
+            items_resp = retrieve_client.retrieve(q, top_k=args.k, **retrieve_kw)
             _, items = retrieve_client.extracted(items_resp)
             ctx = "\n\n".join((it.get("llm_context") or "") for it in items).strip()
         except Exception:
             ctx = ""
         try:
-            gm_metrics = run_generation(q, gold, gold_ans, ctx, args.k, judge_fn, **kw)
-            gm_metrics["__question_id"] = c.get("id", i)
+            gm_metrics, audit = run_generation(
+                q,
+                gold,
+                gold_ans,
+                ctx,
+                args.k,
+                judge_fn,
+                api_base_url=args.api_base_url,
+                **kw,
+            )
+            audit_row = {
+                "__question_id": c.get("id", args.start + i - 1),
+                "question": q,
+                "gold_answer": gold_ans,
+                **audit,
+            }
+            per_q_generation_audit.append(audit_row)
+            if gm_metrics is None:
+                state_hint = audit.get("state_hint", "UNKNOWN")
+                per_q_generation.append({
+                    "__question_id": c.get("id", args.start + i - 1),
+                    "error": f"non-OK generation state: {state_hint}",
+                })
+                print(f"[{i}/{len(cases)}] generation DEGRADED: {state_hint}")
+                time.sleep(0.1)
+                continue
+            gm_metrics["__question_id"] = c.get("id", args.start + i - 1)
             per_q_generation.append(gm_metrics)
             print(f"[{i}/{len(cases)}] retrieval@{args.k}={ {k2:round(v,3) for k2,v in m.items() if not k2.startswith('__')} } gen={ {k2:round(v,3) for k2,v in gm_metrics.items() if not k2.startswith('__')} }")
         except Exception as e:
             print(f"[{i}] generation FAIL: {e}")
-            per_q_generation.append({"__question_id": c.get("id", i), "error": str(e)})
+            per_q_generation.append({
+                "__question_id": c.get("id", args.start + i - 1),
+                "error": str(e),
+            })
+            per_q_generation_audit.append({
+                "__question_id": c.get("id", args.start + i - 1),
+                "question": q,
+                "gold_answer": gold_ans,
+                "error": str(e),
+            })
 
         time.sleep(0.1)  # 轻微节流, 防 LLM rate limit
 
@@ -188,6 +292,7 @@ def main():
         "per_query": {
             "retrieval": per_q_retrieval,
             "generation": per_q_generation if not args.skip_generation else [],
+            "generation_audit": per_q_generation_audit if not args.skip_generation else [],
         },
         "retrieval_failures": sum(1 for d in per_q_retrieval if "error" in d),
         "generation_failures": sum(1 for d in per_q_generation if "error" in d),
@@ -197,8 +302,20 @@ def main():
         "embedding_version": sample_meta.get("embedding_version"),
         "rerank_model": sample_meta.get("rerank_model"),
         "rerank_enabled": sample_meta.get("rerank_enabled"),
-        "judge_model": judge_client.primary_judge_model() if judge_fn else None,
+        "judge_provider": args.judge_provider if judge_fn else None,
+        "api_base_url": args.api_base_url,
+        "judge_model": (
+            judge_client.judge_model(args.judge_provider)
+            if judge_fn and args.judge_provider is not None
+            else judge_client.primary_judge_model() if judge_fn else None
+        ),
         "skip_generation": args.skip_generation,
+        "metric_definitions": {
+            "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+            "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+            "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+            "citation_hit_rate": "whether at least one exact gold chunk was cited",
+        },
     }
 
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

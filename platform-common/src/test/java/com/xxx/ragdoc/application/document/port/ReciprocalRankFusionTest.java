@@ -10,10 +10,8 @@ class ReciprocalRankFusionTest {
 
     @Test
     void tiesPreferMoreChannelsThenBetterRankThenChunkId() {
-        List<ScoredChunk> first =
-                List.of(new ScoredChunk(20L, 1f), new ScoredChunk(10L, .9f));
-        List<ScoredChunk> second =
-                List.of(new ScoredChunk(10L, 1f), new ScoredChunk(20L, .9f));
+        List<ScoredChunk> first = List.of(new ScoredChunk(20L, 1f), new ScoredChunk(10L, .9f));
+        List<ScoredChunk> second = List.of(new ScoredChunk(10L, 1f), new ScoredChunk(20L, .9f));
 
         assertThat(ReciprocalRankFusion.fuse(List.of(first, second), 60, 5))
                 .extracting(ScoredChunk::chunkId)

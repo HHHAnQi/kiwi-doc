@@ -12,8 +12,8 @@ import com.xxx.ragdoc.application.chat.port.RerankClient;
 import com.xxx.ragdoc.application.chat.port.RerankClient.RerankCandidate;
 import com.xxx.ragdoc.application.document.port.ChunkRepository;
 import com.xxx.ragdoc.application.document.port.DocumentRepository;
-import com.xxx.ragdoc.application.document.port.Retriever;
 import com.xxx.ragdoc.application.document.port.ReciprocalRankFusion;
+import com.xxx.ragdoc.application.document.port.Retriever;
 import com.xxx.ragdoc.application.document.port.VectorStore;
 import com.xxx.ragdoc.application.document.port.VectorStore.ScoredChunk;
 import com.xxx.ragdoc.common.exception.ErrorCode;
@@ -52,8 +52,8 @@ import org.springframework.stereotype.Service;
 public class RetrieveService {
 
     /**
-     * P1: minScoreThreshold(rerank 分数闸门)配置。setter 注入(可选) — 保持
-     * Lombok 主构造器签名不变, 14 处既有测试调用零改动; 未注入时用默认阈值 0.3。
+     * P1: minScoreThreshold(rerank 分数闸门)配置。setter 注入(可选) — 保持 Lombok 主构造器签名不变, 14 处既有测试调用零改动;
+     * 未注入时用默认阈值 0.3。
      */
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private ChatMessages chatMessages;
@@ -61,9 +61,6 @@ public class RetrieveService {
     private double minScoreThreshold() {
         return chatMessages != null ? chatMessages.getMinScoreThreshold() : 0.3;
     }
-
-
-
 
     private final EmbeddingClient embeddingClient;
     private final VectorStore vectorStore;
@@ -287,9 +284,7 @@ public class RetrieveService {
                     retrievalQueries.size(),
                     lastRetrievalFailure == null ? "unknown" : lastRetrievalFailure.getMessage());
             throw new InfraException(
-                    ErrorCode.RAG_RETRIEVAL_FAILED,
-                    "检索基础设施调用失败",
-                    lastRetrievalFailure);
+                    ErrorCode.RAG_RETRIEVAL_FAILED, "检索基础设施调用失败", lastRetrievalFailure);
         }
         List<ScoredChunk> hits =
                 queryRankings.size() == 1
@@ -338,8 +333,7 @@ public class RetrieveService {
             if (chunk == null
                     || document == null
                     || document.isDeleted()
-                    || document.status()
-                            != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED
+                    || document.status() != com.xxx.ragdoc.domain.document.DocumentStatus.INDEXED
                     || chunk.generation() != document.activeGeneration()) {
                 staleHitCount++;
                 continue;
@@ -377,6 +371,22 @@ public class RetrieveService {
             metrics.recordRetrieveTotal(System.currentTimeMillis() - retrieveT0);
             metrics.recordRetrieveRecall(0);
             return RetrieveResult.empty();
+        }
+
+        // 标题/解释与紧邻代码块经常被拆开。仅扩展高排名 seed，随后仍由 cross-encoder
+        // 统一判相关；不开启 rerank 时不扩展，避免把未经判别的邻居直接喂给 LLM。
+        if (rerankEnabled && rerankProps.isNeighborExpansionEnabled()) {
+            int before = validHits.size();
+            validHits =
+                    expandRerankNeighbors(
+                            validHits, chunkMap, documentMap, principal, allowedDocIds);
+            log.info(
+                    "retrieve.neighbor_expansion before={}, after={}, added={}, window={}, seeds={}",
+                    before,
+                    validHits.size(),
+                    validHits.size() - before,
+                    rerankProps.getNeighborWindow(),
+                    rerankProps.getNeighborSeedCount());
         }
 
         // PR-1 / EMS-PR1: initialRetrieval 段证据 (rerank 前, 严格 validHits 序)
@@ -429,7 +439,10 @@ public class RetrieveService {
                         top1HybridScore);
                 rerankT0 = System.currentTimeMillis();
                 // 必须与召回使用同一个 effectiveQuery；否则开启 query rewrite 后会用旧问题精排新候选。
-                var reranked = (java.util.List<ScoredChunk>) new java.util.ArrayList<ScoredChunk>(rerankClient.rerank(effectiveQuery, candidates, topN));
+                var reranked =
+                        (java.util.List<ScoredChunk>)
+                                new java.util.ArrayList<ScoredChunk>(
+                                        rerankClient.rerank(effectiveQuery, candidates, topN));
                 metrics.recordRerankLatency(System.currentTimeMillis() - rerankT0, true);
                 if (!reranked.isEmpty()) {
                     // minScoreThreshold 接线(P1, 原定义从未使用): rerank 分数是 0-1 的
@@ -438,9 +451,7 @@ public class RetrieveService {
                     // 注意: 只对 rerank 分数闸门; hybrid RRF 分绝对值极低(~0.03)不可比。
                     double threshold = minScoreThreshold();
                     List<ScoredChunk> gated =
-                            reranked.stream()
-                                    .filter(c -> c.score() >= threshold)
-                                    .toList();
+                            reranked.stream().filter(c -> c.score() >= threshold).toList();
                     if (!gated.isEmpty() && gated.size() < reranked.size()) {
                         log.info(
                                 "retrieve.score_gate threshold={}, dropped={}/{}",
@@ -543,6 +554,17 @@ public class RetrieveService {
         java.util.List<Evidence> finalContextEvidences =
                 new java.util.ArrayList<>(finalHits.size());
         java.util.Set<Long> seenParents = new java.util.HashSet<>(); // 同 parent 去重(P3-A)
+        Map<String, Chunk> leadInNeighbors = Map.of();
+        if (rerankProps.isLeadInContextExpansionEnabled()
+                && isConfigurationOrExampleQuestion(cmd.query())) {
+            leadInNeighbors = new HashMap<>();
+            List<Long> finalIds = finalHits.stream().map(ScoredChunk::chunkId).toList();
+            for (Chunk neighbor :
+                    chunkRepository.findActiveNeighbors(
+                            finalIds, Math.max(0, rerankProps.getLeadInContextWindow()))) {
+                leadInNeighbors.put(neighborPositionKey(neighbor), neighbor);
+            }
+        }
         for (ScoredChunk hit : finalHits) {
             Chunk c = chunkMap.get(hit.chunkId());
             if (c == null) continue;
@@ -574,11 +596,14 @@ public class RetrieveService {
                             tenantId,
                             documentMap.get(c.documentId()).version(),
                             c,
-                            contextChunk,
+                            llmContext,
                             hit,
                             rerankApplied);
                     continue;
                 }
+            }
+            if (!leadInNeighbors.isEmpty() && isLeadInChunk(c.content())) {
+                llmContext = expandForwardContext(c, leadInNeighbors);
             }
             citations.add(
                     new Citation(
@@ -594,7 +619,7 @@ public class RetrieveService {
                     tenantId,
                     documentMap.get(c.documentId()).version(),
                     c,
-                    contextChunk,
+                    llmContext,
                     hit,
                     rerankApplied);
         }
@@ -617,6 +642,113 @@ public class RetrieveService {
                 citations, rerankState, top1HybridScore, top1RerankScore, snapshot);
     }
 
+    private List<ScoredChunk> expandRerankNeighbors(
+            List<ScoredChunk> hits,
+            Map<Long, Chunk> chunkMap,
+            Map<Long, Document> documentMap,
+            Principal principal,
+            Set<Long> allowedDocIds) {
+        int window = Math.max(0, rerankProps.getNeighborWindow());
+        int seedCount = Math.min(Math.max(0, rerankProps.getNeighborSeedCount()), hits.size());
+        int maxExtra = Math.max(0, rerankProps.getNeighborMaxExtra());
+        if (window == 0 || seedCount == 0 || maxExtra == 0) return hits;
+
+        java.util.LinkedHashMap<Long, ScoredChunk> expanded = new java.util.LinkedHashMap<>();
+        for (ScoredChunk hit : hits) expanded.putIfAbsent(hit.chunkId(), hit);
+        List<Long> anchorIds =
+                hits.subList(0, seedCount).stream().map(ScoredChunk::chunkId).toList();
+        Map<String, Chunk> neighborsByPosition = new HashMap<>();
+        for (Chunk neighbor : chunkRepository.findActiveNeighbors(anchorIds, window)) {
+            neighborsByPosition.put(neighborPositionKey(neighbor), neighbor);
+        }
+        int added = 0;
+        for (int seedIndex = 0; seedIndex < seedCount && added < maxExtra; seedIndex++) {
+            ScoredChunk seedHit = hits.get(seedIndex);
+            Chunk seed = chunkMap.get(seedHit.chunkId());
+            if (seed == null) continue;
+            Document document = documentMap.get(seed.documentId());
+            if (document == null) continue;
+            for (int distance = 1; distance <= window && added < maxExtra; distance++) {
+                for (int direction : new int[] {-1, 1}) {
+                    int seq = seed.seq() + direction * distance;
+                    if (seq < 0 || added >= maxExtra) continue;
+                    Chunk neighbor =
+                            neighborsByPosition.get(
+                                    neighborPositionKey(
+                                            seed.documentId(),
+                                            seed.generation(),
+                                            seed.type().name(),
+                                            seq));
+                    if (neighbor == null) continue;
+                    if (expanded.containsKey(neighbor.id())
+                            || neighbor.generation() != document.activeGeneration()
+                            || !principal.tenantId().equals(document.tenantId())
+                            || (allowedDocIds != null
+                                    && !allowedDocIds.contains(neighbor.documentId()))) {
+                        continue;
+                    }
+                    // 只用于 rerank 失败时的稳定降级序；正常路径由 cross-encoder 分数替换。
+                    ScoredChunk neighborHit =
+                            new ScoredChunk(neighbor.id(), seedHit.score() * 0.99f);
+                    expanded.put(neighbor.id(), neighborHit);
+                    chunkMap.put(neighbor.id(), neighbor);
+                    added++;
+                }
+            }
+        }
+        return new ArrayList<>(expanded.values());
+    }
+
+    private static String neighborPositionKey(Chunk chunk) {
+        return neighborPositionKey(
+                chunk.documentId(), chunk.generation(), chunk.type().name(), chunk.seq());
+    }
+
+    private static String neighborPositionKey(
+            Long documentId, int generation, String chunkType, int seq) {
+        return documentId + ":" + generation + ":" + chunkType + ":" + seq;
+    }
+
+    static boolean isConfigurationOrExampleQuestion(String query) {
+        if (query == null) return false;
+        return query.matches(".*(配置|示例|如何|怎么|设置|指定|XML|属性).*?");
+    }
+
+    static boolean isLeadInChunk(String content) {
+        if (content == null) return false;
+        String text = content.strip();
+        return text.endsWith(":") || text.endsWith("：") || text.matches("(?s).*(如下|示例|例如)\\s*$");
+    }
+
+    private String expandForwardContext(Chunk anchor, Map<String, Chunk> neighbors) {
+        StringBuilder out = new StringBuilder(anchor.content());
+        int window = Math.max(0, rerankProps.getLeadInContextWindow());
+        int maxChars = Math.max(anchor.content().length(), rerankProps.getLeadInContextMaxChars());
+        for (int distance = 1; distance <= window; distance++) {
+            Chunk next =
+                    neighbors.get(
+                            neighborPositionKey(
+                                    anchor.documentId(),
+                                    anchor.generation(),
+                                    anchor.type().name(),
+                                    anchor.seq() + distance));
+            if (next == null) break;
+            if (!anchor.sectionPath().isEmpty()
+                    && !next.sectionPath().isEmpty()
+                    && !anchor.sectionPath().equals(next.sectionPath())) {
+                break;
+            }
+            String addition = "\n" + next.content();
+            if (out.length() + addition.length() > maxChars) {
+                int remain = maxChars - out.length();
+                if (remain > 1) out.append(addition, 0, remain);
+                break;
+            }
+            out.append(addition);
+        }
+        return out.toString();
+    }
+
     /**
      * PR-1: 向 finalContext 段追加一条 Evidence, 与 citations 同序产出。 chunkId 标 childChunk.id() 维持与 Citation
      * 一致溯源键; content 用 contextChunk.content() (parent 全文或 chunk 自身)。
@@ -626,7 +758,7 @@ public class RetrieveService {
             String tenantId,
             String docVersion,
             Chunk childChunk,
-            Chunk contextChunk,
+            String contextContent,
             ScoredChunk hit,
             boolean rerankApplied) {
         Double rerankScore = rerankApplied ? (double) hit.score() : null;
@@ -637,7 +769,7 @@ public class RetrieveService {
                         childChunk.documentId(),
                         childChunk.id(),
                         docVersion,
-                        contextChunk.content(),
+                        contextContent,
                         retrievalScore,
                         rerankScore,
                         "context",

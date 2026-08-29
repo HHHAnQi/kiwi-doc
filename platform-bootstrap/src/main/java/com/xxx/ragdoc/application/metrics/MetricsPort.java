@@ -73,4 +73,39 @@ public interface MetricsPort {
     default void incrementToolDedupHit(String toolName) {
         // default no-op
     }
+
+    /**
+     * P0-1(降级链): Planner 降级计数。stage 取值: model_retry_success / rule_fallback / classic_fallback。
+     * 非零速率即说明 Model Planner 依赖的 LLM 在劣化 — 告警语义, 不是错误率。
+     */
+    default void incrementPlannerDegradation(String stage) {
+        // default no-op
+    }
+
+    // ─── P1-B: Agent 域指标接线(每个指标单一权威记录点, 语义见 RagdocMetrics) ──
+
+    /** Sufficiency 最终判定出口(DispatchingSufficiencyJudge), outcome=判定状态名。 */
+    default void recordAgentSufficiency(String outcome) {
+        // default no-op
+    }
+
+    /** Replan 决策出口(ReplanDecisionCoordinator), outcome=ALLOWED 或拒绝原因码。 */
+    default void recordAgentReplan(String outcome) {
+        // default no-op
+    }
+
+    /** 预算拒绝权威点(AgentBudgetManager.evaluate→Denied), dimension=超限维度名。 */
+    default void recordAgentBudgetDenied(String dimension) {
+        // default no-op
+    }
+
+    /** Agent pipeline 端到端耗时(同步 try/finally + 流式 doFinally, 每请求恰一次)。 */
+    default void recordAgentE2ELatency(long durationMs) {
+        // default no-op
+    }
+
+    /** Agent 组件真实 LLM 调用(component=planner/sufficiency/composer 调用点)。 */
+    default void recordAgentLlmCall(String component) {
+        // default no-op
+    }
 }

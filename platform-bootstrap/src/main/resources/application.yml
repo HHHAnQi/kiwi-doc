@@ -61,15 +61,21 @@ rag:
     timeout-ms: ${RAG_ONLINE_TIMEOUT_MS:60000}
   agent:
     lease:
+      # 补②修复: 分环境禁用(dev单机零开销, prod多实例启用)
+      enabled: ${RAG_AGENT_LEASE_ENABLED:true}
       ttl-seconds: ${RAG_AGENT_LEASE_TTL_SECONDS:30}
       heartbeat-seconds: ${RAG_AGENT_LEASE_HEARTBEAT_SECONDS:10}
     planner:
       enabled: ${RAG_AGENT_PLANNER_ENABLED:false}
-      model-enabled: ${RAG_AGENT_MODEL_PLANNER_ENABLED:false}
+      model-enabled: ${RAG_AGENT_MODEL_PLANNER_ENABLED:true}
       planned-pipeline-enabled: ${RAG_AGENT_PLANNED_PIPELINE_ENABLED:false}
       max-plan-steps: ${RAG_AGENT_MAX_PLAN_STEPS:3}
       max-replans: ${RAG_AGENT_MAX_REPLANS:1}
       min-router-confidence: ${RAG_AGENT_MIN_ROUTER_CONFIDENCE:0.80}
+      # P0-1(降级链): Model 失败 → 重试 → RuleTemplate → (Pipeline层) Classic RAG。
+      # FIXTURE_* 确定性失败不重试(REPLAY 评测语义保护)。
+      model-retry-attempts: ${RAG_AGENT_PLANNER_MODEL_RETRY_ATTEMPTS:1}
+      rule-fallback-enabled: ${RAG_AGENT_PLANNER_RULE_FALLBACK:true}
     # P0-1 修复: sufficiency 开关此前完全不在 yml → 恒 disabled → Planned run 必然拒答
     # (DispatchingSufficiencyJudge disabled 时恒返 UNDETERMINED, Guard 全拒)。
     # rule 兜底 + LLM fallback 双开: rule 按 requirementIds 精确判, 语义级留给 model。
@@ -81,6 +87,8 @@ rag:
     # P0-3 修复: 执行预算此前硬编码 pr6Default(maxReplans=0!) → Replan 必 BUDGET_ZERO。
     # 默认值给 Replan 留足空间: 3 步初始 + 2 步 replan 余量。
     budget:
+      # P1-⑤修复: token预算(0=不限; 生产设具体值如50000激活denied分支)
+      max-total-tokens: ${RAG_AGENT_BUDGET_MAX_TOTAL_TOKENS:0}
       max-steps: ${RAG_AGENT_BUDGET_MAX_STEPS:5}
       max-tool-calls: ${RAG_AGENT_BUDGET_MAX_TOOL_CALLS:10}
       max-replans: ${RAG_AGENT_BUDGET_MAX_REPLANS:1}

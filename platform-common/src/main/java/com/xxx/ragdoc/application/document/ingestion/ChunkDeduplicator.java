@@ -26,17 +26,30 @@ public class ChunkDeduplicator {
                 continue;
             }
             long fingerprint = simHash(chunk.content());
-            boolean similar = recentFingerprints.stream()
-                    .skip(Math.max(0, recentFingerprints.size() - MAX_RECENT_COMPARISONS))
-                    .anyMatch(prior -> Long.bitCount(prior ^ fingerprint) <= MAX_HAMMING_DISTANCE);
+            boolean similar =
+                    recentFingerprints.stream()
+                            .skip(Math.max(0, recentFingerprints.size() - MAX_RECENT_COMPARISONS))
+                            .anyMatch(
+                                    prior ->
+                                            Long.bitCount(prior ^ fingerprint)
+                                                    <= MAX_HAMMING_DISTANCE);
             if (similar) {
                 near++;
                 continue;
             }
             int seq = unique.size();
-            unique.add(new Chunk(chunk.id(), chunk.documentId(), seq, chunk.type(), chunk.content(),
-                    chunk.page(), chunk.bbox(), chunk.parentChunkId(), chunk.contentHash(),
-                    chunk.sectionPath()));
+            unique.add(
+                    new Chunk(
+                            chunk.id(),
+                            chunk.documentId(),
+                            seq,
+                            chunk.type(),
+                            chunk.content(),
+                            chunk.page(),
+                            chunk.bbox(),
+                            chunk.parentChunkId(),
+                            chunk.contentHash(),
+                            chunk.sectionPath()));
             recentFingerprints.add(fingerprint);
         }
         return new Result(List.copyOf(unique), exact, near);

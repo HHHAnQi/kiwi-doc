@@ -1,0 +1,29 @@
+{
+  "dataset": "eval/golden/golden_v3_frozen80.jsonl",
+  "scope": "non_auto_reviewed_or_curated",
+  "sample_count": 1,
+  "judge_provider": 2,
+  "judge_model": "qwen-max",
+  "generated_at": "2026-08-25T02:08:19.221657+00:00",
+  "counts": {
+    "full": 1
+  },
+  "full_support_rate": 1.0,
+  "results": [
+    {
+      "question": "在配置 Dubbo 应用时，如何指定配置作用的应用粒度？",
+      "review_status": "reviewed",
+      "gold_chunk_ids": [
+        502
+      ],
+      "retrieved_chunk_ids": [
+        502,
+        497,
+        498
+      ],
+      "support": "full",
+      "supported_answer": "在配置 Dubbo 应用时，通过设置 `scope` 字段为 `application` 来指定配置作用的应用粒度，该字段为必填项。",
+      "reason": "证据中明确指出`scope`字段表示配置作用范围，可以设置为`application`以指定应用粒度，并且是必填项。"
+    }
+  ]
+}

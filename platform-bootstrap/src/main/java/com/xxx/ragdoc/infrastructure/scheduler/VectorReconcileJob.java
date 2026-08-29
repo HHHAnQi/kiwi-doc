@@ -67,9 +67,9 @@ public class VectorReconcileJob {
      * <p>用户可改 {@code rag.reconcile.cron} 覆盖。fixedDelay/cron 二选一, cron 更贴合 "每日扫描" 语义。
      */
     // P1 修复: Spring 6 不支持 cron + initialDelay 组合(启动直接 fail)。
-// 原 initialDelay=60s 的意图是躲开启动期资源初始化, 改由方法内部 try/catch 兜底(DB/向量库
-// 未就绪时记 warn 等下轮, scheduler 本身不挂)。
-@Scheduled(cron = "${rag.reconcile.cron:0 0 3 * * *}")
+    // 原 initialDelay=60s 的意图是躲开启动期资源初始化, 改由方法内部 try/catch 兜底(DB/向量库
+    // 未就绪时记 warn 等下轮, scheduler 本身不挂)。
+    @Scheduled(cron = "${rag.reconcile.cron:0 0 3 * * *}")
     public void reconcile() {
         log.info("reconcile.start");
         try {
@@ -97,8 +97,7 @@ public class VectorReconcileJob {
         int fixed = 0;
         for (Document d : indexed) {
             try {
-                int presence =
-                        vectorStore.vectorPresence(d.id().value(), d.activeGeneration());
+                int presence = vectorStore.vectorPresence(d.id().value(), d.activeGeneration());
                 if (presence == 0) {
                     missing++;
                     log.warn(

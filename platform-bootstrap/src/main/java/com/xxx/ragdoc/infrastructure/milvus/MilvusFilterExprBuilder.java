@@ -56,8 +56,8 @@ public final class MilvusFilterExprBuilder {
     }
 
     /**
-     * 每个文档可以处于不同 generation，必须在 ANN/BM25 候选生成前过滤，避免影子代际挤占 topK。
-     * null 表示旧适配器尚不支持；空 map 表示当前条件下没有可检索的在线代际。
+     * 每个文档可以处于不同 generation，必须在 ANN/BM25 候选生成前过滤，避免影子代际挤占 topK。 null 表示旧适配器尚不支持；空 map
+     * 表示当前条件下没有可检索的在线代际。
      */
     private static void appendActiveGenerationClause(
             List<String> clauses, Map<Long, Integer> generations) {

@@ -70,6 +70,7 @@ public class PlannedAgentExecutionCoordinator {
 
     private final RuleTemplateRequirementExtractor requirementExtractor;
     private final PlannerProvider plannerProvider;
+    private final com.xxx.ragdoc.application.chat.planner.PlannerProperties plannerProperties;
     private final PlannerPlanAssembler planAssembler;
     private final AgentRunFactory runFactory;
     private final AgentRunPhaseExecutor phaseExecutor;
@@ -137,7 +138,7 @@ public class PlannedAgentExecutionCoordinator {
                             principal,
                             requestId,
                             "PLANNED_AGENT",
-                            "rule-based-v1",
+                            resolvePlannerVersionTag(plannerResp0),
                             "toolset-v1",
                             "default",
                             "LIVE");
@@ -173,7 +174,8 @@ public class PlannedAgentExecutionCoordinator {
         }
 
         // 5. Initial Sufficiency
-        SufficiencyDecision suff0 = callSufficiency(phase0, frozenRequirements, policy);
+        SufficiencyDecision suff0 =
+                callSufficiency(phase0, frozenRequirements, policy, normalizedQuery);
         SufficiencyDecisionGuard.GuardResult guard0 =
                 sufficiencyGuard.validateForAnswer(
                         suff0, frozenRequirements, phase0.accumulatedEvidence());
@@ -188,7 +190,8 @@ public class PlannedAgentExecutionCoordinator {
                             AgentRunStatus.READY_TO_ANSWER,
                             "PLANNED_INITIAL_SUFFICIENT",
                             phase0.usage(),
-                            phase0.reservation());
+                            phase0.reservation(),
+                            "INITIAL_SUFFICIENT");
             return buildPrepared(
                     phase0,
                     suff0,
@@ -238,7 +241,8 @@ public class PlannedAgentExecutionCoordinator {
                     rd.terminalStatusIfRefused(),
                     rd.reasonIfRefused(),
                     phase0.usage(),
-                    phase0.reservation());
+                    phase0.reservation(),
+                    null);
             return PrepareResult.prematureFailure(
                     phase0.runId(), rd.terminalStatusIfRefused(), rd.reasonIfRefused());
         }
@@ -257,6 +261,32 @@ public class PlannedAgentExecutionCoordinator {
                         cancellation,
                         reqIdToStepId);
         return replanResult;
+    }
+
+    /**
+     * P0-1/P0-2: agent_run 的 planner 版本标记按实际来源写 — 替换原硬编码 "rule-based-v1"。 评测 runner 通过
+     * /agent/runs/{id}.plannerVersion 逐样本判定 planner_source: model-llm-v1[:retry] /
+     * rule-fallback-v1:REASON / rule-based-v1。
+     */
+    private String resolvePlannerVersionTag(
+            com.xxx.ragdoc.application.chat.planner.PlannerResponse resp) {
+        String reason = resp == null ? "" : resp.reasonCode() == null ? "" : resp.reasonCode();
+        if (reason.startsWith(
+                com.xxx.ragdoc.application.chat.planner.FallbackPlannerProvider
+                        .REASON_RULE_FALLBACK)) {
+            // "RULE_FALLBACK_AFTER_MODEL_FAILURE:TIMEOUT:att2" → "rule-fallback-v1:TIMEOUT"
+            String[] parts = reason.split(":");
+            return "rule-fallback-v1:" + (parts.length > 1 ? parts[1] : "UNKNOWN");
+        }
+        if (!plannerProperties.isModelEnabled()) {
+            return "rule-based-v1";
+        }
+        if (reason.startsWith(
+                com.xxx.ragdoc.application.chat.planner.FallbackPlannerProvider
+                        .REASON_MODEL_RETRY)) {
+            return "model-llm-v1:retry";
+        }
+        return "model-llm-v1";
     }
 
     private PrepareResult runReplanPhase(
@@ -290,31 +320,18 @@ public class PlannedAgentExecutionCoordinator {
             replanResp = plannerProvider.plan(replanReq);
         } catch (RuntimeException ex) {
             log.warn("planned.replan_planner_failed run={} err={}", phase0.runId(), ex.toString());
-            runFinalizer.finalize(
-                    phase0.runId(),
-                    phase0.latestRunVersion(),
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "REPLAN_INVALID",
-                    phase0.usage(),
-                    phase0.reservation());
-            return PrepareResult.prematureFailure(
-                    phase0.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, "REPLAN_INVALID");
+            return replanFailureFallback(
+                    phase0, frozenRequirements, cancellation, "REPLAN_PLANNER_FAILED");
         }
 
         PlannerPlanAssembler.AssemblyResult asm =
                 planAssembler.assemble(replanReq, replanResp, policy);
         if (!asm.valid()) {
-            runFinalizer.finalize(
-                    phase0.runId(),
-                    phase0.latestRunVersion(),
-                    Set.of(AgentRunStatus.EXECUTING),
-                    AgentRunStatus.REFUSED_NO_EVIDENCE,
-                    "REPLAN_INVALID:" + asm.invalidReason(),
-                    phase0.usage(),
-                    phase0.reservation());
-            return PrepareResult.prematureFailure(
-                    phase0.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, "REPLAN_INVALID");
+            return replanFailureFallback(
+                    phase0,
+                    frozenRequirements,
+                    cancellation,
+                    "REPLAN_INVALID:" + asm.invalidReason());
         }
         DeterministicExecutionPlan replanPlan = asm.plan();
 
@@ -361,7 +378,8 @@ public class PlannedAgentExecutionCoordinator {
                     com.xxx.ragdoc.application.chat.agent.AgentRunStatus.SYSTEM_FAILED,
                     "REPLAN_APPEND_FAILED",
                     phase0.usage(),
-                    phase0.reservation());
+                    phase0.reservation(),
+                    null);
             return PrepareResult.prematureFailure(
                     phase0.runId(),
                     com.xxx.ragdoc.application.chat.agent.AgentRunStatus.SYSTEM_FAILED,
@@ -412,7 +430,8 @@ public class PlannedAgentExecutionCoordinator {
                     phase1.runId(), phase1.prematureTerminal(), phase1.failureReasonCode());
         }
 
-        SufficiencyDecision suff1 = callSufficiency(phase1, frozenRequirements, policy);
+        SufficiencyDecision suff1 =
+                callSufficiency(phase1, frozenRequirements, policy, normalizedQuery);
         SufficiencyDecisionGuard.GuardResult guard1 =
                 sufficiencyGuard.validateForAnswer(
                         suff1, frozenRequirements, phase1.accumulatedEvidence());
@@ -426,7 +445,8 @@ public class PlannedAgentExecutionCoordinator {
                             AgentRunStatus.READY_TO_ANSWER,
                             "PLANNED_REPLAN_SUFFICIENT",
                             phase1.usage(),
-                            phase1.reservation());
+                            phase1.reservation(),
+                            "REPLAN_SUFFICIENT");
             return buildPrepared(
                     phase1,
                     suff1,
@@ -447,24 +467,107 @@ public class PlannedAgentExecutionCoordinator {
             return PrepareResult.prematureFailure(
                     phase1.runId(), AgentRunStatus.REFUSED_CONFLICT, "CONFLICT");
         }
-        // 否则 INSUFFICIENT_AFTER_REPLAN / REPLAN_LIMIT_REACHED
-        String reason = "INSUFFICIENT_AFTER_REPLAN";
+        // 改动(2026-08-25): INSUFFICIENT_AFTER_REPLAN 不再终态拒答 —
+        // 65% 拒答率的终因。降级为 Classic-style 回答: 用已累积的证据直接 Composer 生成,
+        // 标注 INSUFFICIENT_AFTER_REPLAN_FALLBACK。run 状态改为 READY_TO_ANSWER(带 reason)
+        // 而非 REFUSED_NO_EVIDENCE, 只有完全无证据才保持拒答。
+        String reason = "INSUFFICIENT_AFTER_REPLAN_FALLBACK";
+        boolean hasAnyEvidence = !phase1.accumulatedEvidence().isEmpty();
+        if (hasAnyEvidence) {
+            PlannedAgentRunFinalizer.FinalizeOutcome fo =
+                    runFinalizer.finalize(
+                            phase1.runId(),
+                            phase1.latestRunVersion(),
+                            Set.of(AgentRunStatus.EXECUTING),
+                            AgentRunStatus.READY_TO_ANSWER,
+                            reason,
+                            phase1.usage(),
+                            phase1.reservation(),
+                            "REPLAN_EXHAUSTED_FALLBACK");
+            SufficiencyDecision fallbackSuff =
+                    SufficiencyDecision.rule(
+                            SufficiencyStatus.PARTIAL,
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            RecommendedAction.ANSWER_PARTIAL,
+                            reason);
+            return buildPrepared(
+                    phase1,
+                    fallbackSuff,
+                    frozenRequirements,
+                    fo.newVersion(),
+                    1 /* replanCount */,
+                    cancellation);
+        }
+        // 完全无证据 → 保持拒答(防幻觉底线)
         runFinalizer.finalize(
                 phase1.runId(),
                 phase1.latestRunVersion(),
                 Set.of(AgentRunStatus.EXECUTING),
                 AgentRunStatus.REFUSED_NO_EVIDENCE,
-                reason,
+                "INSUFFICIENT_AFTER_REPLAN_NO_EVIDENCE",
                 phase1.usage(),
-                phase1.reservation());
+                phase1.reservation(),
+                null);
         return PrepareResult.prematureFailure(
-                phase1.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, reason);
+                phase1.runId(),
+                AgentRunStatus.REFUSED_NO_EVIDENCE,
+                "INSUFFICIENT_AFTER_REPLAN_NO_EVIDENCE");
+    }
+
+    /**
+     * 改动(2026-08-25): Replan 失败(REPLAN_INVALID / PLANNER_FAILED)时的降级处理。 有任何证据 → PARTIAL 回答(防 65%
+     * 拒答); 无证据 → 保持拒答(防幻觉底线)。
+     */
+    private PrepareResult replanFailureFallback(
+            PhaseExecutionResult phase,
+            List<EvidenceRequirement> frozenRequirements,
+            CancellationTokenSource.CancellationToken cancellation,
+            String reason) {
+        if (!phase.accumulatedEvidence().isEmpty()) {
+            // 注意: finalize 会递增 version, 必须用 FinalizeOutcome.newVersion()
+            // 而非 phase.latestRunVersion()(是 finalize 前的旧值, 会导致后续
+            // ANSWERED CAS 必然 affected=0 → "已被取消或终止")
+            PlannedAgentRunFinalizer.FinalizeOutcome fo =
+                    runFinalizer.finalize(
+                            phase.runId(),
+                            phase.latestRunVersion(),
+                            Set.of(AgentRunStatus.EXECUTING),
+                            AgentRunStatus.READY_TO_ANSWER,
+                            reason + "_FALLBACK",
+                            phase.usage(),
+                            phase.reservation(),
+                            null);
+            SufficiencyDecision fallbackSuff =
+                    SufficiencyDecision.rule(
+                            SufficiencyStatus.PARTIAL,
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            RecommendedAction.ANSWER_PARTIAL,
+                            reason + "_FALLBACK");
+            return buildPrepared(
+                    phase, fallbackSuff, frozenRequirements, fo.newVersion(), 1, cancellation);
+        }
+        runFinalizer.finalize(
+                phase.runId(),
+                phase.latestRunVersion(),
+                Set.of(AgentRunStatus.EXECUTING),
+                AgentRunStatus.REFUSED_NO_EVIDENCE,
+                reason + "_NO_EVIDENCE",
+                phase.usage(),
+                phase.reservation(),
+                null);
+        return PrepareResult.prematureFailure(
+                phase.runId(), AgentRunStatus.REFUSED_NO_EVIDENCE, reason + "_NO_EVIDENCE");
     }
 
     private SufficiencyDecision callSufficiency(
             PhaseExecutionResult phase,
             List<EvidenceRequirement> requirements,
-            AgentExecutionPolicy policy) {
+            AgentExecutionPolicy policy,
+            String normalizedQuery) {
         Set<String> completedRequired = new HashSet<>();
         for (CompletedStepSummary s : phase.completedSteps()) {
             // PR-7c.3c 简化: 标记 SUCCEEDED/EMPTY 为 completed required
@@ -473,7 +576,9 @@ public class PlannedAgentExecutionCoordinator {
         SufficiencyRequest req =
                 new SufficiencyRequest(
                         phase.runId(),
-                        "" /* normalizedQuery 不进 Sufficiency */,
+                        // P0修复: 传入原始查询——判定器需要知道问题才能判断"证据是否充分"
+                        // (原传空串, 判定器盲判, 多跳题100%走LLM fallback)
+                        normalizedQuery,
                         requirements,
                         phase.accumulatedEvidence(),
                         completedRequired,
@@ -515,6 +620,11 @@ public class PlannedAgentExecutionCoordinator {
             String reasonCode,
             AgentUsage usage,
             AgentBudgetReservation reservation) {
+        // P2-D5(A): 过程决策摘要按终态派生(仅5类语义值, 其余不写)
+        String summary =
+                target == AgentRunStatus.REFUSED_CONFLICT
+                        ? "REFUSED_CONFLICT"
+                        : target == AgentRunStatus.TOOL_FAILED ? "TOOL_FAILURE" : null;
         runFinalizer.finalize(
                 runId,
                 runVersion,
@@ -522,7 +632,8 @@ public class PlannedAgentExecutionCoordinator {
                 target,
                 reasonCode,
                 usage,
-                reservation);
+                reservation,
+                summary);
     }
 
     private void persistenceCoordinatorAppend(
@@ -571,9 +682,8 @@ public class PlannedAgentExecutionCoordinator {
     }
 
     /**
-     * P0-2 修复: reqId → stepId 映射真实现(此前恒空 Map → Rule SufficiencyJudge 对所有
-     * requirement 恒 NO_EVIDENCE → Planned run 必然拒答)。从 plan steps 的
-     * requirementIds(Assembler 已透传)反转构建; 一个 reqId 被多 step 服务时取首个
+     * P0-2 修复: reqId → stepId 映射真实现(此前恒空 Map → Rule SufficiencyJudge 对所有 requirement 恒 NO_EVIDENCE
+     * → Planned run 必然拒答)。从 plan steps 的 requirementIds(Assembler 已透传)反转构建; 一个 reqId 被多 step 服务时取首个
      * (PhaseExecutor 注入证据归属只需任一来源)。
      */
     private static Map<String, String> mapReqIdToStepId(

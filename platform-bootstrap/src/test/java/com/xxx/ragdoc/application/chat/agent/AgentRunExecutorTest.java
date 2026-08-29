@@ -71,8 +71,9 @@ class AgentRunExecutorTest {
         evidenceFactory = new EvidenceAccumulatorFactory();
         when(leaseService.claim(anyString(), anyString(), any())).thenReturn(true);
         when(leaseService.heartbeat(anyString(), anyString(), any())).thenReturn(true);
-        executor = new AgentRunExecutor(
-                coordinator, budgetManager, toolExecutor, evidenceFactory, leaseService);
+        executor =
+                new AgentRunExecutor(
+                        coordinator, budgetManager, toolExecutor, evidenceFactory, leaseService);
     }
 
     private DeterministicExecutionPlan plan(String stepId, boolean required) {

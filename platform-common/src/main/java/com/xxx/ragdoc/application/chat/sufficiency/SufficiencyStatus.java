@@ -19,6 +19,8 @@ package com.xxx.ragdoc.application.chat.sufficiency;
  */
 public enum SufficiencyStatus {
     SUFFICIENT,
+    /** 部分覆盖: ≥1 个需求有证据但非全部 — 带 Composer 标注回答, 不拒答。 */
+    PARTIAL,
     INSUFFICIENT,
     CONFLICTED,
     UNDETERMINED

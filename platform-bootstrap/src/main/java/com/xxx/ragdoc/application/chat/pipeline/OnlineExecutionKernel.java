@@ -18,7 +18,9 @@ public class OnlineExecutionKernel {
 
     public ChatResult execute(ChatCommand command, OnlineExecutionContext context) {
         if (context.route() == OnlineRoute.REFUSE) return refusal(context);
-        ChatResult result = registry.get(context.effectivePipeline()).execute(command, context.toLegacyContext());
+        ChatResult result =
+                registry.get(context.effectivePipeline())
+                        .execute(command, context.toLegacyContext());
         return finalizeResult(result, context);
     }
 
@@ -31,8 +33,7 @@ public class OnlineExecutionKernel {
                             StateHint.REFUSED.name(),
                             context.reasonCode().name()));
         }
-        return registry.get(context.effectivePipeline())
-                .stream(command, context.toLegacyContext())
+        return registry.get(context.effectivePipeline()).stream(command, context.toLegacyContext())
                 .map(event -> enrichTerminal(event, context));
     }
 

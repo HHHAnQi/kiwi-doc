@@ -2,6 +2,7 @@ package com.xxx.ragdoc.infrastructure.mq;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+
 import com.xxx.ragdoc.application.document.port.ParseTaskRepository;
 import com.xxx.ragdoc.domain.document.ParseTask;
 import com.xxx.ragdoc.domain.document.ParseTaskStatus;
@@ -17,8 +18,23 @@ class ParseTaskOutboxRelayTest {
         ParseTaskRepository repository = mock(ParseTaskRepository.class);
         ParseTaskProducer producer = mock(ParseTaskProducer.class);
         Clock clock = Clock.fixed(Instant.parse("2026-08-13T00:00:00Z"), ZoneOffset.UTC);
-        ParseTask task = new ParseTask(7L, 9L, "hash", ParseTaskStatus.PENDING, 0, 3, 0, 0,
-                null, null, List.of(), Instant.now(clock), null, Instant.now(clock), Instant.now(clock));
+        ParseTask task =
+                new ParseTask(
+                        7L,
+                        9L,
+                        "hash",
+                        ParseTaskStatus.PENDING,
+                        0,
+                        3,
+                        0,
+                        0,
+                        null,
+                        null,
+                        List.of(),
+                        Instant.now(clock),
+                        null,
+                        Instant.now(clock),
+                        Instant.now(clock));
         when(repository.claimDueForDelivery(
                         anyString(),
                         eq(Instant.now(clock)),
@@ -36,8 +52,23 @@ class ParseTaskOutboxRelayTest {
         ParseTaskRepository repository = mock(ParseTaskRepository.class);
         ParseTaskProducer producer = mock(ParseTaskProducer.class);
         Clock clock = Clock.fixed(Instant.parse("2026-08-13T00:00:00Z"), ZoneOffset.UTC);
-        ParseTask task = new ParseTask(7L, 9L, "hash", ParseTaskStatus.PENDING, 0, 3, 0, 0,
-                null, null, List.of(), Instant.now(clock), null, Instant.now(clock), Instant.now(clock));
+        ParseTask task =
+                new ParseTask(
+                        7L,
+                        9L,
+                        "hash",
+                        ParseTaskStatus.PENDING,
+                        0,
+                        3,
+                        0,
+                        0,
+                        null,
+                        null,
+                        List.of(),
+                        Instant.now(clock),
+                        null,
+                        Instant.now(clock),
+                        Instant.now(clock));
         when(repository.claimDueForDelivery(
                         anyString(),
                         eq(Instant.now(clock)),
@@ -48,7 +79,12 @@ class ParseTaskOutboxRelayTest {
 
         new ParseTaskOutboxRelay(repository, producer, clock).relay();
 
-        verify(repository).markDeliveryFailed(
-                7L, Instant.now(clock).plusSeconds(5), "relay MQ send failed", Instant.now(clock), 8);
+        verify(repository)
+                .markDeliveryFailed(
+                        7L,
+                        Instant.now(clock).plusSeconds(5),
+                        "relay MQ send failed",
+                        Instant.now(clock),
+                        8);
     }
 }

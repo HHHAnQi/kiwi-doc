@@ -54,10 +54,18 @@ public class ParseTaskService {
         if (task.chunksWritten() <= 0) {
             throw new IllegalStateTransition("PARSED 守卫失败: chunks_written<=0 task_id=" + task.id());
         }
-        ParseTask updated = task.withExecutionState(
-                ParseTaskStatus.PARSED, task.retryCount(), task.chunksWritten(),
-                task.chunkSeqOffset(), null, null, task.attempts(), task.visibleAt(),
-                task.leasedBy(), Instant.now(clock));
+        ParseTask updated =
+                task.withExecutionState(
+                        ParseTaskStatus.PARSED,
+                        task.retryCount(),
+                        task.chunksWritten(),
+                        task.chunkSeqOffset(),
+                        null,
+                        null,
+                        task.attempts(),
+                        task.visibleAt(),
+                        task.leasedBy(),
+                        Instant.now(clock));
         repository.update(updated);
         log.info(
                 "parse_task.parsed task_id={}, doc_id={}, chunks={}",
@@ -91,10 +99,18 @@ public class ParseTaskService {
         Instant nextVisibleAt =
                 dead ? task.visibleAt() : Instant.now(clock).plusSeconds(retryDelaySeconds);
 
-        ParseTask updated = task.withExecutionState(
-                nextStatus, newRetry, task.chunksWritten(), task.chunkSeqOffset(), errorMessage,
-                errorClass, List.copyOf(newAttempts), nextVisibleAt, task.leasedBy(),
-                Instant.now(clock));
+        ParseTask updated =
+                task.withExecutionState(
+                        nextStatus,
+                        newRetry,
+                        task.chunksWritten(),
+                        task.chunkSeqOffset(),
+                        errorMessage,
+                        errorClass,
+                        List.copyOf(newAttempts),
+                        nextVisibleAt,
+                        task.leasedBy(),
+                        Instant.now(clock));
         repository.update(updated);
 
         if (dead) {
@@ -123,10 +139,18 @@ public class ParseTaskService {
      */
     public ParseTask checkpoint(ParseTask task, int chunksWritten, int chunkSeqOffset) {
         ensure(task.status() == ParseTaskStatus.RUNNING, task);
-        ParseTask updated = task.withExecutionState(
-                task.status(), task.retryCount(), chunksWritten, chunkSeqOffset,
-                task.errorMessage(), task.errorClass(), task.attempts(), task.visibleAt(),
-                task.leasedBy(), Instant.now(clock));
+        ParseTask updated =
+                task.withExecutionState(
+                        task.status(),
+                        task.retryCount(),
+                        chunksWritten,
+                        chunkSeqOffset,
+                        task.errorMessage(),
+                        task.errorClass(),
+                        task.attempts(),
+                        task.visibleAt(),
+                        task.leasedBy(),
+                        Instant.now(clock));
         repository.update(updated);
         log.debug(
                 "parse_task.checkpoint task_id={}, chunks_written={}, seq_offset={}",
@@ -146,10 +170,18 @@ public class ParseTaskService {
             throw new IllegalStateTransition(
                     "requeue 守卫失败: retry_count>=max_retries task_id=" + task.id());
         }
-        ParseTask updated = task.withExecutionState(
-                ParseTaskStatus.PENDING, task.retryCount(), task.chunksWritten(),
-                task.chunkSeqOffset(), task.errorMessage(), task.errorClass(), task.attempts(),
-                Instant.now(clock), null, Instant.now(clock));
+        ParseTask updated =
+                task.withExecutionState(
+                        ParseTaskStatus.PENDING,
+                        task.retryCount(),
+                        task.chunksWritten(),
+                        task.chunkSeqOffset(),
+                        task.errorMessage(),
+                        task.errorClass(),
+                        task.attempts(),
+                        Instant.now(clock),
+                        null,
+                        Instant.now(clock));
         repository.update(updated);
         log.info("parse_task.requeued task_id={}", task.id());
         return updated;

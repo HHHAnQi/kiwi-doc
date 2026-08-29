@@ -153,12 +153,29 @@ public class AgentStepEntity {
         this.inputHash = inputHash;
     }
 
-    public String getIdempotencyKey() { return idempotencyKey; }
-    public void setIdempotencyKey(String idempotencyKey) { this.idempotencyKey = idempotencyKey; }
-    public Boolean getRecoverable() { return recoverable; }
-    public void setRecoverable(Boolean recoverable) { this.recoverable = recoverable; }
-    public String getOutputSnapshot() { return outputSnapshot; }
-    public void setOutputSnapshot(String outputSnapshot) { this.outputSnapshot = outputSnapshot; }
+    public String getIdempotencyKey() {
+        return idempotencyKey;
+    }
+
+    public void setIdempotencyKey(String idempotencyKey) {
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public Boolean getRecoverable() {
+        return recoverable;
+    }
+
+    public void setRecoverable(Boolean recoverable) {
+        this.recoverable = recoverable;
+    }
+
+    public String getOutputSnapshot() {
+        return outputSnapshot;
+    }
+
+    public void setOutputSnapshot(String outputSnapshot) {
+        this.outputSnapshot = outputSnapshot;
+    }
 
     public String getStatus() {
         return status;

@@ -47,12 +47,8 @@ public class RRFFusioner {
                 .toList();
     }
 
-    /**
-     * 可解释的确定性融合结果。每条召回路内先按 chunkId 去重，防止异常重复候选重复加分；
-     * 同分时按命中路数、最佳排名、chunkId 稳定排序，保证回放与线上结果一致。
-     */
-    public List<FusionResult> fuseDetailed(
-            List<List<ScoredChunk>> ranked, int k, int topK) {
+    /** 可解释的确定性融合结果。每条召回路内先按 chunkId 去重，防止异常重复候选重复加分； 同分时按命中路数、最佳排名、chunkId 稳定排序，保证回放与线上结果一致。 */
+    public List<FusionResult> fuseDetailed(List<List<ScoredChunk>> ranked, int k, int topK) {
         if (ranked == null || ranked.isEmpty() || topK < 1) return List.of();
         if (k < 1) k = 60;
 

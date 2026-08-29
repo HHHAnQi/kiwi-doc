@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "baseline_type": "retrieval_multi_run",
+  "created_at": "2026-08-24T17:50:06.844979+00:00",
+  "run_count": 3,
+  "source_files": [
+    "eval/runs/frozen80_reindexed_hybrid_run1.json",
+    "eval/runs/frozen80_reindexed_hybrid_run2.json",
+    "eval/runs/frozen80_reindexed_hybrid_run3.json"
+  ],
+  "dataset_size": 80,
+  "dataset_sha256": "e797e495e98d6aa56fa6a058bf87d70455c6d6990cdce9049252a7c844843ce7",
+  "k": 5,
+  "mode": "hybrid",
+  "model_snapshot": {
+    "embedding_version": "BAAI/bge-m3",
+    "rerank_model": "BAAI/bge-reranker-v2-m3",
+    "rerank_enabled": true
+  },
+  "scores": {
+    "hit_rate@5": 0.9125,
+    "mrr@5": 0.80625,
+    "ndcg@5": 0.8323796430126192,
+    "precision@5": 0.18499999999999997,
+    "recall@5": 0.9125
+  },
+  "run_stdev": {
+    "hit_rate@5": 0.0,
+    "mrr@5": 0.0,
+    "ndcg@5": 0.0,
+    "precision@5": 0.0,
+    "recall@5": 0.0
+  },
+  "sampling_confidence_intervals_95": {
+    "hit_rate@5": {
+      "method": "wilson_score",
+      "low": 0.8302320449152499,
+      "high": 0.9569679982179401,
+      "successes": 73,
+      "sample_count": 80
+    },
+    "mrr@5": {
+      "method": "query_bootstrap_percentile",
+      "low": 0.7291666666666667,
+      "high": 0.8760416666666666,
+      "sample_count": 80,
+      "iterations": 10000
+    },
+    "ndcg@5": {
+      "method": "query_bootstrap_percentile",
+      "low": 0.7619930210929762,
+      "high": 0.8963811645875245,
+      "sample_count": 80,
+      "iterations": 10000
+    },
+    "precision@5": {
+      "method": "query_bootstrap_percentile",
+      "low": 0.17,
+      "high": 0.1975,
+      "sample_count": 80,
+      "iterations": 10000
+    },
+    "recall@5": {
+      "method": "wilson_score",
+      "low": 0.8302320449152499,
+      "high": 0.9569679982179401,
+      "successes": 73,
+      "sample_count": 80
+    }
+  },
+  "latency_ms": {
+    "mean_of_run_means": 955.1433333333333,
+    "run_mean_stdev": 49.866679590016126,
+    "mean_of_run_p95": 1168.5435,
+    "run_p95_stdev": 63.893961829346644
+  },
+  "rerank_applied": {
+    "count": 240,
+    "expected": 240,
+    "rate": 1.0
+  },
+  "interpretation": {
+    "run_stdev": "同一冻结集重复运行的系统稳定性；不可替代样本置信区间",
+    "sampling_confidence_intervals_95": "仅按一轮的逐题结果估计，避免将重复运行伪装成独立样本"
+  }
+}

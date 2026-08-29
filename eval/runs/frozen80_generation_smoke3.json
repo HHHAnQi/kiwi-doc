@@ -1,0 +1,75 @@
+{
+  "dataset_size": 3,
+  "metrics": {
+    "retrieval": {
+      "precision@5": 0.20000000000000004,
+      "ndcg@5": 1.0,
+      "mrr@5": 1.0,
+      "recall@5": 1.0,
+      "hit_rate@5": 1.0
+    },
+    "generation": {
+      "answer_correctness": 0.3333333333333333,
+      "faithfulness": 0.5,
+      "citation_accuracy": 0.38888888888888884
+    }
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 2
+      },
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 3
+      }
+    ],
+    "generation": [
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 1.0,
+        "citation_accuracy": 0.5,
+        "__question_id": 1
+      },
+      {
+        "answer_correctness": 0.5,
+        "faithfulness": 0.5,
+        "citation_accuracy": 0.3333333333333333,
+        "__question_id": 2
+      },
+      {
+        "answer_correctness": 0.0,
+        "faithfulness": 0.0,
+        "citation_accuracy": 0.3333333333333333,
+        "__question_id": 3
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 0,
+  "k": 5,
+  "timestamp": "2026-08-25T01:40:23.063809+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_model": "deepseek-chat",
+  "skip_generation": false
+}

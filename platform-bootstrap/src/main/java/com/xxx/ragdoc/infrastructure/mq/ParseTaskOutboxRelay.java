@@ -26,7 +26,8 @@ public class ParseTaskOutboxRelay {
     @org.springframework.beans.factory.annotation.Value("${rag.parser.outbox-max-attempts:8}")
     private int maxDeliveryAttempts = 8;
 
-    @org.springframework.beans.factory.annotation.Value("${rag.parser.outbox-max-backoff-seconds:900}")
+    @org.springframework.beans.factory.annotation.Value(
+            "${rag.parser.outbox-max-backoff-seconds:900}")
     private long maxBackoffSeconds = 900;
 
     @Scheduled(fixedDelayString = "${rag.parser.outbox-relay-ms:30000}")
@@ -45,11 +46,16 @@ public class ParseTaskOutboxRelay {
                 now = Instant.now(clock);
                 long backoff = exponentialBackoffSeconds(task.deliveryAttempts());
                 repository.markDeliveryFailed(
-                        task.id(), now.plusSeconds(backoff), "relay MQ send failed", now,
+                        task.id(),
+                        now.plusSeconds(backoff),
+                        "relay MQ send failed",
+                        now,
                         maxDeliveryAttempts);
                 if (task.deliveryAttempts() + 1 >= maxDeliveryAttempts) {
-                    log.error("parse_task.outbox_dead task_id={} attempts={}",
-                            task.id(), task.deliveryAttempts() + 1);
+                    log.error(
+                            "parse_task.outbox_dead task_id={} attempts={}",
+                            task.id(),
+                            task.deliveryAttempts() + 1);
                 }
             }
         }

@@ -12,12 +12,14 @@ import org.springframework.stereotype.Repository;
 public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
 
     /** count 用于文档详情(不强制 join document; 软删 doc 的 chunk 暂不计入可由 service 决定)。 */
-    @Query("SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
-            + "AND d.id=c.documentId AND c.generation=d.activeGeneration")
+    @Query(
+            "SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
+                    + "AND d.id=c.documentId AND c.generation=d.activeGeneration")
     long countActiveByDocumentId(@Param("documentId") Long documentId);
 
-    @Query("SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
-            + "AND d.id=c.documentId AND c.generation=d.activeGeneration AND c.chunkType <> 'PARENT'")
+    @Query(
+            "SELECT COUNT(c) FROM ChunkEntity c, DocumentEntity d WHERE c.documentId=:documentId "
+                    + "AND d.id=c.documentId AND c.generation=d.activeGeneration AND c.chunkType <> 'PARENT'")
     long countIndexableByDocumentId(@Param("documentId") Long documentId);
 
     /** 单条: 必须保证父 doc 未软删(Scenario 6 "查已软删文档的 chunk → 404")。 */
@@ -72,6 +74,23 @@ public interface ChunkJpaRepository extends JpaRepository<ChunkEntity, Long> {
             @Param("docId") Long docId,
             @Param("seq") int seq,
             @Param("chunkType") String chunkType);
+
+    @Query(
+            """
+            SELECT DISTINCT n FROM ChunkEntity n, ChunkEntity a
+            WHERE a.id IN :anchorIds
+              AND n.documentId = a.documentId
+              AND n.generation = a.generation
+              AND n.chunkType = a.chunkType
+              AND ABS(n.seq - a.seq) BETWEEN 1 AND :window
+              AND EXISTS (
+                SELECT 1 FROM DocumentEntity d
+                WHERE d.id = n.documentId AND d.deletedAt IS NULL
+                  AND n.generation = d.activeGeneration
+              )
+            """)
+    List<ChunkEntity> findActiveNeighbors(
+            @Param("anchorIds") List<Long> anchorIds, @Param("window") int window);
 
     /** 拉取某页全部 chunk: 校验父 doc 未软删, 按 seq 升序。 */
     @Query(

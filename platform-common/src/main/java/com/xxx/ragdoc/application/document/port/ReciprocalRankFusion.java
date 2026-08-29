@@ -14,8 +14,7 @@ public final class ReciprocalRankFusion {
 
     private ReciprocalRankFusion() {}
 
-    public static List<ScoredChunk> fuse(
-            List<List<ScoredChunk>> rankedLists, int k, int topK) {
+    public static List<ScoredChunk> fuse(List<List<ScoredChunk>> rankedLists, int k, int topK) {
         if (rankedLists == null || rankedLists.isEmpty() || topK < 1) return List.of();
         int normalizedK = k < 1 ? 60 : k;
         Map<Long, Aggregate> aggregates = new HashMap<>();

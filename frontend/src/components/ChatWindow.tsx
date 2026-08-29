@@ -22,7 +22,7 @@ export function ChatWindow({ selectedDocId }: Props) {
   const markFeedbackSubmitted = useChatStore((s) => s.markFeedbackSubmitted);
 
   const docs = useDocStore((s) => s.docs);
-  const readyCount = docs.filter((d) => d.status === 'READY').length;
+  const readyCount = docs.filter((d) => (d.status === 'READY' || d.status === 'INDEXED')).length;
 
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);

@@ -59,23 +59,24 @@ public class ParseWorker {
     private final ChunkingProperties chunkingProps;
 
     /**
-     * P1 Contextual Retrieval: embed 输入 = 确定性上下文前缀(来源+文档+章节) + chunk 原文。
-     * 与 TikaParsingTrigger(sync 路径)同一规则; 只影响向量, 原文/哈希/BM25 不动。
+     * P1 Contextual Retrieval: embed 输入 = 确定性上下文前缀(来源+文档+章节) + chunk 原文。 与 TikaParsingTrigger(sync
+     * 路径)同一规则; 只影响向量, 原文/哈希/BM25 不动。
      */
     private List<String> contextualEmbedInputs(Document doc, List<Chunk> chunks) {
         java.util.function.Function<Chunk, String> toInput =
                 chunkingProps.isContextualPrefixEnabled()
                         ? c ->
                                 com.xxx.ragdoc.application.document.chunking
-                                        .ContextualEmbeddingPrefix.build(
-                                        doc.originalFilename(),
-                                        doc.source(),
-                                        c.sectionPath(),
-                                        chunkingProps.getContextualPrefixMaxChars())
-                                + c.content()
+                                                .ContextualEmbeddingPrefix.build(
+                                                doc.originalFilename(),
+                                                doc.source(),
+                                                c.sectionPath(),
+                                                chunkingProps.getContextualPrefixMaxChars())
+                                        + c.content()
                         : Chunk::content;
         return chunks.stream().map(toInput).toList();
     }
+
     private final ParseTaskService parseTaskService;
     private final ParseTaskRepository parseTaskRepository;
     private final IngestionPolicy ingestionPolicy;
@@ -138,8 +139,7 @@ public class ParseWorker {
 
         boolean useParentChild = chunkingProps.getMode() == ChunkingProperties.Mode.PARENT_CHILD;
         return useParentChild
-                ? parseParentChildWithCheckpoint(
-                        task, doc, fullText, prepared.redactionCount())
+                ? parseParentChildWithCheckpoint(task, doc, fullText, prepared.redactionCount())
                 : parseFlatWithCheckpoint(task, doc, fullText, prepared.redactionCount());
     }
 
@@ -174,8 +174,10 @@ public class ParseWorker {
                             sha256Hex(text),
                             sectioned.get(i).sectionPath()));
         }
-        chunks = new ArrayList<>(
-                ingestionPolicy.deduplicateChunks(doc.id().value(), chunks, redactionCount));
+        chunks =
+                new ArrayList<>(
+                        ingestionPolicy.deduplicateChunks(
+                                doc.id().value(), chunks, redactionCount));
         chunkTexts = contextualEmbedInputs(doc, chunks);
         List<EmbeddingResult> embeddings = embeddingClient.embedBatch(chunkTexts);
         ingestionPolicy.validateEmbeddings(
@@ -272,8 +274,10 @@ public class ParseWorker {
             childTexts.add(pc.childText());
         }
 
-        childChunks = new java.util.ArrayList<>(
-                ingestionPolicy.deduplicateChunks(doc.id().value(), childChunks, redactionCount));
+        childChunks =
+                new java.util.ArrayList<>(
+                        ingestionPolicy.deduplicateChunks(
+                                doc.id().value(), childChunks, redactionCount));
         childTexts = new ArrayList<>(contextualEmbedInputs(doc, childChunks));
 
         // D. embed 只 children

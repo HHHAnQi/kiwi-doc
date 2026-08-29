@@ -44,12 +44,21 @@ public class ModelSufficiencyJudge implements EvidenceSufficiencyJudge {
     private final ObjectMapper mapper;
     private final SufficiencyProperties properties;
 
+    /** P1-B: agent llm_calls 指标 — 真实 LLM 调用点(component=sufficiency)。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.xxx.ragdoc.application.metrics.MetricsPort metricsPort;
+
+    void setMetricsPort(com.xxx.ragdoc.application.metrics.MetricsPort metrics) {
+        this.metricsPort = metrics;
+    }
+
     @Override
     public SufficiencyDecision evaluate(SufficiencyRequest request) {
         if (request == null) throw new IllegalArgumentException("request");
         String prompt = buildPrompt(request);
         String raw;
         try {
+            if (metricsPort != null) metricsPort.recordAgentLlmCall("sufficiency");
             raw = chatClient.chat(prompt, List.of());
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
@@ -235,12 +244,17 @@ public class ModelSufficiencyJudge implements EvidenceSufficiencyJudge {
         sb.append("}\n\n");
         sb.append("Requirements:\n");
         for (var r : request.requirements()) {
+            // P2-D3: 显式携带 targetEntities/expectedFilters(此前仅经由description间接可见)
             sb.append("- ")
                     .append(r.requirementId())
                     .append(" | type=")
                     .append(r.type())
                     .append(" | required=")
                     .append(r.required())
+                    .append(" | entities=")
+                    .append(r.targetEntities())
+                    .append(" | filters=")
+                    .append(r.expectedFilters())
                     .append(" | ")
                     .append(r.description())
                     .append('\n');

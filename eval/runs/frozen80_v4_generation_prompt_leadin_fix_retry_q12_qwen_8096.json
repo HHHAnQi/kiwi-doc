@@ -1,0 +1,126 @@
+{
+  "dataset_size": 1,
+  "metrics": {
+    "retrieval": {
+      "hit_rate@5": 1.0,
+      "precision@5": 0.2,
+      "ndcg@5": 1.0,
+      "recall@5": 1.0,
+      "mrr@5": 1.0
+    },
+    "generation": {}
+  },
+  "per_query": {
+    "retrieval": [
+      {
+        "recall@5": 1.0,
+        "precision@5": 0.2,
+        "hit_rate@5": 1.0,
+        "mrr@5": 1.0,
+        "ndcg@5": 1.0,
+        "__question_id": 1
+      }
+    ],
+    "generation": [
+      {
+        "__question_id": 1,
+        "error": "non-OK generation state: LLM_DEGRADED"
+      }
+    ],
+    "generation_audit": [
+      {
+        "__question_id": 1,
+        "question": "如何在 Spring Cloud Alibaba 中配置扩展配置 extension-configs？",
+        "gold_answer": "在 Spring Cloud Alibaba 中配置扩展配置 extension-configs 需要通过 spring.cloud.nacos.config.prefix 来配置前缀，并使用 @RefreshScope 注解实现配置动态刷新。",
+        "answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: f7c27bf7",
+        "state_hint": "LLM_DEGRADED",
+        "cited_chunk_ids": [
+          1426,
+          1399,
+          1385,
+          2116,
+          2113
+        ],
+        "gold_chunk_ids": [
+          1426
+        ],
+        "context_source": "chat_citations",
+        "citations": [
+          {
+            "chunk_id": 1426,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时…",
+            "llm_context": "* `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。\n* `spring.profiles.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档]( )。\n **注意：当 `spring.profiles.active` 为空时，对应的连接符 `-` 也将不存在，dataId 的拼接格式变成 `${prefix}.${file-extension}`**\n* `file-exetension` 为配置内容的数据格式，可以通过配置项 `spring.cloud.nacos.config.file-extension` 来配置。目前只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：\n只支持 `properties` 和 `yaml` 类型。\n\n4. 通过 Spring Cloud 原生注解 `@RefreshScope` 实现配置自动更新：\n@RestController\n@RequestMapping(\"/config\")\n@RefreshScope\npublic class ConfigController {\n\n    @Value(\"${useLocalCache:false}\")\n    private boolean useLocalCache;\n\n    @RequestMapping(\"/get\")\n    public boolean get() {\n        return useLocalCache;\n    }\n}\n",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1399,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "<dependency>\n    <groupId>com.alibaba.cloud</groupId>\n    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n    <version>${latest.version}</version>\n</dependency>\n",
+            "llm_context": "<dependency>\n    <groupId>com.alibaba.cloud</groupId>\n    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n    <version>${latest.version}</version>\n</dependency>\n",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心",
+              "启动配置管理"
+            ]
+          },
+          {
+            "chunk_id": 1385,
+            "doc_id": 134,
+            "page": 0,
+            "snippet": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nac…",
+            "llm_context": "本文主要面向 [Spring Cloud]( ) 的使用者，通过两个示例来介绍如何使用 Nacos 来实现分布式环境下的配置管理和服务注册发现。\n\n关于 Nacos Spring Cloud 的详细文档请参看：[Nacos Config]( ) 和 [Nacos Discovery]( )。\n\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-config 实现配置的动态变更。\n* 通过 Nacos Server 和 spring-cloud-starter-alibaba-nacos-discovery 实现服务的注册与发现。",
+            "section_path": [
+              "Nacos 融合 Spring Cloud，成为注册配置中心"
+            ]
+          },
+          {
+            "chunk_id": 2116,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": "<!--Nacos Discovery-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>\n     <version>[latest version]</version>\n </dep…",
+            "llm_context": "<!--Nacos Discovery-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>\n     <version>[latest version]</version>\n </dependency>\n\n<!--Nacos Config-->\n<dependency>\n     <groupId>com.alibaba.cloud</groupId>\n     <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>\n     <version>[latest version]</version>\n </dependency>\n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题",
+              "Spring Cloud Alibaba"
+            ]
+          },
+          {
+            "chunk_id": 2113,
+            "doc_id": 207,
+            "page": 0,
+            "snippet": " \n\n目前支持修改cluster.conf文件的方式进行扩缩容, 改完后无需重启, Server会自动刷新到文件新内容。\n\n Nacos客户端修改日志级别 \n\n配置-D参数com.alibaba.nacos.naming.log.level设置naming客户端的日志级别，例如设置为error：\n`-Dcom.alibaba.nacos.naming.log.level=error`\n同样的，-D…",
+            "llm_context": " \n\n目前支持修改cluster.conf文件的方式进行扩缩容, 改完后无需重启, Server会自动刷新到文件新内容。\n\n Nacos客户端修改日志级别 \n\n配置-D参数com.alibaba.nacos.naming.log.level设置naming客户端的日志级别，例如设置为error：\n`-Dcom.alibaba.nacos.naming.log.level=error`\n同样的，-D参数com.alibaba.nacos.config.log.level用来设置config客户端的日志级别。\n\n Nacos与Zipkin 整合出现 Service not found 问题 \n\n配置`spring-cloud-seluth`参数：`spring.zipkin.discovery-client-enabled=false`。\n\n如果仍然存在`Service not found`错误，则建议先使用open-api将Zipkin-server注册为永久实例服务：\n\n`curl -X POST ' '`\n\n然后，前往nacos控制台，找到服务名为`zipkin-server`的服务，找到集群配置，设置健康检查模式为`TCP`，端口号为`9411`(即zipkin-server的端口)。\n\n 如何依赖最新的Nacos客户端？ \n",
+            "section_path": [
+              "FAQ",
+              "Nacos使用问题"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "retrieval_failures": 0,
+  "generation_failures": 1,
+  "k": 5,
+  "timestamp": "2026-08-25T04:04:28.629587+00:00",
+  "model_version": "glm-4-plus",
+  "embedding_version": "BAAI/bge-m3",
+  "rerank_model": "BAAI/bge-reranker-v2-m3",
+  "rerank_enabled": true,
+  "judge_provider": 2,
+  "api_base_url": "http://localhost:8096",
+  "judge_model": "qwen-max",
+  "skip_generation": false,
+  "metric_definitions": {
+    "evidence_completeness": "fraction of gold-answer key facts supported by actual chat context",
+    "citation_accuracy": "exact-gold citation precision: |cited ∩ gold| / |cited|",
+    "citation_recall": "exact-gold evidence coverage: |cited ∩ gold| / |gold|",
+    "citation_hit_rate": "whether at least one exact gold chunk was cited"
+  }
+}

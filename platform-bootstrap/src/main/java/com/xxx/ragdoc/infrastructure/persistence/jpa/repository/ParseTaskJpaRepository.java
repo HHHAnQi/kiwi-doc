@@ -27,7 +27,8 @@ public interface ParseTaskJpaRepository extends JpaRepository<ParseTaskEntity, L
 
     Optional<ParseTaskEntity> findByDocumentIdAndGeneration(Long documentId, Integer generation);
 
-    @Query("SELECT COALESCE(MAX(t.generation), 0) FROM ParseTaskEntity t WHERE t.documentId=:documentId")
+    @Query(
+            "SELECT COALESCE(MAX(t.generation), 0) FROM ParseTaskEntity t WHERE t.documentId=:documentId")
     int maxGeneration(@Param("documentId") Long documentId);
 
     /**
@@ -114,10 +115,7 @@ public interface ParseTaskJpaRepository extends JpaRepository<ParseTaskEntity, L
             @Param("nextAttemptAt") Instant nextAttemptAt,
             @Param("now") Instant now);
 
-    /**
-     * 心跳回收必须同时恢复执行与投递两个状态域。若只 RUNNING→PENDING 而保留 delivery=SENT，
-     * Outbox Relay 永远不会再次看到该任务。
-     */
+    /** 心跳回收必须同时恢复执行与投递两个状态域。若只 RUNNING→PENDING 而保留 delivery=SENT， Outbox Relay 永远不会再次看到该任务。 */
     @Modifying
     @Query(
             "UPDATE ParseTaskEntity t SET "
@@ -133,7 +131,8 @@ public interface ParseTaskJpaRepository extends JpaRepository<ParseTaskEntity, L
                     + "WHERE t.status = 'RUNNING' AND t.visibleAt < :now")
     int reapExpiredRunning(@Param("now") Instant now);
 
-    @Query("SELECT t FROM ParseTaskEntity t WHERE t.status = :status AND t.visibleAt <= :now ORDER BY t.id ASC")
+    @Query(
+            "SELECT t FROM ParseTaskEntity t WHERE t.status = :status AND t.visibleAt <= :now ORDER BY t.id ASC")
     List<ParseTaskEntity> findDue(
             @Param("now") Instant now,
             @Param("status") String status,

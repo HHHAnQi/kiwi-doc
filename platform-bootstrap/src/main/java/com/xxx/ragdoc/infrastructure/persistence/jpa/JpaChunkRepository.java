@@ -53,6 +53,14 @@ public class JpaChunkRepository implements ChunkRepository {
     }
 
     @Override
+    public List<Chunk> findActiveNeighbors(List<Long> anchorIds, int window) {
+        if (anchorIds == null || anchorIds.isEmpty() || window <= 0) return List.of();
+        return jpa.findActiveNeighbors(anchorIds, window).stream()
+                .map(ChunkMapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<Chunk> findByDocumentIdAndPageOrderBySeq(Long documentId, int page) {
         return jpa.findActiveByDocAndPage(documentId, page).stream()
                 .map(ChunkMapper::toDomain)
@@ -80,9 +88,11 @@ public class JpaChunkRepository implements ChunkRepository {
     @org.springframework.transaction.annotation.Transactional
     public List<Chunk> saveAll(Long documentId, int generation, List<Chunk> chunks) {
         jpa.deleteByDocumentIdAndGeneration(documentId, generation);
-        List<ChunkEntity> entities = chunks.stream()
-                .map(c -> c.withGeneration(generation))
-                .map(ChunkMapper::toNewEntity).toList();
+        List<ChunkEntity> entities =
+                chunks.stream()
+                        .map(c -> c.withGeneration(generation))
+                        .map(ChunkMapper::toNewEntity)
+                        .toList();
         return jpa.saveAll(entities).stream().map(ChunkMapper::toDomain).toList();
     }
 

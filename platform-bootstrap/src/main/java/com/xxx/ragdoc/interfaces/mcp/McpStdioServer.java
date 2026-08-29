@@ -14,7 +14,6 @@ import com.xxx.ragdoc.domain.shared.TraceId;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +25,7 @@ import org.springframework.stereotype.Component;
 /**
  * P1: 把平台检索/问答能力封装为 MCP (Model Context Protocol) Server, stdio 传输。
  *
- * <p>让 Claude Desktop / Cursor / 任意 MCP Host 把本知识库当工具用 — JD 高频关键词
- * "MCP Server 封装与接入" 的落地。
+ * <p>让 Claude Desktop / Cursor / 任意 MCP Host 把本知识库当工具用 — JD 高频关键词 "MCP Server 封装与接入" 的落地。
  *
  * <h3>启动</h3>
  *
@@ -40,16 +38,15 @@ import org.springframework.stereotype.Component;
  *
  * <ul>
  *   <li>stdio 传输 = 本地进程间通信, 信任边界与宿主一致(MCP 标准模型)
- *   <li>内部以<b>最小权限服务主体</b>调用业务链路: role:user 非 admin → 检索范围
- *       自动排除 PRIVATE 文档(AclPermissionResolver), tenant 可配
- *       ({@code rag.mcp.server.tenant-id}, 默认 default)
+ *   <li>内部以<b>最小权限服务主体</b>调用业务链路: role:user 非 admin → 检索范围 自动排除 PRIVATE 文档(AclPermissionResolver),
+ *       tenant 可配 ({@code rag.mcp.server.tenant-id}, 默认 default)
  *   <li>stdout 是协议通道: 启动时把日志 console appender 切到 stderr, 防日志污染帧
  * </ul>
  *
  * <h3>协议</h3>
  *
- * <p>newline-delimited JSON-RPC 2.0。支持 initialize / notifications/initialized / ping /
- * tools/list / tools/call; 工具: {@code rag_search}(纯检索) 与 {@code rag_ask}(检索+生成)。
+ * <p>newline-delimited JSON-RPC 2.0。支持 initialize / notifications/initialized / ping / tools/list /
+ * tools/call; 工具: {@code rag_search}(纯检索) 与 {@code rag_ask}(检索+生成)。
  */
 @Slf4j
 @Component
@@ -65,8 +62,7 @@ public class McpStdioServer implements CommandLineRunner {
     private static final String SERVER_NAME = "ragdoc";
     private static final String SERVER_VERSION = "0.1.0";
 
-    @org.springframework.beans.factory.annotation.Value(
-            "${rag.mcp.server.tenant-id:default}")
+    @org.springframework.beans.factory.annotation.Value("${rag.mcp.server.tenant-id:default}")
     private String tenantId;
 
     @Override
@@ -152,8 +148,16 @@ public class McpStdioServer implements CommandLineRunner {
         return r;
     }
 
+    // P1-⑦修复: MCP 限流(Guava RateLimiter, 10 QPS)
+    private final com.google.common.util.concurrent.RateLimiter mcpRateLimiter =
+            com.google.common.util.concurrent.RateLimiter.create(10.0);
+
     /** tools/call: 以最小权限服务主体执行, AuthContext 用完即清防串号。 */
     private ObjectNode toolsCall(JsonNode params) {
+        // P1-⑦: 限流防MCP被滥用烧LLM账单
+        if (!mcpRateLimiter.tryAcquire()) {
+            return errorTool("RATE_LIMITED: MCP调用超过10 QPS限制");
+        }
         String tool = params.path("name").asText("");
         JsonNode args = params.path("arguments");
         AuthContext.set(servicePrincipal());
@@ -187,8 +191,8 @@ public class McpStdioServer implements CommandLineRunner {
             ArrayNode sp = o.putArray("section_path");
             if (c.sectionPath() != null) c.sectionPath().forEach(sp::add);
         }
-        return objectMapper.valueToTree(
-                        java.util.Map.of("results", arr, "count", r.items().size()))
+        return objectMapper
+                .valueToTree(java.util.Map.of("results", arr, "count", r.items().size()))
                 .toString();
     }
 
@@ -201,14 +205,15 @@ public class McpStdioServer implements CommandLineRunner {
         o.put("trace_id", r.traceId() == null ? "" : r.traceId().value());
         ArrayNode cits = o.putArray("citations");
         if (r.citations() != null) {
-            r.citations().forEach(
-                    c -> {
-                        ObjectNode cn = cits.addObject();
-                        cn.put("n", cits.size() + 1);
-                        cn.put("chunk_id", c.chunkId());
-                        cn.put("doc_id", c.docId());
-                        cn.put("snippet", c.snippet());
-                    });
+            r.citations()
+                    .forEach(
+                            c -> {
+                                ObjectNode cn = cits.addObject();
+                                cn.put("n", cits.size() + 1);
+                                cn.put("chunk_id", c.chunkId());
+                                cn.put("doc_id", c.docId());
+                                cn.put("snippet", c.snippet());
+                            });
         }
         return o.toString();
     }
@@ -272,7 +277,8 @@ public class McpStdioServer implements CommandLineRunner {
     private static void redirectConsoleLoggingToStderr() {
         ch.qos.logback.classic.Logger root =
                 (ch.qos.logback.classic.Logger)
-                        org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+                        org.slf4j.LoggerFactory.getLogger(
+                                ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
         var it = root.iteratorForAppenders();
         while (it.hasNext()) {
             var a = it.next();

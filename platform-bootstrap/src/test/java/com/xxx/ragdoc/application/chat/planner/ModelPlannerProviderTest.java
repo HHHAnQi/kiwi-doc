@@ -113,12 +113,23 @@ class ModelPlannerProviderTest {
     @Test
     @DisplayName("buildPrompt: 包含 allowedTools + 安全警告 + 不含 token")
     void promptSafer() {
-        String prompt = ModelPlannerProvider.buildPrompt(request());
+        String prompt = ModelPlannerProvider.buildPrompt(request(), props.getMaxPlanSteps());
         assertThat(prompt)
                 .contains("allowedTools", "semantic_search")
                 .contains("UNTRUSTED"); // 安全警告
         assertThat(prompt.toLowerCase())
                 .doesNotContain("rawtoken=")
                 .doesNotContain("tenantoverride="); // 不含身份 Literal
+    }
+
+    @Test
+    @DisplayName("P1-B: LLM 真实调用点 → llm_calls{component=planner}(调用失败也计)")
+    void plannerLlmCallMetric() throws Exception {
+        com.xxx.ragdoc.application.metrics.MetricsPort m =
+                org.mockito.Mockito.mock(com.xxx.ragdoc.application.metrics.MetricsPort.class);
+        provider.setMetricsPort(m);
+        when(chatClient.chat(anyString(), anyList())).thenThrow(new RuntimeException("llm down"));
+        assertThatThrownBy(() -> provider.plan(request())).isInstanceOf(PlannerException.class);
+        org.mockito.Mockito.verify(m).recordAgentLlmCall("planner");
     }
 }

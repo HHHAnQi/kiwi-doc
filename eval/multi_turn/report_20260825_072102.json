@@ -1,0 +1,475 @@
+{
+  "generated_at": "2026-08-25T07:15:47.515458+00:00",
+  "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+  "judge_model": "qwen-max",
+  "fingerprints": {
+    "datasets": {
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/conv_holdout_20.jsonl": "02f104068c364d24d4e18b28776d98cca912705bdcdff52c7e02d2b95adce29f",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/antipollution_holdout_10.jsonl": "77fca9478251b703552782e0219761fa248de44963d6e5729ed03c7b6e86a531",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/fidelity_holdout_50.json": "f506f82c7e505f101a055387fb14ba94f1ab0f33404920f41eed821b6fa3610d",
+      "/Users/huanqi/RagDoc/rag-doc-platform/eval/multi_turn/topic_shift_holdout_50.json": "9922204b79b1336beccfd0235dc804a4eb7b586250aaa6e99f586749fec7804f"
+    },
+    "g1_result": {
+      "path": "eval/runs/e88ce80c67603948/metadata.json",
+      "sha256": "7c4ad757c477a43bdefcb574700f32354c6671c6a455e8386079cd2185956c69"
+    },
+    "g1_baseline": {
+      "path": "eval/ragas_baseline.json",
+      "sha256": "1da6556485ee3520bb12ceb569f16df91d6a7e55c65ca1df5f8767efaa5cbf79"
+    },
+    "config": {
+      "chat_url": "http://127.0.0.1:8096/api/v1/chat",
+      "judge_model": "qwen-max",
+      "judge_provider_id": 2,
+      "gates": "G2,G3",
+      "g1_min_samples": 80,
+      "g1_max_age_hours": 48
+    }
+  },
+  "gates": [
+    {
+      "gate": "G1",
+      "status": "SKIP",
+      "reason": "GATES filter=G2,G3"
+    },
+    {
+      "gate": "G2",
+      "status": "PASS",
+      "pass_n": 20,
+      "total": 20,
+      "rate": 1.0,
+      "threshold": 0.85,
+      "details": [
+        {
+          "question_id": "mt_g2_v2_001",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "ConsistentHashLoadBalance的默认权重和RandomLoadBalance一样吗？",
+          "raw_followup": "那它的默认权重和RandomLoadBalance一样吗？",
+          "expected_standalone": "ConsistentHashLoadBalance的默认权重是否与RandomLoadBalance相同？",
+          "played_history": [
+            {
+              "user": "在Dubbo的负载均衡策略中，ConsistentHashLoadBalance适用于什么场景？",
+              "assistant": "ConsistentHashLoadBalance适用于有状态请求场景，能够确保确定的入参映射到确定的提供者[4]。该策略通过一致性哈希算法实现请求的确定性分配[4]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n理由：实际改写已正确消解指代，明确比较了ConsistentHashLoadBalance和RandomLoadBalance的默认权重，并且保持了原追问意图。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_002",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "Dubbo+在通信模型上默认使用哪种？",
+          "raw_followup": "那在通信模型上，它默认的是哪种？",
+          "expected_standalone": "Dubbo 默认的通信模型是什么？",
+          "played_history": [
+            {
+              "user": "Dubbo 在服务定义上支持哪些方式？",
+              "assistant": "Dubbo 支持两种服务定义方式：使用与某种语言绑定的方式（如 Java 中可直接定义 Interface），或使用 Protobuf IDL 语言中立的方式 [1]。无论选择哪种方式，服务消费方都可以通过 Dubbo 提供的透明代理直接编码 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写补全了指代对象且保持了原追问意图，同时自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_003",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "只设置+async=true+而不设置+onreturn+会是什么模式？",
+          "raw_followup": "那如果我只设置 async=true 而不设置 onreturn，会是什么模式？",
+          "expected_standalone": "如果只设置 async=true 而不设置 onreturn，对应哪种组合模式？",
+          "played_history": [
+            {
+              "user": "callback 和 async 这两个参数在功能上是什么关系？",
+              "assistant": "callback 和 async 这两个参数在功能上正交分解。async=true 表示结果是否马上返回，onreturn 表示是否需要回调。两者叠加存在异步回调模式、同步回调模式、异步无回调和同步无回调四种组合情况，其中 async=false 为默认值 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n理由：实际改写补全了指代对象，并且没有偏离原追问意图，同时自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_004",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "灰度发布配置中，接口粒度配置的必填项除了serviceKey还有哪个？",
+          "raw_followup": "那接口粒度配置里，它的必填项除了serviceKey还有哪个？",
+          "expected_standalone": "接口粒度配置中，除了serviceKey外，还有哪个字段是必填的？",
+          "played_history": [
+            {
+              "user": "灰度发布配置中，全局的决策阈值和灰度比例默认值分别是多少？",
+              "assistant": "全局的决策阈值默认值是1.0 [1]。全局的灰度比例默认值是100 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n实际改写补全了指代对象，并且保持了原追问意图，同时是自包含可独立检索的。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_005",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "broadcast.fail.percent+参数设置为20时，具体会发生什么？",
+          "raw_followup": "那如果设置它为20，具体会怎样？",
+          "expected_standalone": "如果设置broadcast.fail.percent为20，具体会怎样？",
+          "played_history": [
+            {
+              "user": "广播调用在默认情况下，什么时候会抛出异常？",
+              "assistant": "广播调用在默认情况下，当全部调用失败后才会抛出异常 [1]。broadcast.fail.percent 参数可以控制节点调用失败的比例，当达到这个比例后，BroadcastClusterInvoker 将不再调用其他节点，直接抛出异常 [1]。broadcast.fail.percent 取值在 0～100 范围内，默认情况下当全部调用失败后，才会抛出异常 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n实际改写明确了指代对象，并且保持了原追问意图，同时自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_006",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "权限认证插件中的默认SecretKey和Token值可以用于临时测试吗？",
+          "raw_followup": "那它们可以用于临时测试吗？",
+          "expected_standalone": "默认的SecretKey和Token值可以用于临时测试吗？",
+          "played_history": [
+            {
+              "user": "权限认证插件中，默认的SecretKey和Token值分别是什么？",
+              "assistant": "权限认证插件中，默认的SecretKey是`SecretKey012345678901234567890123456789012345678901234567890123456789`[1][2][3][4]，默认的Token值是`VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg=`[1][2]。这些默认值在2.1.0版本后的配置项为`nacos.core.auth.plugin.nacos.token.secret.key`[3][4]，在2.2.0.1版本后不再有默认值[4]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写补全了指代对象且未偏离原追问意图，同时保持了问题的独立性。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_007",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "NacosSync的同步任务处理延时和单机支持的任务量是多少？",
+          "raw_followup": "那它的同步任务处理延时和单机支持的任务量是多少呢？",
+          "expected_standalone": "NacosSync的同步任务处理延时和单机支持的任务量是多少？",
+          "played_history": [
+            {
+              "user": "NacosSync的部署方式有哪些？",
+              "assistant": "NacosSync支持单机部署和高可用的集群部署模式[3]。NacosSync是无状态设计，将任务等状态数据迁移到了数据库，使得集群扩展非常方便[3]。NacosSync基于Spring boot开发框架，数据层采用Spring Data JPA[3]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n实际改写已经补全了指代对象，并且保留了原始追问的意图，同时问题本身自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_008",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "Nacos+鉴权配置参数不一致会有什么后果？",
+          "raw_followup": "那如果节点间不一致，会有什么后果？",
+          "expected_standalone": "如果 Nacos 节点间鉴权配置参数不一致，会有什么后果？",
+          "played_history": [
+            {
+              "user": "开启鉴权后，除了密钥，还需要配置哪些参数？",
+              "assistant": "开启鉴权后，除了密钥，还需要配置以下参数：\n\n1. `nacos.core.auth.enabled=true` - 启用鉴权系统 [2][3]\n2. `nacos.core.auth.system.type=nacos` - 设置认证系统类型为nacos [3]\n3. `nacos.core.auth.server.identity.key` 和 `nacos.core.auth.server.identity.value` - 在2.2.1版本后必须设置这两个参数，否则Nacos服务器会报错并阻止启动 [5]",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写正确地补全了指代对象且保持了原追问意图，同时自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_009",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "Nacos作为Seata配置中心时，配置已导入成功但服务列表没有注册，应该检查哪个配置项？",
+          "raw_followup": "那如果配置已经导入成功，但服务列表里没有注册，接下来该看哪个配置项？",
+          "expected_standalone": "Nacos 作为 Seata 配置中心时，如果配置已经导入成功但服务列表没有注册，接下来应该检查哪个配置项？",
+          "played_history": [
+            {
+              "user": "Nacos 作为 Seata 配置中心时，如果项目启动报错找不到服务，第一步应该检查什么？",
+              "assistant": "根据检索到的信息，当Nacos作为Seata配置中心时，项目启动报错找不到服务，第一步应该检查nacos配置列表，确认seata配置是否已经导入成功 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n实际改写已正确消解指代，保留了系统、场景、条件和所问槽位，足以独立检索到期望的答案。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_010",
+          "mode": "answer-based(fallback)",
+          "rewritten_by_app": "(header 缺失)",
+          "actual_answer": "从片段中可以看出，Seata对表结构有以下影响：\n\n1. 升级到1.5.0版本时，db存储模式需要变更表结构，包括将字符集从utf8调整为utf8mb4，调整global_table的索引，为lock_table增加status字段和相应索引 [1][2]。\n\n2. 升级到1.5.0版本时，需要增加distributed_lock表用于seata-server异步任务调度 [2]。\n\n3. TCC",
+          "expected_standalone": "Seata 1.5.0 升级对表结构有什么影响？",
+          "judge": "PASS，因为bot回答中提到了lock_table增加status字段和索引，以及新增distributed_lock表用于seata-server异步任务调度这两个关键点。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_011",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "seata-server+的默认端口是多少？",
+          "raw_followup": "那它的默认端口是多少？",
+          "expected_standalone": "seata-server 的默认端口是多少？",
+          "played_history": [
+            {
+              "user": "seata-server 支持哪些环境变量？",
+              "assistant": "seata-server 支持以下环境变量：\n- SEATA_IP：可选，指定seata-server启动的IP，用于向注册中心注册时使用 [1][2][3][4]\n- SEATA_PORT：可选，指定seata-server启动的端口，默认为8091 [1][2][3][4]\n- STORE_MODE：可选，指定seata-server的事务日志存储方式，支持db、file、redis(Seata-Server 1.3及以上版本支持)，默认是file [1][2][3][4]\n- SERVER_NODE：可选，用于指定seata-server节点ID，如1、2、3...，默认为根据ip生成 [1][2][3][4]\n- SEATA_ENV：可选，指定seata-server运行环境，如dev、test等 [1][2][3][4]\n- SEATA_CONFIG_NAME：支持的环境变量与Docker相同 [3][4][5]",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写正确补全了指代对象且未偏离原追问意图，自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_012",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "seata-metrics-api+模块中定义的+Meter+类接口有具体实现代码吗？",
+          "raw_followup": "那它内部有具体实现代码吗？",
+          "expected_standalone": "seata-metrics-api 模块内部是否有具体实现代码？",
+          "played_history": [
+            {
+              "user": "seata-metrics-api 模块中定义了哪些 Meter 类接口？",
+              "assistant": "seata-metrics-api 模块中定义了 Meter 类接口：`Gauge`、`Counter`、`Timer` [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写明确了指代对象并保持了原追问意图，同时自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_013",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "在+AT+模式下，如果使用注解开启分布式事务，provider+端不标注注解可以吗？",
+          "raw_followup": "那如果我用注解开启分布式事务，provider 端不标注注解可以吗？",
+          "expected_standalone": "使用注解开启分布式事务时，provider 端不标注注解是否可行？",
+          "played_history": [
+            {
+              "user": "AT 模式目前支持哪些数据库？",
+              "assistant": "AT 模式目前支持的数据库有：MySQL、Oracle、PostgreSQL 和 TiDB [1][2]。此外，AT 模式还支持达梦数据库 [3][4] 和 SQLServer 数据库 [5]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写补全了指代对象，并且保留了系统、场景、条件和所问槽位，足以独立检索到同一答案。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_014",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "SEATA_PORT+环境变量配置什么，默认值是多少？",
+          "raw_followup": "那 SEATA_PORT 呢？",
+          "expected_standalone": "SEATA_PORT 环境变量的默认值是什么？",
+          "played_history": [
+            {
+              "user": "seata-server 支持哪些环境变量？",
+              "assistant": "seata-server 支持的环境变量有：\n\n- **SEATA_IP**：可选，指定seata-server启动的IP，该IP用于向注册中心注册时使用，如eureka等 [1][2][3][4]\n- **SEATA_PORT**：可选，指定seata-server启动的端口，默认为 `8091` [1][2][3][4]\n- **STORE_MODE**：可选，指定seata-server的事务日志存储方式，支持`db`、`file`、redis(Seata-Server 1.3及以上版本支持)，默认是 `file` [1][2][3][4]\n- **SERVER_NODE**：可选，用于指定seata-server节点ID，如 `1`、`2`、`3`...，默认为 `根据ip生成` [1][2][3][4]\n- **SEATA_ENV**：可选，指定 seata-server 运行环境，如 `dev`、`test` 等，服务启动时会使用 `registry-dev.conf` 这样的配置 [1][2][3][4]\n- **SEATA_CONFIG_NAME** [3][4]",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写明确了指代对象且保持了原追问意图，能够独立检索到期望的答案。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_015",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "SQL属性过滤中，表达式计算结果为null或数值类型不符时会被过滤吗？",
+          "raw_followup": "那如果表达式计算结果为null，或者数值类型不符呢？它们也会被过滤吗？",
+          "expected_standalone": "SQL属性过滤中，表达式计算结果为null或数值类型不符时，消息是否会被过滤？",
+          "played_history": [
+            {
+              "user": "SQL属性过滤中，如果过滤条件的表达式计算抛异常，服务端会怎么处理？",
+              "assistant": "如果过滤条件的表达式计算抛异常，消息默认被过滤，不会被投递给消费者 [1]。例如比较数字和非数字类型的值会导致异常情况 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n实际改写已经明确指出了SQL属性过滤场景下的条件，并且准确表达了对于表达式计算结果为null或数值类型不符时是否会进行过滤的询问，满足自包含可独立检索的要求。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_016",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "顺序消息消费超时后会被怎么处理？",
+          "raw_followup": "那如果消费超时，它会被怎么处理？",
+          "expected_standalone": "顺序消息消费超时会被怎么处理？",
+          "played_history": [
+            {
+              "user": "顺序消息在初始化之后，会经历哪些状态？",
+              "assistant": "顺序消息在初始化之后会经历以下状态：\n1. 待消费：消息被发送到服务端，对消费者可见，等待消费者消费的状态 [1]。\n2. 消费中：消息被消费者获取，并按照消费者本地的业务逻辑进行处理的过程 [1]。\n3. 消费提交：消费者完成消费处理，并向服务端提交消费结果，服务端标记当前消息已经被处理 [1]。\n4. 消息删除：Apache RocketMQ按照消息保存机制滚动清理最早的消息数据，将消息从物理文件中删除 [1]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS\n实际改写补全了指代对象且保留了原追问意图，同时能够独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_017",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "生产者客户端的接入点信息必须怎么配置？",
+          "raw_followup": "那接入点信息呢？它必须怎么配置？",
+          "expected_standalone": "接入点信息必须怎么配置？",
+          "played_history": [
+            {
+              "user": "生产者客户端的客户端ID有什么作用？",
+              "assistant": "客户端ID是生产者客户端的标识，用于区分不同的生产者，集群内全局唯一 [1]。客户端ID由Apache RocketMQ的SDK自动生成，主要用于日志查看、问题定位等运维场景，不支持修改 [1]。客户端ID的格式为`time_ip_port`，对应一个基于RPC连接的客户端，兼具注册与订阅功能 [2]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写明确指出了“接入点信息”的所属对象（生产者客户端），同时保留了原追问意图，且问题自包含可独立检索。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_018",
+          "mode": "answer-based(fallback)",
+          "rewritten_by_app": "(header 缺失)",
+          "actual_answer": "强制校验功能会对发送的消息类型和主题定义的消息类型进行校验，若校验不通过则消息发送请求会被拒绝并返回类型不匹配异常 [3]。消息类型必须一致：发送的消息类型必须和目标主题定义的消息类型一致 [3]。主题类型必须单一：每个主题只支持一种消息类型，不允许将多种类型的消息发送到同一个主题中 [3]。为保证向下兼容4.x版本行为，强制校验功能默认开启 [1][2][3][4]。",
+          "expected_standalone": "Apache RocketMQ 的消息类型强制校验功能具体是怎么工作的？",
+          "judge": "PASS，回答提到了从5.0版本开始支持强制校验消息类型、每个主题只允许发送一种消息类型以及为了向下兼容4.x版本默认开启强制校验功能等关键点。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_019",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "消费组内共享消费场景下消费者的负载均衡是怎么决定的？",
+          "raw_followup": "那消费组内共享消费场景下，它又是怎么决定的呢？",
+          "expected_standalone": "消费组内共享消费场景下，消费者负载均衡策略是如何决定消息分配给哪个消费者的？",
+          "played_history": [
+            {
+              "user": "消费组间广播消费场景下，每个消费者分组内只有一个消费者，那么这种场景下是否涉及消费者的负载均衡？",
+              "assistant": "消费组间广播消费场景下，每个消费者分组内只有一个消费者，因此不涉及消费者的负载均衡[1]。在这种场景下，每个消费者可消费到消费者分组内所有的消息，各消费者分组都订阅相同的消息，以此实现单客户端级别的广播一对多推送效果[2]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写已经补全了指代对象且保留了系统、场景、条件和所问槽位，足以独立检索到同一答案。",
+          "pass": true
+        },
+        {
+          "question_id": "mt_g2_v2_020",
+          "mode": "rewrite-direct(query-vs-query)",
+          "rewritten_by_app": "客户端ID的取值有什么要求，它也是需要提前创建的吗？",
+          "raw_followup": "那客户端ID呢？它也是提前创建的吗？",
+          "expected_standalone": "客户端ID的取值有什么要求？它也是提前创建的吗？",
+          "played_history": [
+            {
+              "user": "消费者分组名称的取值有什么要求？",
+              "assistant": "消费者分组名称是消费者必须关联的消费者分组名称，通过消费者分组获取消费行为 [1]。消费者分组为Apache RocketMQ的逻辑资源，需要提前通过控制台或OpenAPI创建 [1]。消费者分组的名称在集群内全局唯一，由用户设置并创建 [2]。具体命名格式和规范请参见[参数限制](../01-introduction/03limits.md) [1][2]。",
+              "state_hint": "OK"
+            }
+          ],
+          "judge": "PASS 实际改写明确了指代对象且保持了原追问意图，同时是自包含的。",
+          "pass": true
+        }
+      ]
+    },
+    {
+      "gate": "G3",
+      "status": "PASS",
+      "pass_n": 9,
+      "total": 10,
+      "rate": 0.9,
+      "pollution_count": 0,
+      "threshold": 0,
+      "note": "G3 硬 gate: pollution_count 必须 0",
+      "details": [
+        {
+          "question_id": "mt_g3_001",
+          "description": "1 turn OK + 1 turn NO_RECALL + 1 turn 重问 OK; 验证 NO_RECALL 文案不污染 rewrite",
+          "actual_answer": "Nacos 2.X 版本新增了 gRPC 通信方式，需要增加2个端口，这些端口是在配置的主端口(server.port，默认8848)基础上进行一定偏移量自动生成 [1]。RocketMQ 在配置中可以设置 prometheus 监听 rocketmq-exporter 的端口，默认为 5557，以及配置 prometheus 获取指标的路径，默认为 /metrics [2]。Nacos 默认监听",
+          "expected": "Nacos 默认端口和 RocketMQ NameServer 默认端口相比如何?",
+          "judge": "FAIL\n\n解析：Bot 的回答中提到了 Nacos 默认端口 8848，并且提到了在 2.X 版本中会额外生成一个默认端口 9848，但是并没有提到 RocketMQ NameServer 的默认端口是 9876，也没有指出两者之间的端口号相差约1000以及使用不同端口来避免冲突的事实。因此，关键事实没有被完全覆盖。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_002",
+          "description": "LLM 出错后再问; 验证 'LLM 出错了 trace=xxx' 不污染 rewrite",
+          "actual_answer": "Sentinel 提供了流量控制规则用于保护服务提供方 [2]。QPS 限流可以通过设置 FlowRule 的 grade 为 RuleConstant.FLOW_GRADE_QPS，并设置 count 值来实现，例如将 limit qps 设置为 20 [1]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [3]。建议使用业务语义明确的命",
+          "expected": "Sentinel QPS 限流规则详细介绍",
+          "judge": "FAIL\n\n理由：虽然bot的回答提到了QPS限流的基本概念，包括通过设置FlowRule的grade为QPS以及设定count值来实现限流，但它没有明确提及当单位时间请求数超过阈值时触发的具体行为（直接拒绝、Warm Up、排队等待），这是关键事实的一部分。因此，根据给定的关键事实标准，此回答未能完全覆盖所需信息。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_003",
+          "description": "EMPTY_KB 模拟 (知识库空时整轮 fail, 后续需重置 ctx); G3 验证 EMPTY_KB 是否拒写 history",
+          "actual_answer": "需要先下载 Nacos 并启动 Nacos server，操作步骤参见 Nacos 快速入门[3][4][5]。可以将 Zookeeper 服务迁移到 Nacos，通过 Nacos-Sync 实现[1]。Nacos 网络交互基于 Http 协议，提供了 Open-API 可以实现访问[1]。",
+          "expected": "Seata 如何从默认注册中心切换到 Nacos?",
+          "judge": "FAIL\n\n解析：Bot 的回答中提到了 Nacos 和一些相关的配置信息，但是并没有具体提到关于 Seata Server/Client 修改 `registry.conf` 文件的具体步骤，也没有提到需要设置 `type=\"nacos\"`、`namespace`、`cluster` 以及 `serverAddr` 等参数，更没有提及客户端同步配置以确保能发现 TC（事务协调器）的重要性。因此，根据给定的关键事实，这个答案未能完全覆盖所需的信息。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_004",
+          "description": "持续 NO_RECALL 多轮的 stress (用户连续问 OOD); G3 验证 history 持续空不需清",
+          "actual_answer": "Seata 的 TCC 模式不与具体的服务框架耦合，与底层 RPC 协议无关，与底层存储介质无关性 [1]。TCC 模式在 1.5.0 增加了防悬挂功能，需要提前在客户端业务库中增加相应表 [3]。TCC 模式的一阶段方法进行了优化，不再需要在一阶段的接口入参定义`BusinessActionContext`，若需要可以通过`BusinessActionContextUtil.getContext",
+          "expected": "Seata TCC 模式好用吗?",
+          "judge": "FAIL\n\n解析：Bot 的回答提到了 TCC 模式的一些技术细节，如不与服务框架、RPC 协议或存储介质耦合，以及一阶段方法的优化等。但是，它没有提到关键事实中所列出的TCC的主要优点（强一致性和性能）、缺点（业务侵入性及幂等问题）、适用场景（金融）和与其他模式（如AT模式对于CRUD业务）的对比。因此，基于提供的关键事实标准，判定为\"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_005",
+          "description": "混合 NO_RECALL 后验证当前语料可回答的 RocketMQ 问题不被污染",
+          "actual_answer": "RocketMQ 通过以下机制保证消息不丢失：\n\n1. RocketMQ 默认对消息进行持久化，将接收到的消息存储到服务端的存储文件中，保证消息的可回溯性和系统故障场景下的可恢复性 [4][5]。\n\n2. RocketMQ 提供事务消息机制，通过原生两阶段提交保证分布式系统中的精确一次投递语义，确保消息发送与本地数据库事务原子性地同时成功或失败 [3]。\n\n3. RocketMQ 基于DLedge",
+          "expected": "RocketMQ 如何保证消息不丢?",
+          "judge": "判定: PASS\n\n解析：虽然Bot的回答没有完全按照关键事实的表述来回答，但它确实提到了RocketMQ通过服务端持久化（第1点）、同步刷盘（虽然直接提到的是“存储到服务端的存储文件中”，这实际上就是一种形式的持久化处理，包含了数据写入磁盘的过程）、以及生产消费链路中的确认和重试机制（第4点）等方式来降低消息丢失的风险。因此，从语义上来看，Bot的回答覆盖了给定的关键事实要点。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_006",
+          "description": "LLM fail + 用户重试 + 后续 OK; 验证 retry 后 ctx 干净",
+          "actual_answer": "第一种配置方式是通过-D参数进行指定的配置 [2]。另一种配置方式是在构造客户端时，通过`Properties`对象进行指定 [2]。详细的配置可以参考application.example.yml文件，该文件存放了所有可使用的详细配置 [4]。",
+          "expected": "Sentinel 直接拒绝 (Default) 流控效果详细介绍",
+          "judge": "FAIL\n\n解析：Bot 的回答中没有提到关于直接拒绝策略（controlBehavior=Default）的具体行为，即超过阈值的请求会立即抛出BlockException (FlowException)，不做任何缓冲，并且这种策略适用于对延迟敏感但可以接受部分请求失败率增加的情况。因此，该回答未能覆盖给定的关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_007",
+          "description": "首 turn 即 NO_RECALL; 验证空 ctx 时 rewrite 不空指针",
+          "actual_answer": "3个或3个以上Nacos节点才能构成集群 [2][4]。当前集群文件中只有两个Nacos节点地址 [1][3]。",
+          "expected": "Nacos 集群部署要几个节点?",
+          "judge": "FAIL\n\n解析：Bot 的回答提到了需要3个或以上的Nacos节点来构成集群，但是没有提到推荐使用奇数个节点以及为什么至少需要3个节点（即为了满足Raft quorum和避免脑裂）。因此，虽然部分信息是正确的，但并没有完全覆盖给定的关键事实。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_008",
+          "description": "OK后多个OOD返回 (用户实验性恐吓); 验证多个降级 turn 后还能正常多轮",
+          "actual_answer": "Dubbo 提供多种服务注册方式，包括使用独立的注册中心组件（如 Nacos、Zookeeper、Consul、Etcd 等）或将服务组织与注册交给底层容器平台（如 Kubernetes）[1]。在配置文件中，可以通过 `<dubbo:registry>` 元素配置多个注册中心，并指定服务向哪些注册中心注册，如示例中的 `registry=\"chinaRegistry\"` 或 `registry=",
+          "expected": "Dubbo 服务怎么注册到注册中心?",
+          "judge": "FAIL\n\n解释：虽然bot的回答提到了Dubbo使用Nacos、Zookeeper等作为注册中心，并且讨论了服务如何配置以向这些注册中心注册，但它并没有明确提到关键事实中的具体过程，即Dubbo service在export时URL（包括application/provider IP:port/接口列表/版本号）是如何被写入到Registry的，以及消费方如何订阅并监听provider URL的变化。因此，根据给定的关键事实和约束条件，判定为\"FAIL\"。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_009",
+          "description": "OK / LLM_DEGRADED 混合 + 后续 OK; 最严的 G3 case",
+          "actual_answer": "Sentinel 提供了流量控制规则来保护服务提供方 [1]。流量控制规则是 Sentinel 提供的多种规则之一，用于保护系统的不同部分 [1]。Sentinel 将每一个需要流控的 URL 或者接口称为一个资源，并使用URL地址或方法签名表示资源 [1][5]。",
+          "expected": "Sentinel 限流规则有哪些?",
+          "judge": "FAIL\n\n解析：Bot 的回答中提到了 Sentinel 提供了流量控制规则，但没有具体提到关键事实中的 QPS、线程数、关联和链路这4种限流规则，也没有提及流控效果（直接拒绝 / Warm Up / 匀速排队），以及监控从滑动窗口统计等内容。因此，根据给定的关键事实，这个回答未能全面覆盖所需的信息点。",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": true
+        },
+        {
+          "question_id": "mt_g3_010",
+          "description": "降级轮次不入 history 后，明确重试最初问题应回到最近有效业务主题",
+          "actual_answer": "模型暂不可用, 请稍后重试。如有紧急问题, 请点反馈并提供 trace_id: 0251a239",
+          "expected": "RocketMQ 如何保证消息不丢?",
+          "judge": "FAIL",
+          "pollution_marker": "",
+          "answer_quality_diagnostic": false,
+          "pass": false
+        }
+      ]
+    },
+    {
+      "gate": "G4",
+      "status": "SKIP",
+      "reason": "GATES filter=G2,G3"
+    },
+    {
+      "gate": "G5",
+      "status": "SKIP",
+      "reason": "GATES filter=G2,G3"
+    }
+  ],
+  "overall_status": "INCOMPLETE"
+}
