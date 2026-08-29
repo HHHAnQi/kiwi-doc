@@ -1,73 +1,98 @@
-# KiwiRAG Final Release Acceptance
+# KiwiRAG Final Release Acceptance — Release Closure
 
-> 2026-08-30 · 本报告为本轮 Merge & Release Acceptance 的完整记录
+> 2026-08-30 · 本报告为 Release Closure 轮（Phase 1-16）的完整记录。
+> 前一轮（Merge & Release Acceptance）产出见 git 历史 `c9bde03`。
 
 ```text
-BRANCH_AUDITED         = codex/rag-metrics-multiturn-baseline (41 commits ahead of origin/main at audit start)
-PRE_MERGE_HEAD         = c4143d0 (pushed to origin)
+BRANCH_AUDITED         = codex/rag-metrics-multiturn-baseline
+PRE_MERGE_HEAD         = 27f5e26 (pushed to origin)
 MAIN_HEAD              = a300c04 (unchanged; PR merge pending owner action)
 
-DIFF_AUDIT             = PASS
-  - secret 模式扫描：无真实 credential（命中均为 Dubbo 文档语料示例）
-  - 本地泄漏：`.evidence/` 33MB 生成物已清除（`d762df9`），eval 报告中的路径为运行环境元数据
-  - Gold 完整性：既有 gold/baseline 零回溯修改；新增 dataset 为增量（200题/50题 pilot）非改标
-SECRET_SCAN            = PASS
-LOCAL_BACKEND          = PASS  (spotlessApply 后 lint 绿, test BUILD SUCCESSFUL)
-LOCAL_FRONTEND         = PASS  (vitest 27/27, vite build ✓, INDEXED 就绪 bug 已修复)
-LOCAL_EVAL             = PASS  (unit + integration green; live eval 需 judge key = BY_DESIGN)
+WORKFLOW_FIX           = PASS
+  step级 if: ${{ secrets.* != '' }} → secret-checkpoint(env映射→GITHUB_OUTPUT)→steps.if
+  修复fork PR下 Unrecognized named-value: 'secrets'
+  Phase2行为语义: deterministic eval始终跑 + live judge缺secret显式warning skip
 
-PR_URL                 = NOT_CREATED (无 gh CLI / GitHub token; 分支已 push, owner 需手动开 PR)
-PR_CI_BACKEND          = NOT_TRIGGERED (等 PR 创建)
-PR_CI_FRONTEND         = NOT_TRIGGERED
-PR_CI_EVAL             = NOT_TRIGGERED
+LOCAL_WORKFLOW_VALIDATION = PASS  (3 YAML safe_load全通过)
+LOCAL_BACKEND_GATE     = PASS  (spotlessCheck + test BUILD SUCCESSFUL)
+LOCAL_FRONTEND_GATE    = PASS  (vitest 27/27 + vite build ✓)
+LOCAL_OFFLINE_EVAL_GATE = PASS (unit + integration test green; live judge 需 key = BY_DESIGN)
 
-POST_MERGE_CI_BACKEND  = NOT_APPLICABLE (PR 未创建)
-POST_MERGE_CI_FRONTEND = NOT_APPLICABLE
-POST_MERGE_CI_EVAL     = NOT_APPLICABLE
+PR_URL                 = NOT_CREATED (无 gh CLI/GitHub token; PR description 已备好:
+                               docs/audits/PR_DESCRIPTION.md — owner 打开 compare URL 粘贴即可)
+PR_BACKEND_CI          = NOT_TRIGGERED
+PR_FRONTEND_CI         = NOT_TRIGGERED
+PR_EVAL_CI             = NOT_TRIGGERED
 
-README                 = STRONG_PASS  (KiwiRAG 14节结构, 261→285行, 4 Mermaid, 3截图)
-ARCHITECTURE           = STRONG_PASS  (五层真实映射, 无虚构组件, 五图文档)
-CLAIM_INTEGRITY        = STRONG_PASS  (矩阵17项全溯源, 禁词扫描仅否定语境)
-EVIDENCE_TRACEABILITY  = STRONG_PASS  (8 doc 入口全链接有效, 冻结数字↔报告原文)
-QUICK_START            = PASS         (make env/up/run/test 真实; Agentic 默认关如实标注)
-SCREENSHOTS            = PASS         (3张真实截图; chat 正常路径截图受前端锁bug阻塞,
-                                        error-state 截图如实采集, SSE 后端 curl 直验)
-GITHUB_METADATA        = PENDING_OWNER (docs/audits/GITHUB_METADATA_UPDATE.md 已生成)
+POST_MERGE_BACKEND_CI  = NOT_APPLICABLE
+POST_MERGE_FRONTEND_CI = NOT_APPLICABLE
+POST_MERGE_EVAL_CI     = NOT_APPLICABLE
 
-TAG_STATUS             = NOT_READY (PR 未创建, CI 未实跑 — 需 owner 完成后打 v1.0.0-portfolio)
+README_MAIN            = PASS (Phase4A旧仓库身份已删; CI limitation保留待真实CI后更新)
+SCREENSHOTS            = PASS  (3张真实截图, docs/assets/, README Demo 节挂接)
+GITHUB_METADATA        = PENDING_OWNER (docs/audits/GITHUB_METADATA_UPDATE.md)
+CLAIM_INTEGRITY        = STRONG_PASS (矩阵17项全溯源; 禁词扫描仅否定语境)
+KNOWN_LIMITATIONS      = PASS (6条真实限制保留于README + PR description)
+
+TAG_READY              = NO (PR未创建/CI未实跑)
 ```
 
-## Merge Gate 状态
+## Merge Gate
 
 ```text
-NO_SECRET_LEAK=PASS  DIFF_AUDIT=PASS  README_TRUTH=PASS  DOC_SYNC=PASS
-LOCAL_DETERMINISTIC_GATES=PASS
-PR_CREATED=NOT_CREATED(no gh/token) ← BLOCKER for merge
-BACKEND_CI=NOT_TRIGGERED  FRONTEND_CI=NOT_TRIGGERED  EVAL_CI=NOT_TRIGGERED
+SECRET_SCAN=PASS  DIFF_AUDIT=PASS  WORKFLOW_VALIDITY=PASS  LOCAL_GATES=PASS
 CLAIM_INTEGRITY=PASS
+PR_CREATED=NOT_CREATED(no gh/token) ← BLOCKER
+BACKEND_CI=NOT_TRIGGERED  FRONTEND_CI=NOT_TRIGGERED  EVAL_CI=NOT_TRIGGERED
 
 MERGE_VERDICT = BLOCKED_ON_OWNER_ACTION
 ```
 
-## Owner Action 清单（最少化）
+## Phase 16 — Final Verdict
 
 ```text
-1. 打开 https://github.com/HHHAnQi/kiwi-doc/compare/main...codex/rag-metrics-multiturn-baseline
-   创建 PR，标题: "release: harden KiwiRAG portfolio v1"（PR 描述可复制本报告 Scope 部分）
-2. 等 CI 三条 workflow 实跑全绿
-3. Merge PR（如需 squashed merge 保持线性历史也 OK）
-4. 修改 GitHub About Description（见 docs/audits/GITHUB_METADATA_UPDATE.md 推荐值）
-5. 添加 Topics（9 个推荐 tag，禁 multimodal-rag/ha/production-ready）
-6. 确认 main 首页显示新版 KiwiRAG README（首行 # 🥝 KiwiRAG）
-7. 确认 CI 绿后打 tag: v1.0.0-portfolio
-   message: "KiwiRAG portfolio release: reliable ingestion, hybrid retrieval,
-   grounded generation, evaluation-driven engineering, and validated Agentic RAG decision."
+KIWIRAG_IDENTITY         = STRONG_PASS  (🥝 KiwiRAG + Reliable RAG Infrastructure; 旧身份清除)
+RAG_ARCHITECTURE         = STRONG_PASS  (五层真实映射/五图文档/无虚构组件)
+RETRIEVAL_ENGINEERING    = STRONG_PASS  (hybrid+RRF+rerank; 消融+9.2pp; Hit@5 92.5%)
+CONTEXT_ENGINEERING      = STRONG_PASS  (双闸门预算/引用对齐/压缩/隔离标签)
+INGESTION_RELIABILITY    = STRONG_PASS  (真实故障注入三测全PASS; kill-9续点零丢失)
+EVALUATION               = STRONG_PASS  (四层体系/配对A/B/planner隔离/common-cohort)
+AGENTIC_ENGINEERING      = STRONG_PASS  (bounded plan-execute-replan; Post-D3平手+多跳反超;
+                                          默认关闭=数据决策; 启用边界文档化)
+README                   = STRONG_PASS  (14节渐进/3截图/4图/claim全溯源)
+SCREENSHOTS              = PASS         (3张真实; chat正常路径截图因前端锁bug取error-state替代)
+WORKFLOW_VALIDITY        = PASS         (secrets-if修复+YAML合法+deterministic始终跑;
+                                          实际运行态待PR CI)
+PR_CI                    = NOT_TRIGGERED (PR未创建; owner action)
+MAIN_CI                  = NOT_TRIGGERED (main未变)
+PUBLIC_MAIN              = PARTIAL       (main仍旧版README — merge pending)
+RELEASE_HYGIENE          = STRONG_PASS  (33MB生成物清除/spotless/secret零/pre-merge审计完整)
+
+FINAL_VERDICT = INTERVIEW_READY_WITH_LIMITATIONS
 ```
 
-## 本轮完成的代码修复（截图流程暴露的真实 bug）
+**LIMITATION 清单**（与 FINAL_RELEASE_GATE 一致 + 本轮增量）：
+1. PR/CI/metadata/tag 为 owner action（本机无 GitHub 认证凭据）
+2. 性能证据单机 dev + rerank OFF 口径
+3. Agentic 默认关闭（数据决策，非失败）
+4. 前端 SSE 中断锁死 known issue（后端正常）
+5. live judge eval 依赖 repository secrets
 
-| Bug | 根因 | 修复 |
-|---|---|---|
-| 前端永远显示"0 个文档就绪" | 后端终态 `INDEXED`（P0-1 重命名）vs 前端判 `READY` | ChatWindow/Sidebar/StatusBadge/types 四文件同步（兼容两者） |
-| parser-service 无法启动（Phase 5 已修） | fat jar 含 bootstrap plain → RerankHealthIndicator 依赖被排除的 RerankProperties | 排除 infrastructure.rerank 包 |
-| 前端 SSE 中断后聊天锁死 | store `sending` 标志在特定 error 路径未复位（curl 直验后端正常） | 已记录 known issue（README Limitations 第 5 条） |
+## Owner Action 清单（最少化，与上轮一致 + PR description 新增）
+
+```text
+1. 打开 https://github.com/HHHAnQi/KiwiRAG/compare/main...codex/rag-metrics-multiturn-baseline
+2. 粘贴 docs/audits/PR_DESCRIPTION.md 全文为 PR description
+3. 等 CI 三条 workflow 实跑确认（backend/frontend/eval-regression）
+4. Merge PR
+5. 更新 About Description + Topics（docs/audits/GITHUB_METADATA_UPDATE.md）
+6. 确认 main 首行 "# 🥝 KiwiRAG" + 3 截图
+7. 更新 README Limitations 第 1 条（CI 运行态）
+8. CI 绿后打 tag v1.0.0-portfolio
+```
+
+## Hard Rules 遵守声明
+
+本轮零新增 AI feature；未调低任何 eval gate threshold；未修改 gold labels；
+未删除负实验；未隐藏 Classic > Agentic cost tradeoff；未 skip 本应执行的
+deterministic tests；workflow invalid 期间未打 tag。
