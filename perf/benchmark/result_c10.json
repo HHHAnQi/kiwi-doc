@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "concurrency": 10,
+    "n": 60
+  },
+  "results": {
+    "retrieve": {
+      "samples": 60,
+      "failed": 0,
+      "wall_s": 30.2,
+      "qps": 1.98,
+      "p50_ms": 3255,
+      "p95_ms": 10112,
+      "p99_ms": 10339,
+      "mean_ms": 4856.8
+    },
+    "llm_ttft_sse": {
+      "samples": 55,
+      "failed": 5,
+      "wall_s": 55.9,
+      "qps": 0.98,
+      "p50_ms": 4293,
+      "p95_ms": 33223,
+      "p99_ms": 35008,
+      "mean_ms": 6751.4
+    },
+    "chat_e2e": {
+      "samples": 60,
+      "failed": 0,
+      "wall_s": 35.5,
+      "qps": 1.69,
+      "p50_ms": 4826,
+      "p95_ms": 9585,
+      "p99_ms": 10226,
+      "mean_ms": 5280.9
+    }
+  }
+}

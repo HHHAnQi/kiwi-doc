@@ -1,0 +1,47 @@
+{
+  "plan_id": "ragdoc-composition-plan-v1.1",
+  "registry_ref": "ragdoc-claim-registry-v1.1 (.evidence/claim_registry.json)",
+  "target_role": "Agent Infra Engineer",
+  "bullets": [
+    {
+      "bullet_id": "B1",
+      "primary_signal_id": "S01",
+      "claim_refs": ["C001", "C002"],
+      "supporting_mechanism_claim_refs": ["C001", "C002"],
+      "result_claim_ref": null,
+      "ownership_claim_ref": null,
+      "coverage_slot": "distributed_execution_infrastructure",
+      "text": "基于 MySQL 实现文档解析的分布式任务执行层：以可见性超时与 CAS 租约做 worker 宕机后的自动回收重派（reaper 用单条原子 SQL 同时恢复执行态与投递态），任务表兼任事务性 Outbox 投递账本（指数退避、DEAD 死信、手动 replay），使任务状态变更与投递记录同事务落盘。"
+    },
+    {
+      "bullet_id": "B2",
+      "primary_signal_id": "S02",
+      "claim_refs": ["C004", "C006"],
+      "supporting_mechanism_claim_refs": ["C004", "C006"],
+      "result_claim_ref": null,
+      "ownership_claim_ref": null,
+      "coverage_slot": "agent_runtime_and_degradation",
+      "text": "实现 Agent 执行引擎与 Planner 容错层：run/step 状态迁移采用版本化 CAS 与心跳租约（SHA-256 幂等键去重工具调用、多维预算联合裁决、工具调用置于数据库事务之外）；Planner 经 Model→重试→Rule→Classic 运行时降级链容错，评测回放模式下 fixture 缺失严格失败不降级以防污染评测语义，降级来源逐样本溯源写入运行记录。"
+    },
+    {
+      "bullet_id": "B3",
+      "primary_signal_id": "S07",
+      "claim_refs": ["C020", "C022"],
+      "supporting_mechanism_claim_refs": ["C020"],
+      "result_claim_ref": "C022",
+      "ownership_claim_ref": null,
+      "coverage_slot": "agent_judge_hard_problem",
+      "text": "以断言冻结的探针测试证实规则充分性裁决存在结构性 false-sufficient 缺陷，重构为规则层仅做确定性判定、语义充分性交由模型层裁决；同 cohort 同判官的 50 题配对 A/B 重跑中，MODEL 有效样本内 Agentic 与 Classic 正确率差距收敛至统计不显著（Δ−0.2pp，bootstrap 95% CI 跨零，MODEL planner 有效样本 48/50）。"
+    },
+    {
+      "bullet_id": "B4",
+      "primary_signal_id": "S03",
+      "claim_refs": ["C010", "C012", "C013", "C015"],
+      "supporting_mechanism_claim_refs": ["C012", "C013"],
+      "result_claim_ref": "C015",
+      "ownership_claim_ref": null,
+      "coverage_slot": "evaluation_infrastructure",
+      "text": "构建带反作弊约束的 LLM-as-judge 评测体系：为评测系统本身编写指标完整性回归测试（拒答按 state_hint 而非答案长度判定、拒绝 smoke 运行冒充门禁、基线须 ≥3 次运行聚合），并接入 GitHub Actions 夜间回归门禁（指标降幅超 3pp 阈值即阻断构建并自动建 issue）；多轮查询改写门通过率由 0.10 升至 0.95（同一 20 题 holdout、同一判官、不同系统版本前后对比）。"
+    }
+  ]
+}

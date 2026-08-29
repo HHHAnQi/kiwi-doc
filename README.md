@@ -138,7 +138,10 @@ flowchart LR
 Classic 与 Agentic 共享同一 retrieval / reranker / generator / judge 基础；配对评测、
 逐样本 planner_source 核验、盲评位置互换、bootstrap 95% CI、固定共同 cohort（46 题）。
 
-### 冻结结果（common-cohort audit，2026-08-27）
+结果按三层组织（current 冻结 → ablation → historical，口径互不混用；主结果为
+**单 run 配对 + bootstrap 95% CI**，多 run 历史基线不混入 headline）：
+
+**Current Frozen Results**（common-cohort audit，2026-08-27）：
 
 | System | Overall vs Classic | Multi-hop vs Classic | Relative Latency |
 |---|---:|---:|---:|
@@ -152,7 +155,11 @@ Classic 与 Agentic 共享同一 retrieval / reranker / generator / judge 基础
 - 语义 replan 在 **21%（10/48）** 的样本上触发——恰好是证据真正不足处（该子集 Classic 仅 0.79），
   并在其中有正向信号（n=10，方向真实、个体不显著）；其余 79% 正确地不触发。
 - 成本：约 **2.8× 延迟**、**3.4 次 LLM 调用/run**。
-- Classic 自身基线（80 题冻结集）：faithfulness **0.885** / recall **0.90**。
+**Ablation Results**：rerank 消融 faith **+9.2pp** / recall +7.5pp（100 题，其余配置不变）；
+Classic 自身基线（80 题冻结集，单 run）：faithfulness **0.885** / recall **0.90**。
+
+**Historical Milestones**（过程数字，含 run 口径，不入 headline）：见
+[docs/evaluation/](docs/evaluation/) 报告链与 [Claim→Evidence 矩阵](docs/evaluation/CLAIM_EVIDENCE_MATRIX.md)。
 
 > **After fixing the Agentic control loop, quality recovered from a significant deficit
 > to statistical parity with Classic RAG. However, the additional latency and LLM cost

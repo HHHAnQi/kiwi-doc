@@ -1,0 +1,572 @@
+{
+  "registry_id": "ragdoc-claim-registry-v1.1",
+  "source_scenario": "Independent audit of /Users/huanqi/RagDoc/rag-doc-platform at commit 53b01c3 (2026-08-28). Evidence mined from code, tests, raw eval artifacts (JSON with sha256 fingerprints), migrations, CI workflows and git history. README/docs treated as unverified input unless a raw artifact backs the claim.",
+  "target_role": "Agent Infra Engineer",
+  "claims": [
+    {
+      "claim_id": "C001",
+      "signal_id": "S01",
+      "claim_type": "mechanism",
+      "canonical_claim": "在 MySQL 上实现 SQS 风格的分布式任务租约机制：parse_tasks 以 visible_at+leased_by 做可见性超时，任务获取经 CAS UPDATE，30 秒周期 reaper 以单条原子 SQL 将过期 RUNNING 任务回滚 PENDING 并同步恢复其投递状态（两个状态域必须同一条 SQL 恢复，否则 Outbox relay 会永久跳过该任务）。",
+      "mandatory_scope": ["parser-service 文档解析任务域"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "parser-service/src/main/java/com/xxx/ragdoc/parser/infrastructure/VisibilityTimeoutScheduler.java",
+        "parser-service/src/test/java/com/xxx/ragdoc/parser/infrastructure/VisibilityTimeoutSchedulerTest.java",
+        "platform-bootstrap/src/main/resources/db/migration/V5__*.sql"
+      ],
+      "prohibited_escalations": ["exactly-once", "生产级", "高并发"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "实现+单元测试（固定时钟注入验证单条原子恢复）确认机制；无量化产物。",
+      "notes": "reaper 注释中的 '30-60s 内恢复' 为设计值（COMMENT_ONLY），不可入 bullet。"
+    },
+    {
+      "claim_id": "C002",
+      "signal_id": "S01",
+      "claim_type": "mechanism",
+      "canonical_claim": "实现事务性 Outbox 投递：parse_tasks 表兼任投递账本（delivery_status/attempts/next_delivery_at），多实例经 CAS 认领投递，指数退避 5s<<attempts 封顶 900s，8 次失败进入 DEAD 终态并支持手动 replay。",
+      "mandatory_scope": ["RocketMQ parse-task-submit 链路"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/infrastructure/mq/ParseTaskOutboxRelay.java",
+        "platform-bootstrap/src/main/resources/db/migration/V17__*.sql",
+        "platform-bootstrap/src/main/resources/db/migration/V18__*.sql"
+      ],
+      "prohibited_escalations": ["保证不丢消息的最终一致", "exactly-once"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "实现+迁移+relay 语义完整；无量化产物。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C003",
+      "signal_id": "S01",
+      "claim_type": "mechanism",
+      "canonical_claim": "解析任务支持断点续跑：每 10 个 chunk 持久化一次检查点（chunks_written/chunk_seq_offset，且仅在任务仍为 RUNNING 时落盘），配合三层幂等（content_hash SHA-256 唯一键、消费重投守卫、终态 ack-skip）。",
+      "mandatory_scope": ["parser-service 文档解析任务域"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "parser-service/src/main/java/com/xxx/ragdoc/parser/application/ParseWorker.java",
+        "parser-service/src/main/java/com/xxx/ragdoc/parser/application/ParseTaskService.java"
+      ],
+      "prohibited_escalations": ["kill -9 后必达恢复（无归档演练日志）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "机制完整；端到端 kill -9 演练脚本存在但无归档通过日志，端到端恢复效果仅作面试材料。",
+      "notes": "scripts/v3-kill-9-drill.sh 为可执行混沌演练资产，面试可现场跑。"
+    },
+    {
+      "claim_id": "C004",
+      "signal_id": "S01",
+      "claim_type": "mechanism",
+      "canonical_claim": "将同一租约/检查点/CAS 模式复用于 Agent 执行引擎：agent_run/agent_step 采用版本化 CAS 状态迁移（有界 3 次重试）、30s TTL+10s 心跳的分布式执行租约防脑裂、SHA-256 幂等键唯一约束去重工具调用、多维预算联合裁决（任一维度 Denied 即步骤跳过），工具调用刻意置于数据库事务之外。",
+      "mandatory_scope": ["platform-bootstrap Planned Agent 执行路径"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/agent/AgentRunExecutor.java",
+        "platform-bootstrap/src/main/resources/db/migration/V20__*.sql",
+        "platform-bootstrap/src/main/resources/db/migration/V23__*.sql"
+      ],
+      "prohibited_escalations": ["分布式 Agent 框架", "生产级调度"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "实现+集成测试（AgentRunExecutorToolTxIT 验证事务边界）确认。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C005",
+      "signal_id": "S01",
+      "claim_type": "mechanism",
+      "canonical_claim": "提供脚本化 kill -9 混沌演练：启动解析服务→上传 PDF→解析中途 kill -9→断言任务从检查点续跑并达到 PARSED/INDEXED 终态，输出 CI 可 grep 的 PASS/FAIL。",
+      "mandatory_scope": ["本地 docker-compose 环境"],
+      "evidence_context": null,
+      "support_level": "PARTIAL",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["scripts/v3-kill-9-drill.sh"],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "脚本真实存在且断言完整，但仓库内无归档的通过日志；端到端恢复结论未留痕，仅作面试演示与防御材料。",
+      "notes": "建议实跑一次并归档输出以升级为 ALLOWED。"
+    },
+    {
+      "claim_id": "C006",
+      "signal_id": "S02",
+      "claim_type": "mechanism",
+      "canonical_claim": "实现 Planner 运行时降级链 Model→重试→Rule→Classic：评测回放（REPLAY）模式下 fixture 缺失严格失败、不重试、不降级，防止降级污染评测语义；每次降级经 reasonCode 溯源标记（如 RULE_FALLBACK_AFTER_MODEL_FAILURE）写入 agent_run 记录，支持逐样本验证 planner 来源。",
+      "mandatory_scope": ["platform-bootstrap Planned Agent 执行路径"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/planner/FallbackPlannerProvider.java",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/planner/FallbackPlannerProviderTest.java",
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/planned/PlannedAgentPipeline.java"
+      ],
+      "prohibited_escalations": ["自愈", "高可用"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "机制+10 个单元测试场景确认（commit 4eaa109/14043b7）。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C007",
+      "signal_id": "S02",
+      "claim_type": "mechanism",
+      "canonical_claim": "Agent 执行采用显式合法迁移状态机（非法迁移抛异常 fail-closed），Replan 受'至多一次'不变量约束并以历史工具签名集单调性做循环检测。",
+      "mandatory_scope": ["platform-common agent 域模型 + PlannedAgentExecutionCoordinator"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-common/src/main/java/com/xxx/ragdoc/agent/AgentStateMachine.java",
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/planned/PlannedAgentExecutionCoordinator.java"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "实现+状态机不变量 javadoc/测试确认。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C008",
+      "signal_id": "S02",
+      "claim_type": "mechanism",
+      "canonical_claim": "SSE 流式对话实现单一终态不变量：通过 concatWith 顺序保证上游错误仅被恰好一个 onErrorResume 转换为唯一 DoneEvent，StepVerifier 测试覆盖全部路径（含客户端取消）断言恰好一个终态事件。",
+      "mandatory_scope": ["platform-bootstrap SSE 聊天流"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/ChatService.java",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/ChatServiceStreamTerminalStateTest.java"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "机制+响应式测试确认。",
+      "notes": "本条未进入最终 bullets（预算约束），作为面试材料。"
+    },
+    {
+      "claim_id": "C009",
+      "signal_id": "S02",
+      "claim_type": "mechanism",
+      "canonical_claim": "业务降级统一为 HTTP 200 + state_hint 语义枚举（EMPTY_KB/NO_RECALL/LLM_DEGRADED 等）而非抛错，并实现 LLM 拒答套话检测以阻止降级文本写入会话历史污染后续轮次改写。",
+      "mandatory_scope": ["platform-bootstrap 聊天管线"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-common/src/main/java/com/xxx/ragdoc/domain/shared/StateHint.java",
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/ChatService.java"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "机制+测试确认；'实跑 6/10 case 失效'事故记录为代码注释（COMMENT_ONLY），不单独成 claim。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C010",
+      "signal_id": "S03",
+      "claim_type": "object",
+      "canonical_claim": "仓库内存在五套评测 harness：单轮 RAGAS 管线（含 bootstrap 95% CI 与拒答拆分指标）、检索指标（Recall/Precision/HitRate/MRR/NDCG@K 纯函数）、多轮 G1–G5 门禁、Agentic 配对 A/B（bootstrap CI、种子冻结）、Planner 轨迹评测。",
+      "mandatory_scope": ["eval/ 目录，Python，离线可运行"],
+      "evidence_context": null,
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "eval/ragas_pipeline.py",
+        "eval/metrics/retrieval_metrics.py",
+        "eval/multi_turn/run_multi_turn_eval.py",
+        "eval/agentic/scripts/paired_ab_runner.py",
+        "eval/planner/run_planner_eval.py",
+        "eval/tests/test_metrics.py"
+      ],
+      "prohibited_escalations": ["工业级评测平台"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "代码+测试+大量 raw 运行产物确认存在且可执行。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C011",
+      "signal_id": "S03",
+      "claim_type": "mechanism",
+      "canonical_claim": "多轮门禁聚合器执行机器校验：对数据集、G1 基线、判官配置做 sha256 指纹比对，校验各门样本总数、拒绝重复门、要求 G4 含≥35 个真实压缩会话；G1 门禁本身要求 schema v2 指纹、≥80 样本、逐指标 judged-n 完整、时间戳 48h 内新鲜，拒绝 smoke 运行冒充门禁。",
+      "mandatory_scope": ["eval/multi_turn 聚合器与 G1 校验"],
+      "evidence_context": null,
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "eval/multi_turn/aggregate_gate_reports.py",
+        "eval/multi_turn/all_gates_20260825_082849.json",
+        "eval/tests/test_p0_metric_integrity.py"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "实现+反作弊测试+raw 聚合产物（含指纹）确认。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C012",
+      "signal_id": "S03",
+      "claim_type": "mechanism",
+      "canonical_claim": "为评测系统编写指标完整性反作弊回归测试：拒答必须按 state_hint 判定而非答案长度、短而正确的答案不得计为拒答、基线必须≥3 次同配置运行聚合、G1 对 >3pp 降级阻断（含 0.8→0.75 失败路径测试）、判官 Cohen's kappa 校准与分层确定性抽样。",
+      "mandatory_scope": ["eval/tests/test_p0_metric_integrity.py，离线无 LLM/网络"],
+      "evidence_context": null,
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["eval/tests/test_p0_metric_integrity.py", "eval/aggregate_ragas_runs.py"],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "测试文件本身即可执行证据。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C013",
+      "signal_id": "S03",
+      "claim_type": "mechanism",
+      "canonical_claim": "评测回归接入 GitHub Actions 夜间门禁：定时任务 + eval-impact label 触发，起全栈 docker 环境跑 RAGAS 后经 compare_baseline 与冻结基线对比，任一指标降幅超 3pp 阈值即 exit 2 阻断构建并自动创建带回归报告的 GitHub issue。",
+      "mandatory_scope": [".github/workflows/eval-regression.yml"],
+      "evidence_context": null,
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        ".github/workflows/eval-regression.yml",
+        "eval/compare_baseline.py"
+      ],
+      "prohibited_escalations": ["CI 强制门禁每个 PR（实际为夜间+label 触发）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "workflow 文件+比较器退出码语义确认。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C014",
+      "signal_id": "S03",
+      "claim_type": "mechanism",
+      "canonical_claim": "发现并修复评测对象漂移：此前 200 题×3 轮 A/B 因 planner 配置 drift（model-enabled 关闭）实际测的是 Rule Planner；修复为逐样本持久化 planner_source 溯源并设置 ≥80% MODEL 有效性门，Pilot 重跑中 Model planner 有效样本 47/50。",
+      "mandatory_scope": ["eval/agentic pilot 与正式报告"],
+      "evidence_context": "OBSERVED_RUN",
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "docs/evaluation/2026-08-27-p0-2-pilot-report.md",
+        "eval/agentic/reports/pilot50_llmplanner/paired_ab_product_run1.json",
+        "eval/agentic/reports/pilot50_llmplanner/paired_ab_product_summary.json"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "正式报告+逐样本 raw JSON（planner_source 字段）确认；47/50 数字由 raw JSON 可复算。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C015",
+      "signal_id": "S03",
+      "claim_type": "metric",
+      "canonical_claim": "多轮查询改写门 G2 通过率从 0.10（2026-08-04 运行，2/20）提升到 0.95（2026-08-25 运行，19/20），两次运行使用同一 20 题多轮 holdout 数据集（sha256 指纹一致）与同一判官 qwen-max，系统版本不同（前后对比，非受控 A/B，不构成因果结论）。",
+      "mandatory_scope": [
+        "同一 20 题 holdout（conv_holdout_20.jsonl，sha256 一致）",
+        "判官 qwen-max",
+        "不同系统版本的前后运行对比",
+        "非因果"
+      ],
+      "evidence_context": "BENCHMARK_RESULT",
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "eval/multi_turn/report_20260804_165347.md",
+        "eval/multi_turn/all_gates_20260825_082849.json",
+        "eval/multi_turn/aggregate_gate_reports.py"
+      ],
+      "allowed_metrics": [
+        {"name": "G2_pass_rate", "baseline": 0.10, "result": 0.95, "unit": "ratio", "sample_size": 20}
+      ],
+      "prohibited_escalations": ["因果表述（'因为 X 修复所以提升'）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "前后两次 raw 报告均存于仓库，holdout sha256 指纹可在聚合产物中核验。",
+      "notes": "同期 G1–G5 五门在 2026-08-25 全 PASS（聚合器机器校验）。"
+    },
+    {
+      "claim_id": "C016",
+      "signal_id": "S04",
+      "claim_type": "mechanism",
+      "canonical_claim": "实现三层会话记忆管理：condense 式查询改写（滚动 Levenshtein≥0.9 鹦鹉检测）、基于嵌入余弦的话题切换检测（含'顺序悖论'守卫：最需要上下文的短指代追问最像话题切换，用正则门 bypass）、异步历史压缩（动态阈值、防抖、lost-update 合并、确定性关键实体恢复），且仅 StateHint.OK 轮次可写入历史。",
+      "mandatory_scope": ["platform-bootstrap 多轮对话域"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/infrastructure/conversation/QueryContextualizer.java",
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/infrastructure/conversation/TopicShiftDetector.java",
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/infrastructure/conversation/HistoryCompressor.java",
+        "platform-common/src/main/java/com/xxx/ragdoc/application/chat/conversation/ConversationContext.java"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "机制+测试确认；因角色排序（Agent Infra）与 4 条 bullet 预算未入选，作为面试材料。",
+      "notes": "对 Agent Engineer 角色此信号会进入 bullets（角色只改排序不改事实）。"
+    },
+    {
+      "claim_id": "C017",
+      "signal_id": "S05",
+      "claim_type": "mechanism",
+      "canonical_claim": "Agent 域 5 项指标（sufficiency/replan/budget_denied/e2e_duration/llm_calls）各自接线到单一权威记录点，并用 Mockito times(1) 测试强制'恰好记录一次'语义（含禁用路径与 LLM 调用失败仍计数）。",
+      "mandatory_scope": ["platform-bootstrap agent 域"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/AgentMetricsWiringTest.java",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/SufficiencyMetricsWiringTest.java"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "commit aa8ba37 后代码+测试确认（注意：docs/架构速查表仍停留在'已注册未接线'的旧状态，引用时以代码为准）。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C018",
+      "signal_id": "S05",
+      "claim_type": "mechanism",
+      "canonical_claim": "实现 per-run 可观测性契约：agent_run 新增 decision_summary 字段由 5 个决策点（初始充分/Replan 后充分/Replan 耗尽降级/矛盾拒答/工具失败）在终结时仅当为空才写入，状态字段表达生命周期、decision_summary 表达原因；runId 仅在运行真实创建后才暴露（无伪造 ID，前置失败经 traceId+requestId 关联），sync 与 SSE 响应头对齐暴露 runId/terminalStatus/decisionSummary。",
+      "mandatory_scope": ["platform-bootstrap Planned Agent + V24 迁移"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/resources/db/migration/V24__agent_run_decision_summary.sql",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/D5PipelineCorrelationTest.java",
+        "docs/evaluation/2026-08-27-d5-reconstruction-audit.md"
+      ],
+      "prohibited_escalations": ["全链路事件溯源（明确未建 event store）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "迁移+测试+失败场景审计文档确认；未入 bullets（预算），面试材料。",
+      "notes": "D5 审计诚实地将两处观测缺口标记为 PARTIAL_OBSERVABILITY_GAP 并最小化修复。"
+    },
+    {
+      "claim_id": "C019",
+      "signal_id": "S06",
+      "claim_type": "mechanism",
+      "canonical_claim": "以 ArchUnit 架构测试（5 条规则）在 CI 中执法 DDD 分层：domain 禁 Spring/JPA/Servlet、application 禁依赖 infrastructure、模块间无循环依赖；并通过依赖反转（抽取 MetricsPort 与会话域 Port 接口）消除了全部跨层违规。",
+      "mandatory_scope": ["platform-bootstrap/platform-common"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/architecture/ArchitectureTest.java",
+        "platform-common/src/main/java/com/xxx/ragdoc/application/chat/conversation/port/"
+      ],
+      "prohibited_escalations": [],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "测试在 CI 运行（ci.yml test 阶段含 ArchUnit）；'41→0'数字出自 commit be3a032 message（SELF_CLAIMED），故不写入 canonical claim。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C020",
+      "signal_id": "S07",
+      "claim_type": "mechanism",
+      "canonical_claim": "以断言冻结的探针测试证实规则充分性裁决存在结构性缺陷（构造性混淆集上 Rule 裁决 10/10 false-sufficient、同 prompt 模型裁决 0/10），并将裁决职责重构：规则层仅保留 3 类确定性判定（无证据/实体过滤不匹配/pinned 版本冲突），其余一律 UNDETERMINED 转交模型层做语义判定，重构后 Agent 级行为由行为测试钉住（充分→不 Replan、不足→真实 Replan、恢复→继续、仍不足→有界降级）。",
+      "mandatory_scope": ["platform-bootstrap SufficiencyJudge 域"],
+      "evidence_context": null,
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/SufficiencySemanticProbeTest.java",
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/RuleSufficiencyJudge.java",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/D3SemanticReplanBehaviorTest.java"
+      ],
+      "prohibited_escalations": ["Rule 判定完全错误（其确定性判定仍正确）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "探针测试与行为测试均为可执行证据；10/10 数字冻结在测试断言中（评测口径的量化结论另见 C106 的 holdout 数字，未入 bullet）。",
+      "notes": "bullet 文本不使用 10/10 数字（mechanism claim 不授权 metric atom）。"
+    },
+    {
+      "claim_id": "C021",
+      "signal_id": "S07",
+      "claim_type": "mechanism",
+      "canonical_claim": "发现并修复被上游评测结果掩盖的 Model Replan 死路径：replan 计划步骤 ID 与已完成步骤命名冲突导致必然 DUPLICATE_STEP_ID 整计划拒绝（命名空间按 replan 轮次隔离修复），且 replan prompt 缺少已尝试查询上下文导致重复查询被确定性拒绝（注入 attempted-query 修复）；配有确定性单测与 fixture 强制 Replan 的集成测试。",
+      "mandatory_scope": ["ModelPlannerProvider + ReplanDecisionCoordinator"],
+      "evidence_context": null,
+      "support_level": "STRONG",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "platform-bootstrap/src/main/java/com/xxx/ragdoc/application/chat/planner/ModelPlannerProvider.java",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/planner/ModelReplanCanonicalizationTest.java",
+        "platform-bootstrap/src/test/java/com/xxx/ragdoc/application/chat/planner/ForcedModelReplanIntegrationTest.java"
+      ],
+      "prohibited_escalations": ["100% DUPLICATE_STEP_ID（数字为诊断结论，不写入 bullet）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "实现+6 个单测+集成测试确认。",
+      "notes": "未入最终 bullets（预算），面试重点材料。"
+    },
+    {
+      "claim_id": "C022",
+      "signal_id": "S07",
+      "claim_type": "metric",
+      "canonical_claim": "充分性裁决职责重构后的同 cohort 同判官 50 题配对 A/B 重跑：MODEL planner 有效样本 48/50（96%）；Model-only 视图下 Agentic 正确率 0.9083 vs Classic 0.9104，Δ=−0.0021，bootstrap 95% CI [−0.0854, +0.0833]（跨零，不显著）；10/48 个运行触发 Replan；两次运行（修复前后）的数据集 sha256、语料指纹、判官与种子完全一致。",
+      "mandatory_scope": [
+        "50 题冻结数据集（sha256 一致）",
+        "同判官 qwen、配对 A/B、种子冻结、bootstrap 5000 次",
+        "Model-only 视图（排除非 MODEL planner 样本）",
+        "CI 跨零 = 统计平手，不可表述为反超"
+      ],
+      "evidence_context": "BENCHMARK_RESULT",
+      "support_level": "VERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [
+        "eval/agentic/reports/pilot50_postd3/paired_ab_product_summary.json",
+        "eval/agentic/reports/pilot50_postd3/paired_ab_product_run1.json"
+      ],
+      "allowed_metrics": [
+        {"name": "model_planner_validity", "result": 0.96, "unit": "ratio", "sample_size": 50},
+        {"name": "agentic_vs_classic_correctness_delta", "result": -0.0021, "unit": "delta", "ci": [-0.0854, 0.0833], "sample_size": 48}
+      ],
+      "prohibited_escalations": ["Agentic 反超 Classic", "显著优于", "多跳切片反超（model-only n=24 不显著）"],
+      "claim_status": "APPROVED",
+      "resume_eligibility": "ALLOWED",
+      "eligibility_rationale": "raw 逐样本 JSON 可复算全部数字；cohort/judge 指纹在产物中一致。",
+      "notes": "共同 cohort n=46 残差分析（Pre −8.3pp 显著 → Post −0.2pp 不显著，含 Classic 跨 run 噪声桥 −2.4pp n.s.）见 docs/evaluation/2026-08-27-postd3-residual-audit.md，作为面试纵深材料。"
+    },
+    {
+      "claim_id": "C101",
+      "signal_id": "S02",
+      "claim_type": "metric",
+      "canonical_claim": "Agent 拒答率从 65% 降到 ≤15%。",
+      "evidence_context": "COMMENT_ONLY",
+      "support_level": "SELF_CLAIMED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["commit c83cabc message", "PlannedAgentExecutionCoordinator.java 代码注释"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "65% 与目标值均出自 commit message/代码注释，无 raw 产物归档修复后拒答率。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C102",
+      "signal_id": "S03",
+      "claim_type": "metric",
+      "canonical_claim": "查询改写/扩展使检索指标提升 X%。",
+      "support_level": "UNVERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["eval/runner/ab_query_rewrite.py（harness 存在，结果文件未提交）"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "COMPARISON_NOT_VERIFIED：运行器真实存在但 query_rewrite_report.json 不在仓库。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C103",
+      "signal_id": "S08",
+      "claim_type": "metric",
+      "canonical_claim": "系统压测 QPS/P99 等性能数字。",
+      "evidence_context": "CONFIG_ONLY",
+      "support_level": "UNVERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["perf/performance_report.md（模板全部标注 unmeasured）", "perf/out/.gitkeep"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "Locust 产物未提交，模板明确禁止虚构。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C104",
+      "signal_id": "S09",
+      "claim_type": "ownership",
+      "canonical_claim": "候选人是本仓库全部 201 个 commit 的作者并独立完成所有模块。",
+      "support_level": "PARTIAL",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": [".evidence/git_ownership.json（唯一贡献者 HHHAnQi，201/201 commits）"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "候选身份 UNRESOLVED：git 唯一贡献者事实存在，但未与候选人身份匹配前，ownership 声明按规则拒绝；bullets 中不得出现任何领导性/独占性措辞。",
+      "notes": "确认 HHHAnQi 即候选人后可重新审计放行。"
+    },
+    {
+      "claim_id": "C105",
+      "signal_id": "S03",
+      "claim_type": "causal",
+      "canonical_claim": "G2 通过率提升由会话记忆机制修复导致。",
+      "support_level": "UNVERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "前后对比无受控变量，因果不成立（METRIC_NE_OUTCOME_NE_CAUSAL）。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C106",
+      "signal_id": "S07",
+      "claim_type": "metric",
+      "canonical_claim": "D3 修复在 24 对×6 类 holdout 上将 false-sufficient 从 58% 降到 4%，人机一致率从 42% 升到 96%。",
+      "evidence_context": "OBSERVED_RUN",
+      "support_level": "SELF_CLAIMED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["docs/evaluation 报告与 commit 62decb1 message"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "数字见于报告 markdown 与 commit message，未找到逐样本 raw 存档；构造混淆集 10/10 vs 0/10 已冻结在探针测试中（C020），可用。",
+      "notes": "面试可讲，简历不写。"
+    },
+    {
+      "claim_id": "C107",
+      "signal_id": "S08",
+      "claim_type": "maturity",
+      "canonical_claim": "系统为生产级/高可用/可扩展。",
+      "support_level": "UNVERIFIED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "个人 docker-compose 部署，无真实流量证据；硬性禁词。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C108",
+      "signal_id": "S05",
+      "claim_type": "metric",
+      "canonical_claim": "D3 后运行中 SUFFICIENT=48/INSUFFICIENT=13/CONFLICTED=1、replan ALLOWED=11。",
+      "evidence_context": "COMMENT_ONLY",
+      "support_level": "SELF_CLAIMED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["commit 159cf5d message（读自运行时 Prometheus，未持久化）"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "聚合指标未写入 raw 产物；样本级 replan（10 runs/17 events）在 raw JSON 中可用（已并入 C022）。",
+      "notes": ""
+    },
+    {
+      "claim_id": "C109",
+      "signal_id": "S08",
+      "claim_type": "metric",
+      "canonical_claim": "聊天端到端 p99 20.7s / 检索 p99 6.99s。",
+      "evidence_context": "COMMENT_ONLY",
+      "support_level": "SELF_CLAIMED",
+      "ownership_status": "OWNERSHIP_UNRESOLVED",
+      "evidence_refs": ["eval/latency_report_p3a.md（markdown 自报，无 raw CSV）"],
+      "claim_status": "REJECTED",
+      "resume_eligibility": "NOT_ALLOWED",
+      "eligibility_rationale": "无原始产物且数值本身无展示价值。",
+      "notes": ""
+    }
+  ]
+}
