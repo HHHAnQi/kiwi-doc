@@ -204,6 +204,9 @@ Classic 自身基线（80 题冻结集，单 run）：faithfulness **0.885** / r
 | Correlation | traceId / requestId / runId (sync headers ⇄ SSE parity) |
 | Metrics | Prometheus agent domain (single authoritative site per metric) |
 
+可靠性机制经**真实故障注入验证**（kill -9 / poison-message / duplicate-delivery，
+见 [FAULT_INJECTION_REPORT](docs/reliability/FAULT_INJECTION_REPORT.md)）。
+
 ---
 
 ## Quick Start
@@ -269,6 +272,9 @@ docs/                 adr(15) / architecture / evaluation / operations / v3 / re
 
 | 主题 | 入口 |
 |---|---|
+| 五张核心架构图 | [docs/architecture/architecture-diagrams.md](docs/architecture/architecture-diagrams.md) |
+| 何时用 Agentic（数据依据） | [docs/agentic/WHEN_TO_USE_AGENTIC_RAG.md](docs/agentic/WHEN_TO_USE_AGENTIC_RAG.md) |
+| 性能基准（实测 P50/95/99） | [perf/performance_report.md](perf/performance_report.md) |
 | Architecture / 机制审计 | `docs/architecture/` · `docs/adr/` |
 | 评测方法与全部报告 | `docs/evaluation/`（P0-2 spec/pilot、Post-D3 验证、E1/E2 残差审计） |
 | 可靠性 runbook | `docs/operations/`（reranker SOP / eval 回归 SOP / prod runbook） |
